@@ -311,6 +311,61 @@ def package(reports):
     return output.getvalue()
 
 
+def diagnostics(code, roles, options):
+    """Retain the original processors' review tables outside the import workbook."""
+    with engine.processing_context(slug(code)):
+        if code == 285:
+            from razync.lcarlos import processar_planilhas_lcarlos
+            _, table, summary = processar_planilhas_lcarlos(roles['jaguar'][0][1],roles['entradas'][0][1])
+            return {'Conciliação Jaguar':table,'Resumo':pd.DataFrame([summary])}
+        if code == 1211:
+            from razync.gz_1211 import processar_gz
+            _, table, unused, summary = processar_gz(roles['extrato'][0][1],roles['boletos'][0][1])
+            return {'Boletos x extrato':table,'Boletos não utilizados':unused,'Resumo':pd.DataFrame([summary])}
+        if code == 1402 and roles.get('extrato'):
+            from razync.vgv_1402 import processar_vgv
+            table, statement_frame, missing, summary = processar_vgv(roles['planilha'][0][1],roles['extrato'][0][1])
+            return {'Caixa x BTG':table,'Extrato BTG':statement_frame,'Sem planilha':missing,'Resumo':pd.DataFrame([summary])}
+        if code == 968:
+            from razync.radani import analisar_desmembramentos,consolidar_comprovantes_sispag
+            tables = {}
+            for bank,label in [('itau','Itaú'),('bradesco','Bradesco')]:
+                parts = [statement(code,bank,content,name) for name,content in roles.get(bank,[])]
+                if not parts:
+                    continue
+                frame = pd.concat(parts,ignore_index=True)
+                frame['DATA'] = pd.to_datetime(frame['DATA'],dayfirst=True,errors='coerce')
+                receipts = consolidar_comprovantes_sispag(roles['sispag'],frame['DATA'].min().isoformat(),frame['DATA'].max().isoformat()) if bank == 'itau' and roles.get('sispag') else pd.DataFrame()
+                result = analisar_desmembramentos(frame,label,receipts)
+                tables[f'Revisões {label}'] = result.revisoes
+                tables[f'Detalhamentos {label}'] = result.detalhamentos
+                tables[f'Extrato original {label}'] = frame
+            return tables
+        if code == 1408 and roles.get('extrato'):
+            from razync.eletro_forte_filial_1408 import montar_modelo_1408
+            from razync.eletro_forte_francesinhas import processar_zip_francesinhas
+            parts = [statement(code,'itau',content,name) for name,content in roles['extrato']]
+            details = [processar_zip_francesinhas(content,'512')[0] for _,content in roles.get('francesinhas',[])]
+            _,summary = montar_modelo_1408(pd.concat(parts,ignore_index=True).to_dict('records'),roles.get('recebidos',[(None,None)])[0][1],int(options.get('ano') or datetime.now().year),pd.concat(details,ignore_index=True) if details else None)
+            return {'Resumo extrato 1408':pd.DataFrame([summary])}
+        return {}
+
+
+def workflow_reports(code, roles, options):
+    if code in {242,1408} and not roles.get('extrato'):
+        return eletro_reports(code,roles,options)
+    content,name = workflow(code,roles,options)
+    reports = {name:content}
+    tables = diagnostics(code,roles,options)
+    if tables:
+        buffer=io.BytesIO()
+        with pd.ExcelWriter(buffer,engine='openpyxl') as writer:
+            for title,frame in tables.items():
+                frame.to_excel(writer,sheet_name=title[:31],index=False)
+        reports[f'RAZYNC_{code}_CONFERENCIAS.xlsx']=buffer.getvalue()
+    return reports
+
+
 def francesinhas(code, uploads):
     from razync.eletro_forte_francesinhas import processar_zip_francesinhas, gerar_excel_francesinhas
     frames, notices = [], []

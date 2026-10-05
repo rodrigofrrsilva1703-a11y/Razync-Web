@@ -81,3 +81,164 @@ def test_tax_endpoint_excel_matches_original_report():
 def test_bank_validation_does_not_silently_use_another_processor():
     response=client.post('/api/v1/modelo-dominio/154',data={'bank':'sicredi'},files={'files':('extrato.pdf',b'pdf')})
     assert response.status_code==400
+
+def pdf_text(text):
+    import fitz
+    document=fitz.open();page=document.new_page()
+    page.insert_text((40,40),text,fontsize=9)
+    return document.tobytes()
+
+def test_gz_real_pdf_desmembramento_dates_balances_and_excel():
+    from razync.gz_1211 import processar_gz,gerar_modelo_dominio_gz
+    statement=pdf_text('GZ IMPORTADORA 0099343-5\n01/10/2026 SALDO ANTERIOR 1.000,00\n01/10/2026 BOLETOS RECEBIDOS 300,00\n01/10/2026 TARIFA -10,00\n01/10/2026 SALDO EM CONTA CORRENTE 1.290,00')
+    receipts=pdf_text('Boletos baixados e liquidados GZ IMPORTADORA ITAU\nCLIENTE A 30/09/2026 01/10/2026 100,00 157 Liquidado\nCLIENTE B 30/09/2026 01/10/2026 200,00 157 Liquidado\nCLIENTE C 30/09/2026 01/10/2026 500,00 157 Baixado')
+    frame,diagnosis,unused,summary=processar_gz(statement,receipts)
+    assert len(frame)==3
+    assert frame['VALOR'].tolist()==[100,200,-10]
+    assert summary['agregados_batendo']==1
+    assert summary['saldo_final_calculado']==1290
+    expected=gerar_modelo_dominio_gz(frame,engine.TEMPLATE.read_bytes())
+    roles={'extrato':[('gz.pdf',statement)],'boletos':[('liquidados.pdf',receipts)]}
+    actual,_=workflow(1211,roles,{})
+    assert workbook_signature(actual)==workbook_signature(expected)
+    from app.migration_services import diagnostics
+    actual_tables=diagnostics(1211,roles,{})
+    pd.testing.assert_frame_equal(actual_tables['Boletos x extrato'],diagnosis)
+
+def test_lcarlos_api_preserves_auxiliary_replacements_and_original_excel(monkeypatch):
+    from razync.lcarlos import processar_planilhas_lcarlos
+    jaguar=xlsx([['Data','Cliente ou Fornecedor (Razão Social ou Nome Fantasia)','','','Valor (R$)','Saldo (R$)'],['05/08/2026','RECEBIMENTO VENDAS NF','','',75,75],['06/08/2026','TARIFA BANCARIA','','',-5,70]])
+    auxiliary=xlsx([['RECEBIMENTOS','LCARLOS','AGOSTO',''],['','','',''],['05/08/2026',50,'BOLETO NF1','CLIENTE A'],['',25,'BOLETO NF2','CLIENTE B']])
+    frame,_,summary=processar_planilhas_lcarlos(jaguar,auxiliary)
+    assert len(frame)==3
+    assert summary['diferenca_total']==0
+    ref=reference_engine();monkeypatch.chdir(engine.TEMPLATE.parent)
+    expected=ref.gerar_excel_modelo_dominio(frame)
+    response=client.post('/api/v1/workflow/285',data={'roles_json':'["jaguar","entradas"]'},files=[('files',('Jaguar.xlsx',jaguar)),('files',('Entradas.xlsx',auxiliary))])
+    assert response.status_code==200,response.text
+    assert workbook_signature(response.content)==workbook_signature(expected)
+
+def test_radani_api_keeps_sispag_totals_and_full_diagnostics(monkeypatch):
+    from app import migration_services as services
+    from razync import radani
+    from test_original_radani import _extrato,_comprovantes
+    source,receipts=_extrato(),_comprovantes()
+    monkeypatch.setattr(engine,'_radani_cache_extrato_pdf',lambda *_:source.to_dict('records'))
+    monkeypatch.setattr(services,'statement',lambda *_:source.copy())
+    def read_receipts(files,start,end):
+        assert pd.Timestamp(start)==source['DATA'].min()
+        assert pd.Timestamp(end)==source['DATA'].max()
+        return receipts.copy()
+    monkeypatch.setattr(radani,'consolidar_comprovantes_sispag',read_receipts)
+    original=radani.analisar_desmembramentos(source,'Itaú',receipts)
+    expected=reference_engine().gerar_excel_nova_geracao({'Itaú':{'principal':original.organizado,'retirados':pd.DataFrame()}},engine.TEMPLATE.read_bytes())
+    roles={'itau':[('itau.pdf',b'pdf')],'sispag':[('sispag.pdf',b'pdf')]}
+    actual,_=workflow(968,roles,{})
+    assert workbook_signature(actual)==workbook_signature(expected)
+    tables=services.diagnostics(968,roles,{})
+    pd.testing.assert_frame_equal(tables['Detalhamentos Itaú'],original.detalhamentos)
+
+def test_1408_extrato_is_primary_when_recebidos_is_also_uploaded(monkeypatch):
+    from app import migration_services as services
+    from razync.eletro_forte_filial_1408 import montar_modelo_1408
+    source=pd.DataFrame([{'DATA':'04/08/2026','VALOR':80.63,'HISTÓRICO':'PIX RECEBIDO'},{'DATA':'04/08/2026','VALOR':-24.56,'HISTÓRICO':'TAR COBRANCA'}])
+    raw=b'<table><tr><th>Data</th><th>Debito</th><th>Credito</th><th>Valor</th><th>Historico</th></tr><tr><td>04/08</td><td>166</td><td>2</td><td>80,63</td><td>CLIENTE TESTE</td></tr></table>'
+    monkeypatch.setattr(services,'statement',lambda *_:source.copy())
+    frame,summary=montar_modelo_1408(source.to_dict('records'),raw,2026)
+    assert len(frame)==2 and summary['historicos_substituidos']==1
+    ref=reference_engine();monkeypatch.chdir(engine.TEMPLATE.parent)
+    expected=ref.gerar_excel_modelo_dominio(frame)
+    actual,_=workflow(1408,{'extrato':[('itau.pdf',b'pdf')],'recebidos':[('recebidos.xls',raw)]},{'ano':2026})
+    assert workbook_signature(actual)==workbook_signature(expected)
+
+def test_nibo_bank_descriptions_order_and_unclassified_accounts_match_original(monkeypatch):
+    from razync import nibo
+    from test_migration import model
+    from openpyxl import load_workbook
+    data=pd.DataFrame([{'DESCRIÇÃO':'NIBO','DATA':'02/10/2026','VALOR':100,'DÉBITO':'','CRÉDITO':'','HISTÓRICO':'Recebido: ACME'}])
+    monkeypatch.setattr(nibo,'processar_extrato_nibo_pdf',lambda *_:data.copy())
+    combined=pd.concat([data.assign(DESCRIÇÃO='BANCO ITAÚ'),data.assign(DESCRIÇÃO='BANCO DO BRASIL')],ignore_index=True).sort_values(['DATA','DESCRIÇÃO'],kind='stable')
+    ref=reference_engine();monkeypatch.chdir(engine.TEMPLATE.parent)
+    expected=ref.gerar_excel_modelo_dominio(combined)
+    actual,_=workflow(1529,{'itau':[('nibo.pdf',b'pdf')],'banco_brasil':[('nibo-bb.pdf',b'pdf')]},{})
+    assert workbook_signature(actual)==workbook_signature(expected)
+
+def test_francesinhas_endpoint_preserves_emitido_em_and_original_tabs(monkeypatch):
+    from test_original_eletro_forte_francesinhas import TEXTO_508,TEXTO_509,_zip_teste
+    from razync import eletro_forte_francesinhas as original
+    monkeypatch.setattr(original,'_texto_pdf',lambda content:TEXTO_508 if content==b'pdf-508' else TEXTO_509)
+    source=_zip_teste();frame,_=original.processar_zip_francesinhas(source)
+    expected=original.gerar_excel_francesinhas(engine.TEMPLATE.read_bytes(),frame)
+    response=client.post('/api/v1/francesinhas/242',files={'files':('francesinhas.zip',source)})
+    assert response.status_code==200,response.text
+    assert workbook_signature(response.content)==workbook_signature(expected)
+
+def test_txt_keeps_original_history_and_excel_serial_dates():
+    from test_migration import model
+    source=model(date=46212)
+    response=client.post('/api/v1/modelo-dominio-txt',files={'file':('modelo.xlsx',source)})
+    assert response.status_code==200,response.text
+    assert response.content.decode().startswith('09/07/2026;')
+    assert 'Pago: Empresa: ACME INDUSTRIAL' in response.content.decode()
+
+def test_fiscal_coverage_for_all_48_companies():
+    result=client.get('/api/v1/companies').json()
+    assert len(result)==48
+    assert all('conferencia_fiscal' in row['capabilities']['tools'] for row in result)
+
+def test_reconciliation_repeated_movements_and_removed_estornos_match_reference(monkeypatch):
+    from openpyxl import Workbook
+    from app import migration_services as services
+    wb=Workbook();ws=wb.active;ws.title='Itaú'
+    ws.append(services.COLUNAS)
+    for value in (100,100,-25):
+        ws.append(['BANCO ITAÚ','01/10/2026',value,'','','Recebido: ACME' if value>0 else 'Pago: TARIFA'])
+    removed=wb.create_sheet('Lançamentos retirados');removed.append(services.COLUNAS+['MOTIVO']);removed.append(['BANCO ITAÚ','01/10/2026',200,'','','Estorno de baixa','Estorno de baixa identificado'])
+    buffer=io.BytesIO();wb.save(buffer);model=buffer.getvalue()
+    movements=pd.DataFrame([{'DESCRIÇÃO':'BANCO ITAÚ','DATA':'01/10/2026','VALOR':v,'DÉBITO':'','CRÉDITO':'','HISTÓRICO':'Estorno de baixa' if v==200 else 'Movimento'} for v in (100,100,100,-25,200)])
+    monkeypatch.setattr(services,'statement',lambda *_:movements.copy())
+    ref=reference_engine()
+    main,excluded,_=ref.ler_planilha_organizada_conferencia(model,'itau')
+    expected=ref.conciliar_empresa_com_extrato(main,movements,excluded)
+    summary,tables=services.reconcile(3,'itau',model,[('itau.pdf',b'pdf')])
+    assert summary['faltando_planilha']==1 and not summary['ok']
+    for name,frame in zip(('Conferência diária','Faltando na planilha','A mais na planilha','Estornos ignorados'),expected):
+        pd.testing.assert_frame_equal(tables[name],frame)
+
+def test_a1_validated_encrypted_and_scoped_to_company(monkeypatch):
+    from cryptography import x509
+    from cryptography.x509.oid import NameOID
+    from cryptography.hazmat.primitives import hashes,serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives.serialization import pkcs12
+    from datetime import datetime,timedelta,timezone
+    from app.certificates_service import connection
+    from razync.certificado_digital import decifrar_certificado
+    monkeypatch.setenv('RAZYNC_ACCESS_TOKEN','test-admin')
+    monkeypatch.setenv('CERTIFICATES_MASTER_KEY','test-crypto-master')
+    key=rsa.generate_private_key(public_exponent=65537,key_size=2048)
+    name=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,'Razync Teste:11222333000181')])
+    now=datetime.now(timezone.utc)
+    certificate=x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(key.public_key()).serial_number(x509.random_serial_number()).not_valid_before(now-timedelta(days=1)).not_valid_after(now+timedelta(days=30)).sign(key,hashes.SHA256())
+    content=pkcs12.serialize_key_and_certificates(b'teste',key,certificate,None,serialization.BestAvailableEncryption(b'test-password'))
+    headers={'Authorization':'Bearer test-admin'}
+    response=client.post('/api/v1/certificates/242',headers=headers,data={'password':'test-password'},files={'file':('teste.pfx',content)})
+    assert response.status_code==200,response.text
+    assert response.json()['certificate']['cnpj']=='11222333000181'
+    assert client.get('/api/v1/certificates/1408',headers=headers).json()['certificate'] is None
+    con=connection();row=con.execute('SELECT encrypted FROM certificates WHERE company=242').fetchone();con.close()
+    assert decifrar_certificado(row['encrypted'],'test-crypto-master')==(content,'test-password')
+    assert 'test-password' not in row['encrypted']
+    assert client.post('/api/v1/certificates/242',headers=headers,data={'password':'wrong'},files={'file':('teste.pfx',content)}).status_code==422
+
+def test_selected_period_filters_standard_api_without_changing_legacy_processor(monkeypatch):
+    import importlib
+    main=importlib.import_module('app.main')
+    source=pd.DataFrame([{'DESCRIÇÃO':'BANCO ITAÚ','DATA':pd.Timestamp(d),'VALOR':v,'DÉBITO':'','CRÉDITO':'508','HISTÓRICO':'Pago: Teste'} for d,v in [('2026-09-30',-10),('2026-10-01',-20)]])
+    monkeypatch.setattr(main,'_process_modular',lambda *_:source.copy())
+    response=client.post('/api/v1/modelo-dominio/88',data={'bank':'itau','options_json':'{"data_inicial":"2026-10-01","data_final":"2026-10-01"}'},files={'files':('itau.pdf',b'pdf')})
+    assert response.status_code==200,response.text
+    expected=engine.gerar_excel_modelo_dominio(source.iloc[1:])
+    assert workbook_signature(response.content)==workbook_signature(expected)
+    bad=client.post('/api/v1/modelo-dominio/88/multi',data={'banks_json':'["itau"]','options_json':'[]'},files={'files':('itau.pdf',b'pdf')})
+    assert bad.status_code==400

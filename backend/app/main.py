@@ -185,6 +185,7 @@ async def modelo_dominio(
     company_code: int,
     bank: str = Form(""),
     files: list[UploadFile] = File(...),
+    options_json: str = Form('{}'),
 ):
     if not files:
         raise HTTPException(status_code=400, detail="Envie pelo menos um arquivo.")
@@ -198,11 +199,18 @@ async def modelo_dominio(
     if not bank and company_code not in {88, 969, 1530}:
         raise HTTPException(status_code=400, detail="Informe o banco para esta empresa.")
     try:
+        from app.migration_services import filter_frame
+        options = json.loads(options_json)
+        if not isinstance(options,dict):
+            raise ValueError('Opções de período inválidas.')
         frames = []
         for upload in files:
             content = await upload.read()
             frames.append(await run_in_threadpool(_process_modular, company_code, bank, content, upload.filename or "arquivo"))
         df = pd.concat(frames, ignore_index=True).sort_values("DATA", kind="stable").reset_index(drop=True)
+        df = filter_frame(df,options)
+        if df.empty:
+            raise ValueError('Nenhum lançamento no período selecionado.')
         workbook = await run_in_threadpool(_original_export, company_code, {_sheet_name(bank): df})
         return _download(workbook, f"RAZYNC_{company_code}_{(bank or 'BANCO').upper()}_MODELO_DOMINIO.xlsx")
     except Exception as exc:
@@ -214,11 +222,16 @@ async def modelo_dominio_multi(
     company_code: int,
     banks_json: str = Form(...),
     files: list[UploadFile] = File(...),
+    options_json: str = Form('{}'),
 ):
     try:
+        from app.migration_services import filter_frame
+        options = json.loads(options_json)
+        if not isinstance(options,dict):
+            raise ValueError('Opções de período inválidas.')
         banks = json.loads(banks_json)
-    except json.JSONDecodeError as exc:
-        raise HTTPException(status_code=400, detail="banks_json inválido.") from exc
+    except (json.JSONDecodeError,ValueError) as exc:
+        raise HTTPException(status_code=400, detail="Configuração de bancos/período inválida.") from exc
     if not isinstance(banks, list) or len(banks) != len(files):
         raise HTTPException(status_code=400, detail="Envie um banco para cada arquivo.")
     groups: dict[str, list[pd.DataFrame]] = {}
@@ -229,9 +242,11 @@ async def modelo_dominio_multi(
             frame = await run_in_threadpool(_process_modular, company_code, str(bank), content, upload.filename or "arquivo")
             groups.setdefault(str(bank), []).append(frame)
         sheets = {
-            _sheet_name(bank): pd.concat(frames, ignore_index=True).sort_values("DATA", kind="stable").reset_index(drop=True)
+            _sheet_name(bank): filter_frame(pd.concat(frames, ignore_index=True).sort_values("DATA", kind="stable").reset_index(drop=True),options)
             for bank, frames in groups.items()
         }
+        if all(frame.empty for frame in sheets.values()):
+            raise ValueError('Nenhum lançamento no período selecionado.')
         return _download(await run_in_threadpool(_original_export, company_code, sheets), f"RAZYNC_{company_code}_MODELO_DOMINIO.xlsx")
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

@@ -53,7 +53,9 @@ async def workflow_preview(company_code: int, roles_json: str = Form(...), optio
                     'entradas':round(sum(v for v in amounts if v > 0),2),'saidas':round(-sum(v for v in amounts if v < 0),2)})
         finally:
             book.close()
-        return {'filename':filename,'sheets':sheets}
+        tables = await run_in_threadpool(services.diagnostics, company_code, roles, options)
+        diagnostics = [{'name':name,'columns':list(frame.columns),'rows':json.loads(frame.head(500).to_json(orient='values',date_format='iso',force_ascii=False)), 'count':len(frame)} for name,frame in tables.items()]
+        return {'filename':filename,'sheets':sheets,'diagnostics':diagnostics}
     except Exception as exc:
         raise HTTPException(422, str(exc)) from exc
 
@@ -80,8 +82,8 @@ def migration_status():
 
 @router.post('/workflow/{company_code}/reports')
 async def report_package(company_code: int, roles_json: str = Form(...), options_json: str = Form('{}'), files: list[UploadFile] = File(...)):
-    if company_code not in {242, 1408}:
-        raise HTTPException(404, 'Pacote de relatórios disponível para Eletro Forte 242 e 1408.')
+    if services.CAPABILITIES.get(company_code, {}).get('workflow') != 'advanced':
+        raise HTTPException(404, 'Empresa sem fluxo de arquivos complementares.')
     try:
         names, options = json.loads(roles_json), json.loads(options_json)
         if not isinstance(names, list) or len(names) != len(files) or not isinstance(options, dict):
@@ -89,8 +91,8 @@ async def report_package(company_code: int, roles_json: str = Form(...), options
         roles = {}
         for name, upload in zip(names, files):
             roles.setdefault(str(name), []).append((upload.filename or 'arquivo.xlsx', await upload.read()))
-        reports = await run_in_threadpool(services.eletro_reports, company_code, roles, options)
-        return download(services.package(reports), f'ELETRO_FORTE_{company_code}_RELATORIOS.zip', {'arquivos': list(reports)}, 'application/zip')
+        reports = await run_in_threadpool(services.workflow_reports, company_code, roles, options)
+        return download(services.package(reports), f'RAZYNC_{company_code}_RELATORIOS.zip', {'arquivos': list(reports)}, 'application/zip')
     except Exception as exc:
         raise HTTPException(422, str(exc)) from exc
 
@@ -105,7 +107,7 @@ async def standalone_francesinhas(company_code: int, files: list[UploadFile] = F
     except Exception as exc:
         raise HTTPException(422, str(exc)) from exc
 
-@router.get('/base-inteligente/{company_code}/exportar')
+@router.get('/base-inteligente/{company_code}/exportar', dependencies=[Depends(require_admin)])
 def export_base(company_code: int):
     content = json.dumps({'version': 1, 'company': company_code, 'records': base.records(company_code)}, ensure_ascii=False).encode()
     return download(content, f'RAZYNC_{company_code}_BASE.json', mime='application/json')
