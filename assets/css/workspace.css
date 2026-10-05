@@ -124,3 +124,234 @@ footer { font-size:10px; min-height:68px; color:#8491a4; }
 @media(max-width:760px) { .sidebar { position:static; width:100%; padding:17px 18px 8px; } .sidebar .brand { padding:0 0 15px; } .brand-mark { width:34px; height:34px; } .brand strong { font-size:20px; } .nav-caption,.sidebar-note { display:none; } .main-nav { flex-direction:row; overflow-x:auto; padding:0; gap:5px; } .main-nav-btn { white-space:nowrap; min-height:39px; font-size:10px; padding:9px 10px; gap:6px; } .main-nav-btn::before { width:14px; height:14px; } .app-shell { margin:0; padding:0; max-width:none; } .topbar,main,footer { margin:0 20px; } .topbar { height:62px; } .status-pill { display:inline-flex; font-size:9px; } .topbar-title { font-size:10px; gap:7px; } .topbar-title strong { padding-left:7px; } .hero { padding:29px 0 24px; } .hero h1 { font-size:31px; } .overview { gap:9px; margin-bottom:26px; } .overview-card { padding:13px 10px; gap:0; } .overview-icon { display:none; } .overview-card strong { font-size:23px; } .overview-card div>span { font-size:9px; line-height:1.5; } .directory-controls { grid-template-columns:1fr; gap:9px; } .directory-heading p { font-size:11px; } .grid { grid-template-columns:1fr; gap:11px; } .company-card { min-height:146px; } .panel-head { padding:20px; align-items:flex-start; gap:12px; } .panel-head h2 { font-size:23px; } .tool-card { padding:19px; } .tool-tabs { margin-left:0; padding:5px; } .tool-tab { padding:9px 11px; font-size:10px; } .task-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .directory-tag { display:none; } footer { padding:15px 0; } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; transition:none !important; } }
 @media(max-width:760px) { .main-nav,.tool-tabs { scrollbar-width:none; } .main-nav::-webkit-scrollbar,.tool-tabs::-webkit-scrollbar { display:none; } }
+
+
+/* Preview contábil inspirada no fluxo do Streamlit: tabela primeiro, download depois. */
+.streamlit-preview {
+  display:grid;
+  gap:16px;
+  margin-top:22px;
+  max-width:100%;
+  min-width:0;
+}
+
+.preview-intro {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:18px;
+  padding:18px 0 2px;
+  border-top:1px solid var(--border);
+}
+
+.preview-eyebrow {
+  display:block;
+  margin-bottom:6px;
+  color:#6d84a5;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:1.35px;
+}
+
+.preview-intro h3 {
+  margin:0;
+  color:var(--text);
+  font-size:18px;
+  letter-spacing:-.25px;
+}
+
+.preview-intro p {
+  max-width:760px;
+  margin:6px 0 0;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.55;
+}
+
+.preview-sheet {
+  min-width:0;
+  overflow:hidden;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:#fff;
+}
+
+.preview-sheet-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:13px 15px;
+  border-bottom:1px solid var(--border);
+  background:#f8fafc;
+}
+
+.preview-sheet-head h4 {
+  margin:0 !important;
+  padding:0 !important;
+  color:#263a56;
+  font-size:13px !important;
+  font-weight:750;
+}
+
+.preview-sheet-head > div:first-child > span {
+  display:block;
+  margin-top:3px;
+  color:var(--muted);
+  font-size:9px;
+}
+
+.preview-metrics {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.preview-metric {
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+  padding:6px 9px;
+  border:1px solid #dbe3ee;
+  border-radius:7px;
+  background:#fff;
+  white-space:nowrap;
+}
+
+.preview-metric small {
+  color:#7a899d;
+  font-size:8px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.45px;
+}
+
+.preview-metric strong {
+  color:#334f74;
+  font-size:10px;
+}
+
+.preview-table-scroll {
+  width:100%;
+  max-width:100%;
+  overflow:auto;
+  max-height:560px;
+  background:#fff;
+}
+
+.preview-results .dataframe-preview {
+  width:100%;
+  min-width:820px;
+  margin:0;
+  border:0;
+  border-collapse:separate;
+  border-spacing:0;
+  font-size:11px;
+}
+
+.preview-results .dataframe-preview thead th {
+  position:sticky;
+  top:0;
+  z-index:2;
+  padding:9px 11px;
+  border:0;
+  border-bottom:1px solid #d7e0eb;
+  background:#f1f5f9;
+  color:#52657f;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.35px;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+
+.preview-results .dataframe-preview tbody td {
+  padding:8px 11px;
+  border:0;
+  border-bottom:1px solid #edf1f5;
+  background:#fff;
+  color:#29384c;
+  line-height:1.35;
+  white-space:nowrap;
+}
+
+.preview-results .dataframe-preview tbody tr:nth-child(even) td {
+  background:#fbfcfe;
+}
+
+.preview-results .dataframe-preview tbody tr:hover td {
+  background:#f2f6fb;
+}
+
+.preview-results .dataframe-preview .numeric {
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+
+.preview-results .dataframe-preview .history-cell {
+  min-width:290px;
+  white-space:normal;
+}
+
+.preview-diagnostics {
+  overflow:hidden;
+  border:1px solid var(--border);
+  border-radius:9px;
+  background:#fff;
+}
+
+.preview-diagnostics summary {
+  cursor:pointer;
+  padding:12px 14px;
+  color:#4c6180;
+  font-size:10px;
+  font-weight:750;
+  background:#f8fafc;
+}
+
+.diagnostic-block {
+  padding:0 14px 14px;
+}
+
+.diagnostic-block h4 {
+  margin:14px 0 8px !important;
+  padding:0 !important;
+  font-size:11px !important;
+}
+
+.preview-note {
+  margin:0;
+  color:#7e8b9d;
+  font-size:9px;
+}
+
+.preview-download {
+  justify-self:start;
+  min-width:220px;
+  border:1px solid #315585;
+  border-radius:8px;
+  padding:10px 15px;
+  background:#315585;
+  color:#fff;
+  cursor:pointer;
+  font-size:11px;
+  font-weight:750;
+}
+
+.preview-download:hover {
+  background:#27476f;
+}
+
+@media(max-width:760px) {
+  .preview-intro { padding-top:15px; }
+  .preview-intro h3 { font-size:16px; }
+  .preview-sheet-head { align-items:flex-start; flex-direction:column; gap:10px; }
+  .preview-metrics { justify-content:flex-start; }
+  .preview-table-scroll { max-height:460px; }
+  .preview-results .dataframe-preview { min-width:760px; font-size:10px; }
+  .preview-results .dataframe-preview thead th,
+  .preview-results .dataframe-preview tbody td { padding:8px 9px; }
+  .preview-download { width:100%; }
+}
