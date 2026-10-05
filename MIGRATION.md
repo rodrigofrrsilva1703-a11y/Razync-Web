@@ -18,6 +18,7 @@ Os testes comparam os resultados com funções originais: lançamentos, entradas
 Validação local: 102 testes aprovados, um `xfail` herdado. A prévia web foi conferida no navegador com arquivo sintético.
 
 As conclusões automáticas de L. Carlos e Nova Geração seguem os mesmos códigos/competência do original. A importação protegida de status mantém timestamps originais e não sobrescreve status mais novos no destino.
+Os oito status existentes no original foram importados. A API publicada passou pela comparação do Excel VGV, prévia RGR e verificação do pacote Windows; os 12.634 registros foram reconferidos após o deploy.
 
 Um teste `xfail` registra comportamento que também falha no original Valean 626: saldo impresso divergente. A regra original permanece preservada.
 

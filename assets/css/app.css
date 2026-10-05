@@ -607,6 +607,7 @@ footer {
 }
 /* Scroll tables inside the company panel on small screens. */
 .preview-results { max-width: 100%; overflow-x: auto; margin-top: 1rem; }
+#workflowPreview { grid-column: 1 / -1; min-width: 0; }
 .preview-results table { width: 100%; border-collapse: collapse; font-size: .85rem; }
 .preview-results th, .preview-results td { padding: .6rem; text-align: left; border-bottom: 1px solid #34434e; }
 .preview-results th { white-space: nowrap; }
