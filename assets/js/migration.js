@@ -20,7 +20,7 @@ renderWorkflow = function(company) {
   $$(".tool-tab").forEach(button => {button.hidden = fiscalOnly && button.dataset.tool !== "fiscal";});
   $("#reportPackage").hidden = company.capabilities?.workflow !== "advanced";
   $("#reportPackage").textContent = eletro ? "Baixar relatórios individuais e consolidado" : "Baixar modelo e conferências";
-  $("#previewWorkflow").hidden = company.capabilities?.workflow !== "advanced";
+  $("#previewWorkflow").hidden = true;
   $("#eletroClassification").hidden = !eletro;
   $("#reviewForm").hidden = eletro;
   if ([3,178,343,266,1396].includes(Number(company.codigo))) {
@@ -57,35 +57,136 @@ function adminHeaders() {
   return {Authorization: `Bearer ${token}`};
 }
 
+function previewLabel(value) {
+  return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+}
+
+function previewValue(label, value) {
+  if (value === null || value === undefined || value === "") return "";
+  const normalized = previewLabel(label);
+  if (normalized === "VALOR" && typeof value === "number") {
+    return new Intl.NumberFormat("pt-BR", {minimumFractionDigits:2, maximumFractionDigits:2}).format(value);
+  }
+  return String(value);
+}
+
 function tableFor(headers, rows) {
   const table = document.createElement("table");
+  table.className = "dataframe-preview";
   const head = document.createElement("thead");
   const line = document.createElement("tr");
-  headers.forEach(label => {const th = document.createElement("th"); th.textContent = label; line.appendChild(th);});
-  head.appendChild(line); table.appendChild(head);
+  headers.forEach(label => {
+    const th = document.createElement("th");
+    th.textContent = label;
+    const normalized = previewLabel(label);
+    if (["VALOR","DEBITO","CREDITO"].includes(normalized)) th.classList.add("numeric");
+    line.appendChild(th);
+  });
+  head.appendChild(line);
+  table.appendChild(head);
+
   const body = document.createElement("tbody");
   rows.forEach(row => {
     const tr = document.createElement("tr");
-    row.forEach(value => {const td=document.createElement("td"); td.textContent=String(value ?? ""); tr.appendChild(td);});
+    row.forEach((value, index) => {
+      const td = document.createElement("td");
+      const label = headers[index] || "";
+      td.textContent = previewValue(label, value);
+      const normalized = previewLabel(label);
+      if (["VALOR","DEBITO","CREDITO"].includes(normalized)) td.classList.add("numeric");
+      if (normalized === "HISTORICO") td.classList.add("history-cell");
+      tr.appendChild(td);
+    });
     body.appendChild(tr);
   });
   table.appendChild(body);
   return table;
 }
 
+function metricChip(label, value) {
+  const item = document.createElement("span");
+  item.className = "preview-metric";
+  const small = document.createElement("small");
+  small.textContent = label;
+  const strong = document.createElement("strong");
+  strong.textContent = value;
+  item.append(small, strong);
+  return item;
+}
+
 function showWorkflowPreview(data) {
-  const target = $("#workflowPreview"); target.replaceChildren();
-  data.sheets.forEach(sheet => {
+  const target = $("#workflowPreview");
+  target.replaceChildren();
+
+  const intro = document.createElement("div");
+  intro.className = "preview-intro";
+  const introText = document.createElement("div");
+  const eyebrow = document.createElement("span");
+  eyebrow.className = "preview-eyebrow";
+  eyebrow.textContent = "PRÉVIA DOS LANÇAMENTOS";
+  const heading = document.createElement("h3");
+  heading.textContent = "Confira como os lançamentos ficarão no Modelo Domínio";
+  const description = document.createElement("p");
+  description.textContent = "A tabela abaixo representa o arquivo processado. Confira datas, valores, débito, crédito e histórico antes de baixar.";
+  introText.append(eyebrow, heading, description);
+  intro.appendChild(introText);
+  target.appendChild(intro);
+
+  (data.sheets || []).forEach(sheet => {
+    const block = document.createElement("section");
+    block.className = "preview-sheet";
+
+    const header = document.createElement("div");
+    header.className = "preview-sheet-head";
+    const titleBox = document.createElement("div");
     const title = document.createElement("h4");
-    title.textContent = `${sheet.name} · ${sheet.count} lançamentos · entradas ${sheet.entradas.toFixed(2)} · saídas ${sheet.saidas.toFixed(2)}`;
-    target.appendChild(title);
-    target.appendChild(tableFor(sheet.columns, sheet.rows));
+    title.textContent = sheet.name;
+    const subtitle = document.createElement("span");
+    subtitle.textContent = `${sheet.count} lançamento(s)`;
+    titleBox.append(title, subtitle);
+
+    const metrics = document.createElement("div");
+    metrics.className = "preview-metrics";
+    metrics.append(
+      metricChip("Entradas", new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(sheet.entradas || 0))),
+      metricChip("Saídas", new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(sheet.saidas || 0)))
+    );
+
+    header.append(titleBox, metrics);
+    block.appendChild(header);
+
+    const scroll = document.createElement("div");
+    scroll.className = "preview-table-scroll";
+    scroll.appendChild(tableFor(sheet.columns || [], sheet.rows || []));
+    block.appendChild(scroll);
+    target.appendChild(block);
   });
-  (data.diagnostics || []).forEach(sheet => {
-    const title=document.createElement("h4");title.textContent=`${sheet.name} · ${sheet.count} registro(s)`;target.appendChild(title);
-    target.appendChild(tableFor(sheet.columns,sheet.rows));
-  });
-  const note = document.createElement("p"); note.textContent="A prévia mostra até 500 linhas por aba. O Excel contém todos os lançamentos."; target.appendChild(note);
+
+  if ((data.diagnostics || []).length) {
+    const details = document.createElement("details");
+    details.className = "preview-diagnostics";
+    const summary = document.createElement("summary");
+    summary.textContent = "Ver conferências e diagnósticos";
+    details.appendChild(summary);
+
+    data.diagnostics.forEach(sheet => {
+      const block = document.createElement("div");
+      block.className = "diagnostic-block";
+      const title = document.createElement("h4");
+      title.textContent = `${sheet.name} · ${sheet.count} registro(s)`;
+      const scroll = document.createElement("div");
+      scroll.className = "preview-table-scroll";
+      scroll.appendChild(tableFor(sheet.columns || [], sheet.rows || []));
+      block.append(title, scroll);
+      details.appendChild(block);
+    });
+    target.appendChild(details);
+  }
+
+  const note = document.createElement("p");
+  note.className = "preview-note";
+  note.textContent = "A prévia mostra até 500 linhas por aba. O Excel baixado contém todos os lançamentos.";
+  target.appendChild(note);
 }
 
 $("#francesinhasForm").addEventListener("submit", async event => {
