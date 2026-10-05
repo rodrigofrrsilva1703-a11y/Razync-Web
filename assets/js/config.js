@@ -1,3 +1,3 @@
 window.RAZYNC_CONFIG = {
-  apiBase: ""
+  apiBase: "https://razync-api-production.up.railway.app"
 };
