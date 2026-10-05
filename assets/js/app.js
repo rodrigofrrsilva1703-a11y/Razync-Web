@@ -702,3 +702,4 @@ loadCompanies = async function() {
 };
 
 connectorHealth();
+loadCompanies();
