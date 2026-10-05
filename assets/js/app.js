@@ -178,6 +178,8 @@ async function refreshBaseStats() {
 
 function openCompany(company) {
   selected = company;
+  document.querySelectorAll(".global-view").forEach(view => view.classList.remove("active"));
+  document.querySelectorAll(".main-nav-btn").forEach(btn => btn.classList.remove("active"));
   $("#panelCode").textContent = `Empresa ${company.codigo}`;
   $("#panelName").textContent = company.nome;
   $("#panelRegime").textContent = company.regime;
@@ -212,6 +214,7 @@ function closeCompany() {
   workspace.hidden = false;
   $(".hero").hidden = false;
   selected = null;
+  showGlobalView("companies");
 }
 
 function downloadBlob(response, fallback) {
@@ -406,3 +409,296 @@ async function checkApi() {
 
 loadCompanies();
 checkApi();
+
+
+function showGlobalView(name) {
+  panel.hidden = true;
+  selected = null;
+  document.querySelectorAll(".global-view").forEach(view => {
+    view.classList.toggle("active", view.id === `${name}View`);
+  });
+  document.querySelectorAll(".main-nav-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.view === name);
+  });
+  if (name === "tasks") loadTasks();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+document.querySelectorAll(".main-nav-btn").forEach(btn => {
+  btn.addEventListener("click", () => showGlobalView(btn.dataset.view));
+});
+
+$("#converterForm")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const files = [...$("#converterFiles").files];
+  const msg = $("#converterMessage");
+  if (!files.length) return msg.textContent = "Selecione pelo menos um extrato.";
+  const data = new FormData();
+  files.forEach(file => data.append("files", file));
+  msg.textContent = "Convertendo extratos…";
+  try {
+    const response = await fetch(`${API()}/api/v1/conversor-extratos`, {method:"POST", body:data});
+    if (!response.ok) throw new Error(await responseError(response));
+    await downloadBlob(response, "RAZYNC_CONVERSOR_EXTRATOS_MODELO_DOMINIO.xlsx");
+    msg.textContent = "Modelo Domínio gerado com sucesso.";
+  } catch (error) {
+    msg.textContent = error.message;
+  }
+});
+
+$("#ledgerForm")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const statement = $("#ledgerStatement").files[0];
+  const ledger = $("#ledgerFile").files[0];
+  const msg = $("#ledgerMessage");
+  if (!statement || !ledger) return msg.textContent = "Envie o extrato e o Razão.";
+  const data = new FormData();
+  data.append("extrato", statement);
+  data.append("razao", ledger);
+  msg.textContent = "Conciliando…";
+  try {
+    const response = await fetch(`${API()}/api/v1/conciliacao-razao`, {method:"POST", body:data});
+    if (!response.ok) throw new Error(await responseError(response));
+    const raw = response.headers.get("x-razync-summary");
+    const summary = raw ? JSON.parse(raw) : {};
+    await downloadBlob(response, "RAZYNC_CONCILIACAO_RAZAO.xlsx");
+    msg.textContent = summary.dias_revisar
+      ? `Concluído: ${summary.dias_revisar} dia(s) precisam de revisão.`
+      : "Concluído: os totais diários estão conferindo.";
+  } catch (error) {
+    msg.textContent = error.message;
+  }
+});
+
+function brl(value) {
+  return new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(value||0));
+}
+
+async function loadTasks() {
+  const metrics = $("#taskMetrics");
+  const companiesBox = $("#companyTasks");
+  const manualBox = $("#manualTasks");
+  try {
+    const response = await fetch(`${API()}/api/v1/tasks`);
+    if (!response.ok) throw new Error(await responseError(response));
+    const data = await response.json();
+    const r = data.resumo || {};
+    metrics.innerHTML = [
+      ["Pendentes",r.pendentes],["Atrasadas",r.atrasadas],
+      ["Urgentes / hoje",r.urgentes_hoje],["Concluídas",r.concluidas],
+      ["Progresso",`${r.progresso||0}%`]
+    ].map(([a,b])=>`<div class="task-metric"><span>${a}</span><strong>${b??0}</strong></div>`).join("");
+    $("#taskCompetencia").textContent = `Competência ${String(data.competencia||"").slice(5,7)}/${String(data.competencia||"").slice(0,4)}`;
+
+    companiesBox.innerHTML = (data.empresas||[]).map(item => `
+      <div class="task-row ${item.classe||""}">
+        <div>
+          <strong>${item.codigo} · ${item.nome}</strong>
+          <small>${item.regime} · vence ${new Date(item.vencimento+"T12:00:00").toLocaleDateString("pt-BR")} · ${item.status}</small>
+        </div>
+        <button type="button" data-company-task="${item.codigo}" data-done="${item.concluida ? "1":"0"}" data-competencia="${data.competencia}">
+          ${item.concluida ? "Reabrir" : "Concluir"}
+        </button>
+      </div>
+    `).join("");
+
+    manualBox.innerHTML = (data.manuais||[]).length ? (data.manuais||[]).map(item => `
+      <div class="task-row">
+        <div>
+          <strong>${item.titulo}</strong>
+          <small>${item.prioridade||"Normal"} · ${item.classificacao?.faixa||item.status}</small>
+        </div>
+        <div class="task-actions">
+          <button type="button" data-manual-done="${item.id}">${item.status==="Concluída" ? "Reabrir":"Concluir"}</button>
+          <button type="button" data-manual-delete="${item.id}" class="danger-lite">Excluir</button>
+        </div>
+      </div>
+    `).join("") : '<div class="empty-state compact">Nenhuma tarefa manual.</div>';
+
+    companiesBox.querySelectorAll("[data-company-task]").forEach(btn => btn.addEventListener("click", async () => {
+      await fetch(`${API()}/api/v1/tasks/company/${btn.dataset.companyTask}`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({competencia:btn.dataset.competencia, concluida:btn.dataset.done!=="1"})
+      });
+      loadTasks();
+    }));
+    manualBox.querySelectorAll("[data-manual-done]").forEach(btn => btn.addEventListener("click", async () => {
+      const row = (data.manuais||[]).find(x=>x.id===btn.dataset.manualDone);
+      await fetch(`${API()}/api/v1/tasks/manual/${btn.dataset.manualDone}`, {
+        method:"PATCH", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({status:row?.status==="Concluída" ? "Pendente":"Concluída"})
+      });
+      loadTasks();
+    }));
+    manualBox.querySelectorAll("[data-manual-delete]").forEach(btn => btn.addEventListener("click", async () => {
+      await fetch(`${API()}/api/v1/tasks/manual/${btn.dataset.manualDelete}`, {method:"DELETE"});
+      loadTasks();
+    }));
+  } catch (error) {
+    metrics.innerHTML = `<div class="empty-state">${error.message}</div>`;
+  }
+}
+
+$("#manualTaskForm")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const payload = {
+    titulo: $("#taskTitle").value,
+    codigo_empresa: $("#taskCompany").value,
+    categoria: $("#taskCategory").value,
+    prioridade: $("#taskPriority").value,
+    prazo: $("#taskDue").value,
+    descricao: $("#taskDescription").value
+  };
+  const msg = $("#taskMessage");
+  msg.textContent = "Salvando…";
+  try {
+    const response = await fetch(`${API()}/api/v1/tasks/manual`, {
+      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)
+    });
+    if (!response.ok) throw new Error(await responseError(response));
+    event.target.reset();
+    $("#taskCategory").value = "Geral";
+    $("#taskPriority").value = "Normal";
+    msg.textContent = "Tarefa criada.";
+    loadTasks();
+  } catch (error) {
+    msg.textContent = error.message;
+  }
+});
+
+$("#taxForm")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const balance = $("#taxBalance").files[0];
+  const revenue = $("#taxRevenue").files[0];
+  const msg = $("#taxMessage");
+  if (!balance || !revenue) return msg.textContent = "Envie o balancete e o relatório da Receita, ou use o Conector Windows.";
+  await runTaxComparison(balance, revenue, msg);
+});
+
+async function runTaxComparison(balance, revenue, msgElement) {
+  const data = new FormData();
+  data.append("receita", revenue);
+  data.append("balancete", balance);
+  data.append("competencia", $("#taxCompetence").value);
+  msgElement.textContent = "Conferindo impostos…";
+  const response = await fetch(`${API()}/api/v1/conferencia-impostos/${selected.codigo}`, {method:"POST", body:data});
+  if (!response.ok) throw new Error(await responseError(response));
+  const raw = response.headers.get("x-razync-summary");
+  const summary = raw ? JSON.parse(raw) : {};
+  await downloadBlob(response, `RAZYNC_${selected.codigo}_CONFERENCIA_IMPOSTOS.xlsx`);
+  msgElement.textContent = summary.revisar
+    ? `Relatório gerado: ${summary.revisar} imposto(s) precisam de revisão.`
+    : "Relatório gerado: impostos conferindo.";
+}
+
+const CONNECTOR = "http://127.0.0.1:17891";
+const connectorTokenKey = "razync_connector_token_v1";
+
+async function connectorHealth() {
+  try {
+    const r = await fetch(`${CONNECTOR}/v1/health`);
+    if (!r.ok) throw new Error();
+    const data = await r.json();
+    $("#connectorStatus").textContent = `Conectado · v${data.version||""}`;
+    return true;
+  } catch {
+    $("#connectorStatus").textContent = "Conector não encontrado";
+    return false;
+  }
+}
+
+async function connectorRequest(path, options={}) {
+  const token = localStorage.getItem(connectorTokenKey) || "";
+  const headers = {...(options.headers||{})};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (options.body && typeof options.body === "string") headers["Content-Type"]="application/json";
+  const r = await fetch(`${CONNECTOR}${path}`, {...options, headers});
+  const body = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(body.error || `Erro do conector (${r.status})`);
+  return body;
+}
+
+async function loadCertificates() {
+  const data = await connectorRequest("/v1/certificates");
+  const select = $("#certificateSelect");
+  select.innerHTML = "";
+  for (const cert of data.certificates || []) {
+    const o=document.createElement("option");
+    o.value=cert.thumbprint;
+    o.textContent=`${cert.subject || "Certificado"}${cert.valid_to ? " · "+String(cert.valid_to).slice(0,10):""}`;
+    select.appendChild(o);
+  }
+  if (!select.options.length) throw new Error("Nenhum certificado A1 disponível no Windows.");
+}
+
+$("#pairConnector")?.addEventListener("click", async () => {
+  const msg=$("#taxMessage");
+  try {
+    if (!await connectorHealth()) throw new Error("Abra ou instale o Conector Razync no Windows.");
+    const code=$("#pairingCode").value.trim();
+    if (!/^\d{6}$/.test(code)) throw new Error("Informe o código de pareamento de 6 dígitos.");
+    const data=await connectorRequest("/v1/pair",{method:"POST",body:JSON.stringify({code})});
+    localStorage.setItem(connectorTokenKey,data.token);
+    await loadCertificates();
+    $("#connectorStatus").textContent="Pareado";
+    msg.textContent="Conector pareado com sucesso.";
+  } catch(error) {
+    msg.textContent=error.message;
+  }
+});
+
+async function identifyCompanyCnpj(balance) {
+  const data=new FormData(); data.append("balancete",balance);
+  const r=await fetch(`${API()}/api/v1/impostos/${selected.codigo}/identificar-cnpj`,{method:"POST",body:data});
+  if(!r.ok) throw new Error(await responseError(r));
+  const body=await r.json();
+  if(!body.cnpjs?.length) throw new Error("Não encontrei um CNPJ válido no balancete.");
+  return body.cnpjs[0];
+}
+
+$("#openDctf")?.addEventListener("click", async () => {
+  const msg=$("#taxMessage");
+  try {
+    const balance=$("#taxBalance").files[0];
+    const comp=$("#taxCompetence").value;
+    if(!balance || !comp) throw new Error("Envie o balancete e informe a competência.");
+    if(!localStorage.getItem(connectorTokenKey)) throw new Error("Pareie o Conector Windows primeiro.");
+    if(!$("#certificateSelect").options.length) await loadCertificates();
+    const cnpj=await identifyCompanyCnpj(balance);
+    const [year,month]=comp.split("-");
+    await connectorRequest("/v1/dctf/open",{
+      method:"POST",
+      body:JSON.stringify({cnpj,competencia:`${month}-${year}`,thumbprint:$("#certificateSelect").value})
+    });
+    msg.textContent="e-CAC aberto. Após o relatório ser baixado, clique em “Buscar relatório baixado e conferir”.";
+  } catch(error) {
+    msg.textContent=error.message;
+  }
+});
+
+$("#fetchDctf")?.addEventListener("click", async () => {
+  const msg=$("#taxMessage");
+  try {
+    const balance=$("#taxBalance").files[0];
+    if(!balance) throw new Error("Envie o balancete primeiro.");
+    const report=await connectorRequest("/v1/dctf/latest");
+    const binary=atob(report.content);
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    const revenue=new File([bytes],report.name||"DCTFWeb.pdf");
+    await runTaxComparison(balance,revenue,msg);
+  } catch(error) {
+    msg.textContent=error.message;
+  }
+});
+
+const originalLoadCompanies = loadCompanies;
+loadCompanies = async function() {
+  await originalLoadCompanies();
+  const select=$("#taskCompany");
+  if(select) {
+    select.innerHTML='<option value="">Sem empresa específica</option>'+companies.map(c=>`<option value="${c.codigo}">${c.codigo} · ${c.nome}</option>`).join("");
+  }
+};
+
+connectorHealth();
