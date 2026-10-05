@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import sqlite3
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from razync.company_catalog import EMPRESAS
@@ -120,6 +120,36 @@ def set_company_status(codigo: str, competencia: str, concluida: bool):
           DO UPDATE SET concluida=excluded.concluida, updated_at=excluded.updated_at
         """, (str(codigo), str(competencia), int(bool(concluida)), now))
         con.commit()
+    finally:
+        con.close()
+
+
+def import_company_statuses(rows):
+    allowed = {str(e['codigo']) for e in EMPRESAS}
+    normalized = []
+    for row in rows:
+        code = str(row['codigo_empresa'])
+        if code not in allowed or not isinstance(row['concluida'], bool):
+            raise ValueError('Status de tarefa inválido.')
+        period = date.fromisoformat(row['competencia'])
+        if period.day != 1:
+            raise ValueError('Competência inválida.')
+        timestamp = datetime.fromisoformat(row['atualizado_em'].replace('Z','+00:00'))
+        if timestamp.tzinfo:
+            timestamp = timestamp.astimezone(timezone.utc).replace(tzinfo=None)
+        normalized.append((code,period.isoformat(),int(row['concluida']),timestamp.isoformat()))
+    con = _db()
+    try:
+        con.execute('BEGIN IMMEDIATE')
+        imported = 0
+        for record in normalized:
+            old = con.execute('SELECT updated_at FROM company_task_status WHERE codigo_empresa=? AND competencia=?',record[:2]).fetchone()
+            if old and datetime.fromisoformat(old['updated_at']) >= datetime.fromisoformat(record[3]):
+                continue
+            con.execute('INSERT OR REPLACE INTO company_task_status VALUES(?,?,?,?)',record)
+            imported += 1
+        con.commit()
+        return imported
     finally:
         con.close()
 

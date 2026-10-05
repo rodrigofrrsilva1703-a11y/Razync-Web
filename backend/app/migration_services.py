@@ -174,6 +174,21 @@ def eletro_reports(code, roles, options):
 
 
 def workflow(code, roles, options):
+    result = _workflow(code, roles, options)
+    # These are the two automatic task-completion rules in app_legacy.py.
+    if code in {285,266,1396}:
+        try:
+            from app.tasks import set_company_status
+            from razync.task_deadlines import obter_competencia_operacional
+            _, competencia = obter_competencia_operacional()
+            set_company_status('285' if code == 285 else '266', competencia.isoformat(), True)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).warning('Modelo gerado; tarefa não atualizada.', exc_info=True)
+    return result
+
+
+def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
         if code == 1408 and roles.get('extrato'):

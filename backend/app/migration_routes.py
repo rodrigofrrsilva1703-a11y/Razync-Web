@@ -80,6 +80,17 @@ def migration_status():
             'validation': 'pending_real_files', 'certificates_configured': bool(os.getenv('CERTIFICATES_MASTER_KEY') and os.getenv('RAZYNC_ACCESS_TOKEN')),
             'original_base_import_configured': bool(os.getenv('SUPABASE_URL') and os.getenv('SUPABASE_SERVICE_KEY'))}
 
+@router.post('/tasks/importar-status', dependencies=[Depends(require_admin)])
+async def import_task_statuses(file: UploadFile = File(...)):
+    try:
+        from app.tasks import import_company_statuses
+        rows = json.loads(await file.read())
+        if not isinstance(rows,list):
+            raise ValueError('Snapshot de tarefas inválido.')
+        return {'imported':await run_in_threadpool(import_company_statuses,rows)}
+    except Exception as exc:
+        raise HTTPException(422,str(exc)) from exc
+
 @router.post('/workflow/{company_code}/reports')
 async def report_package(company_code: int, roles_json: str = Form(...), options_json: str = Form('{}'), files: list[UploadFile] = File(...)):
     if services.CAPABILITIES.get(company_code, {}).get('workflow') != 'advanced':
