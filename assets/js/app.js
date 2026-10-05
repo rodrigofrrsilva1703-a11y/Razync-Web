@@ -62,25 +62,42 @@ function render(items) {
     grid.innerHTML = '<div class="empty-state">Nenhuma empresa encontrada.</div>';
     return;
   }
-  for (const company of items) {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "company-card company-card-button";
-    card.dataset.availability = company.capabilities?.status || 'unknown';
-    card.innerHTML = `
-      <div>
-        <div class="card-topline">
-          <span class="company-code">${company.codigo}</span>
-          <span class="mini-status">${statusFor(company)}</span>
-        </div>
-        <h2>${company.nome}</h2>
-        <p>${company.regime}</p>
-      </div>
-      <span class="arrow">→</span>
-    `;
-    card.addEventListener("click", () => openCompany(company));
-    grid.appendChild(card);
-  }
+
+  items.forEach((company, index) => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "company-card company-card-button company-row";
+    row.dataset.availability = company.capabilities?.status || 'unknown';
+    row.style.setProperty("--row-index", String(Math.min(index, 12)));
+
+    const code = document.createElement("span");
+    code.className = "company-row-code";
+    code.textContent = company.codigo;
+
+    const main = document.createElement("span");
+    main.className = "company-row-main";
+    const name = document.createElement("strong");
+    name.className = "company-row-name";
+    name.textContent = company.nome;
+    const meta = document.createElement("span");
+    meta.className = "company-row-meta";
+    const regime = document.createElement("span");
+    regime.className = "company-row-regime";
+    regime.textContent = company.regime;
+    const status = document.createElement("span");
+    status.className = "mini-status";
+    status.textContent = statusFor(company);
+    meta.append(regime, status);
+    main.append(name, meta);
+
+    const action = document.createElement("span");
+    action.className = "company-row-action";
+    action.innerHTML = '<span>Abrir</span><b aria-hidden="true">→</b>';
+
+    row.append(code, main, action);
+    row.addEventListener("click", () => openCompany(company));
+    grid.appendChild(row);
+  });
 }
 
 function fillBankSelect(select, banks) {
@@ -191,6 +208,14 @@ function openCompany(company) {
   $("#panelName").textContent = company.nome;
   $("#panelRegime").textContent = company.regime;
   $("#panelStatus").textContent = statusFor(company);
+
+  const quickInfo = $("#panelQuickInfo");
+  quickInfo.replaceChildren();
+  Object.entries(company.capabilities?.banks || {}).forEach(([bank, account]) => {
+    const badge = document.createElement("span");
+    badge.textContent = bankLabel(bank, account);
+    quickInfo.appendChild(badge);
+  });
 
   const available = ["api_ready", "fiscal_only"].includes(company.capabilities?.status);
   $("#toolUnavailable").hidden = available;
@@ -490,6 +515,15 @@ function showGlobalView(name) {
 
 document.querySelectorAll(".main-nav-btn").forEach(btn => {
   btn.addEventListener("click", () => showGlobalView(btn.dataset.view));
+});
+
+panel.addEventListener("change", event => {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement) || input.type !== "file") return;
+  input.classList.toggle("has-files", input.files.length > 0);
+  input.title = input.files.length
+    ? [...input.files].map(file => file.name).join("\n")
+    : "";
 });
 
 $("#converterForm")?.addEventListener("submit", async event => {
