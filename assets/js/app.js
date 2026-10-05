@@ -414,6 +414,10 @@ checkApi();
 function showGlobalView(name) {
   panel.hidden = true;
   selected = null;
+  if (name === "companies") {
+    workspace.hidden = false;
+    $(".hero").hidden = false;
+  }
   document.querySelectorAll(".global-view").forEach(view => {
     view.classList.toggle("active", view.id === `${name}View`);
   });
@@ -572,7 +576,11 @@ $("#taxForm")?.addEventListener("submit", async event => {
   const revenue = $("#taxRevenue").files[0];
   const msg = $("#taxMessage");
   if (!balance || !revenue) return msg.textContent = "Envie o balancete e o relatório da Receita, ou use o Conector Windows.";
-  await runTaxComparison(balance, revenue, msg);
+  try {
+    await runTaxComparison(balance, revenue, msg);
+  } catch (error) {
+    msg.textContent = error.message;
+  }
 });
 
 async function runTaxComparison(balance, revenue, msgElement) {
