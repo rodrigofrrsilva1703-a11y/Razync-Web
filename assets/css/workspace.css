@@ -1614,3 +1614,297 @@ details.connector-box summary {
     grid-template-columns:1fr;
   }
 }
+
+
+/* === Tool workspace v4: refinamento estrutural e hierarquia visual === */
+.tool-card {
+  display:grid;
+  grid-template-columns:minmax(230px,.62fr) minmax(0,1.38fr);
+  gap:14px;
+  padding:0;
+  border:0;
+  background:transparent;
+  box-shadow:none;
+}
+
+.tool-card > div:first-child {
+  position:sticky;
+  top:58px;
+  align-self:start;
+  min-height:100%;
+  padding:18px !important;
+  border:1px solid #dfe6ef;
+  border-radius:12px;
+  background:
+    linear-gradient(155deg,rgba(255,255,255,.98),rgba(247,250,254,.98)),
+    #fff;
+  box-shadow:0 7px 22px rgba(30,48,72,.035);
+}
+
+.modern-form,
+.stack-forms .modern-form {
+  border-radius:12px !important;
+  box-shadow:0 7px 22px rgba(30,48,72,.035);
+}
+
+#processForm.modern-form,
+#reconcileForm.modern-form {
+  min-height:100%;
+}
+
+/* Campos avançados ficam organizados como blocos de entrada, e não como uma pilha crua. */
+.dynamic-fields {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.field-group {
+  display:grid;
+  align-content:start;
+  gap:5px;
+  min-width:0;
+  padding:10px;
+  border:1px solid #e3e9f0;
+  border-radius:8px;
+  background:#fbfcfe;
+}
+.field-group:focus-within {
+  border-color:#b4c6df;
+  background:#fff;
+  box-shadow:0 0 0 3px rgba(70,104,158,.05);
+}
+.field-group label {
+  margin:0 0 2px !important;
+}
+.field-group input,
+.field-group select {
+  background:#fff !important;
+}
+
+/* Períodos lado a lado, visual mais compacto. */
+#standardPeriod {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-rows:auto auto;
+  gap:4px 8px;
+  margin-top:2px;
+  padding:10px;
+  border:1px solid #e8edf3;
+  border-radius:8px;
+  background:#fbfcfd;
+}
+#standardPeriod label:nth-of-type(1) { grid-column:1; grid-row:1; }
+#standardPeriod input:nth-of-type(1) { grid-column:1; grid-row:2; }
+#standardPeriod label:nth-of-type(2) { grid-column:2; grid-row:1; }
+#standardPeriod input:nth-of-type(2) { grid-column:2; grid-row:2; }
+
+/* O formulário principal recebe uma barra de ação no final. */
+#processButton,
+#reconcileForm button[type="submit"],
+#fiscalForm button[type="submit"],
+#taxForm button[type="submit"] {
+  margin-top:4px;
+}
+#processButton {
+  position:relative;
+  overflow:hidden;
+}
+#processButton::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(110deg,transparent 25%,rgba(255,255,255,.18) 45%,transparent 65%);
+  transform:translateX(-120%);
+  transition:transform .5s ease;
+}
+#processButton:hover::after {
+  transform:translateX(120%);
+}
+
+/* Abas com indicador ativo mais moderno. */
+.tool-tabs {
+  overflow:visible;
+}
+.tool-tab {
+  position:relative;
+}
+.tool-tab.active::after {
+  content:"";
+  position:absolute;
+  left:14px;
+  right:14px;
+  bottom:3px;
+  height:2px;
+  border-radius:99px;
+  background:#5478b9;
+}
+
+/* Base inteligente com melhor separação de níveis. */
+.stack-forms {
+  align-items:start;
+}
+.stack-forms .modern-form {
+  min-height:100%;
+}
+.base-management {
+  padding:10px 12px;
+  border:1px solid #e3e9f1;
+  border-radius:9px;
+  background:#fafbfd;
+}
+.base-management::before {
+  content:"Gerenciamento da base";
+  flex-basis:100%;
+  color:#73849a;
+  font-size:8px;
+  font-weight:750;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+}
+
+/* Conferência: reforça a ideia de dois documentos sendo comparados. */
+#reconcileForm {
+  position:relative;
+}
+#reconcileForm::after {
+  content:"";
+  position:absolute;
+  right:14px;
+  top:17px;
+  width:38px;
+  height:38px;
+  border-radius:10px;
+  background:#f2f6fb;
+  opacity:.8;
+  pointer-events:none;
+}
+#reconcileForm::before {
+  content:"";
+  position:absolute;
+  z-index:1;
+  right:24px;
+  top:27px;
+  width:18px;
+  height:18px;
+  background:#6a82a5;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='black' stroke-width='1.8' viewBox='0 0 24 24'%3E%3Cpath d='M4 7h13m-3-3 3 3-3 3M20 17H7m3-3-3 3 3 3'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='black' stroke-width='1.8' viewBox='0 0 24 24'%3E%3Cpath d='M4 7h13m-3-3 3 3-3 3M20 17H7m3-3-3 3 3 3'/%3E%3C/svg%3E") center/contain no-repeat;
+  pointer-events:none;
+}
+
+/* Fiscal ganha divisões mais claras para não parecer um formulário longo. */
+.fiscal-grid .vertical-card {
+  border:1px solid #e0e6ee;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 7px 22px rgba(30,48,72,.03);
+}
+.fiscal-grid .vertical-card > div:first-child {
+  position:static;
+  min-height:0;
+  border:0;
+  border-bottom:1px solid #e9eef4;
+  border-radius:0;
+  box-shadow:none;
+  background:transparent;
+}
+.fiscal-grid .vertical-card .modern-form {
+  border:0 !important;
+  border-bottom:1px solid #edf1f5 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  padding:14px 15px !important;
+}
+.connector-card {
+  margin:0 15px 14px;
+}
+details.connector-box {
+  margin:0 15px 15px;
+}
+
+/* Melhor leitura dos arquivos escolhidos */
+.file-selection-item {
+  transition:border-color .12s ease,background .12s ease,transform .12s ease;
+}
+.file-selection-item:hover {
+  border-color:#d1dbe7;
+  background:#fff;
+  transform:translateY(-1px);
+}
+
+/* Área de resultado claramente separada da entrada de dados. */
+#workflowPreview:not(:empty) {
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid #e1e7ee;
+}
+.preview-intro {
+  position:relative;
+  overflow:hidden;
+}
+.preview-intro::before {
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:3px;
+  background:#5e7fb5;
+}
+
+/* Pesquisa não deve ter aparência de login/autofill. */
+#companySearch {
+  appearance:none;
+  -webkit-appearance:none;
+  background:#fff;
+}
+#companySearch:-webkit-autofill,
+#companySearch:-webkit-autofill:hover,
+#companySearch:-webkit-autofill:focus {
+  -webkit-text-fill-color:#2d405b;
+  -webkit-box-shadow:0 0 0 1000px #fff inset;
+  transition:background-color 9999s ease-out 0s;
+}
+
+/* Layout responsivo */
+@media(max-width:1100px) {
+  .tool-card {
+    grid-template-columns:minmax(200px,.7fr) minmax(0,1.3fr);
+  }
+  .dynamic-fields {
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:900px) {
+  .tool-card {
+    grid-template-columns:1fr;
+  }
+  .tool-card > div:first-child {
+    position:static;
+  }
+}
+
+@media(max-width:760px) {
+  .tool-tabs {
+    overflow-x:auto;
+  }
+  .tool-tab.active::after {
+    left:10px;
+    right:10px;
+  }
+  #standardPeriod {
+    grid-template-columns:1fr;
+    grid-template-rows:auto auto auto auto;
+  }
+  #standardPeriod label:nth-of-type(1),
+  #standardPeriod input:nth-of-type(1),
+  #standardPeriod label:nth-of-type(2),
+  #standardPeriod input:nth-of-type(2) {
+    grid-column:1;
+  }
+  #standardPeriod label:nth-of-type(1) { grid-row:1; }
+  #standardPeriod input:nth-of-type(1) { grid-row:2; }
+  #standardPeriod label:nth-of-type(2) { grid-row:3; }
+  #standardPeriod input:nth-of-type(2) { grid-row:4; }
+}
