@@ -323,6 +323,7 @@ form.addEventListener("submit", async (event) => {
 
     processMessage.textContent = "Processando…";
     processButton.disabled = true;
+    processButton.classList.add("is-loading");
     const response = await fetch(endpoint, { method: "POST", body: data });
     if (!response.ok) throw new Error(await responseError(response));
     if (event.submitter?.dataset.output === "preview") {
@@ -355,6 +356,7 @@ form.addEventListener("submit", async (event) => {
     processMessage.textContent = error.message;
   } finally {
     processButton.disabled = false;
+    processButton.classList.remove("is-loading");
   }
 });
 
@@ -517,13 +519,60 @@ document.querySelectorAll(".main-nav-btn").forEach(btn => {
   btn.addEventListener("click", () => showGlobalView(btn.dataset.view));
 });
 
-panel.addEventListener("change", event => {
-  const input = event.target;
-  if (!(input instanceof HTMLInputElement) || input.type !== "file") return;
+function humanFileSize(bytes) {
+  const size = Number(bytes || 0);
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function updateFileSelection(input) {
   input.classList.toggle("has-files", input.files.length > 0);
   input.title = input.files.length
     ? [...input.files].map(file => file.name).join("\n")
     : "";
+
+  let selection = input.nextElementSibling;
+  if (!selection?.classList.contains("file-selection")) {
+    selection = document.createElement("div");
+    selection.className = "file-selection";
+    input.insertAdjacentElement("afterend", selection);
+  }
+  selection.replaceChildren();
+
+  if (!input.files.length) {
+    selection.hidden = true;
+    return;
+  }
+
+  selection.hidden = false;
+  [...input.files].slice(0, 4).forEach(file => {
+    const item = document.createElement("span");
+    item.className = "file-selection-item";
+    const icon = document.createElement("i");
+    icon.setAttribute("aria-hidden", "true");
+    const text = document.createElement("span");
+    const name = document.createElement("strong");
+    name.textContent = file.name;
+    const meta = document.createElement("small");
+    meta.textContent = humanFileSize(file.size);
+    text.append(name, meta);
+    item.append(icon, text);
+    selection.appendChild(item);
+  });
+
+  if (input.files.length > 4) {
+    const more = document.createElement("span");
+    more.className = "file-selection-more";
+    more.textContent = `+${input.files.length - 4} arquivo(s)`;
+    selection.appendChild(more);
+  }
+}
+
+panel.addEventListener("change", event => {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement) || input.type !== "file") return;
+  updateFileSelection(input);
 });
 
 $("#converterForm")?.addEventListener("submit", async event => {
