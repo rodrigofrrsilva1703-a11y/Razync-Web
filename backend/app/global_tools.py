@@ -46,6 +46,9 @@ def _prefixar(df: pd.DataFrame) -> pd.DataFrame:
         hist = re.sub(r"^(?:Pago|Recebido)\s*:\s*", "", hist, flags=re.I).strip()
         return ("Recebido: " if float(row["VALOR"]) > 0 else "Pago: ") + (hist or "MOVIMENTO BANCÁRIO")
     out["HISTÓRICO"] = out.apply(h, axis=1)
+    # O conversor global não presume a conta contábil da empresa.
+    out["DÉBITO"] = ""
+    out["CRÉDITO"] = ""
     return out[COLUNAS].sort_values("DATA", kind="stable").reset_index(drop=True)
 
 
