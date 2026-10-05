@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0f13">
+  <title>Razync</title>
+  <meta name="description" content="Razync — automação contábil">
+  <link rel="stylesheet" href="./assets/css/app.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Razync">
+        <span class="brand-mark">R</span>
+        <span>
+          <strong>Razync</strong>
+          <small>Automação contábil</small>
+        </span>
+      </a>
+      <span class="status-pill">Razync Web · Migração</span>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="eyebrow">NOVA ARQUITETURA</div>
+        <h1>O mesmo motor do Razync, com uma interface web mais rápida.</h1>
+        <p>
+          Esta é a nova base do sistema. As ferramentas serão migradas e validadas
+          uma por uma antes de substituir a versão atual em Streamlit.
+        </p>
+      </section>
+
+      <section class="workspace" aria-label="Área principal">
+        <div class="search-card">
+          <label for="companySearch">Empresas</label>
+          <div class="search-wrap">
+            <span aria-hidden="true">⌕</span>
+            <input id="companySearch" type="search" placeholder="Pesquisar por código ou nome" autocomplete="off">
+          </div>
+          <p class="helper">O catálogo e as ferramentas serão conectados ao backend nas próximas etapas.</p>
+        </div>
+
+        <div class="grid" id="companyGrid">
+          <article class="company-card">
+            <div>
+              <span class="company-code">Estrutura inicial</span>
+              <h2>Frontend pronto para GitHub Pages</h2>
+              <p>A versão atual do Razync continua preservada enquanto a migração acontece.</p>
+            </div>
+            <span class="arrow">→</span>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Razync Web</span>
+      <span>Ambiente separado da versão Streamlit</span>
+    </footer>
+  </div>
+
+  <script src="./assets/js/app.js"></script>
+</body>
+</html>
