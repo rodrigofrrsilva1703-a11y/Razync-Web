@@ -20,8 +20,8 @@ O repositório original `Razync` permanece intacto e continua sendo a referênci
 - [x] Criar health-check
 - [x] Criar verificação automática de sintaxe no GitHub Actions
 - [x] Configurar CORS para o GitHub Pages
-- [ ] Publicar API Python
-- [ ] Conectar URL pública da API ao frontend
+- [x] Publicar API Python no Railway (`https://razync-api-production.up.railway.app`)
+- [x] Conectar URL pública da API ao frontend
 
 ## Adaptadores API já preparados
 - [x] 47 — Banco do Brasil · conta 8
@@ -66,3 +66,10 @@ Cada ferramenta só será marcada como concluída depois de comparar com a vers�
 - arquivo Excel final;
 - conferência com extrato;
 - comportamento em desktop e mobile.
+
+
+## Infraestrutura publicada
+- Frontend: GitHub Pages
+- Backend: Railway / FastAPI
+- Health-check: `/health`
+- Repositório original `Razync`: preservado, sem substituição automática
