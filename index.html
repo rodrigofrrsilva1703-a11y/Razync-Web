@@ -7,7 +7,7 @@
   <title>Razync</title>
   <meta name="description" content="Razync — automação contábil">
   <link rel="stylesheet" href="./assets/css/app.css">
-  <link rel="stylesheet" href="./assets/css/workspace.css?v=5">
+  <link rel="stylesheet" href="./assets/css/workspace.css?v=6">
 </head>
 <body>
   <div class="app-shell">
@@ -29,10 +29,10 @@
 
     <main>
       <section id="companiesView" class="global-view active">
-        <section class="hero">
-          <div class="eyebrow">SEU ESPAÇO DE TRABALHO</div>
-          <h1>Uma rotina contábil<br>mais organizada.</h1>
-          <p>Encontre a empresa e continue seu trabalho. Organize documentos, aplique classificações e confira cada lançamento.</p>
+        <section class="hero compact-hero">
+          <div class="eyebrow">RAZYNC</div>
+          <h1>Empresas</h1>
+          <p>Pesquise uma empresa e acesse diretamente as ferramentas de organização, classificação e conferência.</p>
         </section>
         <div class="overview" aria-label="Resumo das ferramentas">
           <div class="overview-card"><span class="overview-icon" aria-hidden="true">▦</span><div><strong id="totalCompanies">—</strong><span>Empresas cadastradas</span></div></div>
@@ -41,7 +41,7 @@
         </div>
         <section class="workspace">
           <div class="search-card">
-            <div class="directory-heading"><div><h2>Suas empresas</h2><p>Escolha uma empresa para acessar suas ferramentas.</p></div><span class="directory-tag">CATÁLOGO</span></div>
+            <div class="directory-heading"><div><h2>Empresas cadastradas</h2><p>Os resultados aparecem enquanto você digita.</p></div></div>
             <label for="companySearch" class="visually-hidden">Pesquisar empresa</label>
             <div class="directory-controls">
             <div class="search-wrap">
@@ -53,7 +53,7 @@
             <div class="company-filters" role="group" aria-label="Filtrar ferramentas"><button type="button" class="company-filter active" data-filter="all" aria-pressed="true">Todas</button><button type="button" class="company-filter" data-filter="organizer" aria-pressed="false">Com organizador</button><button type="button" class="company-filter" data-filter="fiscal" aria-pressed="false">Somente fiscal</button></div>
             <div class="search-meta">
               <span id="companyCount">Carregando empresas…</span>
-              <span>Busca por código, nome ou regime</span>
+              <span>Use código, nome ou regime para filtrar</span>
             </div>
           </div>
           <div class="grid" id="companyGrid" aria-live="polite"></div>
@@ -116,6 +116,7 @@
             <span id="panelCode" class="company-code"></span>
             <h2 id="panelName"></h2>
             <p id="panelRegime"></p>
+            <div id="panelQuickInfo" class="panel-quick-info"></div>
           </div>
           <span id="panelStatus" class="status-pill"></span>
         </div>
@@ -320,7 +321,7 @@
   </div>
 
   <script src="./assets/js/config.js"></script>
-  <script src="./assets/js/app.js?v=streamlit-preview-1"></script>
-  <script src="./assets/js/migration.js?v=streamlit-preview-1"></script>
+  <script src="./assets/js/app.js?v=workspace-2"></script>
+  <script src="./assets/js/migration.js?v=workspace-2"></script>
 </body>
 </html>
