@@ -12,7 +12,7 @@ from app.excel import _template_bytes, gerar_modelo_abas
 from app.registry import CAPABILITIES
 
 COLUNAS = ['DESCRIÇÃO', 'DATA', 'VALOR', 'DÉBITO', 'CRÉDITO', 'HISTÓRICO']
-SLUGS = {3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
+SLUGS = {1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
          242: 'eletro_forte', 1408: 'eletro_forte_filial_1408',
          266: 'nova_geracao_matriz', 1396: 'nova_geracao_filial',
          285: 'lcarlos', 968: 'radani', 1000: 'accede_automacao',
@@ -63,6 +63,9 @@ def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
     with engine.processing_context(slug(code)):
+        if code == 1248:
+            from razync.rgr_1248 import ler_extrato_itau_rgr
+            return ler_extrato_itau_rgr(content)
         if code in {88, 625, 626, 841, 969, 1208, 1530}:
             from app.main import _process_modular
             return _process_modular(code, bank, content, filename)
@@ -237,6 +240,14 @@ def workflow(code, roles, options):
             return engine.gerar_excel_nova_geracao(data, _template_bytes()), f'ACCEDE_{code}_MODELO_DOMINIO.xlsx'
         # Existing modular processors remain intact. Replace only universal readers
         # and rewritten SIG/map functions with their original implementations.
+        if code == 1248:
+            from razync.rgr_1248 import processar_rgr
+            if not roles.get('extrato') or not roles.get('movimentos'):
+                raise ValueError('Envie extrato Itaú PDF e planilha Entradas e Saídas.')
+            frame, _, _, _, _ = processar_rgr(roles['extrato'][0][1], roles['movimentos'][0][1])
+            datas = pd.to_datetime(frame['DATA'], errors='coerce').dropna()
+            periodo = f"{datas.min():%d%m%Y}_A_{datas.max():%d%m%Y}" if not datas.empty else 'PERIODO'
+            return engine.gerar_excel_modelo_dominio(frame, formato_data='dd/mm/yyyy'), f'RGR_1248_ITAU_508_MODELO_DOMINIO_{periodo}.xlsx'
         if code == 285:
             from razync.lcarlos import processar_planilhas_lcarlos
             if not roles.get('jaguar') or not roles.get('entradas'):
@@ -314,6 +325,10 @@ def package(reports):
 def diagnostics(code, roles, options):
     """Retain the original processors' review tables outside the import workbook."""
     with engine.processing_context(slug(code)):
+        if code == 1248:
+            from razync.rgr_1248 import processar_rgr
+            _, table, unused, expenses, summary = processar_rgr(roles['extrato'][0][1], roles['movimentos'][0][1])
+            return {'Boletos recebidos':table,'Boletos não vinculados':unused,'Saídas não vinculadas':expenses,'Resumo':pd.DataFrame([summary])}
         if code == 285:
             from razync.lcarlos import processar_planilhas_lcarlos
             _, table, summary = processar_planilhas_lcarlos(roles['jaguar'][0][1],roles['entradas'][0][1])
