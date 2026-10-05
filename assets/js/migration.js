@@ -118,38 +118,128 @@ function showWorkflowPreview(data) {
   const target = $("#workflowPreview");
   target.replaceChildren();
 
+  const sheets = data.sheets || [];
+  const diagnostics = data.diagnostics || [];
+  const money = value => new Intl.NumberFormat("pt-BR",{
+    style:"currency",currency:"BRL"
+  }).format(Number(value || 0));
+
+  const totalCount = sheets.reduce((sum, sheet) => sum + Number(sheet.count || 0), 0);
+  const totalEntradas = sheets.reduce((sum, sheet) => sum + Number(sheet.entradas || 0), 0);
+  const totalSaidas = sheets.reduce((sum, sheet) => sum + Number(sheet.saidas || 0), 0);
+
+  const command = document.createElement("div");
+  command.className = "preview-commandbar";
+  const commandInfo = document.createElement("div");
+  commandInfo.className = "preview-command-info";
+  const ready = document.createElement("span");
+  ready.className = "preview-ready-dot";
+  ready.setAttribute("aria-hidden","true");
+  const commandText = document.createElement("div");
+  const commandTitle = document.createElement("strong");
+  commandTitle.textContent = "Prévia pronta para conferência";
+  const commandMeta = document.createElement("small");
+  commandMeta.textContent = `${totalCount} lançamento(s) em ${sheets.length} aba(s)`;
+  commandText.append(commandTitle, commandMeta);
+  commandInfo.append(ready, commandText);
+  const primaryActions = document.createElement("div");
+  primaryActions.className = "preview-primary-actions";
+  command.append(commandInfo, primaryActions);
+  target.appendChild(command);
+
+  const summaryGrid = document.createElement("div");
+  summaryGrid.className = "preview-summary-grid";
+  [
+    ["Lançamentos", totalCount.toLocaleString("pt-BR"), "summary-icon summary-icon-rows"],
+    ["Entradas", money(totalEntradas), "summary-icon summary-icon-in"],
+    ["Saídas", money(totalSaidas), "summary-icon summary-icon-out"],
+    ["Abas / bancos", String(sheets.length), "summary-icon summary-icon-sheets"],
+  ].forEach(([label,value,iconClass]) => {
+    const card = document.createElement("div");
+    card.className = "preview-summary-item";
+    const icon = document.createElement("span");
+    icon.className = iconClass;
+    icon.setAttribute("aria-hidden","true");
+    const content = document.createElement("div");
+    const small = document.createElement("small");
+    small.textContent = label;
+    const strong = document.createElement("strong");
+    strong.textContent = value;
+    content.append(small,strong);
+    card.append(icon,content);
+    summaryGrid.appendChild(card);
+  });
+  target.appendChild(summaryGrid);
+
   const intro = document.createElement("div");
   intro.className = "preview-intro";
   const introText = document.createElement("div");
   const eyebrow = document.createElement("span");
   eyebrow.className = "preview-eyebrow";
-  eyebrow.textContent = "PRÉVIA DOS LANÇAMENTOS";
+  eyebrow.textContent = "LANÇAMENTOS PROCESSADOS";
   const heading = document.createElement("h3");
-  heading.textContent = "Confira como os lançamentos ficarão no Modelo Domínio";
+  heading.textContent = "Confira o Modelo Domínio antes de baixar";
   const description = document.createElement("p");
-  description.textContent = "A tabela abaixo representa o arquivo processado. Confira datas, valores, débito, crédito e histórico antes de baixar.";
+  description.textContent = "Revise datas, valores, contas e históricos. Você pode filtrar os lançamentos dentro de cada tabela.";
   introText.append(eyebrow, heading, description);
   intro.appendChild(introText);
   target.appendChild(intro);
 
-  (data.sheets || []).forEach(sheet => {
+  const sheetBlocks = [];
+
+  if (sheets.length > 1) {
+    const switcher = document.createElement("div");
+    switcher.className = "preview-sheet-switcher";
+    const switcherLabel = document.createElement("span");
+    switcherLabel.textContent = "Visualizar";
+    switcher.appendChild(switcherLabel);
+
+    const makeButton = (label, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.dataset.sheetIndex = String(index);
+      if (index === -1) button.classList.add("active");
+      button.addEventListener("click", () => {
+        switcher.querySelectorAll("button").forEach(item => item.classList.toggle("active", item === button));
+        sheetBlocks.forEach((block, blockIndex) => {
+          block.hidden = index !== -1 && blockIndex !== index;
+        });
+      });
+      return button;
+    };
+
+    switcher.appendChild(makeButton("Todas", -1));
+    sheets.forEach((sheet,index) => switcher.appendChild(makeButton(sheet.name,index)));
+    target.appendChild(switcher);
+  }
+
+  sheets.forEach((sheet, sheetIndex) => {
     const block = document.createElement("section");
     block.className = "preview-sheet";
+    block.dataset.previewSheetIndex = String(sheetIndex);
+    sheetBlocks.push(block);
 
     const header = document.createElement("div");
     header.className = "preview-sheet-head";
     const titleBox = document.createElement("div");
+    const badge = document.createElement("span");
+    badge.className = "preview-sheet-badge";
+    badge.textContent = String(sheetIndex + 1).padStart(2,"0");
+    const titleText = document.createElement("div");
     const title = document.createElement("h4");
     title.textContent = sheet.name;
     const subtitle = document.createElement("span");
     subtitle.textContent = `${sheet.count} lançamento(s)`;
-    titleBox.append(title, subtitle);
+    titleText.append(title, subtitle);
+    titleBox.className = "preview-sheet-title";
+    titleBox.append(badge,titleText);
 
     const metrics = document.createElement("div");
     metrics.className = "preview-metrics";
     metrics.append(
-      metricChip("Entradas", new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(sheet.entradas || 0))),
-      metricChip("Saídas", new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(sheet.saidas || 0)))
+      metricChip("Entradas", money(sheet.entradas)),
+      metricChip("Saídas", money(sheet.saidas))
     );
 
     header.append(titleBox, metrics);
@@ -161,10 +251,16 @@ function showWorkflowPreview(data) {
     if (rows.length > 6) {
       const tools = document.createElement("div");
       tools.className = "preview-table-tools";
+      const searchWrap = document.createElement("label");
+      searchWrap.className = "preview-table-search";
+      const searchIcon = document.createElement("i");
+      searchIcon.setAttribute("aria-hidden","true");
       const search = document.createElement("input");
       search.type = "search";
-      search.placeholder = "Filtrar lançamentos desta tabela";
+      search.placeholder = "Filtrar por data, valor, histórico ou conta";
       search.setAttribute("aria-label", `Filtrar lançamentos de ${sheet.name}`);
+      searchWrap.append(searchIcon,search);
+
       const visible = document.createElement("span");
       visible.textContent = `${rows.length} exibidos`;
 
@@ -181,7 +277,7 @@ function showWorkflowPreview(data) {
           : `${rows.length} exibidos`;
       });
 
-      tools.append(search, visible);
+      tools.append(searchWrap, visible);
       block.appendChild(tools);
     }
 
@@ -192,14 +288,18 @@ function showWorkflowPreview(data) {
     target.appendChild(block);
   });
 
-  if ((data.diagnostics || []).length) {
+  if (diagnostics.length) {
     const details = document.createElement("details");
     details.className = "preview-diagnostics";
     const summary = document.createElement("summary");
-    summary.textContent = "Ver conferências e diagnósticos";
+    const summaryText = document.createElement("span");
+    summaryText.textContent = "Conferências e diagnósticos";
+    const counter = document.createElement("b");
+    counter.textContent = diagnostics.reduce((sum,item)=>sum + Number(item.count || 0),0);
+    summary.append(summaryText,counter);
     details.appendChild(summary);
 
-    data.diagnostics.forEach(sheet => {
+    diagnostics.forEach(sheet => {
       const block = document.createElement("div");
       block.className = "diagnostic-block";
       const title = document.createElement("h4");
