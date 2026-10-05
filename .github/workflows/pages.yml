@@ -28,7 +28,9 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Validate frontend JavaScript
-        run: node --check assets/js/app.js
+        run: |
+          node --check assets/js/app.js
+          node --check assets/js/migration.js
 
       - name: Prepare static site
         run: |

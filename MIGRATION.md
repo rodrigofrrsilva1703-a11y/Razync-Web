@@ -1,75 +1,32 @@
-# Plano de migração — Razync Web
+# Migração Razync → Razync-Web
 
-## Princípio de segurança
-O repositório original `Razync` permanece intacto e continua sendo a referência funcional até a homologação completa da nova versão.
+O original em Streamlit permanece intacto. FastAPI no Railway e JavaScript no GitHub Pages publicam pela `main`.
 
-## Fase 1 — Fundação
-- [x] Criar repositório separado
-- [x] Publicar frontend no GitHub Pages
-- [x] Deploy automático do frontend pela branch `main`
-- [x] Catálogo real com 48 empresas e pesquisa instantânea
-- [x] Painel web por empresa
-- [x] Estrutura para upload e download do Modelo Domínio
+## Implementação
 
-## Fase 2 — Backend/API
-- [x] Copiar módulos Python centrais do Razync para `backend/legacy/razync`
-- [x] Preservar template do Modelo Domínio em recurso privado do backend
-- [x] Criar FastAPI
-- [x] Criar Dockerfile
-- [x] Preparar configuração Railway
-- [x] Criar health-check
-- [x] Criar verificação automática de sintaxe no GitHub Actions
-- [x] Configurar CORS para o GitHub Pages
-- [x] Publicar API Python no Railway (`https://razync-api-production.up.railway.app`)
-- [x] Conectar URL pública da API ao frontend
+- Módulos originais em `backend/legacy/razync/`; motor com 65 funções extraídas e comparação automática dos corpos.
+- Fluxos completos: Autokraft 3/178/343; Eletro Forte 242/1408; Nova Geração 266/1396; L. Carlos 285; Radani 968; Accede 1000/1001; UP PACK 1096; GZ 1211; RGR 1248; VGV 1402; Dias Pereira/Nibo 1529; adaptadores 47/88/154/625/626/841/912/964/969/1208/1530/1532.
+- Arquivos auxiliares, múltiplos PDFs, XLS/XLSX, ZIP, francesinhas, períodos, bancos, lançamentos retirados e relatórios usam as regras originais.
+- Base Inteligente persistente: importação de modelos classificados/Razão/ZIP, classificação, revisão, aprendizado e backup JSON; preservação de assinaturas, ocorrências, períodos, conflitos e contas.
+- Conferência com Extrato; Conferência Fiscal para 48 empresas; Impostos/DCTFWeb; conversor de extratos; conciliação com Razão; Central de Tarefas; Excel final para TXT Domínio.
+- Conector Windows pela API: pareamento, certificado A1 criptografado, eCAC/DCTFWeb, extensão e automação Chrome incluídos no instalador.
+- Chaves administrativas no Railway. Volume `/data` mantém a base entre deploys. Nunca incluir classificações reais, certificados ou chaves no Git.
 
-## Adaptadores API já preparados
-- [x] 47 — Banco do Brasil · conta 8
-- [x] 88 — Itaú
-- [x] 154 — Bradesco · conta 9 / Itaú · conta 508
-- [x] 625 — Banco do Brasil / Caixa / Sicredi
-- [x] 626 — Banco do Brasil / Sicredi
-- [x] 841 — Banco Inter · conta 506
-- [x] 912 — Sicredi · conta 515
-- [x] 964 — Bradesco · conta 9
-- [x] 969 — Itaú · conta 508
-- [x] 1208 — Itaú / Safra / Bradesco
-- [x] 1530 — Itaú XLS/XLSX
-- [x] 1532 — Itaú · conta 508
+## Validação
 
-## Fluxos complexos preservados no backend e ainda a ligar à API web
-- [ ] Grupo Autokraft
-- [ ] 242 — Eletro Forte
-- [ ] 266/1396 — Nova Geração
-- [ ] 285 — L. Carlos
-- [ ] 968 — Radani
-- [ ] 1000/1001 — Accede
-- [ ] 1096 — UP PACK
-- [ ] 1211 — GZ
-- [ ] 1402 — VGV
-- [ ] 1408 — Eletro Forte Filial
-- [ ] 1529 — Dias Pereira
-- [ ] Base Inteligente
-- [ ] Conferência com Extrato
-- [ ] Conferência Fiscal / DCTFWeb
-- [ ] Conector Windows / eCAC
+Os testes comparam os resultados com funções originais: lançamentos, entradas/saídas, datas, históricos, débito/crédito, remoção de saldos, abas, valores, estilos e Excel final. Também cobrem APIs, múltiplos bancos, classificação, relatórios, certificados sintéticos e TXT.
 
-## Homologação obrigatória
-Cada ferramenta só será marcada como concluída depois de comparar com a versão Streamlit:
+Um teste `xfail` registra comportamento que também falha no original Valean 626: saldo impresso divergente. A regra original permanece preservada.
 
-- quantidade de lançamentos;
-- total de entradas e saídas;
-- datas;
-- históricos;
-- contas de débito/crédito;
-- exclusão correta de linhas de saldo;
-- arquivo Excel final;
-- conferência com extrato;
-- comportamento em desktop e mobile.
+Base Inteligente copiada em leitura do Supabase original para o volume do Railway: 12.634 registros, 21 empresas, todos os campos idênticos ao snapshot (inclusive períodos e ocorrências). Hash MD5 dos IDs ordenados: `2501922f8f42dd20b76571773a6396e5`. Dados privados ficam fora do repositório.
 
+**Homologação com documentos reais pendente:** o usuário não possui mais os PDFs/planilhas e Excel finais usados anteriormente. Comparação de código e testes não substituem essa homologação. Adaptadores expõem `validation_status: pending_real_files`.
 
-## Infraestrutura publicada
-- Frontend: GitHub Pages
-- Backend: Railway / FastAPI
-- Health-check: `/health`
-- Repositório original `Razync`: preservado, sem substituição automática
+**eCAC pendente de execução real no Windows:** certificado do usuário, pareamento, login e download no portal. Testes com A1 sintético e pacote do conector não comprovam acesso autenticado ao eCAC.
+
+## Publicação
+
+- Frontend: https://rodrigofrrsilva1703-a11y.github.io/Razync-Web/
+- Backend: https://razync-api-production.up.railway.app
+- Saúde `/health`; catálogo `/api/v1/companies`; status `/api/v1/migration-status`.
+- GitHub Actions verifica JavaScript, Python e runtime Docker. Railway reconectado à `main` após identificar que servia um commit antigo.

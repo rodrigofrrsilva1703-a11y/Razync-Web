@@ -605,3 +605,14 @@ footer {
   .task-metrics { grid-template-columns:1fr 1fr; }
   .task-row { align-items:flex-start; }
 }
+/* Scroll tables inside the company panel on small screens. */
+.preview-results { max-width: 100%; overflow-x: auto; margin-top: 1rem; }
+.preview-results table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.preview-results th, .preview-results td { padding: .6rem; text-align: left; border-bottom: 1px solid #34434e; }
+.preview-results th { white-space: nowrap; }
+.preview-results input { min-width: 7rem; }
+.base-management { display: grid; gap: .6rem; }
+[hidden] { display: none !important; }
+.admin-access {margin: 0 0 18px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px;}
+.admin-access label {display: block; margin: 12px 0 6px;}
+.admin-access input {max-width: 420px; width: 100%;}

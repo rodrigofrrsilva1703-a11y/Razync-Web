@@ -4,7 +4,7 @@ Nova versão web do Razync.
 
 ## Objetivo
 
-Migrar gradualmente a interface do Razync, hoje em Streamlit, para uma arquitetura web com:
+Migrar os processadores e ferramentas do Razync em Streamlit para uma arquitetura web com:
 
 - Frontend estático publicado no GitHub Pages;
 - Backend Python/API para os processamentos de PDF, Excel e regras contábeis;
@@ -22,5 +22,6 @@ Cada ferramenta migrada deve ser comparada com o resultado da versão atual ante
 - `index.html` — entrada do frontend;
 - `assets/css/app.css` — identidade visual;
 - `assets/js/app.js` — navegação e comportamento do frontend;
-- `backend/` — futura API Python;
+- `backend/` — API FastAPI publicada no Railway com os processadores originais;
+- `assets/js/migration.js` — prévias, relatórios, revisão da base e conector;
 - `MIGRATION.md` — controle das etapas da migração.

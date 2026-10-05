@@ -34,7 +34,8 @@ function normalize(value) {
 
 function statusFor(company) {
   const status = company?.capabilities?.status;
-  if (status === "api_ready") return "Ferramentas migradas";
+  if (status === "api_ready") return "Disponível · em validação";
+  if (status === "fiscal_only") return "Fiscal disponível";
   if (status === "catalog_only") return "Sem ferramenta específica";
   return "Em migração";
 }
@@ -185,7 +186,7 @@ function openCompany(company) {
   $("#panelRegime").textContent = company.regime;
   $("#panelStatus").textContent = statusFor(company);
 
-  const available = company.capabilities?.status === "api_ready";
+  const available = ["api_ready", "fiscal_only"].includes(company.capabilities?.status);
   $("#toolUnavailable").hidden = available;
   $$(".tool-tabs, .tool-pane").forEach(el => {
     if (el.classList.contains("tool-tabs")) el.hidden = !available;
@@ -194,7 +195,7 @@ function openCompany(company) {
 
   if (available) {
     renderWorkflow(company);
-    activateTool("organizar");
+    activateTool(company.capabilities?.status === "fiscal_only" ? "fiscal" : "organizar");
     refreshBaseStats();
   }
 
@@ -241,6 +242,7 @@ async function responseError(response) {
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!selected) return;
+  const companyCode=selected.codigo;
   const cap = selected.capabilities || {};
   const workflow = cap.workflow || "standard";
   const data = new FormData();
@@ -258,9 +260,15 @@ form.addEventListener("submit", async (event) => {
       if (!roles.length) throw new Error("Envie os arquivos necessários para esta empresa.");
       const options = {};
       for (const input of $$("[data-option]")) options[input.dataset.option] = input.value;
+      const bankOptions=$$("[data-selected-bank]");
+      if(bankOptions.length) {
+        options.bancos=bankOptions.filter(input=>input.checked).map(input=>input.dataset.selectedBank);
+        if(!options.bancos.length)throw new Error("Selecione pelo menos um banco para organizar.");
+      }
       data.append("roles_json", JSON.stringify(roles));
       data.append("options_json", JSON.stringify(options));
       endpoint = `${API()}/api/v1/workflow/${selected.codigo}`;
+      if (event.submitter?.dataset.output) endpoint += `/${event.submitter.dataset.output}`;
     } else if (workflow === "standard_multi_bank") {
       const banks = [];
       for (const input of $$("[data-bank]")) {
@@ -271,11 +279,13 @@ form.addEventListener("submit", async (event) => {
       }
       if (!banks.length) throw new Error("Envie pelo menos um arquivo bancário.");
       data.append("banks_json", JSON.stringify(banks));
+      data.append("options_json",JSON.stringify({data_inicial:$("#processStart").value,data_final:$("#processEnd").value}));
       endpoint = `${API()}/api/v1/modelo-dominio/${selected.codigo}/multi`;
     } else {
       const files = [...fileInput.files];
       if (!files.length) throw new Error("Selecione pelo menos um arquivo.");
       data.append("bank", bankSelect.value);
+      data.append("options_json",JSON.stringify({data_inicial:$("#processStart").value,data_final:$("#processEnd").value}));
       files.forEach(file => data.append("files", file));
     }
 
@@ -283,7 +293,13 @@ form.addEventListener("submit", async (event) => {
     processButton.disabled = true;
     const response = await fetch(endpoint, { method: "POST", body: data });
     if (!response.ok) throw new Error(await responseError(response));
-    await downloadBlob(response, `RAZYNC_${selected.codigo}_MODELO_DOMINIO.xlsx`);
+    if (event.submitter?.dataset.output === "preview") {
+      if(selected?.codigo!==companyCode)return;
+      showWorkflowPreview(await response.json());
+      processMessage.textContent = "Pré-visualização concluída. Confira os lançamentos antes de baixar.";
+      return;
+    }
+    await downloadBlob(response, `RAZYNC_${companyCode}_MODELO_DOMINIO.xlsx`);
     processMessage.textContent = "Modelo Domínio gerado com sucesso.";
   } catch (error) {
     processMessage.textContent = error.message;
@@ -316,6 +332,14 @@ classifyForm.addEventListener("submit", async (event) => {
   if (!file) return $("#classifyMessage").textContent = "Selecione o Modelo Domínio.";
   const data = new FormData();
   data.append("file", file);
+  if ([242, 1408].includes(Number(selected.codigo))) {
+    const column = $("#classificationColumn").value;
+    data.append("options_json", JSON.stringify({
+      modo_consolidado: !column && $("#eletroConsolidated").checked,
+      coluna_substituir: column,
+      valores_substituiveis: $("#classificationValues").value.split(",").map(v => v.trim())
+    }));
+  }
   $("#classifyMessage").textContent = "Classificando…";
   try {
     const response = await fetch(`${API()}/api/v1/base-inteligente/${selected.codigo}/classificar`, {method:"POST", body:data});
@@ -337,6 +361,7 @@ reconcileForm.addEventListener("submit", async (event) => {
   const data = new FormData();
   data.append("bank", $("#reconcileBank").value);
   data.append("model_file", model);
+  data.append("options_json", JSON.stringify({data_inicial: $("#reconcileStart").value, data_final: $("#reconcileEnd").value}));
   statements.forEach(file => data.append("statement_files", file));
   $("#reconcileMessage").textContent = "Conferindo…";
   try {
@@ -584,16 +609,17 @@ $("#taxForm")?.addEventListener("submit", async event => {
 });
 
 async function runTaxComparison(balance, revenue, msgElement) {
+  const companyCode=selected.codigo;
   const data = new FormData();
   data.append("receita", revenue);
   data.append("balancete", balance);
   data.append("competencia", $("#taxCompetence").value);
   msgElement.textContent = "Conferindo impostos…";
-  const response = await fetch(`${API()}/api/v1/conferencia-impostos/${selected.codigo}`, {method:"POST", body:data});
+  const response = await fetch(`${API()}/api/v1/conferencia-impostos/${companyCode}`, {method:"POST", body:data});
   if (!response.ok) throw new Error(await responseError(response));
   const raw = response.headers.get("x-razync-summary");
   const summary = raw ? JSON.parse(raw) : {};
-  await downloadBlob(response, `RAZYNC_${selected.codigo}_CONFERENCIA_IMPOSTOS.xlsx`);
+  await downloadBlob(response, `RAZYNC_${companyCode}_CONFERENCIA_IMPOSTOS.xlsx`);
   msgElement.textContent = summary.revisar
     ? `Relatório gerado: ${summary.revisar} imposto(s) precisam de revisão.`
     : "Relatório gerado: impostos conferindo.";
@@ -661,6 +687,12 @@ async function identifyCompanyCnpj(balance) {
   if(!r.ok) throw new Error(await responseError(r));
   const body=await r.json();
   if(!body.cnpjs?.length) throw new Error("Não encontrei um CNPJ válido no balancete.");
+  const requested = $("#targetCnpj").value.replace(/\D/g, "");
+  if (requested) {
+    if (!body.cnpjs.includes(requested)) throw new Error("O CNPJ informado não foi encontrado no balancete.");
+    return requested;
+  }
+  if (body.cnpjs.length > 1) throw new Error("Há vários CNPJs no balancete. Informe o CNPJ da empresa no campo acima.");
   return body.cnpjs[0];
 }
 
