@@ -4,7 +4,7 @@
 - [x] Criar repositório separado
 - [x] Criar frontend inicial para GitHub Pages
 - [x] Reservar estrutura para backend/API
-- [ ] Publicar primeira versão no GitHub Pages
+- [ ] Publicar primeira versão no GitHub Pages — workflow pronto; falta habilitar Pages uma vez em Settings > Pages
 - [ ] Definir endereço da API
 
 ## Fase 2 — Motor Python
