@@ -7,7 +7,7 @@
   <title>Razync</title>
   <meta name="description" content="Razync — automação contábil">
   <link rel="stylesheet" href="./assets/css/app.css">
-  <link rel="stylesheet" href="./assets/css/workspace.css?v=4">
+  <link rel="stylesheet" href="./assets/css/workspace.css?v=5">
 </head>
 <body>
   <div class="app-shell">
@@ -22,7 +22,6 @@
       <button class="main-nav-btn active" data-view="companies">Empresas</button>
       <button class="main-nav-btn" data-view="converter">Conversor de Extratos</button>
       <button class="main-nav-btn" data-view="ledger">Conciliação com Razão</button>
-      <button class="main-nav-btn" data-view="tasks">Central de Tarefas</button>
     </nav>
       <div class="sidebar-note"><span class="sidebar-dot"></span><div>Rotina organizada<small>Do documento à conferência.</small></div></div>
     </aside>
@@ -110,40 +109,6 @@
         </div>
       </section>
 
-      <section id="tasksView" class="global-view">
-        <div class="page-head">
-          <span class="company-code">CENTRAL OPERACIONAL</span>
-          <h1>Tarefas e Prazos</h1>
-          <p>Controle os vencimentos automáticos por regime e suas tarefas manuais.</p>
-        </div>
-        <div id="taskMetrics" class="task-metrics"></div>
-        <div class="task-layout">
-          <section class="task-panel">
-            <div class="section-row">
-              <h3>Empresas</h3>
-              <span id="taskCompetencia" class="mini-status"></span>
-            </div>
-            <div id="companyTasks" class="task-list"></div>
-          </section>
-          <section class="task-panel">
-            <h3>Nova tarefa</h3>
-            <form id="manualTaskForm">
-              <label>Título</label><input id="taskTitle" type="text" required>
-              <label>Empresa (opcional)</label><select id="taskCompany"></select>
-              <label>Categoria</label><input id="taskCategory" type="text" value="Geral">
-              <label>Prioridade</label>
-              <select id="taskPriority"><option>Normal</option><option>Urgente</option><option>Alta</option><option>Baixa</option></select>
-              <label>Prazo</label><input id="taskDue" type="date">
-              <label>Descrição</label><textarea id="taskDescription" rows="3"></textarea>
-              <button type="submit">Criar tarefa</button>
-              <p id="taskMessage" class="helper"></p>
-            </form>
-            <h3 class="task-subtitle">Tarefas manuais</h3>
-            <div id="manualTasks" class="task-list"></div>
-          </section>
-        </div>
-      </section>
-
       <section id="companyPanel" class="company-panel" hidden>
         <button id="backButton" class="back-button" type="button">← Voltar às empresas</button>
         <div class="panel-head">
@@ -190,12 +155,12 @@
                 <label for="processStart">Data inicial (opcional)</label><input id="processStart" type="date">
                 <label for="processEnd">Data final (opcional)</label><input id="processEnd" type="date">
               </div>
-              <button id="processButton" type="submit">Processar e conferir prévia</button>
+              <button id="processButton" type="submit">Processar e visualizar lançamentos</button>
               <button id="previewWorkflow" type="submit" data-output="preview" class="secondary-action" hidden>Pré-visualizar lançamentos</button>
               <button id="reportPackage" type="submit" data-output="reports" class="secondary-action" hidden>Baixar relatórios individuais e consolidado</button>
               <p id="processMessage" class="helper"></p>
             </form>
-            <div id="workflowPreview" class="preview-results"></div>
+            <div id="workflowPreview" class="preview-results streamlit-preview" aria-live="polite"></div>
           </div>
         </section>
 
@@ -355,7 +320,7 @@
   </div>
 
   <script src="./assets/js/config.js"></script>
-  <script src="./assets/js/app.js?v=preview-1"></script>
-  <script src="./assets/js/migration.js"></script>
+  <script src="./assets/js/app.js?v=streamlit-preview-1"></script>
+  <script src="./assets/js/migration.js?v=streamlit-preview-1"></script>
 </body>
 </html>
