@@ -25,6 +25,7 @@ const fiscalForm = $("#fiscalForm");
 
 let companies = [];
 let selected = null;
+let companyFilter = 'all';
 
 const API = () => String(window.RAZYNC_CONFIG?.apiBase || "").replace(/\/$/, "");
 
@@ -54,6 +55,9 @@ function bankLabel(bank, account) {
 function render(items) {
   grid.innerHTML = "";
   count.textContent = `${items.length} empresa(s)`;
+  $('#totalCompanies').textContent = companies.length || '—';
+  $('#organizerCompanies').textContent = companies.filter(c=>c.capabilities?.status==='api_ready').length;
+  $('#fiscalCompanies').textContent = companies.filter(c=>(c.capabilities?.tools || []).includes('conferencia_fiscal')).length;
   if (!items.length) {
     grid.innerHTML = '<div class="empty-state">Nenhuma empresa encontrada.</div>';
     return;
@@ -62,6 +66,7 @@ function render(items) {
     const card = document.createElement("button");
     card.type = "button";
     card.className = "company-card company-card-button";
+    card.dataset.availability = company.capabilities?.status || 'unknown';
     card.innerHTML = `
       <div>
         <div class="card-topline">
@@ -179,8 +184,9 @@ async function refreshBaseStats() {
 
 function openCompany(company) {
   selected = company;
+  $('#currentSection').textContent = `Empresa ${company.codigo}`;
   document.querySelectorAll(".global-view").forEach(view => view.classList.remove("active"));
-  document.querySelectorAll(".main-nav-btn").forEach(btn => btn.classList.remove("active"));
+  document.querySelectorAll(".main-nav-btn").forEach(btn => btn.classList.toggle("active",btn.dataset.view==='companies'));
   $("#panelCode").textContent = `Empresa ${company.codigo}`;
   $("#panelName").textContent = company.nome;
   $("#panelRegime").textContent = company.regime;
@@ -398,14 +404,24 @@ fiscalForm.addEventListener("submit", async (event) => {
   }
 });
 
-search.addEventListener("input", () => {
+function filterCompanies() {
   const query = normalize(search.value.trim());
+  const regime = $('#regimeFilter').value;
   render(companies.filter(company =>
-    normalize(company.codigo).includes(query) ||
+    (!regime || company.regime === regime) &&
+    (companyFilter==='all' || company.capabilities?.status === (companyFilter==='organizer'?'api_ready':'fiscal_only')) &&
+    (normalize(company.codigo).includes(query) ||
     normalize(company.nome).includes(query) ||
-    normalize(company.regime).includes(query)
+    normalize(company.regime).includes(query))
   ));
-});
+}
+search.addEventListener("input", filterCompanies);
+$('#regimeFilter').addEventListener('change',filterCompanies);
+$$('.company-filter').forEach(button=>button.addEventListener('click',()=>{
+  companyFilter=button.dataset.filter;
+  $$('.company-filter').forEach(item=>{item.classList.toggle('active',item===button);item.setAttribute('aria-pressed',String(item===button));});
+  filterCompanies();
+}));
 backButton.addEventListener("click", closeCompany);
 
 async function loadCompanies() {
@@ -417,7 +433,7 @@ async function loadCompanies() {
     const response = await fetch("./assets/data/companies.json");
     companies = await response.json();
   }
-  render(companies);
+  filterCompanies();
 }
 
 async function checkApi() {
@@ -437,6 +453,7 @@ checkApi();
 
 
 function showGlobalView(name) {
+  $('#currentSection').textContent = {companies:'Empresas',converter:'Conversor de Extratos',ledger:'Conciliação com Razão',tasks:'Central de Tarefas'}[name];
   panel.hidden = true;
   selected = null;
   if (name === "companies") {
