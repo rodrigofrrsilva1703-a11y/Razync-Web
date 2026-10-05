@@ -7,7 +7,7 @@
   <title>Razync</title>
   <meta name="description" content="Razync — automação contábil">
   <link rel="stylesheet" href="./assets/css/app.css">
-  <link rel="stylesheet" href="./assets/css/workspace.css?v=6">
+  <link rel="stylesheet" href="./assets/css/workspace.css?v=7">
 </head>
 <body>
   <div class="app-shell">
@@ -140,11 +140,19 @@
         <section class="tool-pane active" data-pane="organizar">
           <div class="tool-card">
             <div>
+              <span class="tool-visual-icon tool-visual-organizar" aria-hidden="true"></span>
               <span class="company-code">MODELO DOMÍNIO</span>
               <h3>Organizar arquivos</h3>
               <p id="toolDescription">Envie os arquivos desta empresa e gere o Modelo Domínio.</p>
+              <div class="tool-flow" aria-label="Fluxo da ferramenta">
+                <span><b>1</b>Enviar</span><i></i><span><b>2</b>Processar</span><i></i><span><b>3</b>Conferir</span>
+              </div>
             </div>
-            <form id="processForm">
+            <form id="processForm" class="modern-form">
+              <div class="form-card-header">
+                <span class="form-card-icon icon-files" aria-hidden="true"></span>
+                <div><strong>Arquivos de origem</strong><small>Selecione os documentos e parâmetros deste processamento.</small></div>
+              </div>
               <div id="standardFields">
                 <label for="bankSelect">Banco</label>
                 <select id="bankSelect"></select>
@@ -168,19 +176,32 @@
         <section class="tool-pane" data-pane="base">
           <div class="tool-card">
             <div>
+              <span class="tool-visual-icon tool-visual-base" aria-hidden="true"></span>
               <span class="company-code">BASE INTELIGENTE</span>
               <h3>Aprender e classificar</h3>
               <p>Importe modelos revisados e aplique padrões seguros por empresa, banco e histórico.</p>
+              <div class="tool-feature-list">
+                <span><b aria-hidden="true">✓</b> Aprende por empresa e banco</span>
+                <span><b aria-hidden="true">✓</b> Mantém revisão antes de aplicar</span>
+              </div>
               <div id="baseStats" class="mini-metrics"></div>
             </div>
             <div class="stack-forms">
-              <form id="learnForm">
+              <form id="learnForm" class="modern-form compact-form">
+                <div class="form-card-header">
+                  <span class="form-card-icon icon-learn" aria-hidden="true"></span>
+                  <div><strong>Ensinar à base</strong><small>Adicione arquivos já revisados para ampliar os padrões.</small></div>
+                </div>
                 <label for="learnFiles">Arquivos revisados</label>
                 <input id="learnFiles" type="file" multiple accept=".xls,.xlsx,.zip,.csv,.json">
                 <button type="submit">Adicionar à Base Inteligente</button>
                 <p id="learnMessage" class="helper"></p>
               </form>
-              <form id="classifyForm">
+              <form id="classifyForm" class="modern-form compact-form">
+                <div class="form-card-header">
+                  <span class="form-card-icon icon-classify" aria-hidden="true"></span>
+                  <div><strong>Classificar arquivo</strong><small>Aplique os padrões aprendidos ao Modelo Domínio.</small></div>
+                </div>
                 <label for="classifyFile">Modelo Domínio para classificar</label>
                 <input id="classifyFile" type="file" accept=".xlsx">
                 <div id="eletroClassification" hidden>
@@ -198,8 +219,11 @@
                 <button id="importOriginalBase" type="button" class="secondary-action" hidden>Copiar base do Streamlit</button>
                 <p id="baseManagementMessage" class="helper"></p>
               </div>
-              <form id="reviewForm">
-                <h3>Revisão Inteligente</h3>
+              <form id="reviewForm" class="modern-form compact-form">
+                <div class="form-card-header">
+                  <span class="form-card-icon icon-review" aria-hidden="true"></span>
+                  <div><strong>Revisão Inteligente</strong><small>Resolva contas pendentes e, se quiser, ensine a correção.</small></div>
+                </div>
                 <label for="reviewFile">Modelo Domínio com contas pendentes</label>
                 <input id="reviewFile" type="file" accept=".xlsx" required>
                 <button type="submit">Listar lançamentos pendentes</button>
@@ -215,11 +239,20 @@
         <section class="tool-pane" data-pane="extrato">
           <div class="tool-card">
             <div>
+              <span class="tool-visual-icon tool-visual-extrato" aria-hidden="true"></span>
               <span class="company-code">CONFERÊNCIA</span>
               <h3>Modelo Domínio × Extrato</h3>
               <p>O pareamento é individual por data e valor, inclusive para lançamentos repetidos.</p>
+              <div class="tool-feature-list">
+                <span><b aria-hidden="true">✓</b> Data e valor conferidos individualmente</span>
+                <span><b aria-hidden="true">✓</b> Repetidos tratados sem duplicação</span>
+              </div>
             </div>
-            <form id="reconcileForm">
+            <form id="reconcileForm" class="modern-form">
+              <div class="form-card-header">
+                <span class="form-card-icon icon-compare" aria-hidden="true"></span>
+                <div><strong>Arquivos para conferência</strong><small>Compare o Modelo Domínio final com um ou vários extratos.</small></div>
+              </div>
               <label for="reconcileBank">Banco</label>
               <select id="reconcileBank"></select>
               <label for="modelFile">Modelo Domínio final</label>
@@ -238,11 +271,16 @@
           <div class="fiscal-grid">
             <div class="tool-card vertical-card">
               <div>
+                <span class="tool-visual-icon tool-visual-fiscal" aria-hidden="true"></span>
                 <span class="company-code">FISCAL × CONTÁBIL</span>
                 <h3>Acumuladores × Razão</h3>
                 <p>Compare os acumuladores fiscais com as contas do Razão.</p>
               </div>
-              <form id="fiscalForm">
+              <form id="fiscalForm" class="modern-form">
+                <div class="form-card-header">
+                  <span class="form-card-icon icon-ledger" aria-hidden="true"></span>
+                  <div><strong>Conferência fiscal</strong><small>Envie Acumuladores e Razão para comparar os movimentos.</small></div>
+                </div>
                 <label for="acumuladoresFile">Acumuladores</label>
                 <input id="acumuladoresFile" type="file" accept=".xls,.xlsx,.csv">
                 <label for="razaoFile">Razão</label>
@@ -256,11 +294,16 @@
 
             <div class="tool-card vertical-card">
               <div>
+                <span class="tool-visual-icon tool-visual-tax" aria-hidden="true"></span>
                 <span class="company-code">IMPOSTOS × DCTFWEB</span>
                 <h3>Balancete × Receita</h3>
                 <p>Use o Conector Windows para consultar a DCTFWeb com o certificado local ou envie um relatório já baixado.</p>
               </div>
-              <form id="taxForm">
+              <form id="taxForm" class="modern-form">
+                <div class="form-card-header">
+                  <span class="form-card-icon icon-tax" aria-hidden="true"></span>
+                  <div><strong>Conferir impostos</strong><small>Use arquivos locais ou deixe o conector buscar a DCTFWeb.</small></div>
+                </div>
                 <label for="taxBalance">Balancete</label>
                 <input id="taxBalance" type="file" accept=".pdf,.xls,.xlsx,.csv">
                 <label for="taxRevenue">Relatório Receita/DCTFWeb (opcional se usar conector)</label>
@@ -270,8 +313,9 @@
                 <button type="submit">Conferir impostos</button>
                 <p id="taxMessage" class="helper"></p>
               </form>
-              <div class="connector-box">
-                <div class="section-row"><strong>Conector Windows</strong><span id="connectorStatus" class="mini-status">Não verificado</span></div>
+              <div class="connector-box connector-card">
+                <div class="section-row connector-title"><div><span class="connector-icon" aria-hidden="true"></span><strong>Conector Windows</strong></div><span id="connectorStatus" class="mini-status">Não verificado</span></div>
+                <p class="connector-description">Integra o navegador e o certificado do escritório sem expor o A1 no frontend.</p>
                 <button id="downloadConnector" type="button" class="secondary-action">Baixar instalador do Conector Windows</button>
                 <label for="pairingCode">Código de pareamento</label>
                 <div class="inline-fields">
@@ -303,8 +347,12 @@
         </section>
         <section class="tool-pane" data-pane="francesinhas">
           <div class="tool-card">
-            <div><h3>Francesinhas avulsas</h3><p>Leia as liquidações L pela data “Emitido em” e baixe o Modelo Domínio separado por conta.</p></div>
-            <form id="francesinhasForm">
+            <div><span class="tool-visual-icon tool-visual-francesinhas" aria-hidden="true"></span><span class="company-code">FRANCESINHAS</span><h3>Francesinhas avulsas</h3><p>Leia as liquidações L pela data “Emitido em” e baixe o Modelo Domínio separado por conta.</p></div>
+            <form id="francesinhasForm" class="modern-form">
+              <div class="form-card-header">
+                <span class="form-card-icon icon-zip" aria-hidden="true"></span>
+                <div><strong>Arquivos ZIP</strong><small>Envie uma ou mais francesinhas para consolidar as liquidações.</small></div>
+              </div>
               <label for="francesinhasFiles">ZIPs de francesinhas</label><input id="francesinhasFiles" type="file" multiple accept=".zip" required>
               <button type="submit">Gerar Modelo Domínio das francesinhas</button>
               <p id="francesinhasMessage" class="helper"></p>
@@ -321,7 +369,7 @@
   </div>
 
   <script src="./assets/js/config.js"></script>
-  <script src="./assets/js/app.js?v=workspace-2"></script>
-  <script src="./assets/js/migration.js?v=workspace-2"></script>
+  <script src="./assets/js/app.js?v=workspace-3"></script>
+  <script src="./assets/js/migration.js?v=workspace-3"></script>
 </body>
 </html>
