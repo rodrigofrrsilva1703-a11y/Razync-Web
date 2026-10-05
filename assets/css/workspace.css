@@ -355,3 +355,597 @@ footer { font-size:10px; min-height:68px; color:#8491a4; }
   .preview-results .dataframe-preview tbody td { padding:8px 9px; }
   .preview-download { width:100%; }
 }
+
+
+/* === Workspace refinement v2: mais próximo do fluxo simples do Streamlit === */
+.compact-hero {
+  padding:24px 0 14px;
+  max-width:880px;
+}
+.compact-hero .eyebrow {
+  color:#71829a;
+  font-size:9px;
+  letter-spacing:1.7px;
+}
+.compact-hero h1 {
+  margin:5px 0 4px;
+  font-size:30px;
+  line-height:1.18;
+  letter-spacing:-.9px;
+}
+.compact-hero p {
+  max-width:760px;
+  font-size:12px;
+  line-height:1.55;
+}
+
+/* Resumo discreto em vez de três cards grandes. */
+.overview {
+  display:flex;
+  align-items:center;
+  gap:0;
+  margin:0 0 24px;
+  padding:0 0 16px;
+  border-bottom:1px solid var(--border);
+}
+.overview-card {
+  min-width:0;
+  display:flex;
+  align-items:baseline;
+  gap:7px;
+  padding:0 22px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.overview-card:first-child { padding-left:0; }
+.overview-card + .overview-card { border-left:1px solid var(--border); }
+.overview-icon { display:none; }
+.overview-card strong {
+  display:inline;
+  font-size:17px;
+  line-height:1;
+  color:#314b70;
+}
+.overview-card div {
+  display:flex;
+  align-items:baseline;
+  gap:7px;
+}
+.overview-card div>span {
+  display:inline;
+  margin:0;
+  color:#8090a4;
+  font-size:9px;
+}
+
+/* Busca e filtros mais compactos, como no catálogo do Streamlit. */
+.directory-heading {
+  margin-bottom:12px;
+}
+.directory-heading h2 {
+  font-size:16px;
+  letter-spacing:-.2px;
+}
+.directory-heading p {
+  margin-top:2px;
+  font-size:10px;
+}
+.directory-controls {
+  grid-template-columns:minmax(0,1fr) 205px;
+  gap:8px;
+}
+.search-wrap {
+  height:42px;
+  border-color:#d7e0eb;
+  box-shadow:0 1px 2px rgba(31,49,73,.025);
+}
+.search-wrap:focus-within {
+  border-color:#9bb2d7;
+  box-shadow:0 0 0 3px rgba(77,112,170,.09);
+}
+.search-wrap input {
+  font-size:11px;
+}
+.directory-controls select {
+  padding:9px 11px;
+  font-size:11px;
+}
+.company-filters {
+  margin-top:11px;
+  gap:4px;
+}
+.company-filter {
+  padding:5px 9px;
+  font-size:9px;
+}
+.search-meta {
+  margin-top:10px;
+  padding-bottom:8px;
+  font-size:9px;
+}
+
+/* Lista de empresas: linhas discretas, sem aparência de botões grandes. */
+.grid {
+  display:block;
+  margin-top:0;
+  overflow:hidden;
+  border:1px solid var(--border);
+  border-radius:11px;
+  background:#fff;
+  box-shadow:0 2px 8px rgba(30,47,70,.025);
+}
+.company-card.company-row {
+  width:100%;
+  min-height:68px;
+  display:grid;
+  grid-template-columns:58px minmax(0,1fr) auto;
+  align-items:center;
+  gap:14px;
+  padding:10px 14px;
+  border:0;
+  border-bottom:1px solid #edf1f5;
+  border-radius:0;
+  background:#fff;
+  box-shadow:none;
+  text-align:left;
+  color:inherit;
+  cursor:pointer;
+  transform:none;
+  transition:background .14s ease, box-shadow .14s ease;
+  animation:rowEnter .22s ease both;
+  animation-delay:calc(var(--row-index, 0) * 14ms);
+}
+.company-card.company-row:last-child {
+  border-bottom:0;
+}
+.company-card.company-row:hover {
+  background:#f8fafd;
+  border-color:#edf1f5;
+  box-shadow:inset 3px 0 #6f91ca;
+  transform:none;
+}
+.company-card.company-row:focus-visible {
+  position:relative;
+  z-index:2;
+}
+.company-row-code {
+  display:inline-flex;
+  width:46px;
+  height:28px;
+  align-items:center;
+  justify-content:center;
+  border-radius:6px;
+  background:#edf2f8;
+  color:#526b8f;
+  font-size:10px;
+  font-weight:750;
+  font-variant-numeric:tabular-nums;
+}
+.company-row-main {
+  min-width:0;
+  display:grid;
+  gap:4px;
+}
+.company-row-name {
+  overflow:hidden;
+  color:#25364e;
+  font-size:12px;
+  font-weight:650;
+  line-height:1.35;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.company-row-meta {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+.company-row-regime {
+  color:#7c8999;
+  font-size:8px;
+  font-weight:700;
+  letter-spacing:.45px;
+  text-transform:uppercase;
+}
+.company-row .mini-status {
+  padding:2px 6px;
+  border:0;
+  background:transparent;
+  color:#8a98aa;
+  font-size:8px;
+}
+.company-row[data-availability="api_ready"] .mini-status {
+  background:transparent;
+  color:#447866;
+}
+.company-row-action {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  color:#7d8b9f;
+  font-size:9px;
+  font-weight:650;
+}
+.company-row-action b {
+  display:grid;
+  width:24px;
+  height:24px;
+  place-items:center;
+  border-radius:50%;
+  background:#f0f4f8;
+  color:#5f7391;
+  font-size:12px;
+  font-weight:600;
+  transition:transform .14s ease, background .14s ease;
+}
+.company-row:hover .company-row-action b {
+  transform:translateX(2px);
+  background:#e8eef7;
+}
+
+/* Área da empresa: contexto no topo e navegação de ferramentas mais limpa. */
+.company-panel {
+  padding:18px 0 44px;
+}
+.back-button {
+  margin:0 0 14px;
+  color:#708096;
+  font-size:10px;
+}
+.panel-head {
+  align-items:flex-start;
+  margin:0 0 10px;
+  padding:0 0 16px;
+  border:0;
+  border-bottom:1px solid var(--border);
+  border-radius:0;
+  background:transparent;
+}
+.panel-head h2 {
+  max-width:900px;
+  margin:4px 0 3px;
+  font-size:24px;
+  line-height:1.25;
+  letter-spacing:-.6px;
+}
+.panel-head p {
+  margin:0;
+  font-size:10px;
+}
+.panel-quick-info {
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:9px;
+}
+.panel-quick-info span {
+  display:inline-flex;
+  align-items:center;
+  min-height:23px;
+  padding:3px 8px;
+  border:1px solid #dae2ec;
+  border-radius:999px;
+  background:#fff;
+  color:#657791;
+  font-size:8px;
+  font-weight:650;
+}
+.panel-head>.status-pill {
+  margin-top:2px;
+  background:transparent;
+}
+.admin-access {
+  margin:3px 0 8px;
+  padding:5px 0;
+  font-size:9px;
+}
+.admin-access summary {
+  color:#8190a3;
+}
+.admin-access[open] {
+  padding-bottom:12px;
+}
+.tool-tabs {
+  position:sticky;
+  top:0;
+  z-index:12;
+  margin:0 0 13px;
+  padding:4px;
+  border:1px solid #dce4ee;
+  border-radius:9px;
+  background:rgba(245,247,251,.94);
+  backdrop-filter:blur(12px);
+}
+.tool-tab {
+  padding:8px 11px;
+  font-size:9px;
+}
+.tool-tab.active {
+  color:#294f80;
+  box-shadow:0 1px 3px rgba(37,55,78,.09);
+}
+
+/* Ferramentas mais compactas, mantendo a prévia como área principal. */
+.tool-pane.active {
+  animation:paneEnter .18s ease both;
+}
+.tool-card {
+  border-color:#dfe6ef;
+  border-radius:10px;
+  padding:20px;
+  grid-template-columns:minmax(190px,.55fr) minmax(360px,1.45fr);
+  gap:22px;
+  box-shadow:0 2px 8px rgba(34,52,74,.025);
+}
+.tool-card>div:first-child {
+  padding-right:8px;
+}
+.tool-card h3 {
+  margin:4px 0 5px;
+  font-size:16px;
+}
+.tool-card p {
+  margin-top:6px;
+  font-size:10px;
+  line-height:1.6;
+}
+#processForm {
+  align-content:start;
+  gap:7px;
+}
+#processForm label,
+form label {
+  margin:2px 0 4px;
+  font-size:9px !important;
+}
+form input,
+form select,
+form textarea {
+  min-height:40px;
+  padding:9px 10px !important;
+  border-radius:7px !important;
+  font-size:10px !important;
+}
+form input[type="file"] {
+  min-height:auto;
+  padding:11px !important;
+  background:#fbfcfe !important;
+  border-style:dashed !important;
+  transition:border-color .15s ease, background .15s ease, box-shadow .15s ease;
+}
+form input[type="file"].has-files {
+  border-style:solid !important;
+  border-color:#93b6a9 !important;
+  background:#f5faf8 !important;
+  box-shadow:0 0 0 2px rgba(70,124,102,.05);
+}
+input::file-selector-button {
+  padding:5px 8px;
+  font-size:9px;
+}
+form button[type="submit"],
+#processButton {
+  min-height:39px;
+  padding:9px 13px;
+  border-radius:7px;
+  font-size:10px;
+}
+.secondary-action {
+  min-height:37px;
+  padding:8px 12px !important;
+  font-size:9px !important;
+}
+#workflowPreview {
+  grid-column:1 / -1;
+  margin-top:2px;
+}
+
+/* Barra de filtro dentro de cada prévia. */
+.preview-table-tools {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:8px 10px;
+  border-bottom:1px solid #e4eaf1;
+  background:#fbfcfe;
+}
+.preview-table-tools input {
+  width:min(360px,100%);
+  min-height:32px;
+  padding:7px 10px;
+  border:1px solid #dce4ed;
+  border-radius:6px;
+  background:#fff;
+  color:#32445d;
+  font-size:9px;
+}
+.preview-table-tools input:focus {
+  outline:2px solid rgba(73,111,172,.18);
+  border-color:#9fb4d5;
+}
+.preview-table-tools span {
+  flex:none;
+  color:#8a98aa;
+  font-size:8px;
+  font-variant-numeric:tabular-nums;
+}
+
+/* A prévia fica visualmente integrada ao fluxo, não como um card separado. */
+.streamlit-preview {
+  gap:11px;
+  margin-top:14px;
+}
+.preview-intro {
+  padding:14px 0 0;
+}
+.preview-intro h3 {
+  font-size:15px;
+}
+.preview-intro p {
+  max-width:820px;
+  margin-top:4px;
+  font-size:9px;
+}
+.preview-sheet {
+  border-radius:8px;
+}
+.preview-sheet-head {
+  padding:10px 12px;
+}
+.preview-sheet-head h4 {
+  font-size:11px !important;
+}
+.preview-sheet-head>div:first-child>span {
+  font-size:8px;
+}
+.preview-metric {
+  padding:4px 7px;
+  border-radius:6px;
+}
+.preview-metric small {
+  font-size:7px;
+}
+.preview-metric strong {
+  font-size:9px;
+}
+.preview-table-scroll {
+  max-height:610px;
+}
+.preview-results .dataframe-preview {
+  min-width:760px;
+  font-size:10px;
+}
+.preview-results .dataframe-preview thead th {
+  padding:8px 10px;
+  font-size:8px;
+}
+.preview-results .dataframe-preview tbody td {
+  padding:7px 10px;
+}
+.preview-results .dataframe-preview .history-cell {
+  min-width:330px;
+}
+.preview-download {
+  min-width:190px;
+  padding:9px 13px;
+  font-size:9px;
+}
+.preview-diagnostics summary {
+  padding:9px 11px;
+  font-size:9px;
+}
+
+/* Transições curtas para dar sensação de aplicativo, sem exagero visual. */
+.global-view.active,
+.company-panel:not([hidden]) {
+  animation:viewEnter .2s ease both;
+}
+@keyframes viewEnter {
+  from { opacity:0; transform:translateY(4px); }
+  to { opacity:1; transform:none; }
+}
+@keyframes paneEnter {
+  from { opacity:0; transform:translateY(3px); }
+  to { opacity:1; transform:none; }
+}
+@keyframes rowEnter {
+  from { opacity:0; transform:translateY(3px); }
+  to { opacity:1; transform:none; }
+}
+
+@media(max-width:900px) {
+  .tool-card {
+    grid-template-columns:1fr;
+  }
+  .tool-card>div:first-child {
+    padding-right:0;
+  }
+}
+
+@media(max-width:760px) {
+  .compact-hero { padding:22px 0 12px; }
+  .compact-hero h1 { font-size:25px; }
+  .compact-hero p { font-size:10px; }
+  .overview {
+    gap:0;
+    overflow-x:auto;
+    padding-bottom:12px;
+    margin-bottom:18px;
+  }
+  .overview-card {
+    flex:0 0 auto;
+    padding:0 12px;
+  }
+  .overview-card strong { font-size:15px; }
+  .overview-card div>span { font-size:8px; }
+  .directory-controls { grid-template-columns:1fr; }
+  .grid { border-radius:9px; }
+  .company-card.company-row {
+    min-height:64px;
+    grid-template-columns:48px minmax(0,1fr) auto;
+    gap:10px;
+    padding:9px 10px;
+  }
+  .company-row-code {
+    width:40px;
+    height:26px;
+    font-size:9px;
+  }
+  .company-row-name {
+    font-size:10px;
+  }
+  .company-row-regime,
+  .company-row .mini-status {
+    font-size:7px;
+  }
+  .company-row-action>span {
+    display:none;
+  }
+  .company-row-action b {
+    width:22px;
+    height:22px;
+  }
+  .panel-head {
+    gap:8px;
+    padding-bottom:13px;
+  }
+  .panel-head h2 {
+    font-size:20px;
+  }
+  .panel-head>.status-pill {
+    align-self:flex-start;
+  }
+  .tool-tabs {
+    top:0;
+    margin-left:0;
+    overflow-x:auto;
+  }
+  .tool-card {
+    padding:15px;
+    gap:14px;
+  }
+  .preview-table-tools {
+    align-items:stretch;
+    flex-direction:column;
+    gap:5px;
+  }
+  .preview-table-tools input {
+    width:100%;
+  }
+  .preview-table-tools span {
+    padding-left:1px;
+  }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  .company-card.company-row,
+  .global-view.active,
+  .company-panel:not([hidden]),
+  .tool-pane.active {
+    animation:none !important;
+  }
+}
