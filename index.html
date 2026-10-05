@@ -24,7 +24,7 @@
       <section class="hero">
         <div class="eyebrow">RAZYNC WEB</div>
         <h1>Ferramentas contábeis em um único ambiente.</h1>
-        <p>Pesquise a empresa e acesse as ferramentas bancárias, bases e conferências. A migração mantém o Razync original preservado como referência.</p>
+        <p>Pesquise a empresa, organize os arquivos, classifique, confira o extrato e faça a conferência fiscal sem sair da área da empresa.</p>
       </section>
 
       <section class="workspace">
@@ -39,12 +39,12 @@
             <span>Resultados instantâneos</span>
           </div>
         </div>
-
         <div class="grid" id="companyGrid" aria-live="polite"></div>
       </section>
 
       <section id="companyPanel" class="company-panel" hidden>
         <button id="backButton" class="back-button" type="button">← Voltar às empresas</button>
+
         <div class="panel-head">
           <div>
             <span id="panelCode" class="company-code"></span>
@@ -54,30 +54,108 @@
           <span id="panelStatus" class="status-pill"></span>
         </div>
 
-        <div class="tool-card">
-          <div>
-            <span class="company-code">MODELO DOMÍNIO</span>
-            <h3>Organizar extrato bancário</h3>
-            <p id="toolDescription">Selecione o banco e envie os arquivos da empresa.</p>
-          </div>
+        <nav class="tool-tabs" aria-label="Ferramentas">
+          <button type="button" class="tool-tab active" data-tool="organizar">Organizar arquivos</button>
+          <button type="button" class="tool-tab" data-tool="base">Base Inteligente</button>
+          <button type="button" class="tool-tab" data-tool="extrato">Conferência com Extrato</button>
+          <button type="button" class="tool-tab" data-tool="fiscal">Conferência Fiscal</button>
+        </nav>
 
-          <form id="processForm">
-            <label for="bankSelect">Banco</label>
-            <select id="bankSelect"></select>
-
-            <label for="fileInput">Arquivos</label>
-            <input id="fileInput" type="file" multiple accept=".pdf,.xls,.xlsx,.csv,.ofx">
-
-            <button id="processButton" type="submit">Gerar Modelo Domínio</button>
-            <p id="processMessage" class="helper"></p>
-          </form>
+        <div id="toolUnavailable" class="empty-state" hidden>
+          Esta empresa está cadastrada, mas ainda não possui um fluxo específico no Razync atual.
         </div>
+
+        <section class="tool-pane active" data-pane="organizar">
+          <div class="tool-card">
+            <div>
+              <span class="company-code">MODELO DOMÍNIO</span>
+              <h3>Organizar arquivos</h3>
+              <p id="toolDescription">Envie os arquivos desta empresa e gere o Modelo Domínio.</p>
+            </div>
+            <form id="processForm">
+              <div id="standardFields">
+                <label for="bankSelect">Banco</label>
+                <select id="bankSelect"></select>
+                <label for="fileInput">Arquivos</label>
+                <input id="fileInput" type="file" multiple accept=".pdf,.xls,.xlsx,.csv,.ofx">
+              </div>
+              <div id="advancedFields" class="dynamic-fields" hidden></div>
+              <button id="processButton" type="submit">Gerar Modelo Domínio</button>
+              <p id="processMessage" class="helper"></p>
+            </form>
+          </div>
+        </section>
+
+        <section class="tool-pane" data-pane="base">
+          <div class="tool-card">
+            <div>
+              <span class="company-code">BASE INTELIGENTE</span>
+              <h3>Aprender e classificar</h3>
+              <p>Importe modelos já revisados para aprender padrões exclusivos desta empresa. Depois aplique esses padrões em um Modelo Domínio.</p>
+              <div id="baseStats" class="mini-metrics"></div>
+            </div>
+            <div class="stack-forms">
+              <form id="learnForm">
+                <label for="learnFiles">Arquivos revisados</label>
+                <input id="learnFiles" type="file" multiple accept=".xls,.xlsx">
+                <button type="submit">Adicionar à Base Inteligente</button>
+                <p id="learnMessage" class="helper"></p>
+              </form>
+              <form id="classifyForm">
+                <label for="classifyFile">Modelo Domínio para classificar</label>
+                <input id="classifyFile" type="file" accept=".xlsx">
+                <button type="submit">Classificar Modelo Domínio</button>
+                <p id="classifyMessage" class="helper"></p>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <section class="tool-pane" data-pane="extrato">
+          <div class="tool-card">
+            <div>
+              <span class="company-code">CONFERÊNCIA</span>
+              <h3>Modelo Domínio × Extrato bancário</h3>
+              <p>O pareamento é individual por data e valor, inclusive quando existem movimentos repetidos.</p>
+            </div>
+            <form id="reconcileForm">
+              <label for="reconcileBank">Banco</label>
+              <select id="reconcileBank"></select>
+              <label for="modelFile">Modelo Domínio final</label>
+              <input id="modelFile" type="file" accept=".xlsx,.xls">
+              <label for="statementFiles">Extrato(s)</label>
+              <input id="statementFiles" type="file" multiple accept=".pdf,.xls,.xlsx,.csv,.ofx">
+              <button type="submit">Conferir com Extrato</button>
+              <p id="reconcileMessage" class="helper"></p>
+            </form>
+          </div>
+        </section>
+
+        <section class="tool-pane" data-pane="fiscal">
+          <div class="tool-card">
+            <div>
+              <span class="company-code">FISCAL × CONTÁBIL</span>
+              <h3>Conferência Fiscal</h3>
+              <p>Compare Acumuladores e Razão e baixe um relatório auditável com resumo, alertas e lançamentos.</p>
+            </div>
+            <form id="fiscalForm">
+              <label for="acumuladoresFile">Acumuladores</label>
+              <input id="acumuladoresFile" type="file" accept=".xls,.xlsx,.csv">
+              <label for="razaoFile">Razão</label>
+              <input id="razaoFile" type="file" accept=".xls,.xlsx,.csv">
+              <label for="filialInput">Filial (opcional)</label>
+              <input id="filialInput" type="text" placeholder="Ex.: 242">
+              <button type="submit">Gerar Conferência Fiscal</button>
+              <p id="fiscalMessage" class="helper"></p>
+            </form>
+          </div>
+        </section>
       </section>
     </main>
 
     <footer>
       <span>Razync Web</span>
-      <span>GitHub Pages + API Python</span>
+      <span>GitHub Pages + Railway</span>
     </footer>
   </div>
 
