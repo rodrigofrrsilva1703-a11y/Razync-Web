@@ -23,6 +23,8 @@ from app.registry import CAPABILITIES, COMMON_TOOLS
 from app.advanced import workflow_modelo, processar_itau_generico, processar_daycoval_generico
 from app.conferencia import ler_modelo_excel, conciliar
 from app.base_inteligente import learn as base_learn, status as base_status, classify as base_classify
+from app.global_tools import processar_arquivo, processar_razao, conciliar_razao
+from app.tasks import dashboard as task_dashboard, set_company_status, create_task, update_task, delete_task
 
 app = FastAPI(title="Razync Web API", version="0.3.0")
 
@@ -333,5 +335,131 @@ async def conferencia_fiscal(
             "periodo_razao": str(resultado.get("periodo_razao", "")),
         }, ensure_ascii=False)
         return response
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/v1/conversor-extratos")
+async def conversor_extratos(files: list[UploadFile] = File(...)):
+    try:
+        sheets = {}
+        frames = []
+        for idx, upload in enumerate(files, start=1):
+            df = processar_arquivo(await upload.read(), upload.filename or f"arquivo_{idx}")
+            frames.append(df)
+            nome = Path(upload.filename or f"Arquivo {idx}").stem[:24]
+            sheets[f"{idx:02d} {nome}"[:31]] = df
+        if not frames:
+            raise ValueError("Nenhum arquivo foi processado.")
+        consolidado = pd.concat(frames, ignore_index=True).sort_values("DATA", kind="stable")
+        sheets = {"Consolidado": consolidado, **sheets}
+        return _download(gerar_modelo_abas(sheets), "RAZYNC_CONVERSOR_EXTRATOS_MODELO_DOMINIO.xlsx")
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/v1/conciliacao-razao")
+async def conciliacao_razao(
+    extrato: UploadFile = File(...),
+    razao: UploadFile = File(...),
+):
+    try:
+        df_ext = processar_arquivo(await extrato.read(), extrato.filename or "extrato")
+        df_raz = processar_razao(await razao.read(), razao.filename or "razao")
+        diario, resumo = conciliar_razao(df_ext, df_raz)
+        report = _excel_report({
+            "Resumo": pd.DataFrame([resumo]),
+            "Conciliação diária": diario,
+            "Extrato": df_ext,
+            "Razão": df_raz,
+        })
+        response = _download(report, "RAZYNC_CONCILIACAO_RAZAO.xlsx")
+        response.headers["X-Razync-Summary"] = json.dumps(resumo, ensure_ascii=False)
+        return response
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/v1/conferencia-impostos/{company_code}")
+async def conferencia_impostos(
+    company_code: int,
+    receita: UploadFile = File(...),
+    balancete: UploadFile = File(...),
+    competencia: str = Form(""),
+):
+    try:
+        from datetime import date
+        from razync.conferencia_impostos import processar_conferencia_impostos, gerar_relatorio_impostos
+        resultado = processar_conferencia_impostos(
+            await receita.read(), receita.filename or "receita",
+            await balancete.read(), balancete.filename or "balancete",
+        )
+        empresa = next((x for x in EMPRESAS if int(x["codigo"]) == company_code), {"nome": str(company_code)})
+        if competencia and re.match(r"^\d{4}-\d{2}$", competencia):
+            ano, mes = map(int, competencia.split("-"))
+            comp = date(ano, mes, 1)
+        else:
+            hoje = date.today()
+            comp = hoje.replace(day=1)
+        report = gerar_relatorio_impostos(resultado, f"{company_code} - {empresa['nome']}", comp)
+        response = _download(report, f"RAZYNC_{company_code}_CONFERENCIA_IMPOSTOS.xlsx")
+        response.headers["X-Razync-Summary"] = json.dumps({
+            "impostos": int(len(resultado)),
+            "conferem": int((resultado["SITUAÇÃO"] == "CONFERE").sum()),
+            "revisar": int((resultado["SITUAÇÃO"] == "REVISAR").sum()),
+        }, ensure_ascii=False)
+        return response
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/v1/impostos/{company_code}/identificar-cnpj")
+async def identificar_cnpj(company_code: int, balancete: UploadFile = File(...)):
+    try:
+        from razync.conferencia_impostos import extrair_cnpjs
+        cnpjs = extrair_cnpjs(await balancete.read(), balancete.filename or "balancete")
+        return {"company": company_code, "cnpjs": cnpjs}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/api/v1/tasks")
+def tasks_get():
+    return task_dashboard()
+
+
+@app.post("/api/v1/tasks/company/{company_code}")
+async def tasks_company(company_code: int, payload: dict):
+    try:
+        competencia = str(payload.get("competencia") or task_dashboard()["competencia"])
+        set_company_status(str(company_code), competencia, bool(payload.get("concluida", True)))
+        return task_dashboard()
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/v1/tasks/manual")
+async def tasks_create(payload: dict):
+    try:
+        task = create_task(payload)
+        return {"ok": True, "task": task}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.patch("/api/v1/tasks/manual/{task_id}")
+async def tasks_update(task_id: str, payload: dict):
+    try:
+        update_task(task_id, str(payload.get("status") or "Pendente"))
+        return {"ok": True}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.delete("/api/v1/tasks/manual/{task_id}")
+def tasks_delete(task_id: str):
+    try:
+        delete_task(task_id)
+        return {"ok": True}
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
