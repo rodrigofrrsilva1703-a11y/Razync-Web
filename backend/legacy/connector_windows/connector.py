@@ -28,8 +28,10 @@ CONFIG_FILE = DATA_DIR / "config.json"
 AUTOMATION_LOG = DATA_DIR / "automation.log"
 DEFAULT_ORIGINS = {
     "https://razync-k9la2wnmiml5tm3edjvgur.streamlit.app",
+    "https://rodrigofrrsilva1703-a11y.github.io",
     "http://localhost:8501",
     "http://127.0.0.1:8501",
+    "http://localhost:5173",
 }
 
 
