@@ -13,12 +13,51 @@ from app import migration_services as services
 
 router = APIRouter(prefix='/api/v1')
 
+
+def workbook_preview(content):
+    from openpyxl import load_workbook
+    from openpyxl.utils.datetime import from_excel
+    import datetime
+    book = load_workbook(io.BytesIO(content), data_only=True, read_only=True)
+    sheets = []
+    try:
+        for sheet in book:
+            if sheet.title.casefold() == 'principal':
+                continue
+            rows = list(sheet.iter_rows(values_only=True))
+            header = next((i for i, row in enumerate(rows) if any(str(c or '').strip().upper() == 'HISTÓRICO' for c in row)), None)
+            if header is None:
+                continue
+            columns = [str(c or '') for c in rows[header]]
+            values = [r for r in rows[header+1:] if any(c is not None for c in r)]
+            index = next((i for i,c in enumerate(columns) if c.strip().upper() == 'VALOR'), None)
+            amounts = [float(r[index]) for r in values if index is not None and isinstance(r[index], (int,float))]
+            date_index = next((i for i,c in enumerate(columns) if c.strip().upper() == 'DATA'), None)
+            display = []
+            for row in values[:500]:
+                formatted = []
+                for i,c in enumerate(row):
+                    if i == date_index and isinstance(c,(int,float)):
+                        c = from_excel(c, book.epoch)
+                    formatted.append(c.strftime('%d/%m/%Y') if isinstance(c,(datetime.datetime,datetime.date)) else c)
+                display.append(formatted)
+            sheets.append({'name':sheet.title,'count':len(values),'columns':columns,'rows':display,
+                'entradas':round(sum(v for v in amounts if v > 0),2),'saidas':round(-sum(v for v in amounts if v < 0),2)})
+    finally:
+        book.close()
+    return sheets
+
+@router.post('/modelo-preview')
+async def model_preview(file: UploadFile = File(...)):
+    try:
+        sheets = await run_in_threadpool(workbook_preview, await file.read())
+        return {'sheets': sheets, 'diagnostics': []}
+    except Exception as exc:
+        raise HTTPException(422, str(exc)) from exc
+
 @router.post('/workflow/{company_code}/preview')
 async def workflow_preview(company_code: int, roles_json: str = Form(...), options_json: str = Form('{}'), files: list[UploadFile] = File(...)):
     try:
-        from openpyxl import load_workbook
-        from openpyxl.utils.datetime import from_excel
-        import datetime
         names, options = json.loads(roles_json), json.loads(options_json)
         if not isinstance(names, list) or len(names) != len(files) or not isinstance(options, dict):
             raise ValueError('Configuração dos arquivos inválida.')
@@ -26,33 +65,7 @@ async def workflow_preview(company_code: int, roles_json: str = Form(...), optio
         for name, upload in zip(names, files):
             roles.setdefault(str(name), []).append((upload.filename or 'arquivo.xlsx', await upload.read()))
         content, filename = await run_in_threadpool(services.workflow, company_code, roles, options)
-        book = load_workbook(io.BytesIO(content), data_only=True, read_only=True)
-        sheets = []
-        try:
-            for sheet in book:
-                if sheet.title.casefold() == 'principal':
-                    continue
-                rows = list(sheet.iter_rows(values_only=True))
-                header = next((i for i, row in enumerate(rows) if any(str(c or '').strip().upper() == 'HISTÓRICO' for c in row)), None)
-                if header is None:
-                    continue
-                columns = [str(c or '') for c in rows[header]]
-                values = [r for r in rows[header+1:] if any(c is not None for c in r)]
-                index = next((i for i,c in enumerate(columns) if c.strip().upper() == 'VALOR'), None)
-                amounts = [float(r[index]) for r in values if index is not None and isinstance(r[index], (int,float))]
-                date_index = next((i for i,c in enumerate(columns) if c.strip().upper() == 'DATA'), None)
-                display = []
-                for row in values[:500]:
-                    formatted = []
-                    for i,c in enumerate(row):
-                        if i == date_index and isinstance(c,(int,float)):
-                            c = from_excel(c, book.epoch)
-                        formatted.append(c.strftime('%d/%m/%Y') if isinstance(c,(datetime.datetime,datetime.date)) else c)
-                    display.append(formatted)
-                sheets.append({'name':sheet.title,'count':len(values),'columns':columns,'rows':display,
-                    'entradas':round(sum(v for v in amounts if v > 0),2),'saidas':round(-sum(v for v in amounts if v < 0),2)})
-        finally:
-            book.close()
+        sheets = await run_in_threadpool(workbook_preview, content)
         tables = await run_in_threadpool(services.diagnostics, company_code, roles, options)
         diagnostics = [{'name':name,'columns':list(frame.columns),'rows':json.loads(frame.head(500).to_json(orient='values',date_format='iso',force_ascii=False)), 'count':len(frame)} for name,frame in tables.items()]
         return {'filename':filename,'sheets':sheets,'diagnostics':diagnostics}
