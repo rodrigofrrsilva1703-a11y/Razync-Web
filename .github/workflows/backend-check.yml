@@ -21,3 +21,28 @@ jobs:
           python -m py_compile backend/app/*.py
           python -m compileall -q backend/legacy/razync
           python -m compileall -q backend/legacy/connector_windows
+
+  runtime-smoke:
+    needs: syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -f backend/Dockerfile -t razync-web-api .
+      - name: Start API
+        run: |
+          docker run -d --name razync-api-test -p 8000:8000 razync-web-api
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8000/health >/tmp/health.json; then
+              break
+            fi
+            sleep 2
+          done
+          cat /tmp/health.json
+      - name: Smoke endpoints
+        run: |
+          curl -fsS http://127.0.0.1:8000/api/v1/companies | python -c "import sys,json; d=json.load(sys.stdin); assert len(d)>=40"
+          curl -fsS http://127.0.0.1:8000/api/v1/tasks | python -c "import sys,json; d=json.load(sys.stdin); assert 'resumo' in d and 'empresas' in d"
+      - name: Container logs on failure
+        if: failure()
+        run: docker logs razync-api-test || true
