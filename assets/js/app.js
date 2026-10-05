@@ -251,6 +251,7 @@ form.addEventListener("submit", async (event) => {
   const companyCode=selected.codigo;
   const cap = selected.capabilities || {};
   const workflow = cap.workflow || "standard";
+  $("#workflowPreview").replaceChildren();
   const data = new FormData();
   let endpoint = `${API()}/api/v1/modelo-dominio/${selected.codigo}`;
 
@@ -305,8 +306,25 @@ form.addEventListener("submit", async (event) => {
       processMessage.textContent = "Pré-visualização concluída. Confira os lançamentos antes de baixar.";
       return;
     }
-    await downloadBlob(response, `RAZYNC_${companyCode}_MODELO_DOMINIO.xlsx`);
-    processMessage.textContent = "Modelo Domínio gerado com sucesso.";
+    if (event.submitter?.dataset.output === "reports") {
+      await downloadBlob(response, `RAZYNC_${companyCode}_RELATORIOS.zip`);
+      processMessage.textContent = "Relatórios gerados com sucesso.";
+      return;
+    }
+    const workbook = await response.blob();
+    const previewData = new FormData();
+    previewData.append("file", workbook, "modelo.xlsx");
+    const previewResponse = await fetch(`${API()}/api/v1/modelo-preview`, {method:"POST", body:previewData});
+    if (!previewResponse.ok) throw new Error(await responseError(previewResponse));
+    if (selected?.codigo !== companyCode) return;
+    showWorkflowPreview(await previewResponse.json());
+    const download = document.createElement("button");
+    download.type = "button";
+    download.textContent = "Baixar Excel conferido";
+    const disposition = response.headers.get("content-disposition");
+    download.addEventListener("click", () => downloadBlob(new Response(workbook, {headers:disposition ? {"Content-Disposition":disposition} : {}}), `RAZYNC_${companyCode}_MODELO_DOMINIO.xlsx`));
+    $("#workflowPreview").prepend(download);
+    processMessage.textContent = "Prévia pronta. Confira a tabela e clique em Baixar Excel conferido.";
   } catch (error) {
     processMessage.textContent = error.message;
   } finally {
