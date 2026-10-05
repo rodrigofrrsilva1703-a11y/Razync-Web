@@ -141,3 +141,33 @@ CAPABILITIES = {
 }
 
 COMMON_TOOLS = ["modelo_dominio", "base_inteligente", "conferencia_extrato", "conferencia_fiscal"]
+
+# Accounts confirmed in the original modules/pages; never infer unknown accounts.
+CAPABILITIES[626]['banks'] = {'banco_brasil': '8', 'sicredi': '1155'}
+CAPABILITIES[625]['banks']['caixa'] = '504'
+CAPABILITIES[266]['banks'] = {'itau': '508', 'bradesco': '9', 'fibra': '506'}
+CAPABILITIES[1396]['banks'] = {'itau': '515', 'bradesco': '514'}
+CAPABILITIES[1211]['banks'] = {'itau': '508'}
+for code in (242, 1408):
+    existing = CAPABILITIES[code]['roles']
+    for role in existing:
+        role['optional'] = True
+    for name, label in (('despesas', 'Relatório Despesa'), ('fornecedores', 'Relatório Fornecedor'), ('recebidos', 'Relatório Recebido')):
+        if not any(role['name'] == name for role in existing):
+            existing.append({'name': name, 'label': label, 'accept': '.xls,.xlsx', 'multiple': False, 'optional': True})
+    CAPABILITIES[code]['options'] = [
+        {'name': 'ano', 'label': 'Ano de referência', 'type': 'number'},
+        {'name': 'data_inicial', 'label': 'Data inicial (opcional)', 'type': 'date'},
+        {'name': 'data_final', 'label': 'Data final (opcional)', 'type': 'date'},
+    ]
+for code in (3, 178, 343, 266, 1396, 1000, 1001):
+    CAPABILITIES[code]['options'] = [
+        {'name': 'data_inicial', 'label': 'Data inicial (opcional)', 'type': 'date'},
+        {'name': 'data_final', 'label': 'Data final (opcional)', 'type': 'date'},
+    ]
+# GZ's original boleto parser consumes PDF, not Excel.
+next(r for r in CAPABILITIES[1211]['roles'] if r['name'] == 'boletos')['accept'] = '.pdf'
+next(r for r in CAPABILITIES[1402]['roles'] if r['name'] == 'extrato')['optional'] = True
+for capability in CAPABILITIES.values():
+    capability['validation_status'] = 'pending_real_files'
+COMMON_TOOLS.extend(['conferencia_impostos', 'revisao_inteligente'])

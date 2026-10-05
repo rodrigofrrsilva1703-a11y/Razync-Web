@@ -11,6 +11,7 @@ import pandas as pd
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.concurrency import run_in_threadpool
 
 ROOT = Path(__file__).resolve().parents[1]
 LEGACY = ROOT / "legacy"
@@ -23,11 +24,12 @@ from app.excel import gerar_modelo_abas
 from app.registry import CAPABILITIES, COMMON_TOOLS
 from app.advanced import workflow_modelo, processar_itau_generico, processar_daycoval_generico
 from app.conferencia import ler_modelo_excel, conciliar
-from app.base_inteligente import learn as base_learn, status as base_status, classify as base_classify
+from app.classification_service import learn as base_learn, status as base_status, classify as base_classify
+from app.migration_services import workflow as migrated_workflow, statement as migrated_statement
 from app.global_tools import processar_arquivo, processar_razao, conciliar_razao
 from app.tasks import dashboard as task_dashboard, set_company_status, create_task, update_task, delete_task
 
-app = FastAPI(title="Razync Web API", version="0.3.0")
+app = FastAPI(title="Razync Web API", version="0.4.0")
 
 origins = [
     "https://rodrigofrrsilva1703-a11y.github.io",
@@ -78,7 +80,7 @@ def companies():
     result = []
     for item in EMPRESAS:
         row = dict(item)
-        cap = dict(CAPABILITIES.get(int(item["codigo"]), {"status": "catalog_only"}))
+        cap = dict(CAPABILITIES.get(int(item["codigo"]), {"status": "fiscal_only", "tools": ["conferencia_fiscal", "conferencia_impostos"]}))
         if cap.get("status") == "api_ready":
             cap["tools"] = COMMON_TOOLS
         row["capabilities"] = cap
@@ -92,7 +94,7 @@ def company(company_code: int):
     if not item:
         raise HTTPException(status_code=404, detail="Empresa não cadastrada.")
     row = dict(item)
-    cap = dict(CAPABILITIES.get(company_code, {"status": "catalog_only"}))
+    cap = dict(CAPABILITIES.get(company_code, {"status": "fiscal_only", "tools": ["conferencia_fiscal", "conferencia_impostos"]}))
     if cap.get("status") == "api_ready":
         cap["tools"] = COMMON_TOOLS
     row["capabilities"] = cap
@@ -104,7 +106,7 @@ def _process_modular(company_code: int, bank: str, content: bytes, filename: str
     name = (filename or "").lower()
 
     if company_code in {47, 154, 912, 964, 1532}:
-        return processar_custom(company_code, bank, content)
+        return migrated_statement(company_code, bank, content, filename)
 
     if company_code == 88:
         from razync.hw_88 import processar_extrato_hw88
@@ -140,28 +142,31 @@ def _process_modular(company_code: int, bank: str, content: bytes, filename: str
 
 
 def _process_statement(company_code: int, bank: str, content: bytes, filename: str) -> pd.DataFrame:
-    try:
-        return _process_modular(company_code, bank, content, filename)
-    except (NotImplementedError, KeyError, ValueError):
-        pass
+    return migrated_statement(company_code, bank, content, filename)
 
-    bank = (bank or "").casefold()
-    if bank == "itau":
-        conta = str(CAPABILITIES.get(company_code, {}).get("banks", {}).get("itau", "") or "")
-        return processar_itau_generico(content, conta)
-    if bank == "daycoval":
-        return processar_daycoval_generico(content)
-    if bank == "bradesco" and company_code == 968:
-        from razync.bradesco_radani import processar_extrato_bradesco_radani
-        df, _ = processar_extrato_bradesco_radani(content)
-        return df
-    if bank == "btg":
-        from razync.vgv_1402 import processar_extrato_btg_vgv
-        return processar_extrato_btg_vgv(content)
-    if bank == "banco_brasil" and company_code == 242:
-        from razync.valean_625 import processar_bb_625
-        return processar_bb_625(content)
-    raise ValueError(f"Leitor de extrato ainda não reconheceu {bank} para a empresa {company_code}.")
+
+def _validated_bank(company_code: int, bank: str) -> str:
+    banks = CAPABILITIES.get(company_code, {}).get('banks', {})
+    if not banks:
+        raise HTTPException(404, 'Empresa sem processador bancário específico.')
+    bank = bank.strip().casefold()
+    if not bank and len(banks) == 1:
+        bank = next(iter(banks))
+    if bank not in banks:
+        raise HTTPException(400, 'Banco não configurado para esta empresa.')
+    return bank
+
+
+def _original_export(company_code, groups):
+    from app import engine
+    with engine.processing_context():
+        if company_code in {969,1532} and len(groups) == 1:
+            from razync.engekraft_969 import gerar_modelo_dominio_engekraft_969
+            return gerar_modelo_dominio_engekraft_969(next(iter(groups.values())), engine.TEMPLATE.read_bytes())
+        if company_code in {47,88,841,912,964,1530} and len(groups) == 1:
+            return engine.gerar_excel_modelo_dominio(next(iter(groups.values())), formato_data='dd/mm/yyyy' if company_code in {47,912,964,1530,1532} else None)
+        blocks = {name:{'principal':frame,'retirados':pd.DataFrame()} for name,frame in groups.items()}
+        return engine.gerar_excel_nova_geracao(blocks, prefixar_historicos=company_code not in {154,1208})
 
 
 def _sheet_name(bank: str) -> str:
@@ -184,6 +189,7 @@ async def modelo_dominio(
     if not files:
         raise HTTPException(status_code=400, detail="Envie pelo menos um arquivo.")
     cap = CAPABILITIES.get(company_code, {})
+    bank = _validated_bank(company_code, bank)
     if cap.get("workflow") == "advanced":
         raise HTTPException(status_code=400, detail="Esta empresa usa o fluxo avançado de múltiplos arquivos.")
     banks = cap.get("banks", {})
@@ -195,9 +201,9 @@ async def modelo_dominio(
         frames = []
         for upload in files:
             content = await upload.read()
-            frames.append(_process_modular(company_code, bank, content, upload.filename or "arquivo"))
+            frames.append(await run_in_threadpool(_process_modular, company_code, bank, content, upload.filename or "arquivo"))
         df = pd.concat(frames, ignore_index=True).sort_values("DATA", kind="stable").reset_index(drop=True)
-        workbook = gerar_modelo_abas({_sheet_name(bank): df})
+        workbook = await run_in_threadpool(_original_export, company_code, {_sheet_name(bank): df})
         return _download(workbook, f"RAZYNC_{company_code}_{(bank or 'BANCO').upper()}_MODELO_DOMINIO.xlsx")
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -216,16 +222,17 @@ async def modelo_dominio_multi(
     if not isinstance(banks, list) or len(banks) != len(files):
         raise HTTPException(status_code=400, detail="Envie um banco para cada arquivo.")
     groups: dict[str, list[pd.DataFrame]] = {}
+    banks = [_validated_bank(company_code, str(bank)) for bank in banks]
     try:
         for bank, upload in zip(banks, files):
             content = await upload.read()
-            frame = _process_modular(company_code, str(bank), content, upload.filename or "arquivo")
+            frame = await run_in_threadpool(_process_modular, company_code, str(bank), content, upload.filename or "arquivo")
             groups.setdefault(str(bank), []).append(frame)
         sheets = {
             _sheet_name(bank): pd.concat(frames, ignore_index=True).sort_values("DATA", kind="stable").reset_index(drop=True)
             for bank, frames in groups.items()
         }
-        return _download(gerar_modelo_abas(sheets), f"RAZYNC_{company_code}_MODELO_DOMINIO.xlsx")
+        return _download(await run_in_threadpool(_original_export, company_code, sheets), f"RAZYNC_{company_code}_MODELO_DOMINIO.xlsx")
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -248,7 +255,7 @@ async def advanced_workflow(
     for role, upload in zip(role_names, files):
         roles.setdefault(str(role), []).append((upload.filename or "arquivo", await upload.read()))
     try:
-        workbook, filename = workflow_modelo(company_code, roles, options if isinstance(options, dict) else {})
+        workbook, filename = await run_in_threadpool(migrated_workflow, company_code, roles, options if isinstance(options, dict) else {})
         return _download(workbook, filename)
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -265,7 +272,7 @@ async def intelligent_base_learn(company_code: int, files: list[UploadFile] = Fi
     errors = []
     for upload in files:
         try:
-            total += base_learn(company_code, await upload.read(), upload.filename or "arquivo.xlsx")
+            total += await run_in_threadpool(base_learn, company_code, await upload.read(), upload.filename or "arquivo.xlsx")
         except Exception as exc:
             errors.append(f"{upload.filename}: {exc}")
     if total == 0 and errors:
@@ -274,9 +281,12 @@ async def intelligent_base_learn(company_code: int, files: list[UploadFile] = Fi
 
 
 @app.post("/api/v1/base-inteligente/{company_code}/classificar")
-async def intelligent_base_classify(company_code: int, file: UploadFile = File(...)):
+async def intelligent_base_classify(company_code: int, file: UploadFile = File(...), options_json: str = Form('{}')):
     try:
-        workbook, summary = base_classify(company_code, await file.read(), file.filename or "modelo.xlsx")
+        options = json.loads(options_json)
+        if not isinstance(options, dict):
+            raise ValueError('Opções de classificação inválidas.')
+        workbook, summary = await run_in_threadpool(base_classify, company_code, await file.read(), file.filename or "modelo.xlsx", options)
         headers = {"X-Razync-Summary": json.dumps(summary, ensure_ascii=False)}
         response = _download(workbook, f"RAZYNC_{company_code}_CLASSIFICADO.xlsx")
         response.headers.update(headers)
@@ -291,20 +301,15 @@ async def conferencia_extrato(
     bank: str = Form(...),
     model_file: UploadFile = File(...),
     statement_files: list[UploadFile] = File(...),
+    options_json: str = Form("{}"),
 ):
     try:
-        modelo = ler_modelo_excel(await model_file.read(), bank)
-        frames = []
-        for upload in statement_files:
-            frames.append(_process_statement(company_code, bank, await upload.read(), upload.filename or "extrato"))
-        extrato = pd.concat(frames, ignore_index=True)
-        resumo, diario, faltando, a_mais = conciliar(modelo, extrato)
-        report = _excel_report({
-            "Resumo": pd.DataFrame([resumo]),
-            "Conferência diária": diario,
-            "Faltando na planilha": faltando,
-            "A mais na planilha": a_mais,
-        })
+        from app.migration_services import reconcile
+        options = json.loads(options_json)
+        statements = [(upload.filename or 'extrato', await upload.read()) for upload in statement_files]
+        bank = _validated_bank(company_code, bank)
+        resumo, sheets = await run_in_threadpool(reconcile, company_code, bank, await model_file.read(), statements, options)
+        report = _excel_report(sheets)
         response = _download(report, f"RAZYNC_{company_code}_CONFERENCIA_EXTRATO.xlsx")
         response.headers["X-Razync-Summary"] = json.dumps(resumo, ensure_ascii=False)
         return response
@@ -321,12 +326,12 @@ async def conferencia_fiscal(
 ):
     try:
         from razync.conferencia_fiscal import processar_conferencia, gerar_relatorio_excel
-        resultado = processar_conferencia(
+        resultado = await run_in_threadpool(processar_conferencia,
             await acumuladores.read(), acumuladores.filename or "acumuladores",
             await razao.read(), razao.filename or "razao",
             filial or None,
         )
-        report = gerar_relatorio_excel(resultado)
+        report = await run_in_threadpool(gerar_relatorio_excel, resultado)
         resumo = resultado.get("resumo", pd.DataFrame())
         response = _download(report, f"RAZYNC_{company_code}_CONFERENCIA_FISCAL.xlsx")
         response.headers["X-Razync-Summary"] = json.dumps({
@@ -346,7 +351,7 @@ async def conversor_extratos(files: list[UploadFile] = File(...)):
         sheets = {}
         frames = []
         for idx, upload in enumerate(files, start=1):
-            df = processar_arquivo(await upload.read(), upload.filename or f"arquivo_{idx}")
+            df = await run_in_threadpool(processar_arquivo, await upload.read(), upload.filename or f"arquivo_{idx}")
             frames.append(df)
             nome = Path(upload.filename or f"Arquivo {idx}").stem[:24]
             sheets[f"{idx:02d} {nome}"[:31]] = df
@@ -365,8 +370,8 @@ async def conciliacao_razao(
     razao: UploadFile = File(...),
 ):
     try:
-        df_ext = processar_arquivo(await extrato.read(), extrato.filename or "extrato")
-        df_raz = processar_razao(await razao.read(), razao.filename or "razao")
+        df_ext = await run_in_threadpool(processar_arquivo, await extrato.read(), extrato.filename or "extrato")
+        df_raz = await run_in_threadpool(processar_razao, await razao.read(), razao.filename or "razao")
         diario, resumo = conciliar_razao(df_ext, df_raz)
         report = _excel_report({
             "Resumo": pd.DataFrame([resumo]),
@@ -391,7 +396,7 @@ async def conferencia_impostos(
     try:
         from datetime import date
         from razync.conferencia_impostos import processar_conferencia_impostos, gerar_relatorio_impostos
-        resultado = processar_conferencia_impostos(
+        resultado = await run_in_threadpool(processar_conferencia_impostos,
             await receita.read(), receita.filename or "receita",
             await balancete.read(), balancete.filename or "balancete",
         )
@@ -402,7 +407,7 @@ async def conferencia_impostos(
         else:
             hoje = date.today()
             comp = hoje.replace(day=1)
-        report = gerar_relatorio_impostos(resultado, f"{company_code} - {empresa['nome']}", comp)
+        report = await run_in_threadpool(gerar_relatorio_impostos, resultado, f"{company_code} - {empresa['nome']}", comp)
         response = _download(report, f"RAZYNC_{company_code}_CONFERENCIA_IMPOSTOS.xlsx")
         response.headers["X-Razync-Summary"] = json.dumps({
             "impostos": int(len(resultado)),
@@ -418,7 +423,7 @@ async def conferencia_impostos(
 async def identificar_cnpj(company_code: int, balancete: UploadFile = File(...)):
     try:
         from razync.conferencia_impostos import extrair_cnpjs
-        cnpjs = extrair_cnpjs(await balancete.read(), balancete.filename or "balancete")
+        cnpjs = await run_in_threadpool(extrair_cnpjs, await balancete.read(), balancete.filename or "balancete")
         return {"company": company_code, "cnpjs": cnpjs}
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -464,3 +469,7 @@ def tasks_delete(task_id: str):
         return {"ok": True}
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+from app.migration_routes import router as migration_router
+app.include_router(migration_router)

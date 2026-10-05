@@ -43,6 +43,9 @@ jobs:
         run: |
           curl -fsS http://127.0.0.1:8000/api/v1/companies | python -c "import sys,json; d=json.load(sys.stdin); assert len(d)>=40"
           curl -fsS http://127.0.0.1:8000/api/v1/tasks | python -c "import sys,json; d=json.load(sys.stdin); assert 'resumo' in d and 'empresas' in d"
+      - name: Compare original rules and generated workbooks
+        run: |
+          docker run --rm --entrypoint sh -v "$PWD/backend/tests:/app/tests:ro" razync-web-api -c "pip install --no-cache-dir pytest httpx && python -m pytest tests -q --tb=short"
       - name: Container logs on failure
         if: failure()
         run: docker logs razync-api-test || true

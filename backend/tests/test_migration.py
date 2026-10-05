@@ -87,7 +87,7 @@ def test_autokraft_workbook_matches_original(code):
     data = xlsx([['','','','','',''],['','','01/10/2026','','',''],['ITAU','','Cliente',100,'Fornecedor',40],['','','TOTAL DE CREDITOS',100,'TOTAL DE DEBITOS',40]], '01-10')
     reference = reference_engine()
     groups, _ = reference.processar_mapa_autokraft(data,'MAPA_2026.xlsx')
-    expected = reference.gerar_excel_nova_geracao(groups, engine.TEMPLATE.read_bytes())
+    expected = reference.gerar_excel_nova_geracao(groups)
     actual, _ = workflow(code, {'mapa':[('MAPA_2026.xlsx',data)]}, {})
     assert workbook_signature(actual) == workbook_signature(expected)
 

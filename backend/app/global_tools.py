@@ -308,3 +308,25 @@ def conciliar_razao(extrato: pd.DataFrame, razao: pd.DataFrame):
         "saidas_razao":round(float(diario_r["SAIDAS_RAZAO"].sum()),2),
     }
     return out.sort_values("DATA"), summary
+
+
+# Adapters preserve the original universal readers instead of reduced copies.
+def processar_arquivo(file_bytes: bytes, filename: str) -> pd.DataFrame:
+    from app import engine
+    with engine.processing_context():
+        rows = engine.processar_extrato_conferencia_empresa(file_bytes, filename)
+        frame = pd.DataFrame(rows, columns=COLUNAS)
+        if frame.empty:
+            raise ValueError('Nenhum lançamento válido encontrado no arquivo.')
+        return frame
+
+
+def processar_razao(file_bytes: bytes, filename: str) -> pd.DataFrame:
+    from app import engine
+    with engine.processing_context():
+        frame = engine.processar_razao_dominio(file_bytes, filename)
+        if frame is None or frame.empty:
+            raise ValueError('Nenhum lançamento válido encontrado no Razão.')
+        frame = frame.copy()
+        frame['DATA'] = frame['DATA_DT'].dt.normalize()
+        return frame

@@ -26,6 +26,14 @@ New-Item -ItemType Directory -Path $runtime -Force | Out-Null
 Copy-Item (Join-Path $source "connector.py") $target -Force
 Copy-Item (Join-Path $source "list_certificates.ps1") $target -Force
 Copy-Item (Join-Path $source "sign_challenge.ps1") $target -Force
+foreach ($script in @('automate_ecac.ps1', 'configure_chrome.ps1', 'configure_chrome_admin.ps1')) {
+    if (Test-Path -LiteralPath (Join-Path $source $script)) {
+        Copy-Item -LiteralPath (Join-Path $source $script) -Destination $target -Force
+    }
+}
+if (Test-Path -LiteralPath (Join-Path $source 'chrome_extension')) {
+    Copy-Item -LiteralPath (Join-Path $source 'chrome_extension') -Destination $target -Recurse -Force
+}
 
 $pythonPath = Join-Path $runtime "python.exe"
 $pythonwPath = Join-Path $runtime "pythonw.exe"

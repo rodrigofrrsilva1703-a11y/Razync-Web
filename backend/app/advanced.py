@@ -612,3 +612,22 @@ def workflow_modelo(company_code: int, roles: dict[str, list[tuple[str, bytes]]]
         return gerar_modelo_abas(sheets), "DIAS_PEREIRA_1529_MODELO_DOMINIO.xlsx"
 
     raise NotImplementedError(f"Fluxo avançado ainda não mapeado para a empresa {company_code}.")
+
+
+# Keep the original universal PDF readers, including OCR, signs and balance checks.
+def processar_itau_generico(file_bytes: bytes, conta: str = '') -> pd.DataFrame:
+    from app import engine
+    rows = engine.processar_extrato_conferencia_empresa(file_bytes, 'extrato_itau.pdf', 'itau')
+    frame = pd.DataFrame(rows, columns=COLUNAS)
+    if frame.empty:
+        raise ValueError('Nenhum lançamento Itaú foi encontrado.')
+    return _aplicar_conta(frame, conta) if conta else frame
+
+
+def processar_daycoval_generico(file_bytes: bytes) -> pd.DataFrame:
+    from app import engine
+    rows = engine.processar_extrato_conferencia_empresa(file_bytes, 'extrato_daycoval.pdf', 'daycoval')
+    frame = pd.DataFrame(rows, columns=COLUNAS)
+    if frame.empty:
+        raise ValueError('Nenhum lançamento Daycoval foi encontrado.')
+    return frame
