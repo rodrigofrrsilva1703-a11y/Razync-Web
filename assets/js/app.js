@@ -29,6 +29,30 @@ let companyFilter = 'all';
 
 const API = () => String(window.RAZYNC_CONFIG?.apiBase || "").replace(/\/$/, "");
 
+function unlockProtectedInput(input) {
+  if (!input) return;
+  const unlock = () => input.removeAttribute("readonly");
+  input.addEventListener("pointerdown", unlock, {once:true});
+  input.addEventListener("focus", unlock, {once:true});
+}
+
+function clearAutofilledSearch() {
+  if (!search) return;
+  const value = String(search.value || "").trim();
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    search.value = "";
+    filterCompanies();
+  }
+}
+
+unlockProtectedInput(search);
+unlockProtectedInput($("#adminAccess"));
+requestAnimationFrame(clearAutofilledSearch);
+setTimeout(clearAutofilledSearch, 200);
+setTimeout(clearAutofilledSearch, 900);
+window.addEventListener("pageshow", () => setTimeout(clearAutofilledSearch, 50));
+
+
 function normalize(value) {
   return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
