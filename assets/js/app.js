@@ -320,11 +320,12 @@ form.addEventListener("submit", async (event) => {
     showWorkflowPreview(await previewResponse.json());
     const download = document.createElement("button");
     download.type = "button";
-    download.textContent = "Baixar Excel conferido";
+    download.textContent = "Baixar Modelo Domínio";
     const disposition = response.headers.get("content-disposition");
     download.addEventListener("click", () => downloadBlob(new Response(workbook, {headers:disposition ? {"Content-Disposition":disposition} : {}}), `RAZYNC_${companyCode}_MODELO_DOMINIO.xlsx`));
-    $("#workflowPreview").prepend(download);
-    processMessage.textContent = "Prévia pronta. Confira a tabela e clique em Baixar Excel conferido.";
+    download.className = "preview-download";
+    $("#workflowPreview").append(download);
+    processMessage.textContent = "Prévia pronta. Confira os lançamentos na tabela antes de baixar o Modelo Domínio.";
   } catch (error) {
     processMessage.textContent = error.message;
   } finally {
@@ -471,7 +472,7 @@ checkApi();
 
 
 function showGlobalView(name) {
-  $('#currentSection').textContent = {companies:'Empresas',converter:'Conversor de Extratos',ledger:'Conciliação com Razão',tasks:'Central de Tarefas'}[name];
+  $('#currentSection').textContent = {companies:'Empresas',converter:'Conversor de Extratos',ledger:'Conciliação com Razão'}[name];
   panel.hidden = true;
   selected = null;
   if (name === "companies") {
@@ -484,7 +485,6 @@ function showGlobalView(name) {
   document.querySelectorAll(".main-nav-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.view === name);
   });
-  if (name === "tasks") loadTasks();
   window.scrollTo({top:0, behavior:"smooth"});
 }
 
