@@ -7,7 +7,7 @@
   <title>Razync</title>
   <meta name="description" content="Razync — automação contábil">
   <link rel="stylesheet" href="./assets/css/app.css">
-  <link rel="stylesheet" href="./assets/css/workspace.css?v=7">
+  <link rel="stylesheet" href="./assets/css/workspace.css?v=8">
 </head>
 <body>
   <div class="app-shell">
@@ -46,7 +46,7 @@
             <div class="directory-controls">
             <div class="search-wrap">
               <span aria-hidden="true">⌕</span>
-              <input id="companySearch" type="search" placeholder="Código ou nome da empresa" autocomplete="off">
+              <input id="companySearch" type="text" name="razync_company_lookup" placeholder="Código ou nome da empresa" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" data-lpignore="true" data-1p-ignore="true" readonly>
             </div>
             <label for="regimeFilter" class="visually-hidden">Filtrar por regime</label><select id="regimeFilter"><option value="">Todos os regimes</option><option>LUCRO REAL</option><option>LUCRO PRESUMIDO</option><option>SIMPLES NACIONAL</option></select>
             </div>
@@ -124,7 +124,7 @@
         <details class="admin-access">
           <summary>Acesso administrativo</summary>
           <label for="adminAccess">Chave administrativa para backup da base e certificados A1</label>
-          <input id="adminAccess" type="password" autocomplete="off">
+          <input id="adminAccess" name="razync_admin_access_key" type="password" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" readonly>
         </details>
         <nav class="tool-tabs" aria-label="Ferramentas">
           <button type="button" class="tool-tab active" data-tool="organizar">Organizar arquivos</button>
@@ -369,7 +369,7 @@
   </div>
 
   <script src="./assets/js/config.js"></script>
-  <script src="./assets/js/app.js?v=workspace-3"></script>
-  <script src="./assets/js/migration.js?v=workspace-3"></script>
+  <script src="./assets/js/app.js?v=workspace-4"></script>
+  <script src="./assets/js/migration.js?v=workspace-4"></script>
 </body>
 </html>
