@@ -155,9 +155,39 @@ function showWorkflowPreview(data) {
     header.append(titleBox, metrics);
     block.appendChild(header);
 
+    const rows = sheet.rows || [];
+    const table = tableFor(sheet.columns || [], rows);
+
+    if (rows.length > 6) {
+      const tools = document.createElement("div");
+      tools.className = "preview-table-tools";
+      const search = document.createElement("input");
+      search.type = "search";
+      search.placeholder = "Filtrar lançamentos desta tabela";
+      search.setAttribute("aria-label", `Filtrar lançamentos de ${sheet.name}`);
+      const visible = document.createElement("span");
+      visible.textContent = `${rows.length} exibidos`;
+
+      search.addEventListener("input", () => {
+        const query = previewLabel(search.value);
+        let shown = 0;
+        [...table.tBodies[0].rows].forEach(row => {
+          const match = !query || previewLabel(row.textContent).includes(query);
+          row.hidden = !match;
+          if (match) shown += 1;
+        });
+        visible.textContent = query
+          ? `${shown} de ${rows.length}`
+          : `${rows.length} exibidos`;
+      });
+
+      tools.append(search, visible);
+      block.appendChild(tools);
+    }
+
     const scroll = document.createElement("div");
     scroll.className = "preview-table-scroll";
-    scroll.appendChild(tableFor(sheet.columns || [], sheet.rows || []));
+    scroll.appendChild(table);
     block.appendChild(scroll);
     target.appendChild(block);
   });
