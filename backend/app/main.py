@@ -19,9 +19,12 @@ if str(LEGACY) not in sys.path:
 from razync.company_catalog import EMPRESAS
 from app.custom_adapters import processar_custom
 from app.excel import gerar_modelo_abas
-from app.registry import CAPABILITIES
+from app.registry import CAPABILITIES, COMMON_TOOLS
+from app.advanced import workflow_modelo, processar_itau_generico, processar_daycoval_generico
+from app.conferencia import ler_modelo_excel, conciliar
+from app.base_inteligente import learn as base_learn, status as base_status, classify as base_classify
 
-app = FastAPI(title="Razync Web API", version="0.1.0")
+app = FastAPI(title="Razync Web API", version="0.3.0")
 
 origins = [
     "https://rodrigofrrsilva1703-a11y.github.io",
@@ -36,12 +39,35 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
 )
+
+
+def _excel_report(sheets: dict[str, pd.DataFrame]) -> bytes:
+    out = io.BytesIO()
+    with pd.ExcelWriter(out, engine="openpyxl") as writer:
+        for name, df in sheets.items():
+            frame = df.copy() if isinstance(df, pd.DataFrame) else pd.DataFrame(df)
+            frame.to_excel(writer, sheet_name=str(name)[:31], index=False)
+    return out.getvalue()
+
+
+def _download(data: bytes, filename: str):
+    return StreamingResponse(
+        io.BytesIO(data),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get("/health")
 def health():
-    return {"ok": True, "service": "razync-web-api", "version": app.version}
+    return {
+        "ok": True,
+        "service": "razync-web-api",
+        "version": app.version,
+        "persistent_data": str(os.getenv("RAZYNC_DB_PATH", "/data/razync.db")),
+    }
 
 
 @app.get("/api/v1/companies")
@@ -49,7 +75,10 @@ def companies():
     result = []
     for item in EMPRESAS:
         row = dict(item)
-        row["capabilities"] = CAPABILITIES.get(int(item["codigo"]), {"status": "catalog_only"})
+        cap = dict(CAPABILITIES.get(int(item["codigo"]), {"status": "catalog_only"}))
+        if cap.get("status") == "api_ready":
+            cap["tools"] = COMMON_TOOLS
+        row["capabilities"] = cap
         result.append(row)
     return result
 
@@ -60,7 +89,10 @@ def company(company_code: int):
     if not item:
         raise HTTPException(status_code=404, detail="Empresa não cadastrada.")
     row = dict(item)
-    row["capabilities"] = CAPABILITIES.get(company_code, {"status": "catalog_only"})
+    cap = dict(CAPABILITIES.get(company_code, {"status": "catalog_only"}))
+    if cap.get("status") == "api_ready":
+        cap["tools"] = COMMON_TOOLS
+    row["capabilities"] = cap
     return row
 
 
@@ -98,26 +130,44 @@ def _process_modular(company_code: int, bank: str, content: bytes, filename: str
     if company_code == 1530:
         from razync.dias_pereira_1530 import processar_extrato_itau_xls_1530
         if not name.endswith((".xls", ".xlsx")):
-            raise ValueError("A API inicial da empresa 1530 espera o extrato Itaú em XLS/XLSX.")
+            raise ValueError("A empresa 1530 espera o extrato Itaú em XLS/XLSX.")
         return processar_extrato_itau_xls_1530(content)
 
-    raise NotImplementedError(
-        "Esta ferramenta já foi copiada para o backend, mas ainda exige um adaptador de fluxo multi-arquivo."
-    )
+    raise NotImplementedError("Use o endpoint de fluxo avançado para esta empresa.")
+
+
+def _process_statement(company_code: int, bank: str, content: bytes, filename: str) -> pd.DataFrame:
+    try:
+        return _process_modular(company_code, bank, content, filename)
+    except (NotImplementedError, KeyError, ValueError):
+        pass
+
+    bank = (bank or "").casefold()
+    if bank == "itau":
+        conta = str(CAPABILITIES.get(company_code, {}).get("banks", {}).get("itau", "") or "")
+        return processar_itau_generico(content, conta)
+    if bank == "daycoval":
+        return processar_daycoval_generico(content)
+    if bank == "bradesco" and company_code == 968:
+        from razync.bradesco_radani import processar_extrato_bradesco_radani
+        df, _ = processar_extrato_bradesco_radani(content)
+        return df
+    if bank == "btg":
+        from razync.vgv_1402 import processar_extrato_btg_vgv
+        return processar_extrato_btg_vgv(content)
+    if bank == "banco_brasil" and company_code == 242:
+        from razync.valean_625 import processar_bb_625
+        return processar_bb_625(content)
+    raise ValueError(f"Leitor de extrato ainda não reconheceu {bank} para a empresa {company_code}.")
 
 
 def _sheet_name(bank: str) -> str:
     names = {
-        "itau": "Itaú",
-        "bradesco": "Bradesco",
-        "sicredi": "Sicredi",
-        "banco_brasil": "Banco do Brasil",
-        "bb": "Banco do Brasil",
-        "caixa": "Caixa",
-        "inter": "Banco Inter",
-        "safra": "Safra",
-        "btg": "BTG",
-        "santander": "Santander",
+        "itau": "Itaú", "itau_508": "Itaú 508", "itau_509": "Itaú 509",
+        "bradesco": "Bradesco", "sicredi": "Sicredi", "banco_brasil": "Banco do Brasil",
+        "bb": "Banco do Brasil", "caixa": "Caixa", "inter": "Banco Inter",
+        "safra": "Safra", "btg": "BTG", "santander": "Santander",
+        "daycoval": "Daycoval", "fibra": "Fibra",
     }
     return names.get((bank or "").casefold(), bank or "Banco")
 
@@ -130,32 +180,24 @@ async def modelo_dominio(
 ):
     if not files:
         raise HTTPException(status_code=400, detail="Envie pelo menos um arquivo.")
-
     cap = CAPABILITIES.get(company_code, {})
+    if cap.get("workflow") == "advanced":
+        raise HTTPException(status_code=400, detail="Esta empresa usa o fluxo avançado de múltiplos arquivos.")
     banks = cap.get("banks", {})
     if not bank and len(banks) == 1:
         bank = next(iter(banks))
     if not bank and company_code not in {88, 969, 1530}:
         raise HTTPException(status_code=400, detail="Informe o banco para esta empresa.")
-
-    frames = []
     try:
+        frames = []
         for upload in files:
             content = await upload.read()
             frames.append(_process_modular(company_code, bank, content, upload.filename or "arquivo"))
         df = pd.concat(frames, ignore_index=True).sort_values("DATA", kind="stable").reset_index(drop=True)
         workbook = gerar_modelo_abas({_sheet_name(bank): df})
-    except NotImplementedError as exc:
-        raise HTTPException(status_code=501, detail=str(exc)) from exc
+        return _download(workbook, f"RAZYNC_{company_code}_{(bank or 'BANCO').upper()}_MODELO_DOMINIO.xlsx")
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-    filename = f"RAZYNC_{company_code}_{(bank or 'BANCO').upper()}_MODELO_DOMINIO.xlsx"
-    return StreamingResponse(
-        io.BytesIO(workbook),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
 
 
 @app.post("/api/v1/modelo-dominio/{company_code}/multi")
@@ -170,7 +212,6 @@ async def modelo_dominio_multi(
         raise HTTPException(status_code=400, detail="banks_json inválido.") from exc
     if not isinstance(banks, list) or len(banks) != len(files):
         raise HTTPException(status_code=400, detail="Envie um banco para cada arquivo.")
-
     groups: dict[str, list[pd.DataFrame]] = {}
     try:
         for bank, upload in zip(banks, files):
@@ -178,19 +219,119 @@ async def modelo_dominio_multi(
             frame = _process_modular(company_code, str(bank), content, upload.filename or "arquivo")
             groups.setdefault(str(bank), []).append(frame)
         sheets = {
-            _sheet_name(bank): pd.concat(frames, ignore_index=True)
-            .sort_values("DATA", kind="stable")
-            .reset_index(drop=True)
+            _sheet_name(bank): pd.concat(frames, ignore_index=True).sort_values("DATA", kind="stable").reset_index(drop=True)
             for bank, frames in groups.items()
         }
-        workbook = gerar_modelo_abas(sheets)
-    except NotImplementedError as exc:
-        raise HTTPException(status_code=501, detail=str(exc)) from exc
+        return _download(gerar_modelo_abas(sheets), f"RAZYNC_{company_code}_MODELO_DOMINIO.xlsx")
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    return StreamingResponse(
-        io.BytesIO(workbook),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="RAZYNC_{company_code}_MODELO_DOMINIO.xlsx"'},
-    )
+
+@app.post("/api/v1/workflow/{company_code}")
+async def advanced_workflow(
+    company_code: int,
+    roles_json: str = Form(...),
+    options_json: str = Form("{}"),
+    files: list[UploadFile] = File(...),
+):
+    try:
+        role_names = json.loads(roles_json)
+        options = json.loads(options_json or "{}")
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail="Configuração do fluxo inválida.") from exc
+    if not isinstance(role_names, list) or len(role_names) != len(files):
+        raise HTTPException(status_code=400, detail="Cada arquivo precisa ter uma função/role.")
+    roles: dict[str, list[tuple[str, bytes]]] = {}
+    for role, upload in zip(role_names, files):
+        roles.setdefault(str(role), []).append((upload.filename or "arquivo", await upload.read()))
+    try:
+        workbook, filename = workflow_modelo(company_code, roles, options if isinstance(options, dict) else {})
+        return _download(workbook, filename)
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/api/v1/base-inteligente/{company_code}/status")
+def intelligent_base_status(company_code: int):
+    return {"company": company_code, **base_status(company_code)}
+
+
+@app.post("/api/v1/base-inteligente/{company_code}/aprender")
+async def intelligent_base_learn(company_code: int, files: list[UploadFile] = File(...)):
+    total = 0
+    errors = []
+    for upload in files:
+        try:
+            total += base_learn(company_code, await upload.read(), upload.filename or "arquivo.xlsx")
+        except Exception as exc:
+            errors.append(f"{upload.filename}: {exc}")
+    if total == 0 and errors:
+        raise HTTPException(status_code=422, detail="; ".join(errors))
+    return {"ok": True, "learned": total, "errors": errors, **base_status(company_code)}
+
+
+@app.post("/api/v1/base-inteligente/{company_code}/classificar")
+async def intelligent_base_classify(company_code: int, file: UploadFile = File(...)):
+    try:
+        workbook, summary = base_classify(company_code, await file.read(), file.filename or "modelo.xlsx")
+        headers = {"X-Razync-Summary": json.dumps(summary, ensure_ascii=False)}
+        response = _download(workbook, f"RAZYNC_{company_code}_CLASSIFICADO.xlsx")
+        response.headers.update(headers)
+        return response
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/v1/conferencia-extrato/{company_code}")
+async def conferencia_extrato(
+    company_code: int,
+    bank: str = Form(...),
+    model_file: UploadFile = File(...),
+    statement_files: list[UploadFile] = File(...),
+):
+    try:
+        modelo = ler_modelo_excel(await model_file.read(), bank)
+        frames = []
+        for upload in statement_files:
+            frames.append(_process_statement(company_code, bank, await upload.read(), upload.filename or "extrato"))
+        extrato = pd.concat(frames, ignore_index=True)
+        resumo, diario, faltando, a_mais = conciliar(modelo, extrato)
+        report = _excel_report({
+            "Resumo": pd.DataFrame([resumo]),
+            "Conferência diária": diario,
+            "Faltando na planilha": faltando,
+            "A mais na planilha": a_mais,
+        })
+        response = _download(report, f"RAZYNC_{company_code}_CONFERENCIA_EXTRATO.xlsx")
+        response.headers["X-Razync-Summary"] = json.dumps(resumo, ensure_ascii=False)
+        return response
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/v1/conferencia-fiscal/{company_code}")
+async def conferencia_fiscal(
+    company_code: int,
+    acumuladores: UploadFile = File(...),
+    razao: UploadFile = File(...),
+    filial: str = Form(""),
+):
+    try:
+        from razync.conferencia_fiscal import processar_conferencia, gerar_relatorio_excel
+        resultado = processar_conferencia(
+            await acumuladores.read(), acumuladores.filename or "acumuladores",
+            await razao.read(), razao.filename or "razao",
+            filial or None,
+        )
+        report = gerar_relatorio_excel(resultado)
+        resumo = resultado.get("resumo", pd.DataFrame())
+        response = _download(report, f"RAZYNC_{company_code}_CONFERENCIA_FISCAL.xlsx")
+        response.headers["X-Razync-Summary"] = json.dumps({
+            "linhas_resumo": int(len(resumo)),
+            "filial_aplicada": resultado.get("filial_aplicada", ""),
+            "periodo_fiscal": str(resultado.get("periodo_fiscal", "")),
+            "periodo_razao": str(resultado.get("periodo_razao", "")),
+        }, ensure_ascii=False)
+        return response
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
