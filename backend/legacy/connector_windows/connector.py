@@ -41,6 +41,9 @@ def _load_config() -> dict:
         try:
             config = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
             if config.get("token") and config.get("pairing_code"):
+                origens = set(config.get("origins", [])) | set(DEFAULT_ORIGINS)
+                config["origins"] = sorted(origens)
+                CONFIG_FILE.write_text(json.dumps(config, indent=2), encoding="utf-8")
                 return config
         except (OSError, ValueError):
             pass
