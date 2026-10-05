@@ -29,6 +29,94 @@ let companyFilter = 'all';
 
 const API = () => String(window.RAZYNC_CONFIG?.apiBase || "").replace(/\/$/, "");
 
+function setProcessStage(stage, title="", text="") {
+  const flow = document.querySelector(".tool-flow");
+  if (flow) {
+    const order = ["upload","processing","review"];
+    const current = order.indexOf(stage);
+    flow.querySelectorAll("[data-step]").forEach(item => {
+      const index = order.indexOf(item.dataset.step);
+      item.classList.toggle("active", index === current);
+      item.classList.toggle("completed", current >= 0 && index < current);
+    });
+  }
+
+  const box = $("#processVisualStatus");
+  if (!box) return;
+  if (!title && !text) {
+    box.hidden = true;
+    box.classList.remove("is-processing","is-success","is-error");
+    return;
+  }
+  box.hidden = false;
+  box.classList.toggle("is-processing", stage === "processing");
+  box.classList.toggle("is-success", stage === "review");
+  box.classList.toggle("is-error", stage === "error");
+  $("#processStatusTitle").textContent = title;
+  $("#processStatusText").textContent = text;
+}
+
+function renderProcessingSkeleton() {
+  const target = $("#workflowPreview");
+  if (!target) return;
+  target.innerHTML = `
+    <div class="processing-preview" aria-hidden="true">
+      <div class="processing-preview-head">
+        <span class="skeleton skeleton-icon"></span>
+        <div><span class="skeleton skeleton-line wide"></span><span class="skeleton skeleton-line short"></span></div>
+      </div>
+      <div class="processing-preview-table">
+        <span class="skeleton skeleton-row"></span>
+        <span class="skeleton skeleton-row"></span>
+        <span class="skeleton skeleton-row"></span>
+        <span class="skeleton skeleton-row"></span>
+      </div>
+    </div>`;
+}
+
+function enhanceFileInput(input) {
+  if (!input || input.dataset.dropEnhanced === "1") return;
+  input.dataset.dropEnhanced = "1";
+
+  const shell = document.createElement("div");
+  shell.className = "file-drop-shell";
+  input.parentNode.insertBefore(shell, input);
+  shell.appendChild(input);
+
+  const hint = document.createElement("span");
+  hint.className = "file-drop-hint";
+  hint.innerHTML = '<i aria-hidden="true"></i><span>Arraste o arquivo aqui ou clique para selecionar</span>';
+  shell.appendChild(hint);
+
+  const activate = event => {
+    event.preventDefault();
+    event.stopPropagation();
+    shell.classList.add("is-dragging");
+  };
+  const deactivate = event => {
+    event.preventDefault();
+    event.stopPropagation();
+    shell.classList.remove("is-dragging");
+  };
+
+  ["dragenter","dragover"].forEach(name => shell.addEventListener(name, activate));
+  ["dragleave","drop"].forEach(name => shell.addEventListener(name, deactivate));
+  shell.addEventListener("drop", event => {
+    const dropped = [...(event.dataTransfer?.files || [])];
+    if (!dropped.length) return;
+    const transfer = new DataTransfer();
+    const limit = input.multiple ? dropped.length : Math.min(1, dropped.length);
+    dropped.slice(0, limit).forEach(file => transfer.items.add(file));
+    input.files = transfer.files;
+    input.dispatchEvent(new Event("change", {bubbles:true}));
+  });
+}
+
+function enhanceFileInputs(root=document) {
+  root.querySelectorAll('input[type="file"]').forEach(enhanceFileInput);
+}
+
+
 function unlockProtectedInput(input) {
   if (!input) return;
   const unlock = () => input.removeAttribute("readonly");
@@ -250,6 +338,8 @@ function openCompany(company) {
 
   if (available) {
     renderWorkflow(company);
+    enhanceFileInputs(panel);
+    setProcessStage("upload");
     activateTool(company.capabilities?.status === "fiscal_only" ? "fiscal" : "organizar");
     refreshBaseStats();
   }
@@ -345,20 +435,24 @@ form.addEventListener("submit", async (event) => {
       files.forEach(file => data.append("files", file));
     }
 
-    processMessage.textContent = "Processando…";
+    processMessage.textContent = "";
     processButton.disabled = true;
     processButton.classList.add("is-loading");
+    setProcessStage("processing", "Processando arquivos", "O Razync está lendo, organizando e montando os lançamentos.");
+    renderProcessingSkeleton();
     const response = await fetch(endpoint, { method: "POST", body: data });
     if (!response.ok) throw new Error(await responseError(response));
     if (event.submitter?.dataset.output === "preview") {
       if(selected?.codigo!==companyCode)return;
       showWorkflowPreview(await response.json());
-      processMessage.textContent = "Pré-visualização concluída. Confira os lançamentos antes de baixar.";
+      processMessage.textContent = "";
+      setProcessStage("review", "Prévia concluída", "Confira os lançamentos e os totais antes de baixar.");
       return;
     }
     if (event.submitter?.dataset.output === "reports") {
       await downloadBlob(response, `RAZYNC_${companyCode}_RELATORIOS.zip`);
-      processMessage.textContent = "Relatórios gerados com sucesso.";
+      processMessage.textContent = "";
+      setProcessStage("review", "Relatórios gerados", "Os arquivos foram preparados e baixados com sucesso.");
       return;
     }
     const workbook = await response.blob();
@@ -374,10 +468,13 @@ form.addEventListener("submit", async (event) => {
     const disposition = response.headers.get("content-disposition");
     download.addEventListener("click", () => downloadBlob(new Response(workbook, {headers:disposition ? {"Content-Disposition":disposition} : {}}), `RAZYNC_${companyCode}_MODELO_DOMINIO.xlsx`));
     download.className = "preview-download";
-    $("#workflowPreview").append(download);
-    processMessage.textContent = "Prévia pronta. Confira os lançamentos na tabela antes de baixar o Modelo Domínio.";
+    ($("#workflowPreview .preview-primary-actions") || $("#workflowPreview")).append(download);
+    processMessage.textContent = "";
+    setProcessStage("review", "Modelo pronto para conferência", "Revise a prévia e baixe o Modelo Domínio quando estiver tudo certo.");
   } catch (error) {
+    $("#workflowPreview").replaceChildren();
     processMessage.textContent = error.message;
+    setProcessStage("error", "Não foi possível processar", error.message);
   } finally {
     processButton.disabled = false;
     processButton.classList.remove("is-loading");
@@ -520,6 +617,7 @@ async function checkApi() {
 
 loadCompanies();
 checkApi();
+enhanceFileInputs(document);
 
 
 function showGlobalView(name) {
@@ -556,11 +654,13 @@ function updateFileSelection(input) {
     ? [...input.files].map(file => file.name).join("\n")
     : "";
 
-  let selection = input.nextElementSibling;
-  if (!selection?.classList.contains("file-selection")) {
+  const shell = input.closest(".file-drop-shell");
+  let selection = shell?.querySelector(":scope > .file-selection");
+  if (!selection) {
     selection = document.createElement("div");
     selection.className = "file-selection";
-    input.insertAdjacentElement("afterend", selection);
+    if (shell) shell.appendChild(selection);
+    else input.insertAdjacentElement("afterend", selection);
   }
   selection.replaceChildren();
 
@@ -590,6 +690,12 @@ function updateFileSelection(input) {
     more.className = "file-selection-more";
     more.textContent = `+${input.files.length - 4} arquivo(s)`;
     selection.appendChild(more);
+  }
+
+  if (input.closest("#processForm")) {
+    setProcessStage("upload", "Arquivos prontos", input.files.length === 1
+      ? "1 arquivo selecionado para processamento."
+      : `${input.files.length} arquivos selecionados para processamento.`);
   }
 }
 
