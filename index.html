@@ -13,53 +13,75 @@
     <header class="topbar">
       <a class="brand" href="./" aria-label="Razync">
         <span class="brand-mark">R</span>
-        <span>
-          <strong>Razync</strong>
-          <small>Automação contábil</small>
-        </span>
+        <span><strong>Razync</strong><small>Automação contábil</small></span>
       </a>
-      <span class="status-pill">Razync Web · Migração</span>
+      <div class="header-status">
+        <span id="apiStatus" class="status-pill">Backend verificando…</span>
+      </div>
     </header>
 
     <main>
       <section class="hero">
-        <div class="eyebrow">NOVA ARQUITETURA</div>
-        <h1>O mesmo motor do Razync, com uma interface web mais rápida.</h1>
-        <p>
-          Esta é a nova base do sistema. As ferramentas serão migradas e validadas
-          uma por uma antes de substituir a versão atual em Streamlit.
-        </p>
+        <div class="eyebrow">RAZYNC WEB</div>
+        <h1>Ferramentas contábeis em um único ambiente.</h1>
+        <p>Pesquise a empresa e acesse as ferramentas bancárias, bases e conferências. A migração mantém o Razync original preservado como referência.</p>
       </section>
 
-      <section class="workspace" aria-label="Área principal">
+      <section class="workspace">
         <div class="search-card">
-          <label for="companySearch">Empresas</label>
+          <label for="companySearch">Pesquisar empresa</label>
           <div class="search-wrap">
             <span aria-hidden="true">⌕</span>
-            <input id="companySearch" type="search" placeholder="Pesquisar por código ou nome" autocomplete="off">
+            <input id="companySearch" type="search" placeholder="Código ou nome da empresa" autocomplete="off">
           </div>
-          <p class="helper">O catálogo e as ferramentas serão conectados ao backend nas próximas etapas.</p>
+          <div class="search-meta">
+            <span id="companyCount">Carregando empresas…</span>
+            <span>Resultados instantâneos</span>
+          </div>
         </div>
 
-        <div class="grid" id="companyGrid">
-          <article class="company-card">
-            <div>
-              <span class="company-code">Estrutura inicial</span>
-              <h2>Frontend pronto para GitHub Pages</h2>
-              <p>A versão atual do Razync continua preservada enquanto a migração acontece.</p>
-            </div>
-            <span class="arrow">→</span>
-          </article>
+        <div class="grid" id="companyGrid" aria-live="polite"></div>
+      </section>
+
+      <section id="companyPanel" class="company-panel" hidden>
+        <button id="backButton" class="back-button" type="button">← Voltar às empresas</button>
+        <div class="panel-head">
+          <div>
+            <span id="panelCode" class="company-code"></span>
+            <h2 id="panelName"></h2>
+            <p id="panelRegime"></p>
+          </div>
+          <span id="panelStatus" class="status-pill"></span>
+        </div>
+
+        <div class="tool-card">
+          <div>
+            <span class="company-code">MODELO DOMÍNIO</span>
+            <h3>Organizar extrato bancário</h3>
+            <p id="toolDescription">Selecione o banco e envie os arquivos da empresa.</p>
+          </div>
+
+          <form id="processForm">
+            <label for="bankSelect">Banco</label>
+            <select id="bankSelect"></select>
+
+            <label for="fileInput">Arquivos</label>
+            <input id="fileInput" type="file" multiple accept=".pdf,.xls,.xlsx,.csv,.ofx">
+
+            <button id="processButton" type="submit">Gerar Modelo Domínio</button>
+            <p id="processMessage" class="helper"></p>
+          </form>
         </div>
       </section>
     </main>
 
     <footer>
       <span>Razync Web</span>
-      <span>Ambiente separado da versão Streamlit</span>
+      <span>GitHub Pages + API Python</span>
     </footer>
   </div>
 
+  <script src="./assets/js/config.js"></script>
   <script src="./assets/js/app.js"></script>
 </body>
 </html>
