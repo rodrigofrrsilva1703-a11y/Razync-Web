@@ -15,36 +15,117 @@
         <span class="brand-mark">R</span>
         <span><strong>Razync</strong><small>Automação contábil</small></span>
       </a>
-      <div class="header-status">
-        <span id="apiStatus" class="status-pill">Backend verificando…</span>
-      </div>
+      <span id="apiStatus" class="status-pill">Backend verificando…</span>
     </header>
 
+    <nav class="main-nav" aria-label="Navegação principal">
+      <button class="main-nav-btn active" data-view="companies">Empresas</button>
+      <button class="main-nav-btn" data-view="converter">Conversor de Extratos</button>
+      <button class="main-nav-btn" data-view="ledger">Conciliação com Razão</button>
+      <button class="main-nav-btn" data-view="tasks">Central de Tarefas</button>
+    </nav>
+
     <main>
-      <section class="hero">
-        <div class="eyebrow">RAZYNC WEB</div>
-        <h1>Ferramentas contábeis em um único ambiente.</h1>
-        <p>Pesquise a empresa, organize os arquivos, classifique, confira o extrato e faça a conferência fiscal sem sair da área da empresa.</p>
+      <section id="companiesView" class="global-view active">
+        <section class="hero">
+          <div class="eyebrow">RAZYNC WEB</div>
+          <h1>Ferramentas contábeis em um único ambiente.</h1>
+          <p>Pesquise a empresa, organize arquivos, classifique, confira extratos e faça conferências fiscais.</p>
+        </section>
+        <section class="workspace">
+          <div class="search-card">
+            <label for="companySearch">Pesquisar empresa</label>
+            <div class="search-wrap">
+              <span aria-hidden="true">⌕</span>
+              <input id="companySearch" type="search" placeholder="Código ou nome da empresa" autocomplete="off">
+            </div>
+            <div class="search-meta">
+              <span id="companyCount">Carregando empresas…</span>
+              <span>Resultados instantâneos</span>
+            </div>
+          </div>
+          <div class="grid" id="companyGrid" aria-live="polite"></div>
+        </section>
       </section>
 
-      <section class="workspace">
-        <div class="search-card">
-          <label for="companySearch">Pesquisar empresa</label>
-          <div class="search-wrap">
-            <span aria-hidden="true">⌕</span>
-            <input id="companySearch" type="search" placeholder="Código ou nome da empresa" autocomplete="off">
-          </div>
-          <div class="search-meta">
-            <span id="companyCount">Carregando empresas…</span>
-            <span>Resultados instantâneos</span>
-          </div>
+      <section id="converterView" class="global-view">
+        <div class="page-head">
+          <span class="company-code">CONVERSÃO BANCÁRIA</span>
+          <h1>Conversor de Extratos</h1>
+          <p>Envie PDFs, OFX, CSV ou Excel. O Razync identifica o banco, remove saldos e gera um Modelo Domínio consolidado.</p>
         </div>
-        <div class="grid" id="companyGrid" aria-live="polite"></div>
+        <div class="tool-card single-card">
+          <div>
+            <h3>Extratos bancários</h3>
+            <p>Você pode enviar vários arquivos de uma vez.</p>
+          </div>
+          <form id="converterForm">
+            <label for="converterFiles">Arquivos</label>
+            <input id="converterFiles" type="file" multiple accept=".pdf,.ofx,.csv,.xls,.xlsx">
+            <button type="submit">Converter para Modelo Domínio</button>
+            <p id="converterMessage" class="helper"></p>
+          </form>
+        </div>
+      </section>
+
+      <section id="ledgerView" class="global-view">
+        <div class="page-head">
+          <span class="company-code">CONFERÊNCIA CONTÁBIL</span>
+          <h1>Conciliação com Razão</h1>
+          <p>Compare o movimento bancário com o Razão da Domínio e identifique diferenças por dia.</p>
+        </div>
+        <div class="tool-card single-card">
+          <div>
+            <h3>Extrato × Razão</h3>
+            <p>Entradas do banco são comparadas aos créditos do Razão; saídas, aos débitos.</p>
+          </div>
+          <form id="ledgerForm">
+            <label for="ledgerStatement">Extrato bancário</label>
+            <input id="ledgerStatement" type="file" accept=".pdf,.ofx,.csv,.xls,.xlsx">
+            <label for="ledgerFile">Razão da Domínio</label>
+            <input id="ledgerFile" type="file" accept=".csv,.xls,.xlsx">
+            <button type="submit">Conciliar</button>
+            <p id="ledgerMessage" class="helper"></p>
+          </form>
+        </div>
+      </section>
+
+      <section id="tasksView" class="global-view">
+        <div class="page-head">
+          <span class="company-code">CENTRAL OPERACIONAL</span>
+          <h1>Tarefas e Prazos</h1>
+          <p>Controle os vencimentos automáticos por regime e suas tarefas manuais.</p>
+        </div>
+        <div id="taskMetrics" class="task-metrics"></div>
+        <div class="task-layout">
+          <section class="task-panel">
+            <div class="section-row">
+              <h3>Empresas</h3>
+              <span id="taskCompetencia" class="mini-status"></span>
+            </div>
+            <div id="companyTasks" class="task-list"></div>
+          </section>
+          <section class="task-panel">
+            <h3>Nova tarefa</h3>
+            <form id="manualTaskForm">
+              <label>Título</label><input id="taskTitle" type="text" required>
+              <label>Empresa (opcional)</label><select id="taskCompany"></select>
+              <label>Categoria</label><input id="taskCategory" type="text" value="Geral">
+              <label>Prioridade</label>
+              <select id="taskPriority"><option>Normal</option><option>Urgente</option><option>Alta</option><option>Baixa</option></select>
+              <label>Prazo</label><input id="taskDue" type="date">
+              <label>Descrição</label><textarea id="taskDescription" rows="3"></textarea>
+              <button type="submit">Criar tarefa</button>
+              <p id="taskMessage" class="helper"></p>
+            </form>
+            <h3 class="task-subtitle">Tarefas manuais</h3>
+            <div id="manualTasks" class="task-list"></div>
+          </section>
+        </div>
       </section>
 
       <section id="companyPanel" class="company-panel" hidden>
         <button id="backButton" class="back-button" type="button">← Voltar às empresas</button>
-
         <div class="panel-head">
           <div>
             <span id="panelCode" class="company-code"></span>
@@ -58,7 +139,7 @@
           <button type="button" class="tool-tab active" data-tool="organizar">Organizar arquivos</button>
           <button type="button" class="tool-tab" data-tool="base">Base Inteligente</button>
           <button type="button" class="tool-tab" data-tool="extrato">Conferência com Extrato</button>
-          <button type="button" class="tool-tab" data-tool="fiscal">Conferência Fiscal</button>
+          <button type="button" class="tool-tab" data-tool="fiscal">Fiscal e Impostos</button>
         </nav>
 
         <div id="toolUnavailable" class="empty-state" hidden>
@@ -91,7 +172,7 @@
             <div>
               <span class="company-code">BASE INTELIGENTE</span>
               <h3>Aprender e classificar</h3>
-              <p>Importe modelos já revisados para aprender padrões exclusivos desta empresa. Depois aplique esses padrões em um Modelo Domínio.</p>
+              <p>Importe modelos revisados e aplique padrões seguros por empresa, banco e histórico.</p>
               <div id="baseStats" class="mini-metrics"></div>
             </div>
             <div class="stack-forms">
@@ -115,8 +196,8 @@
           <div class="tool-card">
             <div>
               <span class="company-code">CONFERÊNCIA</span>
-              <h3>Modelo Domínio × Extrato bancário</h3>
-              <p>O pareamento é individual por data e valor, inclusive quando existem movimentos repetidos.</p>
+              <h3>Modelo Domínio × Extrato</h3>
+              <p>O pareamento é individual por data e valor, inclusive para lançamentos repetidos.</p>
             </div>
             <form id="reconcileForm">
               <label for="reconcileBank">Banco</label>
@@ -132,22 +213,54 @@
         </section>
 
         <section class="tool-pane" data-pane="fiscal">
-          <div class="tool-card">
-            <div>
-              <span class="company-code">FISCAL × CONTÁBIL</span>
-              <h3>Conferência Fiscal</h3>
-              <p>Compare Acumuladores e Razão e baixe um relatório auditável com resumo, alertas e lançamentos.</p>
+          <div class="fiscal-grid">
+            <div class="tool-card vertical-card">
+              <div>
+                <span class="company-code">FISCAL × CONTÁBIL</span>
+                <h3>Acumuladores × Razão</h3>
+                <p>Compare os acumuladores fiscais com as contas do Razão.</p>
+              </div>
+              <form id="fiscalForm">
+                <label for="acumuladoresFile">Acumuladores</label>
+                <input id="acumuladoresFile" type="file" accept=".xls,.xlsx,.csv">
+                <label for="razaoFile">Razão</label>
+                <input id="razaoFile" type="file" accept=".xls,.xlsx,.csv">
+                <label for="filialInput">Filial (opcional)</label>
+                <input id="filialInput" type="text" placeholder="Ex.: 242">
+                <button type="submit">Gerar Conferência Fiscal</button>
+                <p id="fiscalMessage" class="helper"></p>
+              </form>
             </div>
-            <form id="fiscalForm">
-              <label for="acumuladoresFile">Acumuladores</label>
-              <input id="acumuladoresFile" type="file" accept=".xls,.xlsx,.csv">
-              <label for="razaoFile">Razão</label>
-              <input id="razaoFile" type="file" accept=".xls,.xlsx,.csv">
-              <label for="filialInput">Filial (opcional)</label>
-              <input id="filialInput" type="text" placeholder="Ex.: 242">
-              <button type="submit">Gerar Conferência Fiscal</button>
-              <p id="fiscalMessage" class="helper"></p>
-            </form>
+
+            <div class="tool-card vertical-card">
+              <div>
+                <span class="company-code">IMPOSTOS × DCTFWEB</span>
+                <h3>Balancete × Receita</h3>
+                <p>Use o Conector Windows para consultar a DCTFWeb com o certificado local ou envie um relatório já baixado.</p>
+              </div>
+              <form id="taxForm">
+                <label for="taxBalance">Balancete</label>
+                <input id="taxBalance" type="file" accept=".pdf,.xls,.xlsx,.csv">
+                <label for="taxRevenue">Relatório Receita/DCTFWeb (opcional se usar conector)</label>
+                <input id="taxRevenue" type="file" accept=".pdf,.xls,.xlsx,.csv">
+                <label for="taxCompetence">Competência</label>
+                <input id="taxCompetence" type="month">
+                <button type="submit">Conferir impostos</button>
+                <p id="taxMessage" class="helper"></p>
+              </form>
+              <div class="connector-box">
+                <div class="section-row"><strong>Conector Windows</strong><span id="connectorStatus" class="mini-status">Não verificado</span></div>
+                <label for="pairingCode">Código de pareamento</label>
+                <div class="inline-fields">
+                  <input id="pairingCode" type="text" inputmode="numeric" maxlength="6" placeholder="000000">
+                  <button id="pairConnector" type="button">Parear</button>
+                </div>
+                <label for="certificateSelect">Certificado do escritório</label>
+                <select id="certificateSelect"></select>
+                <button id="openDctf" type="button">Abrir DCTFWeb para esta empresa</button>
+                <button id="fetchDctf" type="button" class="secondary-action">Buscar relatório baixado e conferir</button>
+              </div>
+            </div>
           </div>
         </section>
       </section>
@@ -155,7 +268,7 @@
 
     <footer>
       <span>Razync Web</span>
-      <span>GitHub Pages + Railway</span>
+      <span>GitHub Pages + Railway + Conector Windows</span>
     </footer>
   </div>
 
