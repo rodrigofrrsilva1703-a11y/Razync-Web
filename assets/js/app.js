@@ -229,8 +229,16 @@ function fillBankSelect(select, banks) {
 }
 
 function activateTool(name) {
-  $$(".tool-tab").forEach(btn => btn.classList.toggle("active", btn.dataset.tool === name));
-  $$(".tool-pane").forEach(pane => pane.classList.toggle("active", pane.dataset.pane === name));
+  $(".tool-tab").forEach(btn => {
+    const active = btn.dataset.tool === name;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", String(active));
+  });
+  $(".tool-pane").forEach(pane => {
+    const active = pane.dataset.pane === name;
+    pane.classList.toggle("active", active);
+    pane.hidden = !active;
+  });
 }
 
 $$(".tool-tab").forEach(btn => btn.addEventListener("click", () => activateTool(btn.dataset.tool)));
