@@ -830,7 +830,7 @@
 }
 
 
-/* === Valores grandes: não cortar números em cards e métricas === */
+/* === Valores grandes: cabem sem quebrar o layout dos cards === */
 .preview-summary-item,
 .preview-metric,
 #companyPanel .tool-result-metrics > span,
@@ -841,6 +841,8 @@
   min-width:0;
 }
 
+/* Não usar size containment em conteúdo textual: ele zera a largura intrínseca
+   de flex-items e fazia os números/legendas se amontoarem. */
 .preview-summary-item > div,
 .preview-metric,
 #companyPanel .tool-result-metrics > span,
@@ -848,7 +850,8 @@
 .daily-summary > div,
 .overview-card > div,
 .task-metric {
-  container-type:inline-size;
+  container-type:normal !important;
+  min-width:0;
 }
 
 .preview-summary-item strong,
@@ -861,52 +864,93 @@
   max-width:100%;
   overflow:visible !important;
   text-overflow:clip !important;
-  white-space:normal !important;
-  overflow-wrap:anywhere;
-  word-break:normal;
   font-variant-numeric:tabular-nums;
   line-height:1.15;
 }
 
+/* Valores monetários podem reduzir e quebrar em último caso, mas nunca somem. */
 .preview-summary-item strong {
-  font-size:clamp(13px,7cqw,22px) !important;
+  font-size:clamp(13px,1.45vw,22px) !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere;
 }
 .preview-summary-item strong.value-compact {
-  font-size:clamp(12px,6cqw,18px) !important;
+  font-size:clamp(12px,1.2vw,18px) !important;
 }
 .preview-summary-item strong.value-xcompact {
-  font-size:clamp(11px,5.2cqw,15px) !important;
+  font-size:clamp(11px,1vw,15px) !important;
 }
 
 .preview-metric strong {
-  font-size:clamp(11px,8cqw,15px) !important;
+  font-size:clamp(11px,1vw,15px) !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere;
 }
 .preview-metric strong.value-compact {
-  font-size:clamp(10px,6.8cqw,13px) !important;
+  font-size:clamp(10px,.9vw,13px) !important;
 }
 .preview-metric strong.value-xcompact {
-  font-size:clamp(9px,5.8cqw,11px) !important;
+  font-size:clamp(9px,.8vw,11px) !important;
 }
 
 #companyPanel .tool-result-metrics strong,
 #companyPanel #baseStats > span strong,
 .daily-summary strong {
-  font-size:clamp(12px,8cqw,19px) !important;
+  font-size:clamp(12px,1.25vw,19px) !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere;
 }
 
-.overview-card strong,
+/* O resumo da página de Empresas usa conteúdo curto. Mantém tudo em linha
+   e impede que um item invada o seguinte. */
+.overview {
+  flex-wrap:wrap;
+  row-gap:10px;
+}
+.overview-card {
+  flex:0 0 auto;
+  width:auto;
+  max-width:100%;
+}
+.overview-card > div {
+  width:auto;
+  display:flex;
+  align-items:baseline;
+  gap:7px;
+}
+.overview-card strong {
+  flex:none;
+  font-size:17px !important;
+  white-space:nowrap !important;
+  overflow-wrap:normal !important;
+}
+.overview-card div > span {
+  min-width:0;
+  white-space:nowrap;
+}
+
 .task-metric strong {
-  font-size:clamp(14px,8cqw,26px) !important;
+  font-size:clamp(14px,1.55vw,26px) !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere;
+}
+
+@media(max-width:760px) {
+  .overview {
+    flex-wrap:nowrap;
+  }
+  .overview-card strong {
+    font-size:15px !important;
+  }
 }
 
 @media(max-width:560px) {
   .preview-summary-item strong,
   .preview-summary-item strong.value-compact,
   .preview-summary-item strong.value-xcompact {
-    font-size:clamp(12px,7cqw,18px) !important;
+    font-size:clamp(12px,3.4vw,18px) !important;
   }
 }
-
 
 /* === Conferência com Extrato multi-banco === */
 #companyPanel .reconcile-bank-files {
