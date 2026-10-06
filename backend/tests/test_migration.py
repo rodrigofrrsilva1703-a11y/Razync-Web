@@ -109,6 +109,28 @@ def test_accede_detailed_groups_match_original(code):
     actual,_ = workflow(code, {'itau':[('SIG.xlsx',data)]},{})
     assert workbook_signature(actual) == workbook_signature(expected)
 
+
+def test_tech_control_1064_sig_sicredi_matches_original():
+    data = xlsx([
+        ['Data','D/C','Complemento','Conf','Entrada','Saida'],
+        ['03/07/2026','PAGTO TITULO','PAGAMENTO CONTAS DIV.','X',None,300],
+        [None,'DOC1',100,'FORNECEDOR A',None,None],
+        [None,'DOC2',200,'FORNECEDOR B',None,None],
+        ['03/07/2026','(S) TRANSFERENCIA','EMPRESTIMO','',500,None],
+    ])
+    reference = reference_engine()
+    expected_frame = reference.processar_planilha_accede_sig(data,'sicredi',slug(1064))
+    assert len(expected_frame) == 3
+    assert expected_frame['VALOR'].tolist() == [-100.0, -200.0, 500.0]
+    assert expected_frame['DESCRIÇÃO'].eq('SICREDI').all()
+    expected = reference.gerar_excel_nova_geracao(
+        {'Sicredi':{'principal':expected_frame,'retirados':pd.DataFrame()}},
+        engine.TEMPLATE.read_bytes()
+    )
+    actual, filename = workflow(1064, {'sicredi':[('SIG_SICREDI.xlsx',data)]},{})
+    assert filename == 'TECH_CONTROL_1064_SICREDI_505_MODELO_DOMINIO.xlsx'
+    assert workbook_signature(actual) == workbook_signature(expected)
+
 def test_classification_preserves_full_original_rules_and_backup():
     history = 'Pago: Empresa: ACME INDUSTRIAL'
     for month in (7,8,9):
