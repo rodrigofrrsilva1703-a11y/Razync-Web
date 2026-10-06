@@ -163,7 +163,12 @@ function normalize(value) {
   return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
+function hasCompanyTools(company) {
+  return Array.isArray(company?.capabilities?.tools) && company.capabilities.tools.length > 0;
+}
+
 function statusFor(company) {
+  if (!hasCompanyTools(company)) return "";
   const status = company?.capabilities?.status;
   if (status === "api_ready") return "Disponível · em validação";
   if (status === "catalog_only") return "";
@@ -185,7 +190,7 @@ function render(items) {
   grid.innerHTML = "";
   count.textContent = `${items.length} empresa(s)`;
   $('#totalCompanies').textContent = companies.length || '—';
-  $('#organizerCompanies').textContent = companies.filter(c=>c.capabilities?.status==='api_ready').length;
+  $('#organizerCompanies').textContent = companies.filter(hasCompanyTools).length;
   $('#multiBankCompanies').textContent = companies.filter(c=>Object.keys(c.capabilities?.banks || {}).length > 1).length;
   if (!items.length) {
     grid.innerHTML = '<div class="empty-state">Nenhuma empresa encontrada.</div>';
@@ -590,8 +595,9 @@ async function refreshBaseStats() {
 function openCompany(company) {
   cancelReconcilePreview();
   selected = company;
-  const available = company.capabilities?.status === "api_ready";
+  const available = hasCompanyTools(company);
   const defaultTool = "organizar";
+  panel.dataset.hasTools = String(available);
 
   // Mostra a empresa e a ferramenta padrão primeiro. Assim um erro secundário
   // de inicialização nunca deixa todas as ferramentas invisíveis.
@@ -611,6 +617,7 @@ function openCompany(company) {
 
   const quickInfo = $("#panelQuickInfo");
   quickInfo.replaceChildren();
+  quickInfo.hidden = !available;
   Object.entries(company.capabilities?.banks || {}).forEach(([bank, account]) => {
     const badge = document.createElement("span");
     badge.textContent = bankLabel(bank, account);
@@ -1364,7 +1371,7 @@ function filterCompanies() {
   render(companies.filter(company =>
     (!regime || company.regime === regime) &&
     (companyFilter==='all' ||
-      (companyFilter==='organizer' && company.capabilities?.status === 'api_ready') ||
+      (companyFilter==='organizer' && hasCompanyTools(company)) ||
       (companyFilter==='multibank' && Object.keys(company.capabilities?.banks || {}).length > 1)) &&
     (normalize(company.codigo).includes(query) ||
     normalize(company.nome).includes(query) ||
