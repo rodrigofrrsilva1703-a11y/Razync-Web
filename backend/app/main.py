@@ -80,7 +80,7 @@ def companies():
     result = []
     for item in EMPRESAS:
         row = dict(item)
-        cap = dict(CAPABILITIES.get(int(item["codigo"]), {"status": "fiscal_only", "tools": ["conferencia_fiscal", "conferencia_impostos"]}))
+        cap = dict(CAPABILITIES.get(int(item["codigo"]), {"status": "fiscal_only", "tools": ["conferencia_impostos"]}))
         if cap.get("status") == "api_ready":
             cap["tools"] = COMMON_TOOLS
         row["capabilities"] = cap
