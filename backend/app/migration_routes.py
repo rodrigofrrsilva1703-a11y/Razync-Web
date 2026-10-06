@@ -121,12 +121,19 @@ async def report_package(company_code: int, roles_json: str = Form(...), options
         raise HTTPException(422, str(exc)) from exc
 
 @router.post('/francesinhas/{company_code}')
-async def standalone_francesinhas(company_code: int, files: list[UploadFile] = File(...)):
+async def standalone_francesinhas(
+    company_code: int,
+    files: list[UploadFile] = File(...),
+    data_inicial: str = Form(''),
+    data_final: str = Form(''),
+):
     if company_code not in {242, 1408}:
         raise HTTPException(404, 'Francesinhas disponíveis para Eletro Forte 242 e 1408.')
     try:
         uploads = [(u.filename or 'francesinhas.zip', await u.read()) for u in files]
-        book, summary = await run_in_threadpool(services.francesinhas, company_code, uploads)
+        book, summary = await run_in_threadpool(
+            services.francesinhas, company_code, uploads, data_inicial, data_final
+        )
         return download(book, f'ELETRO_FORTE_{company_code}_FRANCESINHAS.xlsx', summary)
     except Exception as exc:
         raise HTTPException(422, str(exc)) from exc
@@ -149,9 +156,14 @@ def clear_base(company_code: int):
     return {'ok': True}
 
 @router.post('/base-inteligente/{company_code}/pendencias')
-async def review_pending(company_code: int, file: UploadFile = File(...)):
+async def review_pending(
+    company_code: int,
+    file: UploadFile = File(...),
+    data_inicial: str = Form(''),
+    data_final: str = Form(''),
+):
     try:
-        return {'pendencias': base.pending(company_code, await file.read())}
+        return {'pendencias': base.pending(company_code, await file.read(), data_inicial, data_final)}
     except Exception as exc:
         raise HTTPException(422, str(exc)) from exc
 
@@ -179,7 +191,11 @@ def download_connector():
     return download(buffer.getvalue(), 'RAZYNC_WEB_CONECTOR_WINDOWS.zip', mime='application/zip')
 
 @router.post('/modelo-dominio-txt')
-async def export_txt(file: UploadFile = File(...)):
+async def export_txt(
+    file: UploadFile = File(...),
+    data_inicial: str = Form(''),
+    data_final: str = Form(''),
+):
     try:
         from app import engine
         import pandas as pd
@@ -198,7 +214,18 @@ async def export_txt(file: UploadFile = File(...)):
                 if all(c in frame for c in services.COLUNAS):
                     frame = frame[services.COLUNAS].dropna(subset=['DATA','VALOR'])
                     frame['DATA'] = frame['DATA'].map(lambda v: pd.to_datetime(v,unit='D',origin='1899-12-30') if isinstance(v,(int,float)) else v)
-                    frame['DATA'] = pd.to_datetime(frame['DATA'],dayfirst=True,errors='coerce').dt.strftime('%d/%m/%Y')
+                    parsed = pd.to_datetime(frame['DATA'],dayfirst=True,errors='coerce')
+                    if bool(data_inicial) != bool(data_final):
+                        raise ValueError('Informe as duas datas do período.')
+                    if data_inicial:
+                        inicio = pd.Timestamp(data_inicial).normalize()
+                        fim = pd.Timestamp(data_final).normalize()
+                        if fim < inicio:
+                            raise ValueError('A Data Final não pode ser anterior à Data Inicial.')
+                        mask = parsed.between(inicio, fim, inclusive='both')
+                        frame = frame.loc[mask].copy()
+                        parsed = parsed.loc[mask]
+                    frame['DATA'] = parsed.dt.strftime('%d/%m/%Y')
                     frames.append(frame)
             if not frames:
                 raise ValueError('Nenhuma aba do Modelo Domínio encontrada.')
