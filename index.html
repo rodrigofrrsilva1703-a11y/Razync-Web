@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="./assets/css/workspace.css?v=12">
   <link rel="stylesheet" href="./assets/css/tools.css?v=22">
   <link rel="stylesheet" href="./assets/css/layout.css?v=2">
+  <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=1">
 </head>
 <body>
   <div class="app-shell">
@@ -53,7 +54,7 @@
             </div>
             <label for="regimeFilter" class="visually-hidden">Filtrar por regime</label><select id="regimeFilter"><option value="">Todos os regimes</option><option>LUCRO REAL</option><option>LUCRO PRESUMIDO</option><option>SIMPLES NACIONAL</option></select>
             </div>
-            <div class="company-filters" role="group" aria-label="Filtrar ferramentas"><button type="button" class="company-filter active" data-filter="all" aria-pressed="true">Todas</button><button type="button" class="company-filter" data-filter="organizer" aria-pressed="false">Com organizador</button><button type="button" class="company-filter" data-filter="multibank" aria-pressed="false">Múltiplos bancos</button></div>
+            <div class="company-filters" role="group" aria-label="Filtrar ferramentas"><button type="button" class="company-filter active" data-filter="all" aria-pressed="true">Todas</button><button type="button" class="company-filter" data-filter="organizer" aria-pressed="false">Com organizador</button><button type="button" class="company-filter" data-filter="favorites" aria-pressed="false">Favoritas</button><button type="button" class="company-filter" data-filter="multibank" aria-pressed="false">Múltiplos bancos</button></div>
             <div class="search-meta">
               <span id="companyCount">Carregando empresas…</span>
               <span>Use código, nome ou regime para filtrar</span>
@@ -325,7 +326,8 @@
 
   <script src="./assets/js/config.js"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
-  <script src="./assets/js/app.js?v=auto-workspace-30"></script>
-  <script src="./assets/js/migration.js?v=auto-workspace-14"></script>
+  <script src="./assets/js/workspace-ui.js?v=1"></script>
+  <script src="./assets/js/app.js?v=auto-workspace-31"></script>
+  <script src="./assets/js/migration.js?v=auto-workspace-15"></script>
 </body>
 </html>

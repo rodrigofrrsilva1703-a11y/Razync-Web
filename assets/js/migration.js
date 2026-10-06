@@ -205,6 +205,20 @@ function showWorkflowPreview(data, target = $("#workflowPreview")) {
   target.appendChild(intro);
 
   const sheetBlocks = [];
+  const pendingCount = sheets.reduce((sum, sheet) => sum + (sheet.rows || []).filter(row => previewRowIssues(sheet.columns || [], row).length).length, 0);
+  if (pendingCount) {
+    const notice = document.createElement("div"); notice.className = "preview-pending-summary";
+    const text = document.createElement("span"); text.textContent = `${pendingCount} linha(s) da prévia precisam de revisão: confira contas e datas.`;
+    const onlyPending = document.createElement("button"); onlyPending.type = "button"; onlyPending.textContent = "Ver apenas pendências";
+    onlyPending.addEventListener("click", () => {
+      target.querySelectorAll(".preview-sheet").forEach(block => block.hidden = false);
+      target.querySelectorAll(".preview-sheet-switcher button").forEach(button => button.classList.toggle("active", button.dataset.sheetIndex === "-1"));
+      target.querySelectorAll(".preview-table-tools input").forEach(input => input.value = "");
+      target.querySelectorAll(".preview-table-tools select").forEach(select => { select.value = "pending"; select.dispatchEvent(new Event("change")); });
+      target.querySelector(".preview-table-tools")?.scrollIntoView({behavior:"smooth", block:"center"});
+    });
+    notice.append(text, onlyPending); target.append(notice);
+  }
 
   if (sheets.length > 1) {
     const switcher = document.createElement("div");
@@ -273,16 +287,20 @@ function showWorkflowPreview(data, target = $("#workflowPreview")) {
       search.placeholder = "Buscar data, histórico ou conta";
       search.setAttribute("aria-label", `Filtrar lançamentos de ${sheet.name}`);
       const kind = document.createElement("select"); kind.setAttribute("aria-label", `Tipo de lançamento de ${sheet.name}`);
-      [["all","Todos"],["in","Entradas"],["out","Saídas"],["pending","Contas a revisar"]].forEach(([value,label])=>{
+      [["all","Todos"],["in","Entradas"],["out","Saídas"],["pending","Pendências: contas e datas"]].forEach(([value,label])=>{
         const option=document.createElement("option");option.value=value;option.textContent=label;kind.append(option);
       });
       const visible = document.createElement("span");
       const columns = (sheet.columns || []).map(previewLabel);
       const amountIndex = columns.indexOf("VALOR");
-      const debitIndex = columns.indexOf("DEBITO"), creditIndex = columns.indexOf("CREDITO");
-      const needsReview = row => [debitIndex,creditIndex].some(index=>index>=0 && (!String(row[index] ?? "").trim() || Number(row[index]) === 0));
+      const issues = rows.map(row => previewRowIssues(sheet.columns || [], row));
+      const needsReview = row => previewRowIssues(sheet.columns || [], row).length > 0;
       [...table.tBodies[0].rows].forEach((row,index)=>{
-        if(needsReview(rows[index])) {row.classList.add("accounts-pending");row.title="Há conta em branco ou zero. Confira antes de importar.";}
+        if (issues[index].length) {
+          row.classList.add("accounts-pending"); row.title = issues[index].join(" · ");
+          const badge = document.createElement("small"); badge.className = "preview-row-warning";
+          badge.textContent = issues[index].join(" · "); row.cells[0]?.append(badge);
+        }
       });
       const applyFilter = () => {
         const query=previewLabel(search.value); let shown=0;
@@ -395,3 +413,5 @@ $("#txtForm").addEventListener("submit",async event=>{
 fetch(`${API()}/api/v1/migration-status`).then(response=>response.ok?response.json():null).then(status=>{
   $("#importOriginalBase").hidden=!status?.original_base_import_configured;
 }).catch(()=>{});
+
+initializeWorkspaceUI();

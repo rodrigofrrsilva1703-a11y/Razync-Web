@@ -207,7 +207,27 @@ function render(items) {
 
     row.append(code, main, action);
     row.addEventListener("click", () => openCompany(company));
-    grid.appendChild(row);
+    const entry = document.createElement("div"); entry.className = "company-entry";
+    const favorite = document.createElement("button"); favorite.type = "button"; favorite.className = "favorite-toggle";
+    const updateFavorite = () => {
+      const saved = isFavoriteCompany(company.codigo);
+      favorite.textContent = saved ? "★" : "☆";
+      favorite.setAttribute("aria-pressed", String(saved));
+      favorite.setAttribute("aria-label", `${saved ? "Remover dos favoritos" : "Favoritar"} empresa ${company.codigo}`);
+      favorite.title = saved ? "Remover dos favoritos" : "Adicionar aos favoritos";
+    };
+    updateFavorite();
+    favorite.addEventListener("click", () => {
+      toggleFavoriteCompany(company.codigo); updateFavorite();
+      if (companyFilter === "favorites") {
+        const next = favoriteCompanies.size ? entry.nextElementSibling || entry.previousElementSibling : null;
+        const nextCode = next?.querySelector(".company-row-code")?.textContent;
+        filterCompanies();
+        const nextEntry = [...grid.querySelectorAll(".company-entry")].find(item => item.querySelector(".company-row-code")?.textContent === nextCode);
+        (nextEntry?.querySelector(".favorite-toggle") || document.querySelector('[data-filter="favorites"]')).focus();
+      }
+    });
+    entry.append(row, favorite); grid.appendChild(entry);
   });
 }
 
@@ -1335,6 +1355,7 @@ function filterCompanies() {
   render(companies.filter(company =>
     (!regime || company.regime === regime) &&
     (companyFilter==='all' ||
+      (companyFilter==='favorites' && isFavoriteCompany(company.codigo)) ||
       (companyFilter==='organizer' && company.capabilities?.status === 'api_ready') ||
       (companyFilter==='multibank' && Object.keys(company.capabilities?.banks || {}).length > 1)) &&
     (normalize(company.codigo).includes(query) ||
@@ -1429,6 +1450,7 @@ function updateFileSelection(input) {
   input.title = files.length ? files.map(file => file.name).join("\n") : "";
 
   const shell = input.closest(".file-drop-shell");
+  shell?.classList.toggle("has-selection", files.length > 0);
   let selection = shell?.querySelector(":scope > .file-selection");
   if (!selection) {
     selection = document.createElement("div");
@@ -1444,6 +1466,10 @@ function updateFileSelection(input) {
   }
 
   selection.hidden = false;
+  const summary = document.createElement("div"); summary.className = "file-selection-summary";
+  const quantity = document.createElement("span"); quantity.textContent = `${files.length} arquivo(s)`;
+  const total = document.createElement("span"); total.textContent = humanFileSize(files.reduce((sum, file) => sum + file.size, 0));
+  summary.append(quantity, total); selection.append(summary);
   files.forEach((file,index) => {
     const item = document.createElement("span");
     item.className = "file-selection-item";
@@ -1457,7 +1483,7 @@ function updateFileSelection(input) {
     name.title = file.name;
 
     const meta = document.createElement("small");
-    meta.textContent = humanFileSize(file.size);
+    meta.textContent = `${humanFileSize(file.size)} · ${selectedFileBankLabel(input)}`;
     text.append(name,meta);
 
     const remove = document.createElement("button");

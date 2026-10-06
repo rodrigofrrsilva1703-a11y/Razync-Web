@@ -34,6 +34,7 @@ jobs:
 
       - name: Validate frontend JavaScript
         run: |
+          node --check assets/js/workspace-ui.js
           node --check assets/js/date-fields.js
           node --check assets/js/app.js
           node --check assets/js/migration.js
