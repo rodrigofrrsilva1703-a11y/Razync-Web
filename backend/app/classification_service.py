@@ -80,7 +80,8 @@ class SourceFile(io.BytesIO):
         self.name = filename
 
 def learn(company, content, filename, data_inicial='', data_final=''):
-    digest = hashlib.sha256(content).hexdigest()
+    digest_source = content + f"|{data_inicial}|{data_final}".encode("utf-8") if (data_inicial or data_final) else content
+    digest = hashlib.sha256(digest_source).hexdigest()
     con = _db()
     try:
         con.execute('BEGIN IMMEDIATE')
