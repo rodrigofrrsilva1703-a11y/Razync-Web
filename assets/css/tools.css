@@ -906,3 +906,72 @@
     font-size:clamp(12px,7cqw,18px) !important;
   }
 }
+
+
+/* === Conferência com Extrato multi-banco === */
+#companyPanel .reconcile-bank-files {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:10px;
+  min-width:0;
+}
+#companyPanel .reconcile-bank-file {
+  display:grid;
+  gap:7px;
+  min-width:0;
+  padding:12px;
+  border:1px solid #e0e7ef;
+  border-radius:11px;
+  background:#fbfcfe;
+}
+#companyPanel .reconcile-bank-file[hidden] {
+  display:none !important;
+}
+#companyPanel .reconcile-bank-file > label {
+  margin:0;
+  color:#3e5672;
+  font-size:11px;
+  font-weight:650;
+}
+#companyPanel .reconcile-bank-file > label .optional {
+  color:#8190a1;
+  font-weight:500;
+}
+#companyPanel .reconcile-bank-file input[type="file"] {
+  width:100%;
+  min-width:0;
+}
+.daily-toolbar-left {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  min-width:0;
+}
+.daily-bank-filter {
+  min-height:36px;
+  padding:7px 30px 7px 10px;
+  border:1px solid #d6e0ea;
+  border-radius:9px;
+  background:#fff;
+  color:#50657e;
+  font-size:11px;
+  font-weight:650;
+}
+.daily-bank-cell {
+  color:#31577f !important;
+  font-weight:700;
+}
+@media(max-width:700px) {
+  #companyPanel .reconcile-bank-files {
+    grid-template-columns:1fr;
+  }
+  .daily-toolbar-left {
+    width:100%;
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .daily-bank-filter {
+    width:100%;
+  }
+}
