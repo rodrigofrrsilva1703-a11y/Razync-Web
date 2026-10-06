@@ -219,6 +219,10 @@ def test_company_catalog_does_not_advertise_fiscal_or_tax_tools():
     assert all('conferencia_fiscal' not in row['capabilities']['tools'] for row in result)
     assert all('conferencia_impostos' not in row['capabilities']['tools'] for row in result)
     assert all(row['capabilities'].get('status') != 'fiscal_only' for row in result)
+    empty_companies = [row for row in result if row['capabilities'].get('status') != 'api_ready']
+    assert empty_companies
+    assert all(row['capabilities']['tools'] == [] for row in empty_companies)
+    assert all(row['capabilities']['banks'] == {} for row in empty_companies)
 
 def test_reconciliation_repeated_movements_and_removed_estornos_match_reference(monkeypatch):
     from openpyxl import Workbook
