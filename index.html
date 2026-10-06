@@ -9,7 +9,7 @@
   <meta name="description" content="Razync — automação contábil">
   <link rel="stylesheet" href="./assets/css/app.css">
   <link rel="stylesheet" href="./assets/css/workspace.css?v=12">
-  <link rel="stylesheet" href="./assets/css/tools.css?v=15">
+  <link rel="stylesheet" href="./assets/css/tools.css?v=16">
   <link rel="stylesheet" href="./assets/css/layout.css?v=2">
 </head>
 <body>
@@ -106,10 +106,11 @@
             <input id="ledgerStatement" type="file" accept=".pdf,.ofx,.csv,.xls,.xlsx">
             <label for="ledgerFile">Razão da Domínio</label>
             <input id="ledgerFile" type="file" accept=".csv,.xls,.xlsx">
-            <button type="submit">Conciliar</button>
+            <button type="submit">Atualizar conferência</button>
             <p id="ledgerMessage" class="helper"></p>
           </form>
         </div>
+        <div id="ledgerResult" class="daily-reconciliation global-daily-result" hidden></div>
       </section>
 
       <section id="companyPanel" class="company-panel" hidden>
@@ -267,7 +268,7 @@
               <label for="statementFiles">Extrato(s)</label>
               <input id="statementFiles" type="file" multiple accept=".pdf,.xls,.xlsx,.csv,.ofx">
               <fieldset class="period-card"><legend>Período da conferência <span>(opcional)</span></legend><div class="period-fields"><div><label for="reconcileStart">De</label><input id="reconcileStart" type="date"></div><div><label for="reconcileEnd">Até</label><input id="reconcileEnd" type="date"></div></div></fieldset>
-              <button type="submit">Conferir com Extrato</button>
+              <button type="submit">Atualizar conferência</button>
               <p id="reconcileMessage" class="helper"></p>
             </form>
           </div>
@@ -324,7 +325,7 @@
   </div>
 
   <script src="./assets/js/config.js"></script>
-  <script src="./assets/js/app.js?v=auto-workspace-19"></script>
+  <script src="./assets/js/app.js?v=auto-workspace-20"></script>
   <script src="./assets/js/migration.js?v=auto-workspace-12"></script>
 </body>
 </html>
