@@ -1,19 +1,3 @@
-const favoriteStorageKey = "razync.favorite-companies";
-let favoriteCompanies = new Set();
-try {
-  const saved = JSON.parse(localStorage.getItem(favoriteStorageKey) || "[]");
-  if (Array.isArray(saved)) favoriteCompanies = new Set(saved.filter(value => /^\d+$/.test(String(value))).map(String));
-} catch (_) { /* Favorites remain usable when browser storage is unavailable. */ }
-
-function isFavoriteCompany(code) { return favoriteCompanies.has(String(code)); }
-function toggleFavoriteCompany(code) {
-  const key = String(code);
-  if (favoriteCompanies.has(key)) favoriteCompanies.delete(key);
-  else favoriteCompanies.add(key);
-  try { localStorage.setItem(favoriteStorageKey, JSON.stringify([...favoriteCompanies])); } catch (_) {}
-  return favoriteCompanies.has(key);
-}
-
 function previewRowIssues(headers, row) {
   const labels = headers.map(value => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase());
   const issues = [];

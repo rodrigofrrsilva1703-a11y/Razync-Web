@@ -1,12 +1,5 @@
 /* Shared controls and preview layout, without changing accounting output. */
-.company-entry { position:relative; min-width:0; }
-.company-entry .company-row { width:100%; padding-right:68px !important; }
-.company-entry .company-row-action { display:none; }
-.company-entry .company-row-action span { display:none; }
-.favorite-toggle { position:absolute; right:12px; top:50%; transform:translateY(-50%); z-index:1; width:44px; height:44px; padding:0; border:1px solid transparent; border-radius:10px; background:transparent; color:#7c8da3; font-size:23px; cursor:pointer; }
-.favorite-toggle[aria-pressed=true] { color:#315fc5; background:#edf3fc; }
-.favorite-toggle:hover { border-color:#cbd8ea; }
-.favorite-toggle:focus-visible, .preview-expand:focus-visible { outline:2px solid #315fc5; outline-offset:3px; }
+.preview-expand:focus-visible { outline:2px solid #315fc5; outline-offset:3px; }
 .file-drop-shell.has-selection, #companyPanel .file-drop-shell.has-selection { padding:10px 12px; }
 .file-drop-shell.has-selection .file-drop-hint { display:none; }
 .file-selection { display:flex; flex-direction:column; gap:6px; max-height:190px; }
@@ -45,6 +38,4 @@ body.preview-modal-open { overflow:hidden; }
  .mobile-preview-actions button:disabled { opacity:.6; cursor:wait; }
  body.has-mobile-preview main { padding-bottom:calc(110px + env(safe-area-inset-bottom)); }
  .file-selection-remove { width:44px !important; height:44px !important; min-width:44px !important; min-height:44px !important; }
- .company-entry .company-row { padding-right:60px !important; }
- .favorite-toggle { right:8px; }
 }

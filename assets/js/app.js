@@ -207,27 +207,7 @@ function render(items) {
 
     row.append(code, main, action);
     row.addEventListener("click", () => openCompany(company));
-    const entry = document.createElement("div"); entry.className = "company-entry";
-    const favorite = document.createElement("button"); favorite.type = "button"; favorite.className = "favorite-toggle";
-    const updateFavorite = () => {
-      const saved = isFavoriteCompany(company.codigo);
-      favorite.textContent = saved ? "★" : "☆";
-      favorite.setAttribute("aria-pressed", String(saved));
-      favorite.setAttribute("aria-label", `${saved ? "Remover dos favoritos" : "Favoritar"} empresa ${company.codigo}`);
-      favorite.title = saved ? "Remover dos favoritos" : "Adicionar aos favoritos";
-    };
-    updateFavorite();
-    favorite.addEventListener("click", () => {
-      toggleFavoriteCompany(company.codigo); updateFavorite();
-      if (companyFilter === "favorites") {
-        const next = favoriteCompanies.size ? entry.nextElementSibling || entry.previousElementSibling : null;
-        const nextCode = next?.querySelector(".company-row-code")?.textContent;
-        filterCompanies();
-        const nextEntry = [...grid.querySelectorAll(".company-entry")].find(item => item.querySelector(".company-row-code")?.textContent === nextCode);
-        (nextEntry?.querySelector(".favorite-toggle") || document.querySelector('[data-filter="favorites"]')).focus();
-      }
-    });
-    entry.append(row, favorite); grid.appendChild(entry);
+    grid.appendChild(row);
   });
 }
 
@@ -1355,7 +1335,6 @@ function filterCompanies() {
   render(companies.filter(company =>
     (!regime || company.regime === regime) &&
     (companyFilter==='all' ||
-      (companyFilter==='favorites' && isFavoriteCompany(company.codigo)) ||
       (companyFilter==='organizer' && company.capabilities?.status === 'api_ready') ||
       (companyFilter==='multibank' && Object.keys(company.capabilities?.banks || {}).length > 1)) &&
     (normalize(company.codigo).includes(query) ||
