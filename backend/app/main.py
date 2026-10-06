@@ -359,7 +359,9 @@ def _reconcile_multi(company_code: int, banks: list[str], model: bytes, files: l
     summaries, rows, sheets, errors = {}, [], {}, []
     for bank in requested:
         statements = grouped.get(bank, [])
-        label = display_names.get(bank, bank)
+        account = str(CAPABILITIES.get(company_code, {}).get("banks", {}).get(bank) or "").strip()
+        base_label = display_names.get(bank, bank)
+        label = f"{base_label} {account}".strip() if account else base_label
         if not statements:
             errors.append({"bank": bank, "label": label, "error": "Nenhum extrato enviado para este banco."})
             continue
