@@ -1,0 +1,61 @@
+/* Shared presentation for the directory, global tools and company workspace. */
+:root { --bg:#f3f6fb; --border:#e0e7f0; --accent:#3769bc; --accent-soft:#edf3fc; --muted:#687b92; --panel-shadow:0 5px 22px #1c304c05; }
+body { background:var(--bg); }
+.topbar { border-bottom-color:#e1e8f1; }
+.hero h1, .panel-head h2, .global-view h2 { letter-spacing:-.035em; }
+.directory-controls, .panel-head, .global-view .tool-card,
+#companyPanel .modern-form, #companyPanel .stack-forms .modern-form,
+#companyPanel .preview-sheet, .preview-sheet, .daily-review {
+ border-radius:20px !important; border-color:var(--border) !important;
+ background:#fff; box-shadow:var(--panel-shadow);
+}
+.directory-controls { padding:24px; }
+.company-card { transition:background 180ms ease,box-shadow 180ms ease,border-color 180ms ease; }
+.company-card:hover { background:#f8faff !important; border-color:#c6d7ed !important; box-shadow:0 5px 18px #294d7a08; }
+.tool-tabs { gap:8px; }
+.tool-tab { border-radius:13px !important; border:1px solid var(--border) !important; background:#ffffffb3 !important; color:#64768d !important; box-shadow:none !important; transition:background 180ms ease,border-color 180ms ease,color 180ms ease; }
+.tool-tab:hover { border-color:#c7d7ed !important; color:#3769bc !important; }
+.tool-tab.active { background:#eaf1fc !important; border-color:#c7d8f1 !important; color:#315eab !important; box-shadow:inset 0 1px 0 #fff !important; }
+#companyPanel .tool-card > div:first-child { border-radius:20px !important; border-color:#e0e8f3 !important; background:linear-gradient(125deg,#edf3fb,#f6f8fc) !important; }
+.form-card-header { border-bottom-color:#edf1f6 !important; padding-bottom:16px; margin-bottom:16px; }
+.form-card-icon, .tool-visual-icon { border-radius:14px !important; box-shadow:0 3px 12px #243c5705 !important; }
+.modern-form label, .directory-controls label { color:#475e78; }
+.modern-form input:not([type=file]):not([type=checkbox]):not([type=radio]),
+.modern-form select, .modern-form textarea,
+.directory-controls input, .directory-controls select {
+ border-radius:11px !important; border-color:#dce5ef !important; background:#fafbfd !important;
+ transition:border-color 180ms ease,box-shadow 180ms ease;
+}
+.modern-form input:focus-visible, .modern-form select:focus-visible, .modern-form textarea:focus-visible,
+.directory-controls input:focus-visible, .directory-controls select:focus-visible {
+ outline:2px solid #3769bc; outline-offset:2px; box-shadow:0 0 0 4px #3769bc0c;
+}
+.file-drop-shell, #companyPanel .file-drop-shell { border-radius:15px !important; border-color:#c9d8e9 !important; background:#f8fafd !important; }
+.file-drop-shell:hover, #companyPanel .file-drop-shell:hover,
+.file-drop-shell:focus-within, #companyPanel .file-drop-shell:focus-within { background:#f0f5fd !important; border-color:#7d9ecf !important; }
+.modern-form button, .secondary-action, .preview-expand, #addCompany, .preview-download, .daily-download { border-radius:11px !important; transition:background 180ms ease,box-shadow 180ms ease; }
+.modern-form button[type=submit]:not(.secondary-action) { background:#3769bc !important; border-color:#3769bc !important; color:#fff !important; box-shadow:0 3px 9px #3769bc14; }
+.modern-form button[type=submit]:not(.secondary-action):hover:not(:disabled) { background:#2d5aa5 !important; box-shadow:0 5px 14px #3769bc20; }
+.modern-form button:disabled { box-shadow:none !important; }
+.secondary-action, .preview-expand { background:#f8fafd !important; border-color:#d9e3ef !important; color:#42648e !important; }
+.period-card, #companyPanel .period-card { border-radius:14px !important; background:#f7f9fd !important; border-color:#e0e8f3 !important; }
+#companyPanel .bank-choice { border-radius:12px; background:#fafbfd; border-color:#dfe7f1; }
+#companyPanel .bank-choice.selected { background:#edf3fc; border-color:#a8c0e3; }
+.mini-metrics > span, .preview-summary-item { border-radius:12px !important; border-color:#e1e8f1 !important; }
+.preview-sheet-head, #companyPanel .preview-sheet-head { background:#f9fbfe; border-bottom:1px solid #e8eef6; }
+.preview-table-scroll th, #companyPanel .preview-table-scroll th, .daily-table-scroll th { background:#edf3fa !important; color:#48617e; }
+.preview-table-scroll tbody tr:hover td, .daily-table-scroll tbody tr:hover td { background:#f4f8fe; }
+.company-dialog { border-radius:20px; }
+@media(max-width:760px) {
+ .directory-controls { padding:18px; }
+ .directory-controls, .panel-head, .global-view .tool-card, #companyPanel .modern-form,
+ #companyPanel .stack-forms .modern-form, #companyPanel .tool-card > div:first-child { border-radius:16px !important; }
+ .tool-tabs { gap:6px; }
+ .tool-tab { min-height:44px; }
+ .modern-form input:not([type=checkbox]):not([type=radio]), .modern-form select { font-size:16px !important; }
+}
+@media(prefers-reduced-motion:reduce) {
+ .company-card, .tool-tab, .modern-form input, .modern-form select, .modern-form textarea,
+ .directory-controls input, .directory-controls select, .modern-form button, .secondary-action,
+ .preview-expand, #addCompany, .preview-download, .daily-download { transition:none; }
+}
