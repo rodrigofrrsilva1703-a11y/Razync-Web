@@ -617,3 +617,13 @@ footer {
 .admin-access {margin: 0 0 18px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px;}
 .admin-access label {display: block; margin: 12px 0 6px;}
 .admin-access input {max-width: 420px; width: 100%;}
+
+/* Empresas sem ferramentas devem abrir sem qualquer área de ferramenta. */
+.company-panel[data-has-tools="false"] .tool-tabs,
+.company-panel[data-has-tools="false"] .admin-access,
+.company-panel[data-has-tools="false"] .tool-pane,
+.company-panel[data-has-tools="false"] #toolUnavailable,
+.company-panel[data-has-tools="false"] .panel-quick-info,
+.company-panel[data-has-tools="false"] .status-pill {
+  display: none !important;
+}
