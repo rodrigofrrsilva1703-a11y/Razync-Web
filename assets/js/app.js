@@ -822,11 +822,11 @@ form.addEventListener("submit", async (event) => {
       }
       if (!roles.length) throw new Error("Envie os arquivos necessários para esta empresa.");
       const options = {};
-      for (const input of $("[data-option]")) options[input.dataset.option] = input.dataset.manualDate ? dateApiValue(input) : input.value;
+      for (const input of $$("[data-option]")) options[input.dataset.option] = input.dataset.manualDate ? dateApiValue(input) : input.value;
       const standardPeriod = readPeriod("#processStart","#processEnd");
       options.data_inicial = standardPeriod.data_inicial;
       options.data_final = standardPeriod.data_final;
-      const bankOptions=$("[data-selected-bank]");
+      const bankOptions=$$("[data-selected-bank]");
       if(bankOptions.length) {
         options.bancos=bankOptions.filter(input=>input.checked).map(input=>input.dataset.selectedBank);
         if(!options.bancos.length)throw new Error("Selecione pelo menos um banco para organizar.");
