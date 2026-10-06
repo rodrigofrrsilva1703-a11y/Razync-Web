@@ -28,6 +28,25 @@ let companyFilter = 'all';
 
 const API = () => String(window.RAZYNC_CONFIG?.apiBase || "").replace(/\/$/, "");
 
+function dateApiValue(input) {
+  return String(input?.value || "").trim();
+}
+
+function readPeriod(startSelector, endSelector) {
+  const start = dateApiValue($(startSelector));
+  const end = dateApiValue($(endSelector));
+  if (Boolean(start) !== Boolean(end)) throw new Error("Informe as duas datas do período.");
+  if (start && end && end < start) throw new Error("A data final não pode ser anterior à data inicial.");
+  return {data_inicial:start, data_final:end};
+}
+
+function appendPeriod(formData, startSelector, endSelector) {
+  const period = readPeriod(startSelector,endSelector);
+  formData.append("data_inicial",period.data_inicial);
+  formData.append("data_final",period.data_final);
+  return period;
+}
+
 function setProcessStage(stage, title="", text="") {
   const flow = document.querySelector(".tool-flow");
   if (flow) {
@@ -804,8 +823,11 @@ form.addEventListener("submit", async (event) => {
       }
       if (!roles.length) throw new Error("Envie os arquivos necessários para esta empresa.");
       const options = {};
-      for (const input of $$("[data-option]")) options[input.dataset.option] = input.dataset.manualDate ? dateApiValue(input) : input.value;
-      const bankOptions=$$("[data-selected-bank]");
+      for (const input of $("[data-option]")) options[input.dataset.option] = input.dataset.manualDate ? dateApiValue(input) : input.value;
+      const standardPeriod = readPeriod("#processStart","#processEnd");
+      options.data_inicial = standardPeriod.data_inicial;
+      options.data_final = standardPeriod.data_final;
+      const bankOptions=$("[data-selected-bank]");
       if(bankOptions.length) {
         options.bancos=bankOptions.filter(input=>input.checked).map(input=>input.dataset.selectedBank);
         if(!options.bancos.length)throw new Error("Selecione pelo menos um banco para organizar.");
@@ -893,6 +915,8 @@ learnForm.addEventListener("submit", async (event) => {
   if (!files.length) return $("#learnMessage").textContent = "Selecione pelo menos um arquivo revisado.";
   const data = new FormData();
   files.forEach(file => data.append("files", file));
+  try { appendPeriod(data,"#baseStart","#baseEnd"); }
+  catch (error) { return $("#learnMessage").textContent = error.message; }
   $("#learnMessage").textContent = "Aprendendo padrões…";
   try {
     const response = await fetch(`${API()}/api/v1/base-inteligente/${selected.codigo}/aprender`, {method:"POST", body:data});
@@ -929,14 +953,18 @@ classifyForm.addEventListener("submit", async (event) => {
   button.disabled = true;
   const data = new FormData();
   data.append("file", file);
+  let classifyOptions;
+  try { classifyOptions = readPeriod("#baseStart","#baseEnd"); }
+  catch (error) { button.disabled = false; return $("#classifyMessage").textContent = error.message; }
   if ([242, 1408].includes(Number(selected.codigo))) {
     const column = $("#classificationColumn").value;
-    data.append("options_json", JSON.stringify({
+    Object.assign(classifyOptions,{
       modo_consolidado: !column && $("#eletroConsolidated").checked,
       coluna_substituir: column,
       valores_substituiveis: $("#classificationValues").value.split(",").map(v => v.trim())
-    }));
+    });
   }
+  data.append("options_json", JSON.stringify(classifyOptions));
   $("#classifyMessage").textContent = "Classificando…";
   try {
     const response = await fetch(`${API()}/api/v1/base-inteligente/${companyCode}/classificar`, {method:"POST", body:data, signal:controller.signal});
@@ -1501,6 +1529,8 @@ $("#converterForm")?.addEventListener("submit", async event => {
   if (!files.length) return msg.textContent = "Selecione pelo menos um extrato.";
   const data = new FormData();
   files.forEach(file => data.append("files", file));
+  try { appendPeriod(data,"#converterStart","#converterEnd"); }
+  catch (error) { return msg.textContent = error.message; }
   msg.textContent = "Convertendo extratos…";
   try {
     const response = await fetch(`${API()}/api/v1/conversor-extratos`, {method:"POST", body:data});
@@ -1519,6 +1549,7 @@ function buildLedgerData() {
   const data = new FormData();
   data.append("extrato", $("#ledgerStatement").files[0]);
   data.append("razao", $("#ledgerFile").files[0]);
+  appendPeriod(data,"#ledgerStart","#ledgerEnd");
   return data;
 }
 
@@ -1537,6 +1568,8 @@ function scheduleLedgerPreview() {
     $("#ledgerMessage").textContent = "";
     return;
   }
+  try { readPeriod("#ledgerStart","#ledgerEnd"); }
+  catch (error) { $("#ledgerMessage").textContent = error.message; return; }
   $("#ledgerMessage").textContent = "Arquivos prontos. Montando conciliação diária…";
   ledgerPreviewTimer = setTimeout(() => $("#ledgerForm").requestSubmit(), 550);
 }
@@ -1719,7 +1752,13 @@ async function runTaxComparison(balance, revenue, msgElement) {
   const data = new FormData();
   data.append("receita", revenue);
   data.append("balancete", balance);
-  data.append("competencia", $("#taxCompetence").value);
+  const period = readPeriod("#taxStart","#taxEnd");
+  if (period.data_inicial && period.data_inicial.slice(0,7) !== period.data_final.slice(0,7)) {
+    throw new Error("Na Conferência de Impostos, as duas datas precisam estar na mesma competência.");
+  }
+  data.append("competencia", period.data_inicial ? period.data_inicial.slice(0,7) : "");
+  data.append("data_inicial", period.data_inicial);
+  data.append("data_final", period.data_final);
   msgElement.textContent = "Conferindo impostos…";
   const response = await fetch(`${API()}/api/v1/conferencia-impostos/${companyCode}`, {method:"POST", body:data});
   if (!response.ok) throw new Error(await responseError(response));
