@@ -41,8 +41,17 @@ renderWorkflow = function(company) {
 };
 
 openCompany = function(company) {
-  // File inputs must not carry documents across company navigation.
+  // File inputs and their visual state must not carry documents across companies.
   document.querySelectorAll("#companyPanel form").forEach(f => f.reset());
+  document.querySelectorAll("#companyPanel .file-selection").forEach(el => el.remove());
+  document.querySelectorAll("#companyPanel input[type='file']").forEach(input => {
+    input.classList.remove("has-files");
+    input.title = "";
+  });
+  document.querySelectorAll("#companyPanel .file-drop-shell").forEach(shell => {
+    shell.classList.remove("is-dragging");
+  });
+  $("#workflowPreview").replaceChildren();
   $("#adminAccess").value = "";
   $("#targetCnpj").value = "";
   $("#baseManagementMessage").textContent = "";
