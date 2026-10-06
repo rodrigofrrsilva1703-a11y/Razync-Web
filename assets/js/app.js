@@ -349,6 +349,9 @@ function openCompany(company) {
   $("#classifyMessage").textContent = "";
   $("#reconcileMessage").textContent = "";
   $("#fiscalMessage").textContent = "";
+  clearToolResult("#reconcileResult");
+  clearToolResult("#fiscalResult");
+  clearToolResult("#taxResult");
   workspace.hidden = true;
   $(".hero").hidden = true;
   panel.hidden = false;
@@ -384,6 +387,61 @@ function downloadBlob(response, fallback) {
 async function responseError(response) {
   const body = await response.json().catch(() => ({}));
   return body.detail || `Erro ${response.status}`;
+}
+
+function renderReportResult(target, {title, text, tone="success", metrics=[], blob=null, filename=""}) {
+  if (!target) return;
+  target.replaceChildren();
+  target.hidden = false;
+  target.className = `tool-result compact-result is-${tone}`;
+
+  const head = document.createElement("div");
+  head.className = "tool-result-head";
+  const icon = document.createElement("span");
+  icon.className = "tool-result-icon";
+  icon.setAttribute("aria-hidden","true");
+  const copy = document.createElement("div");
+  const heading = document.createElement("strong");
+  heading.textContent = title;
+  const paragraph = document.createElement("span");
+  paragraph.textContent = text;
+  copy.append(heading, paragraph);
+  head.append(icon, copy);
+  target.appendChild(head);
+
+  if (metrics.length) {
+    const grid = document.createElement("div");
+    grid.className = "tool-result-metrics";
+    metrics.forEach(([label,value]) => {
+      const item = document.createElement("span");
+      const small = document.createElement("small");
+      small.textContent = label;
+      const strong = document.createElement("strong");
+      strong.textContent = String(value ?? "—");
+      item.append(small,strong);
+      grid.appendChild(item);
+    });
+    target.appendChild(grid);
+  }
+
+  if (blob && filename) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "result-download";
+    button.textContent = "Baixar relatório";
+    button.addEventListener("click", () => downloadBlob(
+      new Response(blob, {headers:{"Content-Disposition":`attachment; filename="${filename}"`}}),
+      filename
+    ));
+    target.appendChild(button);
+  }
+}
+
+function clearToolResult(id) {
+  const target = $(id);
+  if (!target) return;
+  target.hidden = true;
+  target.replaceChildren();
 }
 
 let autoPreviewTimer;
@@ -625,6 +683,7 @@ classifyForm.addEventListener("submit", async (event) => {
 
 reconcileForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  clearToolResult("#reconcileResult");
   const model = $("#modelFile").files[0];
   const statements = [...$("#statementFiles").files];
   if (!model || !statements.length) return $("#reconcileMessage").textContent = "Envie o Modelo Domínio e pelo menos um extrato.";
@@ -633,23 +692,36 @@ reconcileForm.addEventListener("submit", async (event) => {
   data.append("model_file", model);
   data.append("options_json", JSON.stringify({data_inicial: $("#reconcileStart").value, data_final: $("#reconcileEnd").value}));
   statements.forEach(file => data.append("statement_files", file));
-  $("#reconcileMessage").textContent = "Conferindo…";
+  $("#reconcileMessage").textContent = "Conferindo lançamentos…";
   try {
     const response = await fetch(`${API()}/api/v1/conferencia-extrato/${selected.codigo}`, {method:"POST", body:data});
     if (!response.ok) throw new Error(await responseError(response));
     const raw = response.headers.get("x-razync-summary");
     const summary = raw ? JSON.parse(raw) : {};
-    await downloadBlob(response, `RAZYNC_${selected.codigo}_CONFERENCIA_EXTRATO.xlsx`);
-    $("#reconcileMessage").textContent = summary.ok
-      ? "Conferência concluída: planilha e extrato estão batendo."
-      : `Conferência concluída com ${summary.faltando_planilha || 0} faltando e ${summary.a_mais_planilha || 0} a mais.`;
+    const report = await response.blob();
+    const ok = Boolean(summary.ok);
+    renderReportResult($("#reconcileResult"), {
+      title: ok ? "Conferência concluída sem divergências" : "Conferência concluída com diferenças",
+      text: ok ? "Modelo Domínio e extrato estão batendo dentro dos critérios da conferência." : "Revise os lançamentos apontados no relatório antes de finalizar.",
+      tone: ok ? "success" : "warning",
+      metrics: [
+        ["Faltando no Modelo", summary.faltando_planilha || 0],
+        ["A mais no Modelo", summary.a_mais_planilha || 0],
+        ["Extratos enviados", statements.length],
+      ],
+      blob: report,
+      filename: `RAZYNC_${selected.codigo}_CONFERENCIA_EXTRATO.xlsx`
+    });
+    $("#reconcileMessage").textContent = "";
   } catch (error) {
     $("#reconcileMessage").textContent = error.message;
+    renderReportResult($("#reconcileResult"), {title:"Não foi possível concluir", text:error.message, tone:"error"});
   }
 });
 
 fiscalForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  clearToolResult("#fiscalResult");
   const acumuladores = $("#acumuladoresFile").files[0];
   const razao = $("#razaoFile").files[0];
   if (!acumuladores || !razao) return $("#fiscalMessage").textContent = "Envie Acumuladores e Razão.";
@@ -661,10 +733,25 @@ fiscalForm.addEventListener("submit", async (event) => {
   try {
     const response = await fetch(`${API()}/api/v1/conferencia-fiscal/${selected.codigo}`, {method:"POST", body:data});
     if (!response.ok) throw new Error(await responseError(response));
-    await downloadBlob(response, `RAZYNC_${selected.codigo}_CONFERENCIA_FISCAL.xlsx`);
-    $("#fiscalMessage").textContent = "Relatório fiscal gerado com sucesso.";
+    const raw = response.headers.get("x-razync-summary");
+    const summary = raw ? JSON.parse(raw) : {};
+    const report = await response.blob();
+    renderReportResult($("#fiscalResult"), {
+      title:"Conferência fiscal pronta",
+      text:"O relatório foi processado. Confira o resumo e baixe o arquivo detalhado.",
+      metrics:[
+        ["Linhas no resumo", summary.linhas_resumo || 0],
+        ["Filial", summary.filial_aplicada || "Todas"],
+        ["Período fiscal", summary.periodo_fiscal || "—"],
+        ["Período razão", summary.periodo_razao || "—"],
+      ],
+      blob:report,
+      filename:`RAZYNC_${selected.codigo}_CONFERENCIA_FISCAL.xlsx`
+    });
+    $("#fiscalMessage").textContent = "";
   } catch (error) {
     $("#fiscalMessage").textContent = error.message;
+    renderReportResult($("#fiscalResult"), {title:"Falha na conferência fiscal", text:error.message, tone:"error"});
   }
 });
 
@@ -942,14 +1029,29 @@ $("#manualTaskForm")?.addEventListener("submit", async event => {
 
 $("#taxForm")?.addEventListener("submit", async event => {
   event.preventDefault();
+  clearToolResult("#taxResult");
   const balance = $("#taxBalance").files[0];
   const revenue = $("#taxRevenue").files[0];
   const msg = $("#taxMessage");
-  if (!balance || !revenue) return msg.textContent = "Envie o balancete e o relatório da Receita, ou use o Conector Windows.";
+  if (!balance || !revenue) return msg.textContent = "Envie o balancete e o relatório DCTFWeb/Receita.";
   try {
-    await runTaxComparison(balance, revenue, msg);
+    const result = await runTaxComparison(balance, revenue, msg);
+    renderReportResult($("#taxResult"), {
+      title: result.summary.revisar ? "Conferência com pontos para revisar" : "Impostos conferindo",
+      text: result.summary.revisar ? "Existem impostos com diferença. Use o relatório detalhado para revisar os valores." : "Os impostos localizados estão conferindo com o relatório informado.",
+      tone: result.summary.revisar ? "warning" : "success",
+      metrics:[
+        ["Impostos", result.summary.impostos || 0],
+        ["Conferem", result.summary.conferem || 0],
+        ["Revisar", result.summary.revisar || 0],
+      ],
+      blob:result.report,
+      filename:`RAZYNC_${selected.codigo}_CONFERENCIA_IMPOSTOS.xlsx`
+    });
+    msg.textContent = "";
   } catch (error) {
     msg.textContent = error.message;
+    renderReportResult($("#taxResult"), {title:"Falha na conferência de impostos", text:error.message, tone:"error"});
   }
 });
 
@@ -964,118 +1066,9 @@ async function runTaxComparison(balance, revenue, msgElement) {
   if (!response.ok) throw new Error(await responseError(response));
   const raw = response.headers.get("x-razync-summary");
   const summary = raw ? JSON.parse(raw) : {};
-  await downloadBlob(response, `RAZYNC_${companyCode}_CONFERENCIA_IMPOSTOS.xlsx`);
-  msgElement.textContent = summary.revisar
-    ? `Relatório gerado: ${summary.revisar} imposto(s) precisam de revisão.`
-    : "Relatório gerado: impostos conferindo.";
+  const report = await response.blob();
+  return {summary, report};
 }
-
-const CONNECTOR = "http://127.0.0.1:17891";
-const connectorTokenKey = "razync_connector_token_v1";
-
-async function connectorHealth() {
-  try {
-    const r = await fetch(`${CONNECTOR}/v1/health`);
-    if (!r.ok) throw new Error();
-    const data = await r.json();
-    $("#connectorStatus").textContent = `Conectado · v${data.version||""}`;
-    return true;
-  } catch {
-    $("#connectorStatus").textContent = "Conector não encontrado";
-    return false;
-  }
-}
-
-async function connectorRequest(path, options={}) {
-  const token = localStorage.getItem(connectorTokenKey) || "";
-  const headers = {...(options.headers||{})};
-  if (token) headers.Authorization = `Bearer ${token}`;
-  if (options.body && typeof options.body === "string") headers["Content-Type"]="application/json";
-  const r = await fetch(`${CONNECTOR}${path}`, {...options, headers});
-  const body = await r.json().catch(()=>({}));
-  if (!r.ok) throw new Error(body.error || `Erro do conector (${r.status})`);
-  return body;
-}
-
-async function loadCertificates() {
-  const data = await connectorRequest("/v1/certificates");
-  const select = $("#certificateSelect");
-  select.innerHTML = "";
-  for (const cert of data.certificates || []) {
-    const o=document.createElement("option");
-    o.value=cert.thumbprint;
-    o.textContent=`${cert.subject || "Certificado"}${cert.valid_to ? " · "+String(cert.valid_to).slice(0,10):""}`;
-    select.appendChild(o);
-  }
-  if (!select.options.length) throw new Error("Nenhum certificado A1 disponível no Windows.");
-}
-
-$("#pairConnector")?.addEventListener("click", async () => {
-  const msg=$("#taxMessage");
-  try {
-    if (!await connectorHealth()) throw new Error("Abra ou instale o Conector Razync no Windows.");
-    const code=$("#pairingCode").value.trim();
-    if (!/^\d{6}$/.test(code)) throw new Error("Informe o código de pareamento de 6 dígitos.");
-    const data=await connectorRequest("/v1/pair",{method:"POST",body:JSON.stringify({code})});
-    localStorage.setItem(connectorTokenKey,data.token);
-    await loadCertificates();
-    $("#connectorStatus").textContent="Pareado";
-    msg.textContent="Conector pareado com sucesso.";
-  } catch(error) {
-    msg.textContent=error.message;
-  }
-});
-
-async function identifyCompanyCnpj(balance) {
-  const data=new FormData(); data.append("balancete",balance);
-  const r=await fetch(`${API()}/api/v1/impostos/${selected.codigo}/identificar-cnpj`,{method:"POST",body:data});
-  if(!r.ok) throw new Error(await responseError(r));
-  const body=await r.json();
-  if(!body.cnpjs?.length) throw new Error("Não encontrei um CNPJ válido no balancete.");
-  const requested = $("#targetCnpj").value.replace(/\D/g, "");
-  if (requested) {
-    if (!body.cnpjs.includes(requested)) throw new Error("O CNPJ informado não foi encontrado no balancete.");
-    return requested;
-  }
-  if (body.cnpjs.length > 1) throw new Error("Há vários CNPJs no balancete. Informe o CNPJ da empresa no campo acima.");
-  return body.cnpjs[0];
-}
-
-$("#openDctf")?.addEventListener("click", async () => {
-  const msg=$("#taxMessage");
-  try {
-    const balance=$("#taxBalance").files[0];
-    const comp=$("#taxCompetence").value;
-    if(!balance || !comp) throw new Error("Envie o balancete e informe a competência.");
-    if(!localStorage.getItem(connectorTokenKey)) throw new Error("Pareie o Conector Windows primeiro.");
-    if(!$("#certificateSelect").options.length) await loadCertificates();
-    const cnpj=await identifyCompanyCnpj(balance);
-    const [year,month]=comp.split("-");
-    await connectorRequest("/v1/dctf/open",{
-      method:"POST",
-      body:JSON.stringify({cnpj,competencia:`${month}-${year}`,thumbprint:$("#certificateSelect").value})
-    });
-    msg.textContent="e-CAC aberto. Após o relatório ser baixado, clique em “Buscar relatório baixado e conferir”.";
-  } catch(error) {
-    msg.textContent=error.message;
-  }
-});
-
-$("#fetchDctf")?.addEventListener("click", async () => {
-  const msg=$("#taxMessage");
-  try {
-    const balance=$("#taxBalance").files[0];
-    if(!balance) throw new Error("Envie o balancete primeiro.");
-    const report=await connectorRequest("/v1/dctf/latest");
-    const binary=atob(report.content);
-    const bytes=new Uint8Array(binary.length);
-    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
-    const revenue=new File([bytes],report.name||"DCTFWeb.pdf");
-    await runTaxComparison(balance,revenue,msg);
-  } catch(error) {
-    msg.textContent=error.message;
-  }
-});
 
 const originalLoadCompanies = loadCompanies;
 loadCompanies = async function() {
@@ -1086,5 +1079,4 @@ loadCompanies = async function() {
   }
 };
 
-connectorHealth();
 loadCompanies();
