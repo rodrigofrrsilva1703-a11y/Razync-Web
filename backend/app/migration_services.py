@@ -59,6 +59,33 @@ def filter_groups(groups, options):
             if not (filtered := filter_frame(frame, options)).empty}
 
 
+def normalize_selected_banks(values):
+    if values is None:
+        return None
+    aliases = {
+        'itau': 'Itaú',
+        'itaú': 'Itaú',
+        'bradesco': 'Bradesco',
+        'fibra': 'Fibra',
+        'banco fibra': 'Fibra',
+        'daycoval': 'Daycoval',
+        'banco do brasil': 'Banco do Brasil',
+        'banco_brasil': 'Banco do Brasil',
+        'sicredi': 'Sicredi',
+        'caixa': 'Caixa',
+        'inter': 'Banco Inter',
+        'banco inter': 'Banco Inter',
+        'safra': 'Safra',
+        'btg': 'BTG',
+        'santander': 'Santander',
+    }
+    normalized = []
+    for value in values:
+        text = str(value or '').strip()
+        normalized.append(aliases.get(text.casefold(), text))
+    return normalized
+
+
 def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
@@ -210,7 +237,8 @@ def _workflow(code, roles, options):
             if not maps:
                 raise ValueError('Envie o mapa bancário.')
             groups = {}
-            allowed = options.get('bancos') or ['Itaú', 'Daycoval']
+            selected_banks = normalize_selected_banks(options.get('bancos'))
+            allowed = selected_banks or ['Itaú', 'Daycoval']
             for filename, content in maps:
                 data, _ = engine.processar_mapa_autokraft(content, filename)
                 for bank, block in data.items():
@@ -227,8 +255,9 @@ def _workflow(code, roles, options):
             parsers = {'Itaú': engine.processar_nova_geracao_itau, 'Bradesco': engine.processar_nova_geracao_bradesco, 'Fibra': engine.processar_nova_geracao_fibra} if code == 266 else {'Itaú': engine.processar_nova_geracao_filial_itau, 'Bradesco': engine.processar_nova_geracao_filial_bradesco}
             data = {}
             errors = []
+            selected_banks = normalize_selected_banks(options.get('bancos'))
             for bank, parser in parsers.items():
-                if options.get('bancos') is not None and bank not in options['bancos']:
+                if selected_banks is not None and bank not in selected_banks:
                     continue
                 principal, removed = [], []
                 for _, content in uploads:
@@ -236,7 +265,7 @@ def _workflow(code, roles, options):
                         main, excluded = parser(content)
                         principal.append(filter_frame(main, options)); removed.append(filter_frame(excluded, options) if not excluded.empty else excluded)
                     except ValueError as exc:
-                        if options.get('bancos') is not None:
+                        if selected_banks is not None:
                             raise ValueError(f'{bank}: {exc}') from exc
                         errors.append(f'{bank}: {exc}')
                 if principal:
