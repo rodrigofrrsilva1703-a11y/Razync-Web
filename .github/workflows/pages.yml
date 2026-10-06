@@ -44,6 +44,21 @@ jobs:
           cp -R assets _site/
           touch _site/.nojekyll
 
+      - name: Smoke test frontend runtime
+        run: |
+          python3 -m http.server 4173 --directory _site >/tmp/razync-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 1
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=8000             --dump-dom http://127.0.0.1:4173/ > /tmp/razync-dom.html 2> /tmp/razync-chrome.log || true
+          echo "=== Chrome stderr ==="
+          cat /tmp/razync-chrome.log || true
+          echo "=== Rendered page checks ==="
+          grep -q 'id="companyGrid"' /tmp/razync-dom.html
+          grep -q 'company-row' /tmp/razync-dom.html
+          grep -q 'Razync' /tmp/razync-dom.html
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
