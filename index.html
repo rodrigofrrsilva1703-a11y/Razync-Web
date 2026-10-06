@@ -169,7 +169,7 @@
                 <input id="fileInput" type="file" multiple accept=".pdf,.xls,.xlsx,.csv,.ofx">
               </div>
               <div id="advancedFields" class="dynamic-fields" hidden></div>
-              <fieldset id="standardPeriod" class="period-card"><legend>Período dos lançamentos <span>(opcional)</span></legend><div class="period-fields"><div><label for="processStart">De</label><input id="processStart" type="date"></div><div><label for="processEnd">Até</label><input id="processEnd" type="date"></div></div><p>Deixe em branco para considerar todo o arquivo.</p></fieldset>
+              <fieldset id="standardPeriod" class="period-card standard-period-card"><legend>Período dos lançamentos <span>(opcional)</span></legend><div class="period-fields"><div><label for="processStart">De</label><input id="processStart" type="date"></div><div><label for="processEnd">Até</label><input id="processEnd" type="date"></div></div><p>Deixe em branco para considerar todo o arquivo.</p></fieldset>
               <button id="processButton" type="submit">Atualizar prévia</button>
               <div id="processVisualStatus" class="process-visual-status" hidden aria-live="polite">
                 <span class="process-status-icon" aria-hidden="true"></span>
@@ -270,7 +270,7 @@
               <label for="modelFile">Modelo Domínio final</label>
               <input id="modelFile" type="file" accept=".xlsx,.xls">
               <div id="reconcileStatementFields" class="reconcile-bank-files"></div>
-              <fieldset class="period-card"><legend>Período da conferência <span>(opcional)</span></legend><div class="period-fields"><div><label for="reconcileStart">De</label><input id="reconcileStart" type="date"></div><div><label for="reconcileEnd">Até</label><input id="reconcileEnd" type="date"></div></div></fieldset>
+              <fieldset class="period-card standard-period-card"><legend>Período da conferência <span>(opcional)</span></legend><div class="period-fields"><div><label for="reconcileStart">De</label><input id="reconcileStart" type="date"></div><div><label for="reconcileEnd">Até</label><input id="reconcileEnd" type="date"></div></div></fieldset>
               <button type="submit">Atualizar conferência</button>
               <p id="reconcileMessage" class="helper"></p>
             </form>
