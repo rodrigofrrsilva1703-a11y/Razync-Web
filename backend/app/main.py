@@ -123,7 +123,7 @@ def companies():
     result = []
     for item in EMPRESAS:
         row = dict(item)
-        cap = dict(CAPABILITIES.get(int(item["codigo"]), {"status": "fiscal_only", "tools": ["conferencia_impostos"]}))
+        cap = dict(CAPABILITIES.get(int(item["codigo"]), {"status": "catalog_only", "tools": []}))
         if cap.get("status") == "api_ready":
             cap["tools"] = COMMON_TOOLS
         row["capabilities"] = cap
@@ -137,7 +137,7 @@ def company(company_code: int):
     if not item:
         raise HTTPException(status_code=404, detail="Empresa não cadastrada.")
     row = dict(item)
-    cap = dict(CAPABILITIES.get(company_code, {"status": "fiscal_only", "tools": ["conferencia_impostos"]}))
+    cap = dict(CAPABILITIES.get(company_code, {"status": "catalog_only", "tools": []}))
     if cap.get("status") == "api_ready":
         cap["tools"] = COMMON_TOOLS
     row["capabilities"] = cap
