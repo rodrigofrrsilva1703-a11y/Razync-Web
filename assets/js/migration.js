@@ -25,22 +25,12 @@ renderWorkflow = function(company) {
   $("#toolDescription").textContent += " A prévia aparece automaticamente quando os arquivos obrigatórios estiverem preenchidos.";
   $("#standardPeriod").hidden = company.capabilities?.workflow === "advanced";
   const eletro = [242,1408].includes(Number(company.codigo));
-  const fiscalOnly = company.capabilities?.status === "fiscal_only";
-  $$(".tool-tab").forEach(button => {button.hidden = fiscalOnly && button.dataset.tool !== "fiscal";});
   $("#reportPackage").hidden = company.capabilities?.workflow !== "advanced";
   $("#reportPackage").textContent = eletro ? "Baixar relatórios individuais e consolidado" : "Baixar modelo e conferências";
   $("#previewWorkflow").hidden = true;
   $("#eletroClassification").hidden = !eletro;
   $("#reviewForm").hidden = eletro;
-  if ([3,178,343,266,1396].includes(Number(company.codigo))) {
-    const label=document.createElement("label");label.textContent="Bancos para organizar";
-    const wrapper=document.createElement("div");wrapper.className="bank-options";
-    const names={itau:"Itaú",daycoval:"Daycoval",bradesco:"Bradesco",fibra:"Fibra"};
-    Object.keys(company.capabilities.banks).forEach(bank=>{
-      const item=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.checked=true;input.dataset.selectedBank=names[bank];item.append(input,document.createTextNode(names[bank]));wrapper.appendChild(item);
-    });
-    advancedFields.append(label,wrapper);
-  }
+
   francesinhasTab.hidden = !eletro;
   updateUploadProgress();
   $("#workflowPreview").replaceChildren();
