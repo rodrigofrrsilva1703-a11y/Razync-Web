@@ -21,7 +21,7 @@ SLUGS = {1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos',
          154: 'rm_postais_154', 625: 'valean_625', 626: 'valean_626',
          841: 'lucrativite_841', 912: 'vital_safety_912', 964: 'willians_964',
          88: 'hw_88', 969: 'engekraft_969', 1208: 'kairos_1208',
-         1530: 'dias_pereira_1530', 1532: 'maria_narbutis_1532'}
+         1064: 'tech_control_1064', 1530: 'dias_pereira_1530', 1532: 'maria_narbutis_1532'}
 
 
 def slug(code):
@@ -273,15 +273,18 @@ def _workflow(code, roles, options):
             if not data:
                 raise ValueError('; '.join(errors))
             return engine.gerar_excel_nova_geracao(data, _template_bytes(), prefixar_historicos=False), f'RAZYNC_{code}_MODELO_DOMINIO.xlsx'
-        if code in {1000, 1001}:
+        if code in {1000, 1001, 1064}:
             data = {}
             for bank in ('itau', 'sicredi'):
                 if roles.get(bank):
                     frames = [engine.processar_planilha_accede_sig(content, bank, slug(code)) for _, content in roles[bank]]
                     data[bank.title()] = {'principal': filter_frame(pd.concat(frames, ignore_index=True), options), 'retirados': pd.DataFrame()}
             if not data:
+                if code == 1064:
+                    raise ValueError('Envie a planilha SIG do Sicredi.')
                 raise ValueError('Envie a planilha SIG do Itaú e/ou Sicredi.')
-            return engine.gerar_excel_nova_geracao(data, _template_bytes()), f'ACCEDE_{code}_MODELO_DOMINIO.xlsx'
+            filename = 'TECH_CONTROL_1064_SICREDI_505_MODELO_DOMINIO.xlsx' if code == 1064 else f'ACCEDE_{code}_MODELO_DOMINIO.xlsx'
+            return engine.gerar_excel_nova_geracao(data, _template_bytes()), filename
         # Existing modular processors remain intact. Replace only universal readers
         # and rewritten SIG/map functions with their original implementations.
         if code == 1248:
