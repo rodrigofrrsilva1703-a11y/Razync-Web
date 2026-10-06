@@ -237,6 +237,23 @@ function bankName(bank) {
   return names[bank] || bank;
 }
 
+function workflowBankName(bank) {
+  const names = {
+    itau:"Itaú",
+    bradesco:"Bradesco",
+    fibra:"Fibra",
+    daycoval:"Daycoval",
+    banco_brasil:"Banco do Brasil",
+    sicredi:"Sicredi",
+    caixa:"Caixa",
+    inter:"Banco Inter",
+    safra:"Safra",
+    btg:"BTG",
+    santander:"Santander"
+  };
+  return names[bank] || bankName(bank);
+}
+
 function renderBankSelector(container, banks, options={}) {
   if (!container) return;
   const entries = Object.entries(banks || {});
@@ -307,7 +324,7 @@ function renderBankSelector(container, banks, options={}) {
     input.value = bank;
     input.dataset.bankChoice = bank;
     input.checked = mode === "multi" || index === 0;
-    if (sendSelectedBanks) input.dataset.selectedBank = bankName(bank);
+    if (sendSelectedBanks) input.dataset.selectedBank = workflowBankName(bank);
 
     const textBox = document.createElement("span");
     const strong = document.createElement("strong");
