@@ -46,17 +46,22 @@ jobs:
 
       - name: Smoke test frontend runtime
         run: |
+          printf 'window.RAZYNC_CONFIG={apiBase:""};' > _site/assets/js/config.js
           python3 -m http.server 4173 --directory _site >/tmp/razync-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
           sleep 1
           CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=8000             --dump-dom http://127.0.0.1:4173/ > /tmp/razync-dom.html 2> /tmp/razync-chrome.log || true
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --enable-logging=stderr --v=1             --virtual-time-budget=8000 --dump-dom http://127.0.0.1:4173/             > /tmp/razync-dom.html 2> /tmp/razync-chrome.log || true
           echo "=== Chrome stderr ==="
-          cat /tmp/razync-chrome.log || true
+          grep -E 'Uncaught|TypeError|ReferenceError|SyntaxError|CONSOLE|ERROR' /tmp/razync-chrome.log || true
           echo "=== Rendered page checks ==="
+          if ! grep -q 'company-row' /tmp/razync-dom.html; then
+            echo "Company rows were not rendered. DOM excerpt:"
+            grep -n -A8 -B4 'companyGrid' /tmp/razync-dom.html || true
+            exit 1
+          fi
           grep -q 'id="companyGrid"' /tmp/razync-dom.html
-          grep -q 'company-row' /tmp/razync-dom.html
           grep -q 'Razync' /tmp/razync-dom.html
 
       - name: Upload Pages artifact
