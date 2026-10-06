@@ -364,7 +364,7 @@ function renderBankSelector(container, banks, options={}) {
     if (!selectAllButton) return;
     const selectedCount = choices.filter(choice => choice.input.checked).length;
     const allSelected = selectedCount === choices.length;
-    selectAllButton.textContent = allSelected ? "Desmarcar todos" : "Selecionar todos os bancos";
+    selectAllButton.textContent = allSelected ? "Todos os bancos selecionados" : "Selecionar todos os bancos";
     selectAllButton.dataset.allSelected = String(allSelected);
     selectAllButton.setAttribute("aria-pressed",String(allSelected));
   };
