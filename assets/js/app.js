@@ -357,6 +357,7 @@ function openCompany(company) {
 
 function closeCompany() {
   cancelAutomaticPreview();
+  cancelClassificationPreview();
   panel.hidden = true;
   workspace.hidden = false;
   $(".hero").hidden = false;
@@ -563,10 +564,28 @@ learnForm.addEventListener("submit", async (event) => {
   }
 });
 
+let classificationController;
+function cancelClassificationPreview() {
+  classificationController?.abort();
+  $("#classificationPreview").replaceChildren();
+  classifyForm.querySelector('button[type="submit"]').disabled = false;
+}
+classifyForm.addEventListener("change", () => {
+  cancelClassificationPreview();
+  $("#classifyMessage").textContent = "";
+});
+
 classifyForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const file = $("#classifyFile").files[0];
   if (!file) return $("#classifyMessage").textContent = "Selecione o Modelo Domínio.";
+  cancelClassificationPreview();
+  const controller = new AbortController();
+  classificationController = controller;
+  const companyCode = selected.codigo;
+  const target = $("#classificationPreview");
+  const button = event.submitter;
+  button.disabled = true;
   const data = new FormData();
   data.append("file", file);
   if ([242, 1408].includes(Number(selected.codigo))) {
@@ -579,14 +598,28 @@ classifyForm.addEventListener("submit", async (event) => {
   }
   $("#classifyMessage").textContent = "Classificando…";
   try {
-    const response = await fetch(`${API()}/api/v1/base-inteligente/${selected.codigo}/classificar`, {method:"POST", body:data});
+    const response = await fetch(`${API()}/api/v1/base-inteligente/${companyCode}/classificar`, {method:"POST", body:data, signal:controller.signal});
     if (!response.ok) throw new Error(await responseError(response));
     const raw = response.headers.get("x-razync-summary");
     const summary = raw ? JSON.parse(raw) : {};
-    await downloadBlob(response, `RAZYNC_${selected.codigo}_CLASSIFICADO.xlsx`);
-    $("#classifyMessage").textContent = `Classificação concluída: ${summary.automaticos || 0} automáticos.`;
+    const workbook = await response.blob();
+    const previewData = new FormData(); previewData.append("file",workbook,"classificado.xlsx");
+    const preview = await fetch(`${API()}/api/v1/modelo-preview`,{method:"POST",body:previewData,signal:controller.signal});
+    if (!preview.ok) throw new Error(await responseError(preview));
+    const result = await preview.json();
+    if (controller.signal.aborted || selected?.codigo !== companyCode) return;
+    showWorkflowPreview(result,target);
+    const download = document.createElement("button");download.type="button";download.className="preview-download";
+    download.textContent="Baixar Excel classificado";
+    const disposition=response.headers.get("content-disposition");
+    download.addEventListener("click",()=>downloadBlob(new Response(workbook,{headers:disposition ? {"Content-Disposition":disposition} : {}}),`RAZYNC_${companyCode}_CLASSIFICADO.xlsx`));
+    target.querySelector(".preview-primary-actions").append(download);
+    $("#classifyMessage").textContent = `Classificação concluída: ${summary.automaticos || 0} automáticos. Confira a prévia antes de baixar.`;
   } catch (error) {
+    if (controller.signal.aborted || selected?.codigo !== companyCode) return;
     $("#classifyMessage").textContent = error.message;
+  } finally {
+    if (classificationController === controller) button.disabled = false;
   }
 });
 

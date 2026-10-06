@@ -94,3 +94,5 @@
  #companyPanel .preview-table-tools select { max-width:100%; }
 }
 #companyPanel #advancedFields > .bank-options { grid-column:1/-1; }
+
+#companyPanel #classificationPreview { grid-column:1/-1; min-width:0; }

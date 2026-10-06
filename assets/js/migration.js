@@ -52,6 +52,7 @@ renderWorkflow = function(company) {
 
 openCompany = function(company) {
   cancelAutomaticPreview();
+  cancelClassificationPreview();
   // File inputs and their visual state must not carry documents across companies.
   document.querySelectorAll("#companyPanel form").forEach(f => f.reset());
   document.querySelectorAll("#companyPanel .file-selection").forEach(el => el.remove());
@@ -134,8 +135,7 @@ function metricChip(label, value) {
   return item;
 }
 
-function showWorkflowPreview(data) {
-  const target = $("#workflowPreview");
+function showWorkflowPreview(data, target = $("#workflowPreview")) {
   target.replaceChildren();
 
   const sheets = data.sheets || [];
