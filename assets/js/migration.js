@@ -65,10 +65,8 @@ openCompany = function(company) {
   });
   $("#workflowPreview").replaceChildren();
   $("#adminAccess").value = "";
-  $("#targetCnpj").value = "";
   $("#baseManagementMessage").textContent = "";
   $("#reviewMessage").textContent = "";
-  $("#a1Message").textContent = "";
   migratedOpenCompany(company);
 };
 
@@ -389,21 +387,6 @@ $("#applyReview").addEventListener("click",async()=>{
   try {const r=await fetch(`${API()}/api/v1/base-inteligente/${code}/revisar`,{method:"POST",body:data});if(!r.ok)throw new Error(await responseError(r));await downloadBlob(r,`RAZYNC_${code}_REVISADO.xlsx`);msg.textContent="Revisão aplicada. Baixe e confira o arquivo.";refreshBaseStats();}catch(e){msg.textContent=e.message;}
 });
 
-$("#downloadConnector").addEventListener("click",async()=>{
-  try {const r=await fetch(`${API()}/api/v1/connector/download`);if(!r.ok)throw new Error(await responseError(r));await downloadBlob(r,"RAZYNC_WEB_CONECTOR_WINDOWS.zip");}catch(e){$("#taxMessage").textContent=e.message;}
-});
-$("#a1Form").addEventListener("submit",async event=>{
-  event.preventDefault();const code=selected.codigo;const msg=$("#a1Message");const data=new FormData();data.append("file",$("#a1File").files[0]);data.append("password",$("#a1Password").value);data.append("cnpj",$("#a1Cnpj").value);
-  try {const r=await fetch(`${API()}/api/v1/certificates/${code}`,{method:"POST",headers:adminHeaders(),body:data});if(!r.ok)throw new Error(await responseError(r));const result=await r.json();msg.textContent=`A1 cadastrado: ${result.certificate.titular} · validade ${result.certificate.validade_fim}`;event.target.reset();}catch(e){msg.textContent=e.message;}
-});
-$("#a1Status").addEventListener("click",async()=>{
-  try {const r=await fetch(`${API()}/api/v1/certificates/${selected.codigo}`,{headers:adminHeaders()});if(!r.ok)throw new Error(await responseError(r));const certificate=(await r.json()).certificate;$("#a1Message").textContent=certificate?`${certificate.titular} · CNPJ ${certificate.cnpj} · validade ${certificate.validade_fim}`:"Nenhum A1 cadastrado.";}catch(e){$("#a1Message").textContent=e.message;}
-});
-
-$("#a1Delete").addEventListener("click",async()=>{
-  if(!confirm("Remover o certificado A1 cadastrado desta empresa?"))return;
-  try {const r=await fetch(`${API()}/api/v1/certificates/${selected.codigo}`,{method:"DELETE",headers:adminHeaders()});if(!r.ok)throw new Error(await responseError(r));$("#a1Message").textContent="Cadastro removido.";}catch(e){$("#a1Message").textContent=e.message;}
-});
 $("#txtForm").addEventListener("submit",async event=>{
   event.preventDefault();const data=new FormData();data.append("file",$("#txtModel").files[0]);const msg=$("#txtMessage");
   try {const r=await fetch(`${API()}/api/v1/modelo-dominio-txt`,{method:"POST",body:data});if(!r.ok)throw new Error(await responseError(r));await downloadBlob(r,"RAZYNC_MODELO_DOMINIO.txt");msg.textContent="TXT gerado com as regras de histórico do original.";}catch(e){msg.textContent=e.message;}
