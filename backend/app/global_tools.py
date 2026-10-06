@@ -297,7 +297,7 @@ def conciliar_razao(extrato: pd.DataFrame, razao: pd.DataFrame):
     out=pd.merge(diario_e,diario_r,on="DATA",how="outer").fillna(0)
     out["DIFERENÇA ENTRADAS"]=(out["ENTRADAS_RAZAO"]-out["ENTRADAS_EXTRATO"]).round(2)
     out["DIFERENÇA SAÍDAS"]=(out["SAIDAS_RAZAO"]-out["SAIDAS_EXTRATO"]).round(2)
-    out["SITUAÇÃO"]=out.apply(lambda x:"CONFERE" if abs(x["DIFERENÇA ENTRADAS"])<=0.01 and abs(x["DIFERENÇA SAÍDAS"])<=0.01 else "REVISAR",axis=1)
+    out["SITUAÇÃO"]=out.apply(lambda x:"CONFERE" if abs(x["DIFERENÇA ENTRADAS"])<0.01 and abs(x["DIFERENÇA SAÍDAS"])<0.01 else "REVISAR",axis=1)
     summary={
         "dias":len(out),
         "dias_conferidos":int((out["SITUAÇÃO"]=="CONFERE").sum()),
