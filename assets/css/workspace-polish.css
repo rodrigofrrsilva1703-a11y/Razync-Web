@@ -77,5 +77,27 @@ body.sidebar-collapsed .sidebar-toggle .toggle-chevron { transform:rotate(180deg
  .directory-heading #addCompany { width:100%; }
 }
 @media(prefers-reduced-motion:reduce) {
- .sidebar, .app-shell, .sidebar-toggle, .sidebar-toggle .toggle-chevron { transition:none; }
+ .sidebar, .app-shell, .sidebar-toggle, .sidebar-toggle .toggle-chevron, .main-nav-btn { transition:none; }
 }
+
+/* Softer navigation surface and a clearly discoverable menu control. */
+.sidebar { background:linear-gradient(165deg,#1c304c 0%,#14243b 65%); border-right:1px solid #ffffff0c; }
+.sidebar .main-nav-btn { border:1px solid transparent; border-radius:12px; transition:background 180ms ease, border-color 180ms ease, color 180ms ease; }
+.sidebar .main-nav-btn:hover { background:#ffffff0a; border-color:#ffffff12; }
+.sidebar .main-nav-btn.active { background:#416ca13b; border-color:#85b4ff33; box-shadow:inset 3px 0 #86b5ff,0 4px 12px #08132612; color:#f4f8ff; }
+.sidebar .brand { padding-bottom:28px; }
+.sidebar .sidebar-note { border-color:#ffffff12; line-height:1.6; }
+.sidebar-toggle { width:auto; gap:8px; padding:0 12px; border:1px solid #dfe7f0; border-radius:12px; background:#ffffffb3; font-size:12px; font-weight:500; }
+.sidebar-toggle::after { content:"Menu"; }
+.sidebar-toggle:hover { border-color:#c7d6eb; background:#fff; box-shadow:0 3px 10px #243c5708; }
+@media(min-width:761px) {
+ .sidebar { inset:12px auto 12px 12px; width:226px; border-radius:20px; padding-top:26px; box-shadow:0 8px 28px #14243b14; }
+ body.sidebar-collapsed .sidebar { transform:translateX(calc(-100% - 16px)); }
+}
+@media(min-width:761px) and (max-width:1100px) { .sidebar { width:198px; } }
+@media(max-width:760px) {
+ .sidebar { border-radius:0 0 18px 18px; border-bottom:1px solid #ffffff12; }
+ .sidebar-toggle { width:40px; padding:0; }
+ .sidebar-toggle::after { content:none; }
+}
+@media(prefers-reduced-motion:reduce) { .sidebar .main-nav-btn { transition:none; } }
