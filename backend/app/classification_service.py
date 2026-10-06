@@ -122,13 +122,81 @@ def learn(company, content, filename, data_inicial='', data_final=''):
     finally:
         con.close()
 
+def _limit_classified_workbook_to_period(original_content, classified_content, data_inicial='', data_final=''):
+    if bool(data_inicial) != bool(data_final):
+        raise ValueError('Informe as duas datas do período.')
+    if not data_inicial:
+        return classified_content, None
+    inicio = pd.Timestamp(data_inicial).normalize()
+    fim = pd.Timestamp(data_final).normalize()
+    if fim < inicio:
+        raise ValueError('A Data Final não pode ser anterior à Data Inicial.')
+
+    from openpyxl import load_workbook
+    original = load_workbook(io.BytesIO(original_content), data_only=False)
+    result = load_workbook(io.BytesIO(classified_content), data_only=False)
+    changed = 0
+
+    for ws in result.worksheets:
+        if ws.title not in original.sheetnames or 'retir' in engine.normalizar_texto(ws.title):
+            continue
+        source = original[ws.title]
+        header = None
+        columns = {}
+        for row_number in range(1, min(source.max_row, 30) + 1):
+            test = {
+                engine.normalizar_texto(engine.texto_celula_seguro(source.cell(row_number, col).value)).strip(): col
+                for col in range(1, source.max_column + 1)
+            }
+            if all(name in test for name in ('historico', 'debito', 'credito')):
+                header, columns = row_number, test
+                break
+        if header is None:
+            continue
+        data_col = columns.get('data')
+        if data_col is None:
+            raise ValueError(f'A aba {ws.title} não possui coluna DATA para aplicar o período.')
+        debit_col, credit_col = columns['debito'], columns['credito']
+
+        for row_number in range(header + 1, source.max_row + 1):
+            raw_date = source.cell(row_number, data_col).value
+            parsed = pd.to_datetime(raw_date, dayfirst=True, errors='coerce')
+            inside = not pd.isna(parsed) and inicio <= parsed.normalize() <= fim
+            source_debit = source.cell(row_number, debit_col).value
+            source_credit = source.cell(row_number, credit_col).value
+            if not inside:
+                ws.cell(row_number, debit_col).value = source_debit
+                ws.cell(row_number, credit_col).value = source_credit
+            elif (
+                ws.cell(row_number, debit_col).value != source_debit
+                or ws.cell(row_number, credit_col).value != source_credit
+            ):
+                changed += 1
+
+    output = io.BytesIO()
+    result.save(output)
+    return output.getvalue(), changed
+
+
 def classify(company, content, filename, options=None):
     options = options or {}
-    return engine.classificar_planilha_final(content, filename, records(company), accounts(company),
+    workbook, summary = engine.classificar_planilha_final(
+        content, filename, records(company), accounts(company),
         empresa_classificacao=slug(company), coluna_substituir=options.get('coluna_substituir', ''),
         valores_substituiveis=options.get('valores_substituiveis', []),
-        modo_consolidado_eletro_forte=bool(options.get('modo_consolidado', company in {242, 1408})),
-        data_inicial=options.get('data_inicial', ''), data_final=options.get('data_final', ''))
+        modo_consolidado_eletro_forte=bool(options.get('modo_consolidado', company in {242, 1408}))
+    )
+    workbook, changed = _limit_classified_workbook_to_period(
+        content, workbook, options.get('data_inicial', ''), options.get('data_final', '')
+    )
+    if changed is not None:
+        summary = dict(summary)
+        summary['automaticos'] = changed
+        summary['periodo_aplicado'] = {
+            'data_inicial': options.get('data_inicial', ''),
+            'data_final': options.get('data_final', ''),
+        }
+    return workbook, summary
 
 def pending(company, content, data_inicial='', data_final=''):
     frame = engine.extrair_pendencias_revisao_inteligente(content, accounts(company))
