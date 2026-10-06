@@ -213,10 +213,11 @@ def test_txt_keeps_original_history_and_excel_serial_dates():
     assert response.content.decode().startswith('09/07/2026;')
     assert 'Pago: Empresa: ACME INDUSTRIAL' in response.content.decode()
 
-def test_fiscal_coverage_for_all_48_companies():
+def test_fiscal_tool_is_not_advertised_while_incomplete():
     result=client.get('/api/v1/companies').json()
     assert len(result)==48
-    assert all('conferencia_fiscal' in row['capabilities']['tools'] for row in result)
+    assert all('conferencia_fiscal' not in row['capabilities']['tools'] for row in result)
+    assert all('conferencia_impostos' in row['capabilities']['tools'] for row in result)
 
 def test_reconciliation_repeated_movements_and_removed_estornos_match_reference(monkeypatch):
     from openpyxl import Workbook
