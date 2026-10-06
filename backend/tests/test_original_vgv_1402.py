@@ -20,6 +20,26 @@ def _caixa_bytes():
     return buffer.getvalue()
 
 
+def _caixa_agosto_bytes():
+    linhas = [
+        [None, None, None, None, None, None],
+        ["CAIXA E BANCOS - AGOSTO - 2026", None, None, None, None, None],
+        ["DATA", "ENTRADA", "SAÍDA", "SALDO", "HISTÓRICO", "Status"],
+        [pd.Timestamp("2026-08-01"), None, None, 275.81, "Saldo", None],
+        [pd.Timestamp("2026-08-07"), 8587.00, None, 8862.81, "Aporte Vivian", None],
+        [pd.Timestamp("2026-08-07"), None, 5936.03, 2926.78, "Pagamento Wará", None],
+        [pd.Timestamp("2026-08-10"), None, 540.33, 2386.45, "Pagamento Jaguar Cont", None],
+        [pd.Timestamp("2026-08-13"), None, 2022.35, 364.10, "Pgto Guarda", None],
+        [pd.Timestamp("2026-08-17"), None, 362.68, 1.42, "Pgto Cond São Lucas", None],
+        [pd.Timestamp("2026-08-25"), 3000.00, None, 3001.42, "Aporte Paulo", None],
+        [pd.Timestamp("2026-08-25"), None, 912.50, 2088.92, "Impostos", None],
+        [pd.Timestamp("2026-08-25"), None, 2068.42, 20.50, "Impostos", None],
+    ]
+    buffer = io.BytesIO()
+    pd.DataFrame(linhas).to_excel(buffer, index=False, header=False)
+    return buffer.getvalue()
+
+
 def _ocr_teste():
     return pd.DataFrame([
         {"text": "09/07/2026", "left": 70, "top": 100, "width": 130, "height": 22},
@@ -42,6 +62,16 @@ def test_caixa_vgv_usa_historico_detalhado_e_conta_510():
     assert dados.iloc[1]["DÉBITO"] == ""
     assert dados.iloc[1]["CRÉDITO"] == "510"
     assert dados.iloc[1]["HISTÓRICO"] == "Pago: Contabilidade"
+
+
+def test_caixa_vgv_agosto_real_layout_is_read_completely():
+    dados = vgv_1402.ler_caixa_vgv(_caixa_agosto_bytes())
+    assert len(dados) == 8
+    assert round(float(dados.loc[dados["VALOR"] > 0, "VALOR"].sum()), 2) == 11587.00
+    assert round(float(-dados.loc[dados["VALOR"] < 0, "VALOR"].sum()), 2) == 11842.31
+    assert dados["DATA"].min() == pd.Timestamp("2026-08-07")
+    assert dados["DATA"].max() == pd.Timestamp("2026-08-25")
+    assert "Saldo" not in " ".join(dados["HISTÓRICO"].astype(str))
 
 
 def test_extrato_btg_separa_movimento_de_saldo(monkeypatch):
