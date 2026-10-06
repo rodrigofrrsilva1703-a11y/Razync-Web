@@ -9,7 +9,7 @@ O original em Streamlit permanece intacto. FastAPI no Railway e JavaScript no Gi
 - Arquivos auxiliares, múltiplos PDFs, XLS/XLSX, ZIP, francesinhas, períodos, bancos, lançamentos retirados e relatórios usam as regras originais.
 - Base Inteligente persistente: importação de modelos classificados/Razão/ZIP, classificação, revisão, aprendizado e backup JSON; preservação de assinaturas, ocorrências, períodos, conflitos e contas.
 - Conferência com Extrato; Conferência Fiscal para 48 empresas; Impostos/DCTFWeb; conversor de extratos; conciliação com Razão; Central de Tarefas; Excel final para TXT Domínio.
-- Conector Windows pela API: pareamento, certificado A1 criptografado, eCAC/DCTFWeb, extensão e automação Chrome incluídos no instalador.
+- Conferência de impostos mantida por upload: balancete + relatório DCTFWeb/Receita, sem automação de eCAC, certificado ou Conector Windows no frontend.
 - Chaves administrativas no Railway. Volume `/data` mantém a base entre deploys. Nunca incluir classificações reais, certificados ou chaves no Git.
 
 ## Validação
@@ -26,7 +26,7 @@ Base Inteligente copiada em leitura do Supabase original para o volume do Railwa
 
 **Homologação com documentos reais pendente:** o usuário não possui mais os PDFs/planilhas e Excel finais usados anteriormente. Comparação de código e testes não substituem essa homologação. Adaptadores expõem `validation_status: pending_real_files`.
 
-**eCAC pendente de execução real no Windows:** certificado do usuário, pareamento, login e download no portal. Testes com A1 sintético e pacote do conector não comprovam acesso autenticado ao eCAC.
+**eCAC removido do fluxo ativo:** a interface não depende mais de certificado, pareamento ou automação do portal. A conferência de impostos usa somente arquivos enviados pelo usuário.
 
 ## Publicação
 
