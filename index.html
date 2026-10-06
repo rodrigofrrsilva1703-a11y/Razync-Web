@@ -9,7 +9,7 @@
   <meta name="description" content="Razync — automação contábil">
   <link rel="stylesheet" href="./assets/css/app.css">
   <link rel="stylesheet" href="./assets/css/workspace.css?v=12">
-  <link rel="stylesheet" href="./assets/css/tools.css?v=12">
+  <link rel="stylesheet" href="./assets/css/tools.css?v=13">
   <link rel="stylesheet" href="./assets/css/layout.css?v=2">
 </head>
 <body>
@@ -40,7 +40,7 @@
         <div class="overview" aria-label="Resumo das ferramentas">
           <div class="overview-card"><span class="overview-icon" aria-hidden="true">▦</span><div><strong id="totalCompanies">—</strong><span>Empresas cadastradas</span></div></div>
           <div class="overview-card"><span class="overview-icon" aria-hidden="true">↗</span><div><strong id="organizerCompanies">—</strong><span>Com organizador de arquivos</span></div></div>
-          <div class="overview-card"><span class="overview-icon" aria-hidden="true">✓</span><div><strong id="fiscalCompanies">—</strong><span>Com conferência fiscal</span></div></div>
+          <div class="overview-card"><span class="overview-icon" aria-hidden="true">⌘</span><div><strong id="multiBankCompanies">—</strong><span>Com múltiplos bancos</span></div></div>
         </div>
         <section class="workspace">
           <div class="search-card">
@@ -53,7 +53,7 @@
             </div>
             <label for="regimeFilter" class="visually-hidden">Filtrar por regime</label><select id="regimeFilter"><option value="">Todos os regimes</option><option>LUCRO REAL</option><option>LUCRO PRESUMIDO</option><option>SIMPLES NACIONAL</option></select>
             </div>
-            <div class="company-filters" role="group" aria-label="Filtrar ferramentas"><button type="button" class="company-filter active" data-filter="all" aria-pressed="true">Todas</button><button type="button" class="company-filter" data-filter="organizer" aria-pressed="false">Com organizador</button><button type="button" class="company-filter" data-filter="fiscal" aria-pressed="false">Somente fiscal</button></div>
+            <div class="company-filters" role="group" aria-label="Filtrar ferramentas"><button type="button" class="company-filter active" data-filter="all" aria-pressed="true">Todas</button><button type="button" class="company-filter" data-filter="organizer" aria-pressed="false">Com organizador</button><button type="button" class="company-filter" data-filter="multibank" aria-pressed="false">Múltiplos bancos</button></div>
             <div class="search-meta">
               <span id="companyCount">Carregando empresas…</span>
               <span>Use código, nome ou regime para filtrar</span>
@@ -133,7 +133,6 @@
           <button type="button" class="tool-tab active" data-tool="organizar">Organizar arquivos</button>
           <button type="button" class="tool-tab" data-tool="base">Base Inteligente</button>
           <button type="button" class="tool-tab" data-tool="extrato">Conferência com Extrato</button>
-          <button type="button" class="tool-tab" data-tool="fiscal">Conferência Fiscal</button>
           <button type="button" class="tool-tab" data-tool="impostos">Conferência de Impostos</button>
         </nav>
 
@@ -159,9 +158,9 @@
                 <span class="form-card-icon icon-files" aria-hidden="true"></span>
                 <div><strong>Arquivos de origem</strong><small>Selecione os documentos e parâmetros deste processamento.</small></div>
               </div>
+              <div id="organizerBankSelector" class="bank-selector" hidden></div>
               <div id="standardFields">
-                <label for="bankSelect">Banco</label>
-                <select id="bankSelect"></select>
+                <select id="bankSelect" hidden aria-hidden="true"></select>
                 <label for="fileInput">Arquivos</label>
                 <input id="fileInput" type="file" multiple accept=".pdf,.xls,.xlsx,.csv,.ofx">
               </div>
@@ -261,8 +260,8 @@
                 <span class="form-card-icon icon-compare" aria-hidden="true"></span>
                 <div><strong>Arquivos para conferência</strong><small>Compare o Modelo Domínio final com um ou vários extratos.</small></div>
               </div>
-              <label for="reconcileBank">Banco</label>
-              <select id="reconcileBank"></select>
+              <div id="reconcileBankSelector" class="bank-selector bank-selector-single"></div>
+              <select id="reconcileBank" hidden aria-hidden="true"></select>
               <label for="modelFile">Modelo Domínio final</label>
               <input id="modelFile" type="file" accept=".xlsx,.xls">
               <label for="statementFiles">Extrato(s)</label>
@@ -273,32 +272,6 @@
             </form>
           </div>
           <div id="reconcileResult" class="tool-result" hidden></div>
-        </section>
-
-        <section class="tool-pane" data-pane="fiscal">
-          <div class="tool-card">
-              <div>
-                <span class="tool-visual-icon tool-visual-fiscal" aria-hidden="true"></span>
-                <span class="company-code">FISCAL × CONTÁBIL</span>
-                <h3>Acumuladores × Razão</h3>
-                <p>Compare os acumuladores fiscais com as contas do Razão.</p>
-              </div>
-              <form id="fiscalForm" class="modern-form">
-                <div class="form-card-header">
-                  <span class="form-card-icon icon-ledger" aria-hidden="true"></span>
-                  <div><strong>Conferência fiscal</strong><small>Envie Acumuladores e Razão para comparar os movimentos.</small></div>
-                </div>
-                <label for="acumuladoresFile">Acumuladores</label>
-                <input id="acumuladoresFile" type="file" accept=".xls,.xlsx,.csv">
-                <label for="razaoFile">Razão</label>
-                <input id="razaoFile" type="file" accept=".xls,.xlsx,.csv">
-                <label for="filialInput">Filial (opcional)</label>
-                <input id="filialInput" type="text" placeholder="Ex.: 242">
-                <button type="submit">Gerar Conferência Fiscal</button>
-                <p id="fiscalMessage" class="helper"></p>
-              </form>
-              <div id="fiscalResult" class="tool-result compact-result" hidden></div>
-          </div>
         </section>
 
         <section class="tool-pane" data-pane="impostos">
@@ -351,7 +324,7 @@
   </div>
 
   <script src="./assets/js/config.js"></script>
-  <script src="./assets/js/app.js?v=auto-workspace-15"></script>
-  <script src="./assets/js/migration.js?v=auto-workspace-10"></script>
+  <script src="./assets/js/app.js?v=auto-workspace-16"></script>
+  <script src="./assets/js/migration.js?v=auto-workspace-11"></script>
 </body>
 </html>
