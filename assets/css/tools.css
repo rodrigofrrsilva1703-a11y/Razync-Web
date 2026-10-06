@@ -99,9 +99,15 @@
 
 
 /* Organizer preview lives outside the upload card so no sticky/tool column can overlap it. */
-#companyPanel .tool-pane[data-pane="organizar"] {
-  display:block;
+#companyPanel .tool-pane {
+  display:none;
   min-width:0;
+}
+#companyPanel .tool-pane.active {
+  display:block;
+}
+#companyPanel .tool-pane[data-pane="organizar"].active {
+  display:block;
 }
 #companyPanel .tool-pane[data-pane="organizar"] > .tool-card {
   width:100%;
