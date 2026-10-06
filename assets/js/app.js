@@ -785,10 +785,9 @@ function scheduleAutomaticPreview() {
       : "A prévia aparece automaticamente após selecionar os arquivos.");
     return;
   }
-  const start = form.querySelector('[data-option="data_inicial"]') || $("#processStart");
-  const end = form.querySelector('[data-option="data_final"]') || $("#processEnd");
-  if (start.value && end.value && dateApiValue(start) > dateApiValue(end)) {
-    setProcessStage("error", "Confira o período", "A data inicial deve ser anterior ou igual à data final.");
+  try { readPeriod("#processStart","#processEnd"); }
+  catch (error) {
+    setProcessStage("error", "Confira o período", error.message);
     return;
   }
   setProcessStage("upload", "Preparando prévia automática", "Os arquivos estão prontos. A prévia será atualizada em instantes.");
