@@ -1121,3 +1121,68 @@
     min-height:30px !important;
   }
 }
+
+
+/* === Período padrão em todas as ferramentas === */
+.standard-period-card {
+  min-width:0;
+  margin:10px 0;
+  padding:16px 18px;
+  border:1px solid #dce7ef;
+  border-radius:12px;
+  background:#f6fafc;
+}
+.standard-period-card legend {
+  padding:0 6px;
+  color:#405670;
+  font-size:13px;
+  font-weight:600;
+}
+.standard-period-card legend span {
+  color:#718498;
+  font-weight:400;
+}
+.standard-period-card .period-fields {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+}
+.standard-period-card .period-fields > div {
+  display:grid;
+  gap:6px;
+  min-width:0;
+}
+.standard-period-card .period-fields label {
+  margin:0;
+}
+.standard-period-card .period-fields input[type="date"] {
+  width:100%;
+  min-width:0;
+}
+.standard-period-card > p {
+  margin:10px 0 0;
+  color:#718498;
+  font-size:12px;
+  line-height:1.45;
+}
+#companyPanel .base-period-card {
+  grid-column:1 / -1;
+  width:100%;
+}
+.global-view .standard-period-card {
+  grid-column:1 / -1;
+  width:100%;
+}
+@media(max-width:560px) {
+  .standard-period-card {
+    padding:12px;
+  }
+  .standard-period-card .period-fields {
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .standard-period-card .period-fields input[type="date"] {
+    padding:10px 7px !important;
+    font-size:12px !important;
+  }
+}
