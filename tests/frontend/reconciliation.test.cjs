@@ -9,7 +9,7 @@ const source = fs.readFileSync(path.join(__dirname, '../../assets/js/app.js'), '
 function harness(kind, banks = ['itau']) {
   const nodes = {};
   const node = key => nodes[key] ||= {
-    files: [], textContent: '', hidden: true,
+    files: [], textContent: '', hidden: true, checkValidity:()=>true,
     addEventListener(name, callback) { this[name] = callback; },
     replaceChildren() { this.cleared = true; },
     requestSubmit() { this.submitted = true; }

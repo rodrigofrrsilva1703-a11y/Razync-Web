@@ -22,6 +22,7 @@ renderWorkflow = function(company) {
     dates.forEach(input => fields.append(input.closest(".field-group")));
     period.append(legend, fields); advancedFields.append(period);
   }
+  enableMobileDateFields(advancedFields);
   $("#toolDescription").textContent += " A prévia aparece automaticamente quando os arquivos obrigatórios estiverem preenchidos.";
   $("#standardPeriod").hidden = company.capabilities?.workflow === "advanced";
   const eletro = [242,1408].includes(Number(company.codigo));

@@ -768,7 +768,7 @@ function scheduleAutomaticPreview() {
   }
   const start = form.querySelector('[data-option="data_inicial"]') || $("#processStart");
   const end = form.querySelector('[data-option="data_final"]') || $("#processEnd");
-  if (start.value && end.value && start.value > end.value) {
+  if (start.value && end.value && dateApiValue(start) > dateApiValue(end)) {
     setProcessStage("error", "Confira o período", "A data inicial deve ser anterior ou igual à data final.");
     return;
   }
@@ -804,7 +804,7 @@ form.addEventListener("submit", async (event) => {
       }
       if (!roles.length) throw new Error("Envie os arquivos necessários para esta empresa.");
       const options = {};
-      for (const input of $$("[data-option]")) options[input.dataset.option] = input.value;
+      for (const input of $$("[data-option]")) options[input.dataset.option] = input.dataset.manualDate ? dateApiValue(input) : input.value;
       const bankOptions=$$("[data-selected-bank]");
       if(bankOptions.length) {
         options.bancos=bankOptions.filter(input=>input.checked).map(input=>input.dataset.selectedBank);
@@ -824,13 +824,13 @@ form.addEventListener("submit", async (event) => {
       }
       if (!banks.length) throw new Error("Envie pelo menos um arquivo bancário.");
       data.append("banks_json", JSON.stringify(banks));
-      data.append("options_json",JSON.stringify({data_inicial:$("#processStart").value,data_final:$("#processEnd").value}));
+      data.append("options_json",JSON.stringify({data_inicial:dateApiValue($("#processStart")),data_final:dateApiValue($("#processEnd"))}));
       endpoint = `${API()}/api/v1/modelo-dominio/${selected.codigo}/multi`;
     } else {
       const files = [...fileInput.files];
       if (!files.length) throw new Error("Selecione pelo menos um arquivo.");
       data.append("bank", bankSelect.value);
-      data.append("options_json",JSON.stringify({data_inicial:$("#processStart").value,data_final:$("#processEnd").value}));
+      data.append("options_json",JSON.stringify({data_inicial:dateApiValue($("#processStart")),data_final:dateApiValue($("#processEnd"))}));
       files.forEach(file => data.append("files", file));
     }
 
@@ -1191,8 +1191,8 @@ function buildSingleReconcileData(bank) {
   data.append("bank",bank);
   data.append("model_file",$("#modelFile").files[0]);
   data.append("options_json",JSON.stringify({
-    data_inicial:$("#reconcileStart").value,
-    data_final:$("#reconcileEnd").value
+    data_inicial:dateApiValue($("#reconcileStart")),
+    data_final:dateApiValue($("#reconcileEnd"))
   }));
   const input = document.querySelector(`#reconcileStatementFields [data-reconcile-bank="${bank}"]`);
   [...(input?.files || [])].forEach(file => data.append("statement_files",file));
@@ -1206,8 +1206,8 @@ function buildReconcileData() {
   data.append("file_banks_json",JSON.stringify(state.fileBanks));
   data.append("model_file",$("#modelFile").files[0]);
   data.append("options_json",JSON.stringify({
-    data_inicial:$("#reconcileStart").value,
-    data_final:$("#reconcileEnd").value
+    data_inicial:dateApiValue($("#reconcileStart")),
+    data_final:dateApiValue($("#reconcileEnd"))
   }));
   state.files.forEach(file => data.append("files",file));
   return data;
@@ -1236,6 +1236,10 @@ function scheduleReconcilePreview() {
     return;
   }
 
+  if (!reconcileForm.checkValidity()) {
+    $("#reconcileMessage").textContent = "Confira as datas: use DD/MM/AAAA.";
+    return;
+  }
   if (state.missing.length) {
     $("#reconcileResult").hidden = true;
     $("#reconcileResult").replaceChildren();
