@@ -307,3 +307,145 @@
     width:100%;
   }
 }
+
+
+/* === Ferramentas realmente separadas: cada aba funciona como uma página própria === */
+#companyPanel .tool-tabs {
+  display:flex;
+  gap:10px;
+  margin:18px 0 22px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+#companyPanel .tool-tabs::-webkit-scrollbar { display:none; }
+
+#companyPanel .tool-tab {
+  flex:0 0 auto;
+  min-height:52px;
+  padding:11px 16px;
+  border:1px solid #dde5ee;
+  border-radius:12px;
+  background:#fff;
+  color:#5f7186;
+  box-shadow:0 2px 8px rgba(26,46,72,.025);
+  font-size:12px;
+  font-weight:600;
+  white-space:nowrap;
+  transition:border-color .15s ease, background .15s ease, color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+#companyPanel .tool-tab:hover {
+  border-color:#bccbdb;
+  background:#fbfcfe;
+  color:#3f5877;
+  transform:translateY(-1px);
+}
+#companyPanel .tool-tab.active {
+  border-color:#9fb7d7;
+  background:#eef3fb;
+  color:#315fc5;
+  box-shadow:0 4px 12px rgba(49,95,197,.08);
+}
+#companyPanel .tool-tab.active::after {
+  display:none;
+}
+
+#companyPanel .tool-tab[data-tool="impostos"] {
+  --tool-tab-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='black' stroke-width='1.7' viewBox='0 0 24 24'%3E%3Cpath d='M12 3 4 6v5c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6l-8-3Z'/%3E%3Cpath d='M9 9h6M9 13h6'/%3E%3C/svg%3E");
+}
+
+#companyPanel .tool-pane {
+  display:none !important;
+  min-width:0;
+}
+#companyPanel .tool-pane.active {
+  display:block !important;
+  animation:paneEnter .18s ease both;
+}
+
+/* Cada ferramenta possui seu próprio espaço; nada lado a lado com outra ferramenta. */
+#companyPanel .tool-pane > .tool-card {
+  width:100%;
+  min-width:0;
+  margin:0;
+}
+#companyPanel .tool-pane > .tool-result {
+  margin-top:18px;
+}
+#companyPanel .fiscal-grid {
+  display:block;
+}
+
+/* Base Inteligente: ações relacionadas, mas visualmente independentes. */
+#companyPanel .stack-forms {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:16px;
+}
+#companyPanel .stack-forms > .modern-form,
+#companyPanel .stack-forms > .base-management {
+  grid-column:1;
+  width:100%;
+}
+#companyPanel #reviewForm {
+  grid-column:1;
+}
+#companyPanel .base-management {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0;
+  padding:15px 16px;
+  border:1px solid #e0e7ef;
+  border-radius:12px;
+  background:#f8fafc;
+}
+#companyPanel .base-management::before {
+  content:"Gerenciamento da Base Inteligente";
+  flex-basis:100%;
+  margin-bottom:2px;
+  color:#6f8195;
+  font-size:11px;
+  font-weight:700;
+  text-transform:none;
+  letter-spacing:0;
+}
+
+/* Fiscal e Impostos agora têm páginas independentes e mesma largura do restante. */
+#companyPanel [data-pane="fiscal"] .tool-card,
+#companyPanel [data-pane="impostos"] .tool-card {
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:18px;
+}
+#companyPanel [data-pane="fiscal"] .tool-card > div:first-child,
+#companyPanel [data-pane="impostos"] .tool-card > div:first-child {
+  min-height:0;
+}
+#companyPanel [data-pane="fiscal"] .compact-result,
+#companyPanel [data-pane="impostos"] .compact-result {
+  margin:0;
+}
+
+/* Uma pequena transição reforça a sensação de trocar de ferramenta, não de juntar cards. */
+@keyframes paneEnter {
+  from { opacity:0; transform:translateY(4px); }
+  to { opacity:1; transform:none; }
+}
+
+@media(max-width:760px) {
+  #companyPanel .tool-tabs {
+    gap:8px;
+    margin:14px 0 18px;
+  }
+  #companyPanel .tool-tab {
+    min-height:46px;
+    padding:9px 12px;
+    border-radius:10px;
+    font-size:11px;
+  }
+}
