@@ -89,3 +89,32 @@ SALDO 60.000,00
     resultado = valean_626.processar_sicredi_626(b"pdf")
 
     assert resultado["VALOR"].tolist() == [-50000.0]
+
+
+@pytest.mark.parametrize("historico,valor", [
+    ("PAGAMENTO PIX CLIENTE PIX_DEB", "-100,00"),
+    ("RECEBIMENTO PIX CLIENTE PIX_CRED", "100,00"),
+    ("TRANSFERENCIA CLIENTE SEM NATUREZA IDENTIFICADA", "-100,00"),
+])
+def test_sicredi_saldo_inconsistente_nao_altera_valor_nem_lancamento_seguinte(monkeypatch, historico, valor):
+    texto = f"""
+SALDO 1.000,00
+02/04/2026 {historico} {valor} 15.302,44
+03/04/2026 PAGAMENTO PIX OUTRO CLIENTE COM HISTORICO COMPLETO PIX_DEB -200,00 700,00
+"""
+    monkeypatch.setattr(valean_626, "_texto_pdf", lambda _: texto)
+    resultado = valean_626.processar_sicredi_626(b"pdf")
+    esperado = -100.0 if valor.startswith("-") else 100.0
+    assert resultado["VALOR"].tolist() == [esperado, -200.0]
+    assert "aviso_saldo_impresso" in resultado.attrs
+
+
+def test_sicredi_preserva_centavos_do_movimento_quando_saldo_diverge(monkeypatch):
+    texto = """
+SALDO 1.000,00
+02/04/2026 PAGAMENTO PIX CLIENTE COM HISTORICO SUFICIENTE PARA LEITURA PIX_DEB -100,00 899,50
+"""
+    monkeypatch.setattr(valean_626, "_texto_pdf", lambda _: texto)
+    resultado = valean_626.processar_sicredi_626(b"pdf")
+    assert resultado["VALOR"].tolist() == [-100.0]
+    assert "aviso_saldo_impresso" in resultado.attrs

@@ -288,6 +288,7 @@ def processar_sicredi_626(conteudo: bytes) -> pd.DataFrame:
     saldo_extrato = None
     data_saldo_extrato = pd.NaT
     saldo_corrente = saldo_inicial_extrato
+    divergencias_saldo = 0
     for bruto in texto.splitlines():
         linha = re.sub(r"\s+", " ", bruto).strip()
         data_match = re.match(r"^(\d{2}/\d{2}/\d{4})\s+", linha)
@@ -320,37 +321,24 @@ def processar_sicredi_626(conteudo: bytes) -> pd.DataFrame:
         if sinal_esperado:
             valor = sinal_esperado * abs(float(valor))
 
-        # O saldo corrido também pode perder o sinal. Testa as duas naturezas
-        # possíveis do saldo e escolhe a variação compatível com o histórico.
-        # Assim, inclusive uma coluna monetária confundida pelo OCR é corrigida
-        # pela equação saldo anterior + movimento = saldo atual.
+        # The movement column is authoritative. A balance may lose its sign
+        # in OCR, but must never replace the transaction amount.
         if saldo_corrente is not None:
+            saldo_previsto = round(float(saldo_corrente) + float(valor), 2)
             saldo_abs = abs(float(saldo_linha))
-            candidatos_saldo = {round(saldo_abs, 2), round(-saldo_abs, 2)}
-            candidatos = [
-                (round(candidato - float(saldo_corrente), 2), candidato)
-                for candidato in candidatos_saldo
-            ]
-            if sinal_esperado:
-                compativeis = [
-                    item for item in candidatos
-                    if item[0] * sinal_esperado > 0 or abs(item[0]) < 0.005
-                ]
-                if compativeis:
-                    variacao_saldo, saldo_linha = min(
-                        compativeis,
-                        key=lambda item: abs(abs(item[0]) - abs(float(valor))),
-                    )
-                    valor = variacao_saldo
+            saldo_escolhido = min(
+                (round(saldo_abs, 2), round(-saldo_abs, 2)),
+                key=lambda candidato: abs(candidato - saldo_previsto),
+            )
+            if abs(saldo_escolhido - saldo_previsto) <= 0.02:
+                saldo_linha = saldo_escolhido
             else:
-                variacao_saldo, saldo_escolhido = min(
-                    candidatos, key=lambda item: abs(item[0] - float(valor))
-                )
-                tolerancia = max(1.00, abs(float(valor)) * 0.01)
-                if abs(variacao_saldo - float(valor)) <= tolerancia:
-                    valor = variacao_saldo
-                    saldo_linha = saldo_escolhido
-        saldo_corrente = float(saldo_linha)
+                divergencias_saldo += 1
+            # Continue from the movements so a bad printed balance cannot
+            # contaminate the validation of the following transactions.
+            saldo_corrente = saldo_previsto
+        else:
+            saldo_corrente = float(saldo_linha)
         saldo_extrato = float(saldo_linha)
         data_saldo_extrato = data
         if pd.isna(data) or abs(valor) < 0.005 or hist_norm == "saldo" or "saldo dia" in hist_norm:
@@ -381,14 +369,14 @@ def processar_sicredi_626(conteudo: bytes) -> pd.DataFrame:
         )
         diferenca = round(movimento_lido - movimento_saldos, 2)
         resultado.attrs["diferenca_validacao_saldo"] = diferenca
-        if abs(diferenca) > 0.02:
+        if abs(diferenca) > 0.02 or divergencias_saldo:
             # O saldo acumulado é apenas uma conferência auxiliar. Em PDFs
             # escaneados o OCR pode perder o sinal desse campo, mesmo lendo
             # corretamente o valor do movimento. Os cards e a planilha usam os
             # movimentos; por isso a divergência vira aviso e não elimina o mês.
             resultado.attrs["aviso_saldo_impresso"] = (
-                "O saldo acumulado impresso teve leitura divergente em "
-                f"R$ {abs(diferenca):,.2f}; os lançamentos foram mantidos."
+                "O saldo acumulado impresso teve leitura divergente; "
+                "os valores dos lançamentos foram preservados."
             )
     return resultado
 

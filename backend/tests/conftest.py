@@ -14,9 +14,3 @@ def isolated_data(tmp_path, monkeypatch):
     monkeypatch.setattr(classification_service, 'DB_PATH', tmp_path / 'test.db')
     monkeypatch.setattr(tasks, 'DB_PATH', tmp_path / 'test.db')
     monkeypatch.chdir(ROOT)
-
-def pytest_collection_modifyitems(items):
-    # This exact regression also fails on the unchanged original reference.
-    for item in items:
-        if item.name == 'test_sicredi_mantem_movimentos_quando_saldo_impresso_diverge':
-            item.add_marker(pytest.mark.xfail(strict=True, reason='Inherited Razync Sicredi 626 balance discrepancy; original and migrated modules both fail this regression.'))
