@@ -463,3 +463,118 @@
 #companyPanel[data-active-tool="francesinhas"] .tool-pane[data-pane="francesinhas"] {
   display:block !important;
 }
+
+
+/* === Seleção padronizada de bancos === */
+#companyPanel .bank-selector {
+  grid-column:1 / -1;
+  display:grid;
+  gap:12px;
+  min-width:0;
+  padding:14px;
+  border:1px solid #dfe7ef;
+  border-radius:13px;
+  background:#f8fafc;
+}
+#companyPanel .bank-selector[hidden] {
+  display:none !important;
+}
+#companyPanel .bank-selector-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+#companyPanel .bank-selector-head > div {
+  display:grid;
+  gap:2px;
+}
+#companyPanel .bank-selector-head strong {
+  color:#304863;
+  font-size:13px;
+}
+#companyPanel .bank-selector-head span {
+  color:#7a8b9e;
+  font-size:11px;
+}
+#companyPanel .bank-selector-options {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:8px;
+}
+#companyPanel .bank-choice,
+#companyPanel .bank-select-all {
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin:0 !important;
+  cursor:pointer;
+  user-select:none;
+}
+#companyPanel .bank-choice {
+  min-width:0;
+  padding:10px 11px;
+  border:1px solid #dce5ee;
+  border-radius:10px;
+  background:#fff;
+  transition:border-color .14s ease, background .14s ease, box-shadow .14s ease;
+}
+#companyPanel .bank-choice:hover {
+  border-color:#b9c9dc;
+  background:#fcfdff;
+}
+#companyPanel .bank-choice.selected {
+  border-color:#9eb7d8;
+  background:#eef4fb;
+  box-shadow:inset 0 0 0 1px rgba(49,95,197,.04);
+}
+#companyPanel .bank-choice input,
+#companyPanel .bank-select-all input {
+  width:16px !important;
+  height:16px !important;
+  min-height:0 !important;
+  padding:0 !important;
+  margin:0 !important;
+  accent-color:#315fc5;
+  flex:none;
+}
+#companyPanel .bank-choice > span {
+  display:grid;
+  min-width:0;
+  gap:1px;
+}
+#companyPanel .bank-choice strong {
+  overflow:hidden;
+  color:#344d69;
+  font-size:12px;
+  font-weight:650;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#companyPanel .bank-choice small {
+  color:#8292a4;
+  font-size:10px;
+}
+#companyPanel .bank-select-all {
+  flex:none;
+  padding:7px 9px;
+  border:1px solid #d7e1eb;
+  border-radius:9px;
+  background:#fff;
+  color:#496078;
+  font-size:11px !important;
+  font-weight:600 !important;
+}
+#companyPanel .field-group[hidden] {
+  display:none !important;
+}
+
+@media(max-width:700px) {
+  #companyPanel .bank-selector-head {
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  #companyPanel .bank-selector-options {
+    grid-template-columns:1fr;
+  }
+}
