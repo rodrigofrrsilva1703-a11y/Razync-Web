@@ -1549,8 +1549,18 @@ function buildLedgerData() {
   const data = new FormData();
   data.append("extrato", $("#ledgerStatement").files[0]);
   data.append("razao", $("#ledgerFile").files[0]);
-  appendPeriod(data,"#ledgerStart","#ledgerEnd");
+  const period = ledgerPeriod();
+  data.append("data_inicial",period.data_inicial);
+  data.append("data_final",period.data_final);
   return data;
+}
+
+function ledgerPeriod() {
+  const start = String($("#ledgerStart")?.value || "").trim();
+  const end = String($("#ledgerEnd")?.value || "").trim();
+  if (Boolean(start) !== Boolean(end)) throw new Error("Informe as duas datas do período.");
+  if (start && end && end < start) throw new Error("A data final não pode ser anterior à data inicial.");
+  return {data_inicial:start,data_final:end};
 }
 
 function scheduleLedgerPreview() {
@@ -1568,7 +1578,7 @@ function scheduleLedgerPreview() {
     $("#ledgerMessage").textContent = "";
     return;
   }
-  try { readPeriod("#ledgerStart","#ledgerEnd"); }
+  try { ledgerPeriod(); }
   catch (error) { $("#ledgerMessage").textContent = error.message; return; }
   $("#ledgerMessage").textContent = "Arquivos prontos. Montando conciliação diária…";
   ledgerPreviewTimer = setTimeout(() => $("#ledgerForm").requestSubmit(), 550);
