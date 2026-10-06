@@ -21,7 +21,6 @@ const baseStats = $("#baseStats");
 const learnForm = $("#learnForm");
 const classifyForm = $("#classifyForm");
 const reconcileForm = $("#reconcileForm");
-const fiscalForm = $("#fiscalForm");
 
 let companies = [];
 let selected = null;
@@ -148,7 +147,7 @@ function normalize(value) {
 function statusFor(company) {
   const status = company?.capabilities?.status;
   if (status === "api_ready") return "Disponível · em validação";
-  if (status === "fiscal_only") return "Fiscal disponível";
+  if (status === "fiscal_only") return "Sem ferramenta ativa";
   if (status === "catalog_only") return "Sem ferramenta específica";
   return "Em migração";
 }
@@ -169,7 +168,7 @@ function render(items) {
   count.textContent = `${items.length} empresa(s)`;
   $('#totalCompanies').textContent = companies.length || '—';
   $('#organizerCompanies').textContent = companies.filter(c=>c.capabilities?.status==='api_ready').length;
-  $('#fiscalCompanies').textContent = companies.filter(c=>(c.capabilities?.tools || []).includes('conferencia_fiscal')).length;
+  $('#multiBankCompanies').textContent = companies.filter(c=>Object.keys(c.capabilities?.banks || {}).length > 1).length;
   if (!items.length) {
     grid.innerHTML = '<div class="empty-state">Nenhuma empresa encontrada.</div>';
     return;
@@ -228,6 +227,142 @@ function fillBankSelect(select, banks) {
   }
 }
 
+function bankName(bank) {
+  const names = {
+    itau:"Itaú", itau_508:"Itaú", itau_509:"Itaú",
+    bradesco:"Bradesco", sicredi:"Sicredi", banco_brasil:"Banco do Brasil",
+    caixa:"Caixa", inter:"Banco Inter", safra:"Safra", btg:"BTG",
+    santander:"Santander", daycoval:"Daycoval", fibra:"Banco Fibra"
+  };
+  return names[bank] || bank;
+}
+
+function renderBankSelector(container, banks, options={}) {
+  if (!container) return;
+  const entries = Object.entries(banks || {});
+  container.replaceChildren();
+  container.hidden = !entries.length;
+  if (!entries.length) return;
+
+  const {
+    mode="single",
+    selectElement=null,
+    controlBankFields=false,
+    controlRoleFields=false,
+    sendSelectedBanks=false
+  } = options;
+
+  const head = document.createElement("div");
+  head.className = "bank-selector-head";
+  const copy = document.createElement("div");
+  const title = document.createElement("strong");
+  title.textContent = mode === "multi" ? "Bancos deste processamento" : "Banco";
+  const hint = document.createElement("span");
+  hint.textContent = mode === "multi"
+    ? "Marque os bancos que deseja usar nesta ferramenta."
+    : "Selecione o banco usado nesta ferramenta.";
+  copy.append(title,hint);
+  head.appendChild(copy);
+
+  const list = document.createElement("div");
+  list.className = "bank-selector-options";
+
+  let selectAll = null;
+  if (mode === "multi" && entries.length > 1) {
+    const allLabel = document.createElement("label");
+    allLabel.className = "bank-select-all";
+    selectAll = document.createElement("input");
+    selectAll.type = "checkbox";
+    selectAll.checked = true;
+    const allText = document.createElement("span");
+    allText.textContent = "Selecionar todos";
+    allLabel.append(selectAll, allText);
+    head.appendChild(allLabel);
+  }
+
+  const applyBankState = (bank, checked) => {
+    if (controlBankFields) {
+      const field = advancedFields.querySelector(`[data-bank-group="${bank}"]`);
+      const input = field?.querySelector("[data-bank]");
+      if (field) field.hidden = !checked;
+      if (input) {
+        input.disabled = !checked;
+        if (!checked) {
+          input.value = "";
+          updateFileSelection(input);
+        }
+      }
+    }
+    if (controlRoleFields) {
+      const field = advancedFields.querySelector(`[data-role-group="${bank}"]`);
+      const input = field?.querySelector("[data-role]");
+      if (field) field.hidden = !checked;
+      if (input) {
+        input.disabled = !checked;
+        if (!checked) {
+          input.value = "";
+          updateFileSelection(input);
+        }
+      }
+    }
+  };
+
+  const choices = entries.map(([bank, account], index) => {
+    const label = document.createElement("label");
+    label.className = "bank-choice";
+    const input = document.createElement("input");
+    input.type = mode === "multi" ? "checkbox" : "radio";
+    input.name = mode === "multi" ? `bank_choice_${container.id}` : `bank_single_${container.id}`;
+    input.value = bank;
+    input.dataset.bankChoice = bank;
+    input.checked = mode === "multi" || index === 0;
+    if (sendSelectedBanks) input.dataset.selectedBank = bankName(bank);
+
+    const textBox = document.createElement("span");
+    const strong = document.createElement("strong");
+    strong.textContent = bankName(bank);
+    const small = document.createElement("small");
+    small.textContent = account ? `Conta ${account}` : "Conta não informada";
+    textBox.append(strong,small);
+    label.append(input,textBox);
+    list.appendChild(label);
+
+    if (input.checked) applyBankState(bank,true);
+    if (mode === "single" && input.checked && selectElement) selectElement.value = bank;
+
+    input.addEventListener("change", () => {
+      if (mode === "single") {
+        if (selectElement) selectElement.value = bank;
+        choices.forEach(choice => choice.label.classList.toggle("selected", choice.input.checked));
+      } else {
+        applyBankState(bank,input.checked);
+        label.classList.toggle("selected",input.checked);
+        if (selectAll) {
+          const checked = choices.filter(choice=>choice.input.checked).length;
+          selectAll.checked = checked === choices.length;
+          selectAll.indeterminate = checked > 0 && checked < choices.length;
+        }
+      }
+    });
+    label.classList.toggle("selected",input.checked);
+    return {bank,input,label};
+  });
+
+  if (selectAll) {
+    selectAll.addEventListener("change", () => {
+      choices.forEach(choice => {
+        choice.input.checked = selectAll.checked;
+        choice.label.classList.toggle("selected",selectAll.checked);
+        applyBankState(choice.bank,selectAll.checked);
+      });
+      selectAll.indeterminate = false;
+      form.dispatchEvent(new Event("change",{bubbles:true}));
+    });
+  }
+
+  container.append(head,list);
+}
+
 function activateTool(name) {
   if (!name) return;
   panel.dataset.activeTool = name;
@@ -252,9 +387,15 @@ function renderWorkflow(company) {
   const cap = company.capabilities || {};
   const workflow = cap.workflow || "standard";
   const banks = cap.banks || {};
+  const organizerPicker = $("#organizerBankSelector");
+  const reconcilePicker = $("#reconcileBankSelector");
+
   fillBankSelect(bankSelect, banks);
   fillBankSelect($("#reconcileBank"), banks);
+  renderBankSelector(reconcilePicker, banks, {mode:"single", selectElement:$("#reconcileBank")});
 
+  organizerPicker.replaceChildren();
+  organizerPicker.hidden = true;
   advancedFields.innerHTML = "";
   advancedFields.hidden = true;
   standardFields.hidden = false;
@@ -265,6 +406,7 @@ function renderWorkflow(company) {
     for (const role of cap.roles || []) {
       const wrap = document.createElement("div");
       wrap.className = "field-group";
+      wrap.dataset.roleGroup = role.name;
       const id = `role_${role.name}`;
       wrap.innerHTML = `
         <label for="${id}">${role.label}${role.optional ? " <span class='optional'>(opcional)</span>" : ""}</label>
@@ -286,6 +428,16 @@ function renderWorkflow(company) {
       `;
       advancedFields.appendChild(wrap);
     }
+
+    const filterByBanks = [3,178,343,266,1396].includes(Number(company.codigo));
+    const roleBanks = Object.keys(banks).filter(bank => (cap.roles || []).some(role => role.name === bank));
+    if (filterByBanks) {
+      renderBankSelector(organizerPicker,banks,{mode:"multi",sendSelectedBanks:true});
+    } else if (roleBanks.length) {
+      const roleBankMap = Object.fromEntries(roleBanks.map(bank=>[bank,banks[bank]]));
+      renderBankSelector(organizerPicker,roleBankMap,{mode:"multi",controlRoleFields:true});
+    }
+
     $("#toolDescription").textContent = "Este fluxo usa arquivos complementares. Envie cada documento no campo correspondente.";
   } else if (workflow === "standard_multi_bank") {
     standardFields.hidden = true;
@@ -293,6 +445,7 @@ function renderWorkflow(company) {
     for (const [bank, account] of Object.entries(banks)) {
       const wrap = document.createElement("div");
       wrap.className = "field-group";
+      wrap.dataset.bankGroup = bank;
       wrap.innerHTML = `
         <label for="bankfiles_${bank}">${bankLabel(bank, account)} <span class="optional">(opcional)</span></label>
         <input id="bankfiles_${bank}" data-bank="${bank}" type="file" multiple
@@ -300,8 +453,10 @@ function renderWorkflow(company) {
       `;
       advancedFields.appendChild(wrap);
     }
-    $("#toolDescription").textContent = "Envie os arquivos por banco. O Razync gera um único Modelo Domínio com uma aba para cada banco informado.";
+    renderBankSelector(organizerPicker,banks,{mode:"multi",controlBankFields:true});
+    $("#toolDescription").textContent = "Selecione os bancos e envie os arquivos correspondentes. O Razync gera uma aba para cada banco processado.";
   } else {
+    renderBankSelector(organizerPicker,banks,{mode:"single",selectElement:bankSelect});
     $("#toolDescription").textContent = "Selecione o banco, envie um ou vários arquivos e gere o Modelo Domínio.";
   }
 }
@@ -326,8 +481,8 @@ async function refreshBaseStats() {
 
 function openCompany(company) {
   selected = company;
-  const available = ["api_ready", "fiscal_only"].includes(company.capabilities?.status);
-  const defaultTool = company.capabilities?.status === "fiscal_only" ? "fiscal" : "organizar";
+  const available = company.capabilities?.status === "api_ready";
+  const defaultTool = "organizar";
 
   // Mostra a empresa e a ferramenta padrão primeiro. Assim um erro secundário
   // de inicialização nunca deixa todas as ferramentas invisíveis.
@@ -384,9 +539,7 @@ function openCompany(company) {
   $("#learnMessage").textContent = "";
   $("#classifyMessage").textContent = "";
   $("#reconcileMessage").textContent = "";
-  $("#fiscalMessage").textContent = "";
   clearToolResult("#reconcileResult");
-  clearToolResult("#fiscalResult");
   clearToolResult("#taxResult");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -494,8 +647,8 @@ function updateUploadProgress() {
   if (!progress) { progress=document.createElement("div");progress.className="upload-progress";progress.setAttribute("role","status");form.querySelector(".form-card-header").after(progress); }
   const workflow=selected?.capabilities?.workflow;
   const inputs=workflow==="advanced" ? [...form.querySelectorAll("[data-role]")] : workflow==="standard_multi_bank" ? [...form.querySelectorAll("[data-bank]")] : [fileInput];
-  const required=inputs.filter(input=>input.required);
-  const filled=inputs.filter(input=>input.files.length);
+  const required=inputs.filter(input=>input.required && !input.disabled);
+  const filled=inputs.filter(input=>!input.disabled && input.files.length);
   const missing=required.filter(input=>!input.files.length);
   const names=missing.map(input=>form.querySelector(`label[for="${input.id}"]`)?.textContent.trim() || "arquivo");
   progress.textContent=required.length ? `${required.length-missing.length} de ${required.length} campos obrigatórios preenchidos${missing.length ? " · Falta: "+names.join(", ") : " · Pronto para prévia"}` : `${filled.length} campo(s) com arquivos · Selecione pelo menos um para conferir`;
@@ -508,8 +661,8 @@ function scheduleAutomaticPreview() {
   const workflow = selected?.capabilities?.workflow;
   const inputs = workflow === "advanced" ? [...form.querySelectorAll("[data-role]")]
     : workflow === "standard_multi_bank" ? [...form.querySelectorAll("[data-bank]")] : [fileInput];
-  const missing = inputs.filter(input => input.required && !input.files.length);
-  const hasFiles = inputs.some(input => input.files.length);
+  const missing = inputs.filter(input => input.required && !input.disabled && !input.files.length);
+  const hasFiles = inputs.some(input => !input.disabled && input.files.length);
   if (!hasFiles || missing.length || !form.checkValidity()) {
     setProcessStage("upload", "Aguardando arquivos", missing.length
       ? "Complete os arquivos obrigatórios para mostrar a prévia automaticamente."
@@ -752,48 +905,15 @@ reconcileForm.addEventListener("submit", async (event) => {
   }
 });
 
-fiscalForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  clearToolResult("#fiscalResult");
-  const acumuladores = $("#acumuladoresFile").files[0];
-  const razao = $("#razaoFile").files[0];
-  if (!acumuladores || !razao) return $("#fiscalMessage").textContent = "Envie Acumuladores e Razão.";
-  const data = new FormData();
-  data.append("acumuladores", acumuladores);
-  data.append("razao", razao);
-  data.append("filial", $("#filialInput").value);
-  $("#fiscalMessage").textContent = "Processando conferência fiscal…";
-  try {
-    const response = await fetch(`${API()}/api/v1/conferencia-fiscal/${selected.codigo}`, {method:"POST", body:data});
-    if (!response.ok) throw new Error(await responseError(response));
-    const raw = response.headers.get("x-razync-summary");
-    const summary = raw ? JSON.parse(raw) : {};
-    const report = await response.blob();
-    renderReportResult($("#fiscalResult"), {
-      title:"Conferência fiscal pronta",
-      text:"O relatório foi processado. Confira o resumo e baixe o arquivo detalhado.",
-      metrics:[
-        ["Linhas no resumo", summary.linhas_resumo || 0],
-        ["Filial", summary.filial_aplicada || "Todas"],
-        ["Período fiscal", summary.periodo_fiscal || "—"],
-        ["Período razão", summary.periodo_razao || "—"],
-      ],
-      blob:report,
-      filename:`RAZYNC_${selected.codigo}_CONFERENCIA_FISCAL.xlsx`
-    });
-    $("#fiscalMessage").textContent = "";
-  } catch (error) {
-    $("#fiscalMessage").textContent = error.message;
-    renderReportResult($("#fiscalResult"), {title:"Falha na conferência fiscal", text:error.message, tone:"error"});
-  }
-});
 
 function filterCompanies() {
   const query = normalize(search.value.trim());
   const regime = $('#regimeFilter').value;
   render(companies.filter(company =>
     (!regime || company.regime === regime) &&
-    (companyFilter==='all' || company.capabilities?.status === (companyFilter==='organizer'?'api_ready':'fiscal_only')) &&
+    (companyFilter==='all' ||
+      (companyFilter==='organizer' && company.capabilities?.status === 'api_ready') ||
+      (companyFilter==='multibank' && Object.keys(company.capabilities?.banks || {}).length > 1)) &&
     (normalize(company.codigo).includes(query) ||
     normalize(company.nome).includes(query) ||
     normalize(company.regime).includes(query))
