@@ -79,7 +79,7 @@ class SourceFile(io.BytesIO):
         super().__init__(content)
         self.name = filename
 
-def learn(company, content, filename):
+def learn(company, content, filename, data_inicial='', data_final=''):
     digest = hashlib.sha256(content).hexdigest()
     con = _db()
     try:
@@ -95,6 +95,20 @@ def learn(company, content, filename):
                 raise ValueError('Base de classificações inválida.')
         else:
             imported = engine.importar_arquivos_classificados([SourceFile(content, filename)], slug(company), accounts(company))
+        if bool(data_inicial) != bool(data_final):
+            raise ValueError('Informe as duas datas do período.')
+        if data_inicial:
+            inicio = pd.Timestamp(data_inicial).to_period('M')
+            fim = pd.Timestamp(data_final).to_period('M')
+            if fim < inicio:
+                raise ValueError('A Data Final não pode ser anterior à Data Inicial.')
+            meses = {str(periodo) for periodo in pd.period_range(inicio, fim, freq='M')}
+            imported = [
+                item for item in imported
+                if any(str(periodo) in meses for periodo in (item.get('periodos') or []))
+            ]
+            if not imported:
+                raise ValueError('Nenhum padrão revisado foi encontrado no período informado.')
         for item in imported:
             if not all(k in item for k in ('banco', 'assinatura', 'debito', 'credito', 'periodos')) or item['banco'] not in accounts(company):
                 raise ValueError('Padrão inválido ou banco não configurado para esta empresa.')
@@ -112,10 +126,20 @@ def classify(company, content, filename, options=None):
     return engine.classificar_planilha_final(content, filename, records(company), accounts(company),
         empresa_classificacao=slug(company), coluna_substituir=options.get('coluna_substituir', ''),
         valores_substituiveis=options.get('valores_substituiveis', []),
-        modo_consolidado_eletro_forte=bool(options.get('modo_consolidado', company in {242, 1408})))
+        modo_consolidado_eletro_forte=bool(options.get('modo_consolidado', company in {242, 1408})),
+        data_inicial=options.get('data_inicial', ''), data_final=options.get('data_final', ''))
 
-def pending(company, content):
+def pending(company, content, data_inicial='', data_final=''):
     frame = engine.extrair_pendencias_revisao_inteligente(content, accounts(company))
+    if bool(data_inicial) != bool(data_final):
+        raise ValueError('Informe as duas datas do período.')
+    if data_inicial and not frame.empty:
+        inicio = pd.Timestamp(data_inicial).normalize()
+        fim = pd.Timestamp(data_final).normalize()
+        if fim < inicio:
+            raise ValueError('A Data Final não pode ser anterior à Data Inicial.')
+        datas = pd.to_datetime(frame['Data'], dayfirst=True, errors='coerce')
+        frame = frame.loc[datas.between(inicio, fim, inclusive='both')].copy()
     return json.loads(frame.to_json(orient='records', date_format='iso', force_ascii=False))
 
 def review(company, content, filename, revisions, remember=False):
