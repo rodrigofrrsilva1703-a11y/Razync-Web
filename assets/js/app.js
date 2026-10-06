@@ -968,6 +968,24 @@ function formatDailyDate(value) {
   return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat("pt-BR").format(date);
 }
 
+function reconciliationBalances(row, kind="modelo") {
+  const ledger = kind === "razao";
+  const leftIn = Number(row[ledger ? "ENTRADAS_RAZAO" : "ENTRADAS PLANILHA"] || 0);
+  const rightIn = Number(row["ENTRADAS_EXTRATO"] || 0);
+  const leftOut = Number(row[ledger ? "SAIDAS_RAZAO" : "SAÍDAS PLANILHA"] || 0);
+  const rightOut = Number(row[ledger ? "SAIDAS_EXTRATO" : "SAÍDAS EXTRATO"] || 0);
+  const entryBalance = Math.round((leftIn - rightIn) * 100) / 100;
+  const exitBalance = Math.round((leftOut - rightOut) * 100) / 100;
+  const entryOk = Math.abs(entryBalance) < 0.01;
+  const exitOk = Math.abs(exitBalance) < 0.01;
+  return {
+    leftIn,rightIn,leftOut,rightOut,
+    entryBalance,exitBalance,
+    entryOk,exitOk,
+    ok:entryOk && exitOk
+  };
+}
+
 function renderDailyReconciliation(target, {rows=[], kind="modelo", download=null}) {
   if (!target) return;
   target.replaceChildren();
@@ -975,21 +993,11 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
   target.className = "daily-reconciliation";
 
   const normalized = rows.map(row => {
-    const ledger = kind === "razao";
-    const leftIn = Number(row[ledger ? "ENTRADAS_RAZAO" : "ENTRADAS PLANILHA"] || 0);
-    const rightIn = Number(row["ENTRADAS_EXTRATO"] || 0);
-    const leftOut = Number(row[ledger ? "SAIDAS_RAZAO" : "SAÍDAS PLANILHA"] || 0);
-    const rightOut = Number(row[ledger ? "SAIDAS_EXTRATO" : "SAÍDAS EXTRATO"] || 0);
-    const statusText = String(row[ledger ? "SITUAÇÃO" : "STATUS"] || "");
-    const ok = /CONFERE|BATENDO/i.test(statusText);
+    const balances = reconciliationBalances(row,kind);
     return {
       bank:String(row.BANCO || ""),
       date:row.DATA,
-      leftIn,rightIn,leftOut,rightOut,
-      leftNet:leftIn-leftOut,
-      rightNet:rightIn-rightOut,
-      diff:(leftIn-leftOut)-(rightIn-rightOut),
-      ok
+      ...balances
     };
   });
 
@@ -1004,6 +1012,14 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
     <div><small>${multiBank ? "Banco/dia analisados" : "Dias analisados"}</small><strong>${normalized.length}</strong></div>
     <div><small>Batendo</small><strong>${okCount}</strong></div>
     <div><small>Divergentes</small><strong>${reviewCount}</strong></div>
+  `;
+
+  const rule = document.createElement("div");
+  rule.className = "daily-rule";
+  const sourceLabel = kind === "razao" ? "Razão" : "Modelo";
+  rule.innerHTML = `
+    <strong>Regra da conferência</strong>
+    <span>Saldo entrada = Entrada ${sourceLabel} − Entrada Extrato · Saldo saída = Saída ${sourceLabel} − Saída Extrato · O status só fica <b>Batendo</b> quando os dois saldos forem R$ 0,00.</span>
   `;
 
   const toolbar = document.createElement("div");
@@ -1059,20 +1075,19 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
   const scroll = document.createElement("div");
   scroll.className = "daily-table-scroll";
   const table = document.createElement("table");
-  table.className = "daily-table";
+  table.className = "daily-table daily-table-reconciliation";
   const leftLabel = kind === "razao" ? "Razão" : "Modelo";
   const bankHeader = banks.length ? "<th>Banco</th>" : "";
   table.innerHTML = `
     <thead><tr>
       ${bankHeader}
       <th>Data</th>
-      <th>Entradas ${leftLabel}</th>
-      <th>Entradas Extrato</th>
-      <th>Saídas ${leftLabel}</th>
-      <th>Saídas Extrato</th>
-      <th>Saldo do dia ${leftLabel}</th>
-      <th>Saldo do dia Extrato</th>
-      <th>Diferença</th>
+      <th>Entrada ${leftLabel}</th>
+      <th>Entrada Extrato</th>
+      <th>Saldo Entrada</th>
+      <th>Saída ${leftLabel}</th>
+      <th>Saída Extrato</th>
+      <th>Saldo Saída</th>
       <th>Status</th>
     </tr></thead>
     <tbody></tbody>
@@ -1092,17 +1107,17 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
       {value:formatDailyDate(row.date),type:"date"},
       {value:brl(row.leftIn),type:"numeric"},
       {value:brl(row.rightIn),type:"numeric"},
+      {value:brl(row.entryBalance),type:"balance",ok:row.entryOk},
       {value:brl(row.leftOut),type:"numeric"},
       {value:brl(row.rightOut),type:"numeric"},
-      {value:brl(row.leftNet),type:"numeric"},
-      {value:brl(row.rightNet),type:"numeric"},
-      {value:brl(row.diff),type:"numeric"},
+      {value:brl(row.exitBalance),type:"balance",ok:row.exitOk},
       {value:status,type:"status"}
     );
 
     values.forEach(cell => {
       const td = document.createElement("td");
       if (cell.type === "numeric") td.className = "numeric";
+      if (cell.type === "balance") td.className = "numeric daily-balance " + (cell.ok ? "is-zero" : "is-different");
       if (cell.type === "bank") td.className = "daily-bank-cell";
       if (cell.type === "status") {
         const badge = document.createElement("span");
@@ -1136,7 +1151,7 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
   toolbarLeft.querySelector(".daily-bank-filter")?.addEventListener("change",applyFilters);
 
   scroll.appendChild(table);
-  target.append(summary,toolbar,scroll);
+  target.append(summary,rule,toolbar,scroll);
 }
 
 function reconcileSelectionState() {
@@ -1267,7 +1282,7 @@ reconcileForm.addEventListener("submit",async event => {
     });
 
     const errors = result.summary?.errors || [];
-    const divergent = (result.rows || []).filter(row => !/BATENDO/i.test(String(row.STATUS || ""))).length;
+    const divergent = (result.rows || []).filter(row => !reconciliationBalances(row,"modelo").ok).length;
     if (errors.length) {
       $("#reconcileMessage").textContent = `Conferência parcial: ${errors.length} banco(s) precisam de atenção e ${divergent} linha(s) diária(s) estão divergentes.`;
     } else if (divergent) {
@@ -1500,7 +1515,7 @@ $("#ledgerForm")?.addEventListener("submit", async event => {
       }
     });
 
-    const divergent = (result.rows || []).filter(row => !/CONFERE/i.test(String(row["SITUAÇÃO"] || ""))).length;
+    const divergent = (result.rows || []).filter(row => !reconciliationBalances(row,"razao").ok).length;
     msg.textContent = divergent
       ? `${divergent} dia(s) com divergência entre Extrato e Razão.`
       : "Todos os dias analisados estão conciliados.";
