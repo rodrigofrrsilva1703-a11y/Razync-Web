@@ -65,6 +65,28 @@ def _download(data: bytes, filename: str):
     )
 
 
+def _period_bounds(data_inicial: str = "", data_final: str = ""):
+    if bool(data_inicial) != bool(data_final):
+        raise ValueError("Informe as duas datas do período.")
+    if not data_inicial:
+        return None, None
+    inicio = pd.Timestamp(data_inicial).normalize()
+    fim = pd.Timestamp(data_final).normalize()
+    if fim < inicio:
+        raise ValueError("A Data Final não pode ser anterior à Data Inicial.")
+    return inicio, fim
+
+
+def _filter_period_frame(frame: pd.DataFrame, data_inicial: str = "", data_final: str = ""):
+    inicio, fim = _period_bounds(data_inicial, data_final)
+    if inicio is None or frame is None or frame.empty:
+        return frame.copy() if isinstance(frame, pd.DataFrame) else frame
+    if "DATA" not in frame.columns:
+        raise ValueError("O arquivo não possui coluna DATA para aplicar o período.")
+    datas = pd.to_datetime(frame["DATA"], dayfirst=True, errors="coerce")
+    return frame.loc[datas.between(inicio, fim, inclusive="both")].copy()
+
+
 def _preview_records(frame: pd.DataFrame):
     """Convert a reconciliation dataframe to compact JSON-safe rows."""
     rows = []
@@ -303,12 +325,20 @@ def intelligent_base_status(company_code: int):
 
 
 @app.post("/api/v1/base-inteligente/{company_code}/aprender")
-async def intelligent_base_learn(company_code: int, files: list[UploadFile] = File(...)):
+async def intelligent_base_learn(
+    company_code: int,
+    files: list[UploadFile] = File(...),
+    data_inicial: str = Form(""),
+    data_final: str = Form(""),
+):
     total = 0
     errors = []
     for upload in files:
         try:
-            total += await run_in_threadpool(base_learn, company_code, await upload.read(), upload.filename or "arquivo.xlsx")
+            total += await run_in_threadpool(
+                base_learn, company_code, await upload.read(), upload.filename or "arquivo.xlsx",
+                data_inicial, data_final
+            )
         except Exception as exc:
             errors.append(f"{upload.filename}: {exc}")
     if total == 0 and errors:
@@ -527,12 +557,17 @@ async def conferencia_fiscal(
 
 
 @app.post("/api/v1/conversor-extratos")
-async def conversor_extratos(files: list[UploadFile] = File(...)):
+async def conversor_extratos(
+    files: list[UploadFile] = File(...),
+    data_inicial: str = Form(""),
+    data_final: str = Form(""),
+):
     try:
         sheets = {}
         frames = []
         for idx, upload in enumerate(files, start=1):
             df = await run_in_threadpool(processar_arquivo, await upload.read(), upload.filename or f"arquivo_{idx}")
+            df = _filter_period_frame(df, data_inicial, data_final)
             frames.append(df)
             nome = Path(upload.filename or f"Arquivo {idx}").stem[:24]
             sheets[f"{idx:02d} {nome}"[:31]] = df
@@ -549,10 +584,14 @@ async def conversor_extratos(files: list[UploadFile] = File(...)):
 async def conciliacao_razao_preview(
     extrato: UploadFile = File(...),
     razao: UploadFile = File(...),
+    data_inicial: str = Form(""),
+    data_final: str = Form(""),
 ):
     try:
         df_ext = await run_in_threadpool(processar_arquivo, await extrato.read(), extrato.filename or "extrato")
         df_raz = await run_in_threadpool(processar_razao, await razao.read(), razao.filename or "razao")
+        df_ext = _filter_period_frame(df_ext, data_inicial, data_final)
+        df_raz = _filter_period_frame(df_raz, data_inicial, data_final)
         diario, resumo = conciliar_razao(df_ext, df_raz)
         return {"summary": resumo, "rows": _preview_records(diario)}
     except Exception as exc:
@@ -563,10 +602,14 @@ async def conciliacao_razao_preview(
 async def conciliacao_razao(
     extrato: UploadFile = File(...),
     razao: UploadFile = File(...),
+    data_inicial: str = Form(""),
+    data_final: str = Form(""),
 ):
     try:
         df_ext = await run_in_threadpool(processar_arquivo, await extrato.read(), extrato.filename or "extrato")
         df_raz = await run_in_threadpool(processar_razao, await razao.read(), razao.filename or "razao")
+        df_ext = _filter_period_frame(df_ext, data_inicial, data_final)
+        df_raz = _filter_period_frame(df_raz, data_inicial, data_final)
         diario, resumo = conciliar_razao(df_ext, df_raz)
         report = _excel_report({
             "Resumo": pd.DataFrame([resumo]),
@@ -587,6 +630,8 @@ async def conferencia_impostos(
     receita: UploadFile = File(...),
     balancete: UploadFile = File(...),
     competencia: str = Form(""),
+    data_inicial: str = Form(""),
+    data_final: str = Form(""),
 ):
     try:
         from datetime import date
@@ -596,7 +641,12 @@ async def conferencia_impostos(
             await balancete.read(), balancete.filename or "balancete",
         )
         empresa = next((x for x in EMPRESAS if int(x["codigo"]) == company_code), {"nome": str(company_code)})
-        if competencia and re.match(r"^\d{4}-\d{2}$", competencia):
+        inicio, fim = _period_bounds(data_inicial, data_final)
+        if inicio is not None and inicio.strftime("%Y-%m") != fim.strftime("%Y-%m"):
+            raise ValueError("Na Conferência de Impostos, as duas datas precisam estar na mesma competência.")
+        if inicio is not None:
+            comp = date(inicio.year, inicio.month, 1)
+        elif competencia and re.match(r"^\d{4}-\d{2}$", competencia):
             ano, mes = map(int, competencia.split("-"))
             comp = date(ano, mes, 1)
         else:
