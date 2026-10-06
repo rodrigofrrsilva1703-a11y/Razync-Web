@@ -413,7 +413,7 @@ function activateTool(name) {
   }
 }
 
-$(".tool-tab").forEach(btn => btn.addEventListener("click", () => activateTool(btn.dataset.tool)));
+$$(".tool-tab").forEach(btn => btn.addEventListener("click", () => activateTool(btn.dataset.tool)));
 
 function selectedReconcileBanks() {
   return $("#reconcileBankSelector [data-bank-choice]:checked").map(input => input.value);
@@ -421,7 +421,7 @@ function selectedReconcileBanks() {
 
 function syncReconcileBankFields(selectedBanks = selectedReconcileBanks()) {
   const selectedSet = new Set(selectedBanks);
-  $("#reconcileStatementFields [data-reconcile-bank-group]").forEach(group => {
+  $$("#reconcileStatementFields [data-reconcile-bank-group]").forEach(group => {
     const active = selectedSet.has(group.dataset.reconcileBankGroup);
     group.hidden = !active;
     const input = group.querySelector("[data-reconcile-bank]");
