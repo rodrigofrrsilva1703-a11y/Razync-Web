@@ -371,13 +371,13 @@ function renderBankSelector(container, banks, options={}) {
 function activateTool(name) {
   if (!name) return;
   panel.dataset.activeTool = name;
-  $("[data-tool].tool-tab").forEach(btn => {
+  $$("[data-tool].tool-tab").forEach(btn => {
     const active = btn.dataset.tool === name;
     btn.classList.toggle("active", active);
     btn.setAttribute("aria-selected", String(active));
     btn.tabIndex = active ? 0 : -1;
   });
-  $("[data-pane].tool-pane").forEach(pane => {
+  $$("[data-pane].tool-pane").forEach(pane => {
     const active = pane.dataset.pane === name;
     pane.classList.toggle("active", active);
     pane.hidden = !active;
@@ -526,7 +526,7 @@ function openCompany(company) {
 
   $("#toolUnavailable").hidden = available;
   $(".tool-tabs").hidden = !available;
-  $(".tool-tab").forEach(button => {
+  $$(".tool-tab").forEach(button => {
     if (button.dataset.tool === "francesinhas") return;
     button.hidden = taxOnly && button.dataset.tool !== "impostos";
   });
