@@ -2115,7 +2115,7 @@ def aplicar_classificacoes_automaticas(df, banco, base_classificacoes):
 def classificar_planilha_final(
     file_bytes, filename, base_classificacoes, contas_bancarias=None,
     empresa_classificacao='', coluna_substituir='', valores_substituiveis=None,
-    modo_consolidado_eletro_forte=False, data_inicial='', data_final='',
+    modo_consolidado_eletro_forte=False,
 ):
     """Preenche Débito/Crédito somente na planilha final já conciliada."""
     from openpyxl import load_workbook
@@ -2205,13 +2205,6 @@ def classificar_planilha_final(
             return int(texto)
         return texto
 
-    if bool(data_inicial) != bool(data_final):
-        raise ValueError('Informe as duas datas do período.')
-    periodo_inicio = pd.Timestamp(data_inicial).normalize() if data_inicial else None
-    periodo_fim = pd.Timestamp(data_final).normalize() if data_final else None
-    if periodo_inicio is not None and periodo_fim < periodo_inicio:
-        raise ValueError('A Data Final não pode ser anterior à Data Inicial.')
-
     wb = load_workbook(io.BytesIO(file_bytes))
     resumo = {
         'automaticos': 0,
@@ -2257,17 +2250,10 @@ def classificar_planilha_final(
         col_debito = mapa_colunas['debito']
         col_credito = mapa_colunas['credito']
         col_valor = mapa_colunas.get('valor')
-        col_data = mapa_colunas.get('data')
         col_descricao = mapa_colunas.get('descricao')
         banco_aba = identificar_chave_banco_empresa(ws.title) or banco_arquivo
 
         for numero_linha in range(linha_cabecalho + 1, ws.max_row + 1):
-            if periodo_inicio is not None:
-                if col_data is None:
-                    continue
-                data_linha = pd.to_datetime(ws.cell(numero_linha, col_data).value, dayfirst=True, errors='coerce')
-                if pd.isna(data_linha) or data_linha.normalize() < periodo_inicio or data_linha.normalize() > periodo_fim:
-                    continue
             historico = texto_celula_seguro(ws.cell(numero_linha, col_hist).value)
             if not historico:
                 continue
