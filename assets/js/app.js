@@ -267,7 +267,8 @@ function renderBankSelector(container, banks, options={}) {
     controlBankFields=false,
     controlRoleFields=false,
     sendSelectedBanks=false,
-    onSelectionChange=null
+    onSelectionChange=null,
+    selectAllByDefault=true
   } = options;
 
   const head = document.createElement("div");
@@ -324,7 +325,7 @@ function renderBankSelector(container, banks, options={}) {
     input.name = mode === "multi" ? `bank_choice_${container.id}` : `bank_single_${container.id}`;
     input.value = bank;
     input.dataset.bankChoice = bank;
-    input.checked = mode === "multi" || index === 0;
+    input.checked = mode === "multi" ? (selectAllByDefault || index === 0) : index === 0;
     if (sendSelectedBanks) input.dataset.selectedBank = workflowBankName(bank);
 
     const textBox = document.createElement("span");
@@ -469,7 +470,8 @@ function renderWorkflow(company) {
   renderBankSelector(reconcilePicker, banks, {
     mode:reconcileMode,
     selectElement:$("#reconcileBank"),
-    onSelectionChange:syncReconcileBankFields
+    onSelectionChange:syncReconcileBankFields,
+    selectAllByDefault:false
   });
   syncReconcileBankFields();
 
@@ -1159,6 +1161,19 @@ function reconcileSelectionState() {
   return {banks,files,fileBanks,missing};
 }
 
+function buildSingleReconcileData(bank) {
+  const data = new FormData();
+  data.append("bank",bank);
+  data.append("model_file",$("#modelFile").files[0]);
+  data.append("options_json",JSON.stringify({
+    data_inicial:$("#reconcileStart").value,
+    data_final:$("#reconcileEnd").value
+  }));
+  const input = document.querySelector(`#reconcileStatementFields [data-reconcile-bank="${bank}"]`);
+  [...(input?.files || [])].forEach(file => data.append("statement_files",file));
+  return data;
+}
+
 function buildReconcileData() {
   const state = reconcileSelectionState();
   const data = new FormData();
@@ -1226,8 +1241,12 @@ reconcileForm.addEventListener("submit",async event => {
     : "Conferindo saldos por dia…";
 
   try {
-    const response = await fetch(`${API()}/api/v1/conferencia-extrato/${selected.codigo}/multi/preview`,{
-      method:"POST",body:buildReconcileData(),signal:controller.signal
+    const previewEndpoint = state.banks.length === 1
+      ? `${API()}/api/v1/conferencia-extrato/${selected.codigo}/preview`
+      : `${API()}/api/v1/conferencia-extrato/${selected.codigo}/multi/preview`;
+    const previewBody = state.banks.length === 1 ? buildSingleReconcileData(state.banks[0]) : buildReconcileData();
+    const response = await fetch(previewEndpoint,{
+      method:"POST",body:previewBody,signal:controller.signal
     });
     if (!response.ok) throw new Error(await responseError(response));
     const result = await response.json();
@@ -1237,9 +1256,11 @@ reconcileForm.addEventListener("submit",async event => {
       rows:result.rows || [],
       kind:"modelo",
       download:async () => {
-        const report = await fetch(`${API()}/api/v1/conferencia-extrato/${selected.codigo}/multi`,{
-          method:"POST",body:buildReconcileData()
-        });
+        const reportEndpoint = state.banks.length === 1
+          ? `${API()}/api/v1/conferencia-extrato/${selected.codigo}`
+          : `${API()}/api/v1/conferencia-extrato/${selected.codigo}/multi`;
+        const reportBody = state.banks.length === 1 ? buildSingleReconcileData(state.banks[0]) : buildReconcileData();
+        const report = await fetch(reportEndpoint,{method:"POST",body:reportBody});
         if (!report.ok) throw new Error(await responseError(report));
         await downloadBlob(report,`RAZYNC_${selected.codigo}_CONFERENCIA_EXTRATO.xlsx`);
       }
