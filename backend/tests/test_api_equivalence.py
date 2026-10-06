@@ -4,12 +4,44 @@ from datetime import date
 import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app, _original_export
+from app.main import app, _original_export, _reconcile_multi
 from app import engine
 from app.migration_services import workflow, eletro_reports
 from test_migration import xlsx, workbook_signature, reference_engine
 
 client = TestClient(app)
+
+
+def test_multi_bank_reconciliation_keeps_each_bank_separate(monkeypatch):
+    import app.migration_services as migration_services
+
+    def fake_reconcile(company_code, bank, model, statements, options):
+        daily = pd.DataFrame([{
+            'DATA': pd.Timestamp('2026-10-01'),
+            'ENTRADAS EXTRATO': 100.0,
+            'SAÍDAS EXTRATO': 20.0,
+            'ENTRADAS PLANILHA': 100.0,
+            'SAÍDAS PLANILHA': 20.0,
+            'DIF. ENTRADAS': 0.0,
+            'DIF. SAÍDAS': 0.0,
+            'STATUS ENTRADAS': '✅ Batendo',
+            'STATUS SAÍDAS': '✅ Batendo',
+            'STATUS': '✅ Batendo',
+        }])
+        return {'ok': True}, {'Conferência diária': daily}
+
+    monkeypatch.setattr(migration_services, 'reconcile', fake_reconcile)
+    summary, rows, sheets = _reconcile_multi(
+        266,
+        ['itau', 'fibra'],
+        b'modelo',
+        [('itau', 'itau.pdf', b'1'), ('fibra', 'fibra.xlsx', b'2')],
+        {},
+    )
+    assert summary['banks'] == 2
+    assert {row['BANCO'] for row in rows} == {'Itaú 508', 'Banco Fibra 506'}
+    assert any(name.startswith('Itaú 508') for name in sheets)
+    assert any(name.startswith('Banco Fibra') for name in sheets)
 
 @pytest.mark.parametrize('code', [242,1408])
 def test_eletro_reports_preserve_individual_original_and_consolidated(code):
