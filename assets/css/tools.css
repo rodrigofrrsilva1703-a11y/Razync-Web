@@ -449,3 +449,17 @@
     font-size:11px;
   }
 }
+
+
+/* Estado final das abas: o painel declara qual ferramenta está ativa. */
+#companyPanel .tool-pane {
+  display:none !important;
+}
+#companyPanel[data-active-tool="organizar"] .tool-pane[data-pane="organizar"],
+#companyPanel[data-active-tool="base"] .tool-pane[data-pane="base"],
+#companyPanel[data-active-tool="extrato"] .tool-pane[data-pane="extrato"],
+#companyPanel[data-active-tool="fiscal"] .tool-pane[data-pane="fiscal"],
+#companyPanel[data-active-tool="impostos"] .tool-pane[data-pane="impostos"],
+#companyPanel[data-active-tool="francesinhas"] .tool-pane[data-pane="francesinhas"] {
+  display:block !important;
+}
