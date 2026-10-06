@@ -112,6 +112,14 @@ function tableFor(headers, rows) {
   return table;
 }
 
+function fitMetricValue(element, value) {
+  const text = String(value ?? "");
+  element.classList.remove("value-compact","value-xcompact");
+  if (text.length >= 22) element.classList.add("value-xcompact");
+  else if (text.length >= 16) element.classList.add("value-compact");
+  element.title = text;
+}
+
 function metricChip(label, value) {
   const item = document.createElement("span");
   item.className = "preview-metric";
@@ -119,6 +127,7 @@ function metricChip(label, value) {
   small.textContent = label;
   const strong = document.createElement("strong");
   strong.textContent = value;
+  fitMetricValue(strong,value);
   item.append(small, strong);
   return item;
 }
@@ -173,6 +182,7 @@ function showWorkflowPreview(data, target = $("#workflowPreview")) {
     small.textContent = label;
     const strong = document.createElement("strong");
     strong.textContent = value;
+    fitMetricValue(strong,value);
     content.append(small,strong);
     card.append(icon,content);
     summaryGrid.appendChild(card);
