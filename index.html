@@ -9,7 +9,7 @@
   <meta name="description" content="Razync — automação contábil">
   <link rel="stylesheet" href="./assets/css/app.css">
   <link rel="stylesheet" href="./assets/css/workspace.css?v=12">
-  <link rel="stylesheet" href="./assets/css/tools.css?v=9">
+  <link rel="stylesheet" href="./assets/css/tools.css?v=10">
   <link rel="stylesheet" href="./assets/css/layout.css?v=2">
 </head>
 <body>
@@ -133,7 +133,8 @@
           <button type="button" class="tool-tab active" data-tool="organizar">Organizar arquivos</button>
           <button type="button" class="tool-tab" data-tool="base">Base Inteligente</button>
           <button type="button" class="tool-tab" data-tool="extrato">Conferência com Extrato</button>
-          <button type="button" class="tool-tab" data-tool="fiscal">Fiscal e Conferências</button>
+          <button type="button" class="tool-tab" data-tool="fiscal">Conferência Fiscal</button>
+          <button type="button" class="tool-tab" data-tool="impostos">Conferência de Impostos</button>
         </nav>
 
         <div id="toolUnavailable" class="empty-state" hidden>
@@ -275,8 +276,7 @@
         </section>
 
         <section class="tool-pane" data-pane="fiscal">
-          <div class="fiscal-grid">
-            <div class="tool-card vertical-card">
+          <div class="tool-card">
               <div>
                 <span class="tool-visual-icon tool-visual-fiscal" aria-hidden="true"></span>
                 <span class="company-code">FISCAL × CONTÁBIL</span>
@@ -298,9 +298,11 @@
                 <p id="fiscalMessage" class="helper"></p>
               </form>
               <div id="fiscalResult" class="tool-result compact-result" hidden></div>
-            </div>
+          </div>
+        </section>
 
-            <div class="tool-card vertical-card">
+        <section class="tool-pane" data-pane="impostos">
+          <div class="tool-card">
               <div>
                 <span class="tool-visual-icon tool-visual-tax" aria-hidden="true"></span>
                 <span class="company-code">CONFERÊNCIA DE IMPOSTOS</span>
@@ -322,9 +324,9 @@
                 <p id="taxMessage" class="helper"></p>
               </form>
               <div id="taxResult" class="tool-result compact-result" hidden></div>
-            </div>
           </div>
         </section>
+
         <section class="tool-pane" data-pane="francesinhas">
           <div class="tool-card">
             <div><span class="tool-visual-icon tool-visual-francesinhas" aria-hidden="true"></span><span class="company-code">FRANCESINHAS</span><h3>Francesinhas avulsas</h3><p>Leia as liquidações L pela data “Emitido em” e baixe o Modelo Domínio separado por conta.</p></div>
@@ -349,7 +351,7 @@
   </div>
 
   <script src="./assets/js/config.js"></script>
-  <script src="./assets/js/app.js?v=auto-workspace-11"></script>
+  <script src="./assets/js/app.js?v=auto-workspace-12"></script>
   <script src="./assets/js/migration.js?v=auto-workspace-10"></script>
 </body>
 </html>
