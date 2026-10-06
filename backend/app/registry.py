@@ -140,7 +140,7 @@ CAPABILITIES = {
     1532: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
 }
 
-COMMON_TOOLS = ["modelo_dominio", "base_inteligente", "conferencia_extrato", "conferencia_fiscal"]
+COMMON_TOOLS = ["modelo_dominio", "base_inteligente", "conferencia_extrato"]
 CAPABILITIES[1248] = {'status':'api_ready','workflow':'advanced','banks':{'itau':'508'},
     'roles':[{'name':'extrato','label':'Extrato Itaú RGR','accept':'.pdf','multiple':False},
              {'name':'movimentos','label':'Entradas e Saídas RGR','accept':'.xls,.xlsx','multiple':False}]}
