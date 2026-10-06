@@ -85,8 +85,8 @@
 #companyPanel .preview-table-tools input { flex:1; min-width:180px; padding:10px 12px; border:1px solid #d5e2ec; border-radius:9px; background:#fff; }
 #companyPanel .preview-table-tools select { padding:10px 12px; border:1px solid #d5e2ec; border-radius:9px; background:#fff; }
 #companyPanel .preview-table-tools span { font-size:12px; color:#60788c; }
-#companyPanel .preview-results .accounts-pending td { background:#fffaf0; }
-#companyPanel .preview-results .accounts-pending td:first-child { border-left:3px solid #d6a344; }
+#companyPanel .preview-results .accounts-pending td { background:#fff; }
+#companyPanel .preview-results .accounts-pending td:first-child { border-left:3px solid #8aa5c2; }
 #companyPanel .preview-commandbar { border-color:#abd8df; }
 @media(max-width:760px) {
  #companyPanel #advancedFields { grid-template-columns:minmax(0,1fr); }
