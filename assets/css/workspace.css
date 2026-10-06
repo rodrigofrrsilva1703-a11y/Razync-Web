@@ -1627,11 +1627,10 @@ details.connector-box summary {
   box-shadow:none;
 }
 
-.tool-card > div:first-child {
-  position:sticky;
-  top:58px;
+#companyPanel .tool-card > div:first-child {
+  position:static;
   align-self:start;
-  min-height:100%;
+  min-height:0;
   padding:18px !important;
   border:1px solid #dfe6ef;
   border-radius:12px;
