@@ -96,3 +96,59 @@
 #companyPanel #advancedFields > .bank-options { grid-column:1/-1; }
 
 #companyPanel #classificationPreview { grid-column:1/-1; min-width:0; }
+
+
+/* Organizer preview lives outside the upload card so no sticky/tool column can overlap it. */
+#companyPanel .tool-pane[data-pane="organizar"] {
+  display:block;
+  min-width:0;
+}
+#companyPanel .tool-pane[data-pane="organizar"] > .tool-card {
+  width:100%;
+  min-width:0;
+}
+#companyPanel .organizer-preview {
+  position:relative;
+  z-index:0;
+  width:100%;
+  min-width:0;
+  margin-top:22px;
+  padding-top:0;
+  border-top:0;
+  clear:both;
+}
+#companyPanel .organizer-preview:empty {
+  display:none;
+}
+#companyPanel .organizer-preview:not(:empty) {
+  display:grid;
+}
+#companyPanel .organizer-preview .preview-commandbar,
+#companyPanel .organizer-preview .preview-summary-grid,
+#companyPanel .organizer-preview .preview-intro,
+#companyPanel .organizer-preview .preview-sheet-switcher,
+#companyPanel .organizer-preview .preview-sheet,
+#companyPanel .organizer-preview .preview-diagnostics,
+#companyPanel .organizer-preview .preview-note {
+  width:100%;
+  min-width:0;
+}
+
+/* Keep table scrolling internal instead of making the whole page overlap horizontally. */
+#companyPanel .organizer-preview .preview-sheet {
+  overflow:hidden;
+}
+#companyPanel .organizer-preview .preview-table-scroll {
+  width:100%;
+  max-width:100%;
+  overflow:auto;
+}
+#companyPanel .organizer-preview .dataframe-preview {
+  width:100%;
+}
+
+@media(max-width:760px) {
+  #companyPanel .organizer-preview {
+    margin-top:16px;
+  }
+}
