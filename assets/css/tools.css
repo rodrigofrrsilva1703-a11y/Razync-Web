@@ -1059,3 +1059,65 @@
 .daily-review .daily-balance.is-different {
   box-shadow:inset 3px 0 0 #d4a44f;
 }
+
+
+/* === Arquivos anexados: remoção individual === */
+.file-selection {
+  max-height:220px;
+  overflow:auto;
+  padding-right:2px;
+}
+.file-selection-item {
+  position:relative;
+}
+.file-selection-item > span {
+  flex:1 1 auto;
+  min-width:0;
+}
+.file-selection-remove {
+  width:28px !important;
+  height:28px !important;
+  min-width:28px !important;
+  min-height:28px !important;
+  flex:none;
+  display:inline-flex !important;
+  align-items:center;
+  justify-content:center;
+  padding:0 !important;
+  border:1px solid #d9e2eb !important;
+  border-radius:8px !important;
+  background:#fff !important;
+  color:#738296 !important;
+  box-shadow:none !important;
+  font:600 18px/1 Arial,sans-serif !important;
+  cursor:pointer;
+  transition:border-color .12s ease,background .12s ease,color .12s ease,transform .12s ease;
+}
+.file-selection-remove::before,
+.file-selection-remove::after {
+  content:none !important;
+}
+.file-selection-remove:hover {
+  border-color:#c7d2df !important;
+  background:#f6f8fb !important;
+  color:#334b68 !important;
+  transform:none !important;
+}
+.file-selection-remove:focus-visible {
+  outline:2px solid #0b9bb5;
+  outline-offset:2px;
+}
+.file-selection-remove > span {
+  transform:translateY(-1px);
+}
+@media(max-width:560px) {
+  .file-selection {
+    max-height:180px;
+  }
+  .file-selection-remove {
+    width:30px !important;
+    height:30px !important;
+    min-width:30px !important;
+    min-height:30px !important;
+  }
+}
