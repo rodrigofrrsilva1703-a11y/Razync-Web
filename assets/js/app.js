@@ -1275,26 +1275,75 @@ $("#converterForm")?.addEventListener("submit", async event => {
   }
 });
 
+let ledgerPreviewTimer;
+let ledgerPreviewController;
+
+function buildLedgerData() {
+  const data = new FormData();
+  data.append("extrato", $("#ledgerStatement").files[0]);
+  data.append("razao", $("#ledgerFile").files[0]);
+  return data;
+}
+
+function scheduleLedgerPreview() {
+  clearTimeout(ledgerPreviewTimer);
+  ledgerPreviewController?.abort();
+  const statement = $("#ledgerStatement").files[0];
+  const ledger = $("#ledgerFile").files[0];
+  const target = $("#ledgerResult");
+  if (!statement || !ledger) {
+    if (target) {
+      target.hidden = true;
+      target.replaceChildren();
+    }
+    $("#ledgerMessage").textContent = "";
+    return;
+  }
+  $("#ledgerMessage").textContent = "Arquivos prontos. Montando conciliação diária…";
+  ledgerPreviewTimer = setTimeout(() => $("#ledgerForm").requestSubmit(), 550);
+}
+
+$("#ledgerForm")?.addEventListener("change", scheduleLedgerPreview);
+
 $("#ledgerForm")?.addEventListener("submit", async event => {
   event.preventDefault();
+  clearTimeout(ledgerPreviewTimer);
+  ledgerPreviewController?.abort();
+  const controller = new AbortController();
+  ledgerPreviewController = controller;
+
   const statement = $("#ledgerStatement").files[0];
   const ledger = $("#ledgerFile").files[0];
   const msg = $("#ledgerMessage");
   if (!statement || !ledger) return msg.textContent = "Envie o extrato e o Razão.";
-  const data = new FormData();
-  data.append("extrato", statement);
-  data.append("razao", ledger);
-  msg.textContent = "Conciliando…";
+
+  msg.textContent = "Conferindo movimentos por dia…";
   try {
-    const response = await fetch(`${API()}/api/v1/conciliacao-razao`, {method:"POST", body:data});
+    const response = await fetch(`${API()}/api/v1/conciliacao-razao/preview`, {
+      method:"POST", body:buildLedgerData(), signal:controller.signal
+    });
     if (!response.ok) throw new Error(await responseError(response));
-    const raw = response.headers.get("x-razync-summary");
-    const summary = raw ? JSON.parse(raw) : {};
-    await downloadBlob(response, "RAZYNC_CONCILIACAO_RAZAO.xlsx");
-    msg.textContent = summary.dias_revisar
-      ? `Concluído: ${summary.dias_revisar} dia(s) precisam de revisão.`
-      : "Concluído: os totais diários estão conferindo.";
+    const result = await response.json();
+    if (controller.signal.aborted) return;
+
+    renderDailyReconciliation($("#ledgerResult"), {
+      rows:result.rows || [],
+      kind:"razao",
+      download:async () => {
+        const report = await fetch(`${API()}/api/v1/conciliacao-razao`, {method:"POST",body:buildLedgerData()});
+        if (!report.ok) throw new Error(await responseError(report));
+        await downloadBlob(report,"RAZYNC_CONCILIACAO_RAZAO.xlsx");
+      }
+    });
+
+    const divergent = (result.rows || []).filter(row => !/CONFERE/i.test(String(row["SITUAÇÃO"] || ""))).length;
+    msg.textContent = divergent
+      ? `${divergent} dia(s) com divergência entre Extrato e Razão.`
+      : "Todos os dias analisados estão conciliados.";
   } catch (error) {
+    if (error.name === "AbortError") return;
+    $("#ledgerResult").hidden = true;
+    $("#ledgerResult").replaceChildren();
     msg.textContent = error.message;
   }
 });
