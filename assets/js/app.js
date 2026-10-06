@@ -166,7 +166,7 @@ function normalize(value) {
 function statusFor(company) {
   const status = company?.capabilities?.status;
   if (status === "api_ready") return "Disponível · em validação";
-  if (status === "catalog_only") return "Sem ferramenta específica";
+  if (status === "catalog_only") return "";
   return "Em migração";
 }
 
@@ -605,7 +605,9 @@ function openCompany(company) {
   $("#panelCode").textContent = `Empresa ${company.codigo}`;
   $("#panelName").textContent = company.nome;
   $("#panelRegime").textContent = company.regime;
-  $("#panelStatus").textContent = statusFor(company);
+  const panelStatusText = statusFor(company);
+  $("#panelStatus").textContent = panelStatusText;
+  $("#panelStatus").hidden = !panelStatusText;
 
   const quickInfo = $("#panelQuickInfo");
   quickInfo.replaceChildren();
@@ -615,8 +617,10 @@ function openCompany(company) {
     quickInfo.appendChild(badge);
   });
 
-  $("#toolUnavailable").hidden = available;
+  $("#toolUnavailable").hidden = true;
   $(".tool-tabs").hidden = !available;
+  const adminAccess = $(".admin-access");
+  if (adminAccess) adminAccess.hidden = !available;
   $(".tool-tab").forEach(button => {
     if (button.dataset.tool === "francesinhas") return;
     button.hidden = false;
