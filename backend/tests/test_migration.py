@@ -16,6 +16,7 @@ from app import engine
 from app import classification_service as base
 from app.main import app
 from app.migration_services import workflow, slug, accounts, reconcile, normalize_selected_banks
+from app.registry import CAPABILITIES
 
 ROOT = Path(__file__).resolve().parents[1]
 client = TestClient(app)
@@ -53,6 +54,17 @@ def reference_engine():
                 definitions.append(node)
         exec(compile(ast.Module(body=definitions, type_ignores=[]), filename, 'exec'), namespace)
     return SimpleNamespace(**namespace)
+
+
+def test_empresa_242_campos_iguais_ao_streamlit():
+    capability = CAPABILITIES[242]
+    assert [role["name"] for role in capability["roles"]] == [
+        "despesas", "fornecedores", "recebidos", "francesinhas"
+    ]
+    assert [option["name"] for option in capability["options"]] == [
+        "data_inicial", "data_final"
+    ]
+    assert all(role.get("optional") is True for role in capability["roles"])
 
 
 def test_bank_selection_aliases_used_by_company_tools():
