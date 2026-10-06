@@ -26,6 +26,7 @@ function selectedFileBankLabel(input) {
 }
 
 function initializeWorkspaceUI() {
+  initializeCompanyControls();
   const targets = "#workflowPreview, #classificationPreview, #reconcileResult, #ledgerResult";
   const main = document.querySelector("main");
   const bar = document.createElement("div");
@@ -84,4 +85,50 @@ function initializeWorkspaceUI() {
     attributeFilter:["hidden", "class", "disabled", "data-active-tool"]
   });
   window.addEventListener("resize", schedule); schedule();
+}
+
+function initializeCompanyControls() {
+  const toggle = document.querySelector("#sidebarToggle");
+  let collapsed = false;
+  try { collapsed = localStorage.getItem("razync.sidebar-collapsed") === "true"; } catch (_) {}
+  const applySidebar = () => {
+    document.body.classList.toggle("sidebar-collapsed", collapsed);
+    toggle.setAttribute("aria-expanded", String(!collapsed));
+    toggle.setAttribute("aria-label", collapsed ? "Abrir menu lateral" : "Recolher menu lateral");
+    toggle.title = collapsed ? "Abrir menu lateral" : "Recolher menu lateral";
+  };
+  applySidebar();
+  toggle.addEventListener("click", () => {
+    collapsed = !collapsed; applySidebar();
+    try { localStorage.setItem("razync.sidebar-collapsed", String(collapsed)); } catch (_) {}
+    window.dispatchEvent(new Event("resize"));
+  });
+  const dialog = document.querySelector("#companyDialog");
+  const form = document.querySelector("#companyCreateForm");
+  const message = document.querySelector("#companyCreateMessage");
+  document.querySelector("#addCompany").addEventListener("click", () => {
+    form.reset(); message.textContent = ""; dialog.showModal();
+  });
+  document.querySelector("#closeCompanyDialog").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("close", () => document.querySelector("#companyCreateKey").value = "");
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = form.querySelector('[type="submit"]'); button.disabled = true;
+    message.textContent = "Criando empresa…";
+    try {
+      const response = await fetch(`${API()}/api/v1/companies`, {
+        method:"POST", headers:{"Content-Type":"application/json", Authorization:`Bearer ${document.querySelector("#companyCreateKey").value}`},
+        body:JSON.stringify({codigo:document.querySelector("#newCompanyCode").value, nome:document.querySelector("#newCompanyName").value, regime:document.querySelector("#newCompanyRegime").value})
+      });
+      if (!response.ok) throw new Error(await responseError(response));
+      const company = await response.json();
+      companies = [...companies.filter(item => Number(item.codigo) !== Number(company.codigo)), company];
+      if (dialog.open) {
+        search.value = ""; document.querySelector("#regimeFilter").value = ""; companyFilter = "all";
+        document.querySelectorAll(".company-filter").forEach(item => { item.classList.toggle("active", item.dataset.filter === "all"); item.setAttribute("aria-pressed", String(item.dataset.filter === "all")); });
+        filterCompanies(); dialog.close(); openCompany(company);
+      } else filterCompanies();
+    } catch (error) { message.textContent = error.message; }
+    finally { button.disabled = false; }
+  });
 }

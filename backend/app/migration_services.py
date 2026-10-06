@@ -292,6 +292,7 @@ def _workflow(code, roles, options):
             if not roles.get('extrato') or not roles.get('movimentos'):
                 raise ValueError('Envie extrato Itaú PDF e planilha Entradas e Saídas.')
             frame, _, _, _, _ = processar_rgr(roles['extrato'][0][1], roles['movimentos'][0][1])
+            frame = filter_frame(frame, options)
             datas = pd.to_datetime(frame['DATA'], errors='coerce').dropna()
             periodo = f"{datas.min():%d%m%Y}_A_{datas.max():%d%m%Y}" if not datas.empty else 'PERIODO'
             return engine.gerar_excel_modelo_dominio(frame, formato_data='dd/mm/yyyy'), f'RGR_1248_ITAU_508_MODELO_DOMINIO_{periodo}.xlsx'
@@ -300,18 +301,18 @@ def _workflow(code, roles, options):
             if not roles.get('jaguar') or not roles.get('entradas'):
                 raise ValueError('Envie Jaguar e Entradas detalhadas.')
             frame, _, _ = processar_planilhas_lcarlos(roles['jaguar'][0][1], roles['entradas'][0][1])
-            return engine.gerar_excel_modelo_dominio(frame), 'LCARLOS_285_MODELO_DOMINIO.xlsx'
+            return engine.gerar_excel_modelo_dominio(filter_frame(frame, options)), 'LCARLOS_285_MODELO_DOMINIO.xlsx'
         if code == 1402:
             from razync.vgv_1402 import ler_caixa_vgv
             if not roles.get('planilha'):
                 raise ValueError('Envie a planilha Caixa VGV. O extrato é opcional para conferência.')
-            return engine.gerar_excel_modelo_dominio(ler_caixa_vgv(roles['planilha'][0][1])[COLUNAS]), 'VGV_1402_MODELO_DOMINIO.xlsx'
+            return engine.gerar_excel_modelo_dominio(filter_frame(ler_caixa_vgv(roles['planilha'][0][1])[COLUNAS], options)), 'VGV_1402_MODELO_DOMINIO.xlsx'
         if code == 1211:
             from razync.gz_1211 import processar_gz, gerar_modelo_dominio_gz
             if not roles.get('extrato') or not roles.get('boletos'):
                 raise ValueError('Envie Extrato Itaú e Boletos liquidados em PDF.')
             frame, _, _, _ = processar_gz(roles['extrato'][0][1], roles['boletos'][0][1])
-            return gerar_modelo_dominio_gz(frame, _template_bytes()), 'GZ_1211_MODELO_DOMINIO.xlsx'
+            return gerar_modelo_dominio_gz(filter_frame(frame, options), _template_bytes()), 'GZ_1211_MODELO_DOMINIO.xlsx'
         if code == 1096:
             from razync.up_pack import processar_planilha_up_pack
             groups = {}
@@ -335,7 +336,7 @@ def _workflow(code, roles, options):
             frame = pd.concat(frames, ignore_index=True)
             frame['_DATA_ORDEM'] = pd.to_datetime(frame['DATA'], dayfirst=True, errors='coerce')
             frame = frame.sort_values(['_DATA_ORDEM','DESCRIÇÃO'], kind='stable').drop(columns=['_DATA_ORDEM']).reset_index(drop=True)
-            return engine.gerar_excel_modelo_dominio(frame), 'DIAS_PEREIRA_1529_MODELO_DOMINIO.xlsx'
+            return engine.gerar_excel_modelo_dominio(filter_frame(frame, options)), 'DIAS_PEREIRA_1529_MODELO_DOMINIO.xlsx'
         if code == 968:
             from razync.radani import analisar_desmembramentos, consolidar_comprovantes_sispag
             from razync.bradesco_radani import processar_extrato_bradesco_radani
@@ -354,7 +355,7 @@ def _workflow(code, roles, options):
                     raise ValueError(f'Nenhum lançamento válido no {label}.')
                 receipts = consolidar_comprovantes_sispag(roles['sispag'], frame['DATA'].min().isoformat(), frame['DATA'].max().isoformat()) if bank == 'itau' and roles.get('sispag') else pd.DataFrame()
                 analysis = analisar_desmembramentos(frame, label, receipts)
-                groups[label] = {'principal': analysis.organizado, 'retirados': pd.DataFrame()}
+                groups[label] = {'principal': filter_frame(analysis.organizado, options), 'retirados': pd.DataFrame()}
             if not groups:
                 raise ValueError('Envie ao menos um extrato Itaú ou Bradesco.')
             return engine.gerar_excel_nova_geracao(groups, _template_bytes()), 'RADANI_968_MODELO_DOMINIO.xlsx'

@@ -85,6 +85,19 @@ def require_admin(authorization: str = Header('')):
     if not hmac.compare_digest(authorization, f'Bearer {expected}'):
         raise HTTPException(401, 'Informe a chave de acesso administrativa.')
 
+@router.post('/companies', dependencies=[Depends(require_admin)], status_code=201)
+def create_company(payload: dict):
+    from app.company_service import create
+    try:
+        row = create(payload.get('codigo'), payload.get('nome'), payload.get('regime'))
+        row['capabilities'] = {'status': 'catalog_only', 'tools': [], 'banks': {}}
+        return row
+    except FileExistsError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
 @router.get('/migration-status')
 def migration_status():
     manifest = Path(__file__).resolve().parents[1] / 'resources' / 'engine_manifest.json'

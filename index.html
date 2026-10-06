@@ -11,11 +11,11 @@
   <link rel="stylesheet" href="./assets/css/workspace.css?v=12">
   <link rel="stylesheet" href="./assets/css/tools.css?v=23">
   <link rel="stylesheet" href="./assets/css/layout.css?v=2">
-  <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=2">
+  <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=3">
 </head>
 <body>
   <div class="app-shell">
-    <aside class="sidebar">
+    <aside id="mainSidebar" class="sidebar">
       <a class="brand" href="./" aria-label="Razync">
         <img class="brand-logo" src="./assets/razync-logo-original.png" alt="" width="48" height="48">
         <span><strong>Razync</strong><small>Automação contábil</small></span>
@@ -29,7 +29,7 @@
     </nav>
       <div class="sidebar-note"><span class="sidebar-dot"></span><div>Rotina organizada<small>Do documento à conferência.</small></div></div>
     </aside>
-    <header class="topbar"><div class="topbar-title"><span>Área de trabalho</span><strong id="currentSection">Empresas</strong></div><span id="apiStatus" class="status-pill" role="status">Verificando conexão…</span></header>
+    <header class="topbar"><button id="sidebarToggle" type="button" class="sidebar-toggle" aria-controls="mainSidebar" aria-expanded="true" aria-label="Recolher menu lateral">☰</button><div class="topbar-title"><span>Área de trabalho</span><strong id="currentSection">Empresas</strong></div><span id="apiStatus" class="status-pill" role="status">Verificando conexão…</span></header>
 
     <main>
       <section id="companiesView" class="global-view active">
@@ -45,7 +45,7 @@
         </div>
         <section class="workspace">
           <div class="search-card">
-            <div class="directory-heading"><div><h2>Empresas cadastradas</h2><p>Os resultados aparecem enquanto você digita.</p></div></div>
+            <div class="directory-heading"><div><h2>Empresas cadastradas</h2><p>Os resultados aparecem enquanto você digita.</p></div><button id="addCompany" type="button" class="secondary-action">+ Adicionar empresa</button></div>
             <label for="companySearch" class="visually-hidden">Pesquisar empresa</label>
             <div class="directory-controls">
             <div class="search-wrap">
@@ -197,7 +197,6 @@
               <div id="baseStats" class="mini-metrics"></div>
             </div>
             <div class="stack-forms">
-              <fieldset id="basePeriod" class="period-card standard-period-card base-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="baseStart">De</label><input id="baseStart" type="date"></div><div><label for="baseEnd">Até</label><input id="baseEnd" type="date"></div></div><p>O período é aplicado às ações de aprender, classificar e revisar.</p></fieldset>
               <form id="learnForm" class="modern-form compact-form">
                 <div class="form-card-header">
                   <span class="form-card-icon icon-learn" aria-hidden="true"></span>
@@ -302,10 +301,21 @@
     </footer>
   </div>
 
+  <dialog id="companyDialog" class="company-dialog" aria-labelledby="companyDialogTitle">
+    <form id="companyCreateForm">
+      <div class="company-dialog-heading"><h2 id="companyDialogTitle">Adicionar empresa</h2><button id="closeCompanyDialog" type="button" aria-label="Fechar cadastro">×</button></div>
+      <p>Cadastre a empresa agora. A ferramenta poderá ser adicionada depois.</p>
+      <label for="newCompanyCode">Código da empresa</label><input id="newCompanyCode" type="text" inputmode="numeric" pattern="[0-9]{1,9}" maxlength="9" required>
+      <label for="newCompanyName">Nome (opcional)</label><input id="newCompanyName" type="text" maxlength="160" placeholder="Se não informar, será usado Empresa + código">
+      <label for="newCompanyRegime">Regime (opcional)</label><select id="newCompanyRegime"><option>Não informado</option><option>LUCRO REAL</option><option>LUCRO PRESUMIDO</option><option>SIMPLES NACIONAL</option></select>
+      <label for="companyCreateKey">Chave administrativa</label><input id="companyCreateKey" type="password" autocomplete="new-password" required>
+      <p id="companyCreateMessage" role="status"></p><button type="submit">Criar empresa</button>
+    </form>
+  </dialog>
   <script src="./assets/js/config.js"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
-  <script src="./assets/js/workspace-ui.js?v=2"></script>
-  <script src="./assets/js/app.js?v=empty-companies-3"></script>
-  <script src="./assets/js/migration.js?v=auto-workspace-16"></script>
+  <script src="./assets/js/workspace-ui.js?v=3"></script>
+  <script src="./assets/js/app.js?v=company-workspace-1"></script>
+  <script src="./assets/js/migration.js?v=company-workspace-1"></script>
 </body>
 </html>

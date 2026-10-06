@@ -14,17 +14,9 @@ $(".tool-tabs").appendChild(francesinhasTab);
 
 renderWorkflow = function(company) {
   migratedRenderWorkflow(company);
-  const dates = [...advancedFields.querySelectorAll('input[type="date"]')];
-  if (dates.length) {
-    const period = document.createElement("fieldset"); period.className = "period-card";
-    const legend = document.createElement("legend"); legend.textContent = "Período dos lançamentos (opcional)";
-    const fields = document.createElement("div"); fields.className = "period-fields";
-    dates.forEach(input => fields.append(input.closest(".field-group")));
-    period.append(legend, fields); advancedFields.append(period);
-  }
   enableMobileDateFields(advancedFields);
   $("#toolDescription").textContent += " A prévia aparece automaticamente quando os arquivos obrigatórios estiverem preenchidos.";
-  $("#standardPeriod").hidden = company.capabilities?.workflow === "advanced";
+  $("#standardPeriod").hidden = false;
   const eletro = [242,1408].includes(Number(company.codigo));
   $("#reportPackage").hidden = company.capabilities?.workflow !== "advanced";
   $("#reportPackage").textContent = eletro ? "Baixar relatórios individuais e consolidado" : "Baixar modelo e conferências";
@@ -383,8 +375,6 @@ $("#reviewForm").addEventListener("submit", async event=>{
   reviewSourceFile=$("#reviewFile").files[0];if(!reviewSourceFile)return;
   const sourceFile=reviewSourceFile;
   const data=new FormData();data.append("file",reviewSourceFile);
-  try { appendPeriod(data,"#baseStart","#baseEnd"); }
-  catch(error) { return msg.textContent=error.message; }
   msg.textContent="Listando pendências…";
   try {
     const r=await fetch(`${API()}/api/v1/base-inteligente/${code}/pendencias`,{method:"POST",body:data});

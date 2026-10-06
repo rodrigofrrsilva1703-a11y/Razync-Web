@@ -22,6 +22,7 @@ from razync.company_catalog import EMPRESAS
 from app.custom_adapters import processar_custom
 from app.excel import gerar_modelo_abas
 from app.registry import CAPABILITIES, COMMON_TOOLS
+from app.company_service import catalog as company_catalog
 from app.advanced import workflow_modelo, processar_itau_generico, processar_daycoval_generico
 from app.conferencia import ler_modelo_excel, conciliar
 from app.classification_service import learn as base_learn, status as base_status, classify as base_classify
@@ -121,7 +122,7 @@ def health():
 @app.get("/api/v1/companies")
 def companies():
     result = []
-    for item in EMPRESAS:
+    for item in company_catalog():
         row = dict(item)
         cap = dict(CAPABILITIES.get(int(item["codigo"]), {"status": "catalog_only", "tools": []}))
         if cap.get("status") == "api_ready":
@@ -136,7 +137,7 @@ def companies():
 
 @app.get("/api/v1/companies/{company_code}")
 def company(company_code: int):
-    item = next((x for x in EMPRESAS if int(x["codigo"]) == company_code), None)
+    item = next((x for x in company_catalog() if int(x["codigo"]) == company_code), None)
     if not item:
         raise HTTPException(status_code=404, detail="Empresa não cadastrada.")
     row = dict(item)

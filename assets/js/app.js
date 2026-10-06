@@ -522,7 +522,7 @@ function renderWorkflow(company) {
       `;
       advancedFields.appendChild(wrap);
     }
-    for (const option of cap.options || []) {
+    for (const option of (cap.options || []).filter(option => option.type !== "date")) {
       const wrap = document.createElement("div");
       wrap.className = "field-group";
       const year = new Date().getFullYear();
@@ -925,8 +925,6 @@ learnForm.addEventListener("submit", async (event) => {
   if (!files.length) return $("#learnMessage").textContent = "Selecione pelo menos um arquivo revisado.";
   const data = new FormData();
   files.forEach(file => data.append("files", file));
-  try { appendPeriod(data,"#baseStart","#baseEnd"); }
-  catch (error) { return $("#learnMessage").textContent = error.message; }
   $("#learnMessage").textContent = "Aprendendo padrões…";
   try {
     const response = await fetch(`${API()}/api/v1/base-inteligente/${selected.codigo}/aprender`, {method:"POST", body:data});
@@ -963,9 +961,7 @@ classifyForm.addEventListener("submit", async (event) => {
   button.disabled = true;
   const data = new FormData();
   data.append("file", file);
-  let classifyOptions;
-  try { classifyOptions = readPeriod("#baseStart","#baseEnd"); }
-  catch (error) { button.disabled = false; return $("#classifyMessage").textContent = error.message; }
+  const classifyOptions = {};
   if ([242, 1408].includes(Number(selected.codigo))) {
     const column = $("#classificationColumn").value;
     Object.assign(classifyOptions,{
