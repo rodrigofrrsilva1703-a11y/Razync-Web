@@ -18,13 +18,11 @@ CAPABILITIES = {
         "status": "api_ready",
         "workflow": "advanced",
         "roles": [
-            {"name": "original", "label": "Arquivo original/principal", "accept": ".xls,.xlsx", "multiple": False},
             {"name": "despesas", "label": "Despesas", "accept": ".xls,.xlsx", "multiple": False, "optional": True},
             {"name": "fornecedores", "label": "Fornecedores", "accept": ".xls,.xlsx", "multiple": False, "optional": True},
             {"name": "recebidos", "label": "Recebidos", "accept": ".xls,.xlsx", "multiple": False, "optional": True},
             {"name": "francesinhas", "label": "Francesinhas ZIP", "accept": ".zip", "multiple": False, "optional": True},
         ],
-        "options": [{"name": "ano", "label": "Ano de referência", "type": "number"}],
         "banks": {"itau_508": "508", "itau_509": "509", "banco_brasil": "8"},
     },
     266: {
@@ -166,11 +164,13 @@ for code in (242, 1408):
     for name, label in (('despesas', 'Relatório Despesa'), ('fornecedores', 'Relatório Fornecedor'), ('recebidos', 'Relatório Recebido')):
         if not any(role['name'] == name for role in existing):
             existing.append({'name': name, 'label': label, 'accept': '.xls,.xlsx', 'multiple': False, 'optional': True})
-    CAPABILITIES[code]['options'] = [
-        {'name': 'ano', 'label': 'Ano de referência', 'type': 'number'},
+    options = [
         {'name': 'data_inicial', 'label': 'Data inicial (opcional)', 'type': 'date'},
         {'name': 'data_final', 'label': 'Data final (opcional)', 'type': 'date'},
     ]
+    if code == 1408:
+        options.insert(0, {'name': 'ano', 'label': 'Ano de referência', 'type': 'number'})
+    CAPABILITIES[code]['options'] = options
 for code in (3, 178, 343, 266, 1396, 1000, 1001, 1064):
     CAPABILITIES[code]['options'] = [
         {'name': 'data_inicial', 'label': 'Data inicial (opcional)', 'type': 'date'},
