@@ -280,3 +280,13 @@ def test_selected_period_filters_standard_api_without_changing_legacy_processor(
     assert workbook_signature(response.content)==workbook_signature(expected)
     bad=client.post('/api/v1/modelo-dominio/88/multi',data={'banks_json':'["itau"]','options_json':'[]'},files={'files':('itau.pdf',b'pdf')})
     assert bad.status_code==400
+
+
+def test_non_tool_companies_are_explicitly_empty():
+    result = client.get('/api/v1/companies').json()
+    empty_companies = [row for row in result if not row['capabilities'].get('tools')]
+    assert empty_companies
+    for row in empty_companies:
+        assert row['capabilities'].get('tools') == []
+        assert row['capabilities'].get('banks') == {}
+        assert row['capabilities'].get('status') == 'catalog_only'
