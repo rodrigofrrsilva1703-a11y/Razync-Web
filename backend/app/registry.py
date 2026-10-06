@@ -82,6 +82,14 @@ CAPABILITIES = {
         ],
         "banks": {"itau": "508", "sicredi": "505"},
     },
+    1064: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [
+            {"name": "sicredi", "label": "Planilha SIG Sicredi", "accept": ".xls,.xlsx", "multiple": True},
+        ],
+        "banks": {"sicredi": "505"},
+    },
     1096: {
         "status": "api_ready",
         "workflow": "advanced",
@@ -163,7 +171,7 @@ for code in (242, 1408):
         {'name': 'data_inicial', 'label': 'Data inicial (opcional)', 'type': 'date'},
         {'name': 'data_final', 'label': 'Data final (opcional)', 'type': 'date'},
     ]
-for code in (3, 178, 343, 266, 1396, 1000, 1001):
+for code in (3, 178, 343, 266, 1396, 1000, 1001, 1064):
     CAPABILITIES[code]['options'] = [
         {'name': 'data_inicial', 'label': 'Data inicial (opcional)', 'type': 'date'},
         {'name': 'data_final', 'label': 'Data final (opcional)', 'type': 'date'},
