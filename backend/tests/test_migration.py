@@ -55,9 +55,10 @@ def reference_engine():
     return SimpleNamespace(**namespace)
 
 
-def test_bank_selection_alias_keeps_fibra_for_company_266():
+def test_bank_selection_aliases_used_by_company_tools():
+    assert normalize_selected_banks(['Itaú', 'Daycoval']) == ['Itaú', 'Daycoval']
     assert normalize_selected_banks(['Itaú', 'Bradesco', 'Banco Fibra']) == ['Itaú', 'Bradesco', 'Fibra']
-    assert normalize_selected_banks(['fibra']) == ['Fibra']
+    assert normalize_selected_banks(['itau', 'bradesco', 'fibra']) == ['Itaú', 'Bradesco', 'Fibra']
 
 
 def test_extracted_rules_match_reference_ast_and_hashes():
