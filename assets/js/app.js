@@ -570,6 +570,7 @@ async function refreshBaseStats() {
   }
 }
 function openCompany(company) {
+  cancelReconcilePreview();
   selected = company;
   const available = ["api_ready","fiscal_only"].includes(company.capabilities?.status);
   const taxOnly = company.capabilities?.status === "fiscal_only";
@@ -640,6 +641,7 @@ function openCompany(company) {
 }
 
 function closeCompany() {
+  cancelReconcilePreview();
   cancelAutomaticPreview();
   cancelClassificationPreview();
   panel.hidden = true;
@@ -1214,9 +1216,15 @@ function buildReconcileData() {
 let reconcilePreviewTimer;
 let reconcilePreviewController;
 
-function scheduleReconcilePreview() {
+function cancelReconcilePreview() {
   clearTimeout(reconcilePreviewTimer);
   reconcilePreviewController?.abort();
+  clearToolResult("#reconcileResult");
+  $("#reconcileMessage").textContent = "";
+}
+
+function scheduleReconcilePreview() {
+  cancelReconcilePreview();
 
   const model = $("#modelFile").files[0];
   const state = reconcileSelectionState();
@@ -1238,7 +1246,10 @@ function scheduleReconcilePreview() {
   $("#reconcileMessage").textContent = state.banks.length > 1
     ? `Arquivos prontos. Conferindo ${state.banks.length} bancos…`
     : "Arquivos prontos. Montando conferência diária…";
-  reconcilePreviewTimer = setTimeout(() => reconcileForm.requestSubmit(),550);
+  const companyCode = selected?.codigo;
+  reconcilePreviewTimer = setTimeout(() => {
+    if (companyCode !== undefined && selected?.codigo === companyCode) reconcileForm.requestSubmit();
+  },550);
 }
 
 reconcileForm.addEventListener("change",scheduleReconcilePreview);
@@ -1246,10 +1257,13 @@ reconcileForm.addEventListener("change",scheduleReconcilePreview);
 reconcileForm.addEventListener("submit",async event => {
   event.preventDefault();
   clearTimeout(reconcilePreviewTimer);
-  reconcilePreviewController?.abort();
+  cancelReconcilePreview();
 
   const controller = new AbortController();
   reconcilePreviewController = controller;
+  const companyCode = selected?.codigo;
+  if (companyCode === undefined) return;
+  const isCurrent = () => !controller.signal.aborted && selected?.codigo === companyCode;
   const model = $("#modelFile").files[0];
   const state = reconcileSelectionState();
 
@@ -1263,29 +1277,32 @@ reconcileForm.addEventListener("submit",async event => {
     ? `Conferindo saldos de ${state.banks.length} bancos por dia…`
     : "Conferindo saldos por dia…";
 
+  // Keep exactly the same documents, banks and period for preview and download.
+  const snapshot = state.banks.length === 1 ? buildSingleReconcileData(state.banks[0]) : buildReconcileData();
   try {
     const previewEndpoint = state.banks.length === 1
-      ? `${API()}/api/v1/conferencia-extrato/${selected.codigo}/preview`
-      : `${API()}/api/v1/conferencia-extrato/${selected.codigo}/multi/preview`;
-    const previewBody = state.banks.length === 1 ? buildSingleReconcileData(state.banks[0]) : buildReconcileData();
+      ? `${API()}/api/v1/conferencia-extrato/${companyCode}/preview`
+      : `${API()}/api/v1/conferencia-extrato/${companyCode}/multi/preview`;
+    const previewBody = snapshot;
     const response = await fetch(previewEndpoint,{
       method:"POST",body:previewBody,signal:controller.signal
     });
     if (!response.ok) throw new Error(await responseError(response));
     const result = await response.json();
-    if (controller.signal.aborted) return;
+    if (!isCurrent()) return;
 
     renderDailyReconciliation($("#reconcileResult"),{
       rows:result.rows || [],
       kind:"modelo",
       download:async () => {
+        if (!isCurrent()) return;
         const reportEndpoint = state.banks.length === 1
-          ? `${API()}/api/v1/conferencia-extrato/${selected.codigo}`
-          : `${API()}/api/v1/conferencia-extrato/${selected.codigo}/multi`;
-        const reportBody = state.banks.length === 1 ? buildSingleReconcileData(state.banks[0]) : buildReconcileData();
-        const report = await fetch(reportEndpoint,{method:"POST",body:reportBody});
+          ? `${API()}/api/v1/conferencia-extrato/${companyCode}`
+          : `${API()}/api/v1/conferencia-extrato/${companyCode}/multi`;
+        const report = await fetch(reportEndpoint,{method:"POST",body:snapshot,signal:controller.signal});
         if (!report.ok) throw new Error(await responseError(report));
-        await downloadBlob(report,`RAZYNC_${selected.codigo}_CONFERENCIA_EXTRATO.xlsx`);
+        if (!isCurrent()) return;
+        await downloadBlob(report,`RAZYNC_${companyCode}_CONFERENCIA_EXTRATO.xlsx`);
       }
     });
 
@@ -1301,7 +1318,7 @@ reconcileForm.addEventListener("submit",async event => {
         : "Todos os dias analisados estão batendo.";
     }
   } catch (error) {
-    if (error.name === "AbortError") return;
+    if (error.name === "AbortError" || !isCurrent()) return;
     $("#reconcileResult").hidden = true;
     $("#reconcileResult").replaceChildren();
     $("#reconcileMessage").textContent = error.message;
@@ -1360,6 +1377,7 @@ enhanceFileInputs(panel);
 
 
 function showGlobalView(name) {
+  cancelReconcilePreview();
   $('#currentSection').textContent = {companies:'Empresas',converter:'Conversor de Extratos',ledger:'Conciliação com Razão'}[name];
   panel.hidden = true;
   selected = null;
@@ -1501,6 +1519,7 @@ function scheduleLedgerPreview() {
   const statement = $("#ledgerStatement").files[0];
   const ledger = $("#ledgerFile").files[0];
   const target = $("#ledgerResult");
+  clearToolResult("#ledgerResult");
   if (!statement || !ledger) {
     if (target) {
       target.hidden = true;
@@ -1519,6 +1538,7 @@ $("#ledgerForm")?.addEventListener("submit", async event => {
   event.preventDefault();
   clearTimeout(ledgerPreviewTimer);
   ledgerPreviewController?.abort();
+  clearToolResult("#ledgerResult");
   const controller = new AbortController();
   ledgerPreviewController = controller;
 
@@ -1527,10 +1547,11 @@ $("#ledgerForm")?.addEventListener("submit", async event => {
   const msg = $("#ledgerMessage");
   if (!statement || !ledger) return msg.textContent = "Envie o extrato e o Razão.";
 
+  const snapshot = buildLedgerData();
   msg.textContent = "Conferindo movimentos por dia…";
   try {
     const response = await fetch(`${API()}/api/v1/conciliacao-razao/preview`, {
-      method:"POST", body:buildLedgerData(), signal:controller.signal
+      method:"POST", body:snapshot, signal:controller.signal
     });
     if (!response.ok) throw new Error(await responseError(response));
     const result = await response.json();
@@ -1540,8 +1561,10 @@ $("#ledgerForm")?.addEventListener("submit", async event => {
       rows:result.rows || [],
       kind:"razao",
       download:async () => {
-        const report = await fetch(`${API()}/api/v1/conciliacao-razao`, {method:"POST",body:buildLedgerData()});
+        if (controller.signal.aborted) return;
+        const report = await fetch(`${API()}/api/v1/conciliacao-razao`, {method:"POST",body:snapshot,signal:controller.signal});
         if (!report.ok) throw new Error(await responseError(report));
+        if (controller.signal.aborted) return;
         await downloadBlob(report,"RAZYNC_CONCILIACAO_RAZAO.xlsx");
       }
     });
@@ -1551,7 +1574,7 @@ $("#ledgerForm")?.addEventListener("submit", async event => {
       ? `${divergent} dia(s) com divergência entre Extrato e Razão.`
       : "Todos os dias analisados estão conciliados.";
   } catch (error) {
-    if (error.name === "AbortError") return;
+    if (error.name === "AbortError" || controller.signal.aborted) return;
     $("#ledgerResult").hidden = true;
     $("#ledgerResult").replaceChildren();
     msg.textContent = error.message;

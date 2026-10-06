@@ -7,6 +7,7 @@ on:
     paths:
       - "index.html"
       - "assets/**"
+      - "tests/frontend/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -35,6 +36,9 @@ jobs:
         run: |
           node --check assets/js/app.js
           node --check assets/js/migration.js
+
+      - name: Test reconciliation preview lifecycle
+        run: node --test tests/frontend/reconciliation.test.cjs
 
       - name: Prepare static site
         run: |
