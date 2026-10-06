@@ -266,7 +266,8 @@ function renderBankSelector(container, banks, options={}) {
     selectElement=null,
     controlBankFields=false,
     controlRoleFields=false,
-    sendSelectedBanks=false
+    sendSelectedBanks=false,
+    onSelectionChange=null
   } = options;
 
   const head = document.createElement("div");
@@ -351,6 +352,9 @@ function renderBankSelector(container, banks, options={}) {
         label.classList.toggle("selected",input.checked);
         updateSelectAllButton();
       }
+      if (typeof onSelectionChange === "function") {
+        onSelectionChange(choices.filter(item => item.input.checked).map(item => item.bank));
+      }
     });
 
     label.classList.toggle("selected",input.checked);
@@ -377,7 +381,10 @@ function renderBankSelector(container, banks, options={}) {
         applyBankState(choice.bank,shouldSelect);
       });
       updateSelectAllButton();
-      form.dispatchEvent(new Event("change",{bubbles:true}));
+      if (typeof onSelectionChange === "function") {
+        onSelectionChange(choices.filter(item => item.input.checked).map(item => item.bank));
+      }
+      container.closest("form")?.dispatchEvent(new Event("change",{bubbles:true}));
     });
     head.appendChild(selectAllButton);
     updateSelectAllButton();
@@ -406,7 +413,47 @@ function activateTool(name) {
   }
 }
 
-$$(".tool-tab").forEach(btn => btn.addEventListener("click", () => activateTool(btn.dataset.tool)));
+$(".tool-tab").forEach(btn => btn.addEventListener("click", () => activateTool(btn.dataset.tool)));
+
+function selectedReconcileBanks() {
+  return $("#reconcileBankSelector [data-bank-choice]:checked").map(input => input.value);
+}
+
+function syncReconcileBankFields(selectedBanks = selectedReconcileBanks()) {
+  const selectedSet = new Set(selectedBanks);
+  $("#reconcileStatementFields [data-reconcile-bank-group]").forEach(group => {
+    const active = selectedSet.has(group.dataset.reconcileBankGroup);
+    group.hidden = !active;
+    const input = group.querySelector("[data-reconcile-bank]");
+    if (input) input.disabled = !active;
+  });
+}
+
+function renderReconcileBankFields(banks) {
+  const host = $("#reconcileStatementFields");
+  if (!host) return;
+  host.replaceChildren();
+  Object.entries(banks || {}).forEach(([bank, account]) => {
+    const group = document.createElement("div");
+    group.className = "reconcile-bank-file field-group";
+    group.dataset.reconcileBankGroup = bank;
+
+    const id = `reconcile_files_${bank}`;
+    const label = document.createElement("label");
+    label.htmlFor = id;
+    label.innerHTML = `${bankName(bank)} <span class="optional">Conta ${account || "—"}</span>`;
+
+    const input = document.createElement("input");
+    input.id = id;
+    input.type = "file";
+    input.multiple = true;
+    input.accept = ".pdf,.xls,.xlsx,.csv,.ofx";
+    input.dataset.reconcileBank = bank;
+
+    group.append(label,input);
+    host.appendChild(group);
+  });
+}
 
 function renderWorkflow(company) {
   const cap = company.capabilities || {};
@@ -417,7 +464,14 @@ function renderWorkflow(company) {
 
   fillBankSelect(bankSelect, banks);
   fillBankSelect($("#reconcileBank"), banks);
-  renderBankSelector(reconcilePicker, banks, {mode:"single", selectElement:$("#reconcileBank")});
+  renderReconcileBankFields(banks);
+  const reconcileMode = Object.keys(banks).length > 1 ? "multi" : "single";
+  renderBankSelector(reconcilePicker, banks, {
+    mode:reconcileMode,
+    selectElement:$("#reconcileBank"),
+    onSelectionChange:syncReconcileBankFields
+  });
+  syncReconcileBankFields();
 
   organizerPicker.replaceChildren();
   organizerPicker.hidden = true;
