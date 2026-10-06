@@ -651,3 +651,180 @@
     width:100%;
   }
 }
+
+
+/* === Conferência diária: Extrato × Modelo e Extrato × Razão === */
+.daily-reconciliation {
+  display:grid;
+  gap:12px;
+  min-width:0;
+  margin-top:18px;
+}
+.daily-reconciliation[hidden] {
+  display:none !important;
+}
+#companyPanel .daily-reconciliation,
+.global-daily-result {
+  padding:16px;
+  border:1px solid #dce5ee;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 4px 16px rgba(25,50,79,.04);
+}
+.daily-summary {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.daily-summary > div {
+  display:grid;
+  gap:3px;
+  padding:12px 13px;
+  border:1px solid #e0e7ef;
+  border-radius:10px;
+  background:#f8fafc;
+}
+.daily-summary small {
+  color:#7d8da0;
+  font-size:10px;
+}
+.daily-summary strong {
+  color:#334f6e;
+  font-size:19px;
+  font-weight:750;
+}
+.daily-toolbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.daily-filters {
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.daily-filter,
+.daily-download {
+  min-height:36px;
+  padding:8px 11px;
+  border:1px solid #d6e0ea;
+  border-radius:9px;
+  background:#fff;
+  color:#50657e;
+  font-size:11px;
+  font-weight:650;
+  cursor:pointer;
+}
+.daily-filter:hover,
+.daily-download:hover {
+  border-color:#aec0d4;
+  background:#f8fbfe;
+}
+.daily-filter.active {
+  border-color:#9fb6d5;
+  background:#eef4fb;
+  color:#315fc5;
+}
+.daily-download {
+  border-color:#315fc5;
+  background:#315fc5;
+  color:#fff;
+}
+.daily-download:hover {
+  background:#294fa8;
+  color:#fff;
+}
+.daily-download:disabled {
+  opacity:.65;
+  cursor:wait;
+}
+.daily-table-scroll {
+  width:100%;
+  max-width:100%;
+  overflow:auto;
+  border:1px solid #e1e8ef;
+  border-radius:11px;
+}
+.daily-table {
+  width:100%;
+  min-width:1080px;
+  border-collapse:collapse;
+  background:#fff;
+}
+.daily-table th {
+  position:sticky;
+  top:0;
+  z-index:1;
+  padding:11px 12px;
+  border-bottom:1px solid #dce5ed;
+  background:#f1f5f9;
+  color:#52657c;
+  font-size:10px;
+  font-weight:700;
+  text-align:left;
+  white-space:nowrap;
+}
+.daily-table td {
+  padding:11px 12px;
+  border-bottom:1px solid #edf1f5;
+  color:#43576f;
+  font-size:11px;
+  white-space:nowrap;
+}
+.daily-table tr:last-child td {
+  border-bottom:0;
+}
+.daily-table td.numeric {
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+.daily-table tr.daily-review td {
+  background:#fffaf2;
+}
+.daily-table tr.daily-ok:hover td {
+  background:#f7fafc;
+}
+.daily-table tr.daily-review:hover td {
+  background:#fff6e8;
+}
+.daily-status {
+  display:inline-flex;
+  align-items:center;
+  min-height:25px;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:700;
+}
+.daily-status.is-ok {
+  background:#edf4f8;
+  color:#4a687d;
+}
+.daily-status.is-review {
+  background:#fff1db;
+  color:#8a652b;
+}
+.global-daily-result {
+  margin-top:16px;
+}
+
+@media(max-width:700px) {
+  .daily-summary {
+    grid-template-columns:1fr 1fr 1fr;
+  }
+  .daily-summary > div {
+    padding:10px;
+  }
+  .daily-summary strong {
+    font-size:16px;
+  }
+  .daily-toolbar {
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .daily-download {
+    width:100%;
+  }
+}
