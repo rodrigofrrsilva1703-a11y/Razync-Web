@@ -9,7 +9,7 @@
   <meta name="description" content="Razync — automação contábil">
   <link rel="stylesheet" href="./assets/css/app.css">
   <link rel="stylesheet" href="./assets/css/workspace.css?v=12">
-  <link rel="stylesheet" href="./assets/css/tools.css?v=1">
+  <link rel="stylesheet" href="./assets/css/tools.css?v=2">
 </head>
 <body>
   <div class="app-shell">
@@ -164,11 +164,8 @@
                 <input id="fileInput" type="file" multiple accept=".pdf,.xls,.xlsx,.csv,.ofx">
               </div>
               <div id="advancedFields" class="dynamic-fields" hidden></div>
-              <div id="standardPeriod">
-                <label for="processStart">Data inicial (opcional)</label><input id="processStart" type="date">
-                <label for="processEnd">Data final (opcional)</label><input id="processEnd" type="date">
-              </div>
-              <button id="processButton" type="submit">Processar e visualizar lançamentos</button>
+              <fieldset id="standardPeriod" class="period-card"><legend>Período dos lançamentos <span>(opcional)</span></legend><div class="period-fields"><div><label for="processStart">De</label><input id="processStart" type="date"></div><div><label for="processEnd">Até</label><input id="processEnd" type="date"></div></div><p>Deixe em branco para considerar todo o arquivo.</p></fieldset>
+              <button id="processButton" type="submit">Atualizar prévia</button>
               <div id="processVisualStatus" class="process-visual-status" hidden aria-live="polite">
                 <span class="process-status-icon" aria-hidden="true"></span>
                 <div><strong id="processStatusTitle">Preparando processamento</strong><small id="processStatusText">Aguarde enquanto o Razync organiza os arquivos.</small></div>
@@ -267,8 +264,7 @@
               <input id="modelFile" type="file" accept=".xlsx,.xls">
               <label for="statementFiles">Extrato(s)</label>
               <input id="statementFiles" type="file" multiple accept=".pdf,.xls,.xlsx,.csv,.ofx">
-              <label for="reconcileStart">Data inicial (opcional)</label><input id="reconcileStart" type="date">
-              <label for="reconcileEnd">Data final (opcional)</label><input id="reconcileEnd" type="date">
+              <fieldset class="period-card"><legend>Período da conferência <span>(opcional)</span></legend><div class="period-fields"><div><label for="reconcileStart">De</label><input id="reconcileStart" type="date"></div><div><label for="reconcileEnd">Até</label><input id="reconcileEnd" type="date"></div></div></fieldset>
               <button type="submit">Conferir com Extrato</button>
               <p id="reconcileMessage" class="helper"></p>
             </form>
@@ -377,7 +373,7 @@
   </div>
 
   <script src="./assets/js/config.js"></script>
-  <script src="./assets/js/app.js?v=workspace-6"></script>
-  <script src="./assets/js/migration.js?v=workspace-6"></script>
+  <script src="./assets/js/app.js?v=auto-workspace-6"></script>
+  <script src="./assets/js/migration.js?v=auto-workspace-6"></script>
 </body>
 </html>

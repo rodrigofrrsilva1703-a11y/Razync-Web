@@ -14,6 +14,15 @@ $(".tool-tabs").appendChild(francesinhasTab);
 
 renderWorkflow = function(company) {
   migratedRenderWorkflow(company);
+  const dates = [...advancedFields.querySelectorAll('input[type="date"]')];
+  if (dates.length) {
+    const period = document.createElement("fieldset"); period.className = "period-card";
+    const legend = document.createElement("legend"); legend.textContent = "Período dos lançamentos (opcional)";
+    const fields = document.createElement("div"); fields.className = "period-fields";
+    dates.forEach(input => fields.append(input.closest(".field-group")));
+    period.append(legend, fields); advancedFields.append(period);
+  }
+  $("#toolDescription").textContent += " A prévia aparece automaticamente quando os arquivos obrigatórios estiverem preenchidos.";
   $("#standardPeriod").hidden = company.capabilities?.workflow === "advanced";
   const eletro = [242,1408].includes(Number(company.codigo));
   const fiscalOnly = company.capabilities?.status === "fiscal_only";
@@ -41,6 +50,7 @@ renderWorkflow = function(company) {
 };
 
 openCompany = function(company) {
+  cancelAutomaticPreview();
   // File inputs and their visual state must not carry documents across companies.
   document.querySelectorAll("#companyPanel form").forEach(f => f.reset());
   document.querySelectorAll("#companyPanel .file-selection").forEach(el => el.remove());

@@ -356,6 +356,7 @@ function openCompany(company) {
 }
 
 function closeCompany() {
+  cancelAutomaticPreview();
   panel.hidden = true;
   workspace.hidden = false;
   $(".hero").hidden = false;
@@ -384,9 +385,52 @@ async function responseError(response) {
   return body.detail || `Erro ${response.status}`;
 }
 
+let autoPreviewTimer;
+let previewController;
+let previewVersion = 0;
+function cancelAutomaticPreview() {
+  clearTimeout(autoPreviewTimer);
+  previewController?.abort();
+  previewVersion++;
+  form.querySelectorAll("button.is-loading").forEach(button => {
+    button.disabled = false;
+    button.classList.remove("is-loading");
+  });
+}
+function scheduleAutomaticPreview() {
+  cancelAutomaticPreview();
+  $("#workflowPreview").replaceChildren();
+  processMessage.textContent = "";
+  const workflow = selected?.capabilities?.workflow;
+  const inputs = workflow === "advanced" ? [...form.querySelectorAll("[data-role]")]
+    : workflow === "standard_multi_bank" ? [...form.querySelectorAll("[data-bank]")] : [fileInput];
+  const missing = inputs.filter(input => input.required && !input.files.length);
+  const hasFiles = inputs.some(input => input.files.length);
+  if (!hasFiles || missing.length || !form.checkValidity()) {
+    setProcessStage("upload", "Aguardando arquivos", missing.length
+      ? "Complete os arquivos obrigatórios para mostrar a prévia automaticamente."
+      : "A prévia aparece automaticamente após selecionar os arquivos.");
+    return;
+  }
+  const start = form.querySelector('[data-option="data_inicial"]') || $("#processStart");
+  const end = form.querySelector('[data-option="data_final"]') || $("#processEnd");
+  if (start.value && end.value && start.value > end.value) {
+    setProcessStage("error", "Confira o período", "A data inicial deve ser anterior ou igual à data final.");
+    return;
+  }
+  setProcessStage("upload", "Preparando prévia automática", "Os arquivos estão prontos. A prévia será atualizada em instantes.");
+  autoPreviewTimer = setTimeout(() => form.requestSubmit(processButton), 800);
+}
+form.addEventListener("change", scheduleAutomaticPreview);
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!selected) return;
+  clearTimeout(autoPreviewTimer);
+  previewController?.abort();
+  const controller = new AbortController();
+  previewController = controller;
+  const currentVersion = ++previewVersion;
   const companyCode=selected.codigo;
   const cap = selected.capabilities || {};
   const workflow = cap.workflow || "standard";
@@ -441,7 +485,8 @@ form.addEventListener("submit", async (event) => {
     submitButton.classList.add("is-loading");
     setProcessStage("processing", "Processando arquivos", "O Razync está lendo, organizando e montando os lançamentos.");
     renderProcessingSkeleton();
-    const response = await fetch(endpoint, { method: "POST", body: data });
+    const response = await fetch(endpoint, { method: "POST", body: data, signal:controller.signal });
+    if (currentVersion !== previewVersion) return;
     if (!response.ok) throw new Error(await responseError(response));
     if (event.submitter?.dataset.output === "preview") {
       if(selected?.codigo!==companyCode)return;
@@ -460,10 +505,12 @@ form.addEventListener("submit", async (event) => {
     const workbook = await response.blob();
     const previewData = new FormData();
     previewData.append("file", workbook, "modelo.xlsx");
-    const previewResponse = await fetch(`${API()}/api/v1/modelo-preview`, {method:"POST", body:previewData});
+    const previewResponse = await fetch(`${API()}/api/v1/modelo-preview`, {method:"POST", body:previewData, signal:controller.signal});
     if (!previewResponse.ok) throw new Error(await responseError(previewResponse));
-    if (selected?.codigo !== companyCode) return;
-    showWorkflowPreview(await previewResponse.json());
+    if (selected?.codigo !== companyCode || currentVersion !== previewVersion) return;
+    const previewResult = await previewResponse.json();
+    if (selected?.codigo !== companyCode || currentVersion !== previewVersion) return;
+    showWorkflowPreview(previewResult);
     const download = document.createElement("button");
     download.type = "button";
     download.textContent = "Baixar Modelo Domínio";
@@ -474,12 +521,15 @@ form.addEventListener("submit", async (event) => {
     processMessage.textContent = "";
     setProcessStage("review", "Modelo pronto para conferência", "Revise a prévia e baixe o Modelo Domínio quando estiver tudo certo.");
   } catch (error) {
+    if (error.name === "AbortError" || currentVersion !== previewVersion) return;
     $("#workflowPreview").replaceChildren();
     processMessage.textContent = error.message;
     setProcessStage("error", "Não foi possível processar", error.message);
   } finally {
-    submitButton.disabled = false;
-    submitButton.classList.remove("is-loading");
+    if (currentVersion === previewVersion) {
+      submitButton.disabled = false;
+      submitButton.classList.remove("is-loading");
+    }
   }
 });
 
