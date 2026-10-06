@@ -89,10 +89,12 @@ function initializeWorkspaceUI() {
 
 function initializeCompanyControls() {
   const toggle = document.querySelector("#sidebarToggle");
+  toggle.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/><path class="toggle-chevron" d="m15 9-3 3 3 3"/></svg>';
   let collapsed = false;
   try { collapsed = localStorage.getItem("razync.sidebar-collapsed") === "true"; } catch (_) {}
   const applySidebar = () => {
     document.body.classList.toggle("sidebar-collapsed", collapsed);
+    document.querySelector("#mainSidebar").inert = collapsed;
     toggle.setAttribute("aria-expanded", String(!collapsed));
     toggle.setAttribute("aria-label", collapsed ? "Abrir menu lateral" : "Recolher menu lateral");
     toggle.title = collapsed ? "Abrir menu lateral" : "Recolher menu lateral";

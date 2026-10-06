@@ -44,8 +44,16 @@ body.preview-modal-open { overflow:hidden; }
 .sidebar-toggle { flex:none; width:44px; height:44px; padding:0; border:1px solid #d5dfec; border-radius:10px; background:#fff; color:#31547d; font-size:22px; cursor:pointer; }
 .topbar { gap:14px; }
 .topbar-title { margin-right:auto; }
-body.sidebar-collapsed .sidebar { display:none; }
-body.sidebar-collapsed .app-shell { margin-left:0; max-width:none; }
+.sidebar { transition:transform 300ms cubic-bezier(.22,1,.36,1), opacity 220ms ease; box-shadow:4px 0 24px #14243b0a; }
+.app-shell { transition:margin-left 300ms cubic-bezier(.22,1,.36,1); }
+body.sidebar-collapsed .sidebar { transform:translateX(-100%); opacity:0; pointer-events:none; }
+body.sidebar-collapsed .app-shell { margin-left:0; }
+.sidebar-toggle { display:inline-flex; align-items:center; justify-content:center; background:transparent; border-color:transparent; color:#62758c; transition:background 180ms ease, color 180ms ease, box-shadow 180ms ease; }
+.sidebar-toggle:hover { background:#e7edf6; color:#315fc5; }
+.sidebar-toggle:focus-visible { outline:2px solid #315fc5; outline-offset:3px; }
+.sidebar-toggle svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.sidebar-toggle .toggle-chevron { transition:transform 300ms ease; transform-origin:14px 12px; }
+body.sidebar-collapsed .sidebar-toggle .toggle-chevron { transform:rotate(180deg); }
 .directory-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
 #addCompany { min-height:44px; padding:10px 16px; border:1px solid #d2deef; border-radius:10px; background:#fff; color:#315fc5; font-weight:600; cursor:pointer; }
 .company-dialog { width:min(480px,94vw); max-height:90dvh; padding:24px; border:1px solid #d8e2ee; border-radius:16px; color:#243c57; background:#fff; box-shadow:0 24px 80px #14243b40; }
@@ -61,8 +69,13 @@ body.sidebar-collapsed .app-shell { margin-left:0; max-width:none; }
 .company-dialog button:disabled { opacity:.6; cursor:wait; }
 #companyCreateMessage { color:#a33c49; }
 @media(max-width:760px) {
+ .sidebar { max-height:180px; overflow:hidden; transition:max-height 300ms cubic-bezier(.22,1,.36,1), padding 300ms ease, opacity 220ms ease; }
+ body.sidebar-collapsed .sidebar { transform:none; max-height:0; padding-top:0; padding-bottom:0; opacity:0; }
  .topbar { gap:8px; }
  .sidebar-toggle { width:40px; height:40px; }
  .company-dialog { padding:18px; }
  .directory-heading #addCompany { width:100%; }
+}
+@media(prefers-reduced-motion:reduce) {
+ .sidebar, .app-shell, .sidebar-toggle, .sidebar-toggle .toggle-chevron { transition:none; }
 }
