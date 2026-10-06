@@ -138,7 +138,6 @@
           <button type="button" class="tool-tab active" data-tool="organizar">Organizar arquivos</button>
           <button type="button" class="tool-tab" data-tool="base">Base Inteligente</button>
           <button type="button" class="tool-tab" data-tool="extrato">Conferência com Extrato</button>
-          <button type="button" class="tool-tab" data-tool="impostos">Conferência de Impostos</button>
         </nav>
 
         <div id="toolUnavailable" class="empty-state" hidden>
@@ -279,31 +278,6 @@
           <div id="reconcileResult" class="tool-result" hidden></div>
         </section>
 
-        <section class="tool-pane" data-pane="impostos">
-          <div class="tool-card">
-              <div>
-                <span class="tool-visual-icon tool-visual-tax" aria-hidden="true"></span>
-                <span class="company-code">CONFERÊNCIA DE IMPOSTOS</span>
-                <h3>Balancete × DCTFWeb</h3>
-                <p>Compare os impostos do balancete com um relatório da DCTFWeb já baixado e veja o resumo antes de gerar o relatório final.</p>
-              </div>
-              <form id="taxForm" class="modern-form">
-                <div class="form-card-header">
-                  <span class="form-card-icon icon-tax" aria-hidden="true"></span>
-                  <div><strong>Conferir impostos</strong><small>Envie os dois arquivos e confira o resumo antes de baixar o relatório final.</small></div>
-                </div>
-                <label for="taxBalance">Balancete</label>
-                <input id="taxBalance" type="file" accept=".pdf,.xls,.xlsx,.csv" required>
-                <label for="taxRevenue">Relatório DCTFWeb / Receita</label>
-                <input id="taxRevenue" type="file" accept=".pdf,.xls,.xlsx,.csv" required>
-                <fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="taxStart">De</label><input id="taxStart" type="date"></div><div><label for="taxEnd">Até</label><input id="taxEnd" type="date"></div></div><p>Para DCTFWeb, as duas datas devem ficar na mesma competência.</p></fieldset>
-                <button type="submit">Conferir impostos</button>
-                <p id="taxMessage" class="helper"></p>
-              </form>
-              <div id="taxResult" class="tool-result compact-result" hidden></div>
-          </div>
-        </section>
-
         <section class="tool-pane" data-pane="francesinhas">
           <div class="tool-card">
             <div><span class="tool-visual-icon tool-visual-francesinhas" aria-hidden="true"></span><span class="company-code">FRANCESINHAS</span><h3>Francesinhas avulsas</h3><p>Leia as liquidações L pela data “Emitido em” e baixe o Modelo Domínio separado por conta.</p></div>
@@ -331,7 +305,7 @@
   <script src="./assets/js/config.js"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
   <script src="./assets/js/workspace-ui.js?v=2"></script>
-  <script src="./assets/js/app.js?v=auto-workspace-34"></script>
+  <script src="./assets/js/app.js?v=auto-workspace-35"></script>
   <script src="./assets/js/migration.js?v=auto-workspace-16"></script>
 </body>
 </html>
