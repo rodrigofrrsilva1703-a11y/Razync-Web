@@ -331,6 +331,127 @@ async def intelligent_base_classify(company_code: int, file: UploadFile = File(.
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+def _reconcile_multi(company_code: int, banks: list[str], model: bytes, files: list[tuple[str, str, bytes]], options: dict):
+    from app.migration_services import reconcile
+
+    grouped = {}
+    for bank, filename, content in files:
+        valid_bank = _validated_bank(company_code, bank)
+        grouped.setdefault(valid_bank, []).append((filename, content))
+
+    requested = []
+    for bank in banks:
+        valid_bank = _validated_bank(company_code, bank)
+        if valid_bank not in requested:
+            requested.append(valid_bank)
+
+    if not requested:
+        raise ValueError("Selecione pelo menos um banco para a conferência.")
+
+    display_names = {
+        "itau": "Itaú", "itau_508": "Itaú", "itau_509": "Itaú",
+        "bradesco": "Bradesco", "fibra": "Banco Fibra", "sicredi": "Sicredi",
+        "banco_brasil": "Banco do Brasil", "caixa": "Caixa", "inter": "Banco Inter",
+        "safra": "Safra", "btg": "BTG", "santander": "Santander",
+        "daycoval": "Daycoval",
+    }
+
+    summaries, rows, sheets, errors = {}, [], {}, []
+    for bank in requested:
+        statements = grouped.get(bank, [])
+        label = display_names.get(bank, bank)
+        if not statements:
+            errors.append({"bank": bank, "label": label, "error": "Nenhum extrato enviado para este banco."})
+            continue
+        try:
+            summary, bank_sheets = reconcile(company_code, bank, model, statements, options)
+            summaries[bank] = summary
+            daily = bank_sheets.get("Conferência diária", pd.DataFrame()).copy()
+            if not daily.empty:
+                daily.insert(0, "BANCO", label)
+                rows.extend(_preview_records(daily))
+            for name, frame in bank_sheets.items():
+                safe = f"{label[:12]} - {name}"[:31]
+                sheets[safe] = frame
+        except Exception as exc:
+            errors.append({"bank": bank, "label": label, "error": str(exc)})
+
+    if not summaries and errors:
+        raise ValueError("; ".join(f"{item['label']}: {item['error']}" for item in errors))
+
+    aggregate = {
+        "banks": len(summaries),
+        "days": len(rows),
+        "ok": all(bool(summary.get("ok")) for summary in summaries.values()) and not errors,
+        "errors": errors,
+        "by_bank": summaries,
+    }
+    return aggregate, rows, sheets
+
+
+@app.post("/api/v1/conferencia-extrato/{company_code}/multi/preview")
+async def conferencia_extrato_multi_preview(
+    company_code: int,
+    banks_json: str = Form(...),
+    file_banks_json: str = Form(...),
+    model_file: UploadFile = File(...),
+    files: list[UploadFile] = File(...),
+    options_json: str = Form("{}"),
+):
+    try:
+        banks = json.loads(banks_json)
+        file_banks = json.loads(file_banks_json)
+        options = json.loads(options_json)
+        if not isinstance(banks, list) or not isinstance(file_banks, list):
+            raise ValueError("Seleção de bancos inválida.")
+        if len(file_banks) != len(files):
+            raise ValueError("Os extratos não correspondem aos bancos selecionados.")
+        prepared = []
+        for bank, upload in zip(file_banks, files):
+            prepared.append((str(bank), upload.filename or "extrato", await upload.read()))
+        summary, rows, _ = await run_in_threadpool(
+            _reconcile_multi, company_code, [str(bank) for bank in banks],
+            await model_file.read(), prepared, options
+        )
+        return {"summary": summary, "rows": rows}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/v1/conferencia-extrato/{company_code}/multi")
+async def conferencia_extrato_multi(
+    company_code: int,
+    banks_json: str = Form(...),
+    file_banks_json: str = Form(...),
+    model_file: UploadFile = File(...),
+    files: list[UploadFile] = File(...),
+    options_json: str = Form("{}"),
+):
+    try:
+        banks = json.loads(banks_json)
+        file_banks = json.loads(file_banks_json)
+        options = json.loads(options_json)
+        if not isinstance(banks, list) or not isinstance(file_banks, list):
+            raise ValueError("Seleção de bancos inválida.")
+        if len(file_banks) != len(files):
+            raise ValueError("Os extratos não correspondem aos bancos selecionados.")
+        prepared = []
+        for bank, upload in zip(file_banks, files):
+            prepared.append((str(bank), upload.filename or "extrato", await upload.read()))
+        summary, _, sheets = await run_in_threadpool(
+            _reconcile_multi, company_code, [str(bank) for bank in banks],
+            await model_file.read(), prepared, options
+        )
+        if summary.get("errors"):
+            sheets["Avisos"] = pd.DataFrame(summary["errors"])
+        report = _excel_report(sheets)
+        response = _download(report, f"RAZYNC_{company_code}_CONFERENCIA_EXTRATO.xlsx")
+        response.headers["X-Razync-Summary"] = json.dumps(summary, ensure_ascii=False)
+        return response
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 @app.post("/api/v1/conferencia-extrato/{company_code}/preview")
 async def conferencia_extrato_preview(
     company_code: int,
