@@ -428,12 +428,15 @@ def workflow_reports(code, roles, options):
     return reports
 
 
-def francesinhas(code, uploads):
+def francesinhas(code, uploads, data_inicial='', data_final=''):
     from razync.eletro_forte_francesinhas import processar_zip_francesinhas, gerar_excel_francesinhas
     frames, notices = [], []
     for _, content in uploads:
         frame, warnings = processar_zip_francesinhas(content, '512' if code == 1408 else None)
         frames.append(frame); notices.extend(warnings)
     frame = pd.concat(frames, ignore_index=True)
+    frame = filter_frame(frame, {'data_inicial': data_inicial, 'data_final': data_final})
+    if frame.empty:
+        raise ValueError('Nenhuma liquidação foi encontrada no período informado.')
     book = gerar_excel_francesinhas(_template_bytes(), frame, (('512', 'Francesinhas - Itau 512'),) if code == 1408 else None)
     return book, {'lancamentos': len(frame), 'avisos': notices}
