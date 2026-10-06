@@ -357,6 +357,8 @@ function showWorkflowPreview(data, target = $("#workflowPreview")) {
 $("#francesinhasForm").addEventListener("submit", async event => {
   event.preventDefault(); const code=selected.codigo; const msg=$("#francesinhasMessage");
   const data=new FormData(); [...$("#francesinhasFiles").files].forEach(f=>data.append("files",f));
+  try { appendPeriod(data,"#francesinhasStart","#francesinhasEnd"); }
+  catch(error) { return msg.textContent=error.message; }
   msg.textContent="Processando francesinhas…";
   try {
     const response=await fetch(`${API()}/api/v1/francesinhas/${code}`,{method:"POST",body:data});
@@ -380,7 +382,10 @@ $("#reviewForm").addEventListener("submit", async event=>{
   event.preventDefault(); const code=selected.codigo; const msg=$("#reviewMessage");
   reviewSourceFile=$("#reviewFile").files[0];if(!reviewSourceFile)return;
   const sourceFile=reviewSourceFile;
-  const data=new FormData();data.append("file",reviewSourceFile);msg.textContent="Listando pendências…";
+  const data=new FormData();data.append("file",reviewSourceFile);
+  try { appendPeriod(data,"#baseStart","#baseEnd"); }
+  catch(error) { return msg.textContent=error.message; }
+  msg.textContent="Listando pendências…";
   try {
     const r=await fetch(`${API()}/api/v1/base-inteligente/${code}/pendencias`,{method:"POST",body:data});
     if(!r.ok)throw new Error(await responseError(r));
@@ -408,7 +413,7 @@ $("#applyReview").addEventListener("click",async()=>{
 
 $("#txtForm").addEventListener("submit",async event=>{
   event.preventDefault();const data=new FormData();data.append("file",$("#txtModel").files[0]);const msg=$("#txtMessage");
-  try {const r=await fetch(`${API()}/api/v1/modelo-dominio-txt`,{method:"POST",body:data});if(!r.ok)throw new Error(await responseError(r));await downloadBlob(r,"RAZYNC_MODELO_DOMINIO.txt");msg.textContent="TXT gerado com as regras de histórico do original.";}catch(e){msg.textContent=e.message;}
+  try {appendPeriod(data,"#txtStart","#txtEnd");const r=await fetch(`${API()}/api/v1/modelo-dominio-txt`,{method:"POST",body:data});if(!r.ok)throw new Error(await responseError(r));await downloadBlob(r,"RAZYNC_MODELO_DOMINIO.txt");msg.textContent="TXT gerado com as regras de histórico do original.";}catch(e){msg.textContent=e.message;}
 });
 fetch(`${API()}/api/v1/migration-status`).then(response=>response.ok?response.json():null).then(status=>{
   $("#importOriginalBase").hidden=!status?.original_base_import_configured;
