@@ -981,28 +981,47 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
     const statusText = String(row[ledger ? "SITUAÇÃO" : "STATUS"] || "");
     const ok = /CONFERE|BATENDO/i.test(statusText);
     return {
-      date: row.DATA,
-      leftIn, rightIn, leftOut, rightOut,
-      leftNet: leftIn - leftOut,
-      rightNet: rightIn - rightOut,
-      diff: (leftIn - leftOut) - (rightIn - rightOut),
+      bank:String(row.BANCO || ""),
+      date:row.DATA,
+      leftIn,rightIn,leftOut,rightOut,
+      leftNet:leftIn-leftOut,
+      rightNet:rightIn-rightOut,
+      diff:(leftIn-leftOut)-(rightIn-rightOut),
       ok
     };
   });
 
+  const banks = [...new Set(normalized.map(row => row.bank).filter(Boolean))];
+  const multiBank = banks.length > 1;
   const okCount = normalized.filter(row => row.ok).length;
   const reviewCount = normalized.length - okCount;
 
   const summary = document.createElement("div");
   summary.className = "daily-summary";
   summary.innerHTML = `
-    <div><small>Dias analisados</small><strong>${normalized.length}</strong></div>
+    <div><small>${multiBank ? "Banco/dia analisados" : "Dias analisados"}</small><strong>${normalized.length}</strong></div>
     <div><small>Batendo</small><strong>${okCount}</strong></div>
     <div><small>Divergentes</small><strong>${reviewCount}</strong></div>
   `;
 
   const toolbar = document.createElement("div");
   toolbar.className = "daily-toolbar";
+  const toolbarLeft = document.createElement("div");
+  toolbarLeft.className = "daily-toolbar-left";
+
+  if (multiBank) {
+    const bankFilter = document.createElement("select");
+    bankFilter.className = "daily-bank-filter";
+    bankFilter.setAttribute("aria-label","Filtrar banco");
+    [["","Todos os bancos"],...banks.map(bank => [bank,bank])].forEach(([value,label]) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      bankFilter.appendChild(option);
+    });
+    toolbarLeft.appendChild(bankFilter);
+  }
+
   const filters = document.createElement("div");
   filters.className = "daily-filters";
   [
@@ -1017,7 +1036,8 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
     button.textContent = label;
     filters.appendChild(button);
   });
-  toolbar.appendChild(filters);
+  toolbarLeft.appendChild(filters);
+  toolbar.appendChild(toolbarLeft);
 
   if (download) {
     const button = document.createElement("button");
@@ -1039,8 +1059,10 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
   const table = document.createElement("table");
   table.className = "daily-table";
   const leftLabel = kind === "razao" ? "Razão" : "Modelo";
+  const bankHeader = banks.length ? "<th>Banco</th>" : "";
   table.innerHTML = `
     <thead><tr>
+      ${bankHeader}
       <th>Data</th>
       <th>Entradas ${leftLabel}</th>
       <th>Entradas Extrato</th>
@@ -1058,58 +1080,96 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
   normalized.forEach(row => {
     const tr = document.createElement("tr");
     tr.dataset.status = row.ok ? "ok" : "review";
+    tr.dataset.bank = row.bank;
     tr.className = row.ok ? "daily-ok" : "daily-review";
     const status = row.ok ? "Batendo" : "Divergente";
-    const cells = [
-      formatDailyDate(row.date),
-      brl(row.leftIn),
-      brl(row.rightIn),
-      brl(row.leftOut),
-      brl(row.rightOut),
-      brl(row.leftNet),
-      brl(row.rightNet),
-      brl(row.diff),
-      status
-    ];
-    cells.forEach((value,index) => {
+
+    const values = [];
+    if (banks.length) values.push({value:row.bank,type:"bank"});
+    values.push(
+      {value:formatDailyDate(row.date),type:"date"},
+      {value:brl(row.leftIn),type:"numeric"},
+      {value:brl(row.rightIn),type:"numeric"},
+      {value:brl(row.leftOut),type:"numeric"},
+      {value:brl(row.rightOut),type:"numeric"},
+      {value:brl(row.leftNet),type:"numeric"},
+      {value:brl(row.rightNet),type:"numeric"},
+      {value:brl(row.diff),type:"numeric"},
+      {value:status,type:"status"}
+    );
+
+    values.forEach(cell => {
       const td = document.createElement("td");
-      td.textContent = value;
-      if (index > 0 && index < 8) td.className = "numeric";
-      if (index === 8) {
+      if (cell.type === "numeric") td.className = "numeric";
+      if (cell.type === "bank") td.className = "daily-bank-cell";
+      if (cell.type === "status") {
         const badge = document.createElement("span");
         badge.className = "daily-status " + (row.ok ? "is-ok" : "is-review");
-        badge.textContent = status;
-        td.textContent = "";
+        badge.textContent = cell.value;
         td.appendChild(badge);
+      } else {
+        td.textContent = cell.value;
       }
       tr.appendChild(td);
     });
     body.appendChild(tr);
   });
 
+  const applyFilters = () => {
+    const activeStatus = filters.querySelector(".daily-filter.active")?.dataset.filter || "all";
+    const selectedBank = toolbarLeft.querySelector(".daily-bank-filter")?.value || "";
+    body.querySelectorAll("tr").forEach(row => {
+      const statusMatch = activeStatus === "all" || row.dataset.status === activeStatus;
+      const bankMatch = !selectedBank || row.dataset.bank === selectedBank;
+      row.hidden = !statusMatch || !bankMatch;
+    });
+  };
+
   filters.addEventListener("click", event => {
     const button = event.target.closest(".daily-filter");
     if (!button) return;
     filters.querySelectorAll(".daily-filter").forEach(item => item.classList.toggle("active",item === button));
-    const filter = button.dataset.filter;
-    body.querySelectorAll("tr").forEach(row => {
-      row.hidden = filter !== "all" && row.dataset.status !== filter;
-    });
+    applyFilters();
   });
+  toolbarLeft.querySelector(".daily-bank-filter")?.addEventListener("change",applyFilters);
 
   scroll.appendChild(table);
   target.append(summary,toolbar,scroll);
 }
 
+function reconcileSelectionState() {
+  const banks = selectedReconcileBanks();
+  const missing = [];
+  const files = [];
+  const fileBanks = [];
+
+  banks.forEach(bank => {
+    const input = document.querySelector(`#reconcileStatementFields [data-reconcile-bank="${bank}"]`);
+    const bankFiles = input ? [...input.files] : [];
+    if (!bankFiles.length) {
+      missing.push(bank);
+      return;
+    }
+    bankFiles.forEach(file => {
+      files.push(file);
+      fileBanks.push(bank);
+    });
+  });
+
+  return {banks,files,fileBanks,missing};
+}
+
 function buildReconcileData() {
+  const state = reconcileSelectionState();
   const data = new FormData();
-  data.append("bank", $("#reconcileBank").value);
-  data.append("model_file", $("#modelFile").files[0]);
-  data.append("options_json", JSON.stringify({
-    data_inicial: $("#reconcileStart").value,
-    data_final: $("#reconcileEnd").value
+  data.append("banks_json",JSON.stringify(state.banks));
+  data.append("file_banks_json",JSON.stringify(state.fileBanks));
+  data.append("model_file",$("#modelFile").files[0]);
+  data.append("options_json",JSON.stringify({
+    data_inicial:$("#reconcileStart").value,
+    data_final:$("#reconcileEnd").value
   }));
-  [...$("#statementFiles").files].forEach(file => data.append("statement_files",file));
+  state.files.forEach(file => data.append("files",file));
   return data;
 }
 
@@ -1119,54 +1179,83 @@ let reconcilePreviewController;
 function scheduleReconcilePreview() {
   clearTimeout(reconcilePreviewTimer);
   reconcilePreviewController?.abort();
+
   const model = $("#modelFile").files[0];
-  const statements = [...$("#statementFiles").files];
-  if (!model || !statements.length) {
+  const state = reconcileSelectionState();
+
+  if (!model || !state.banks.length) {
     $("#reconcileResult").hidden = true;
     $("#reconcileResult").replaceChildren();
     $("#reconcileMessage").textContent = "";
     return;
   }
-  $("#reconcileMessage").textContent = "Arquivos prontos. Montando conferência diária…";
-  reconcilePreviewTimer = setTimeout(() => reconcileForm.requestSubmit(), 550);
+
+  if (state.missing.length) {
+    $("#reconcileResult").hidden = true;
+    $("#reconcileResult").replaceChildren();
+    $("#reconcileMessage").textContent = "Envie o extrato de: " + state.missing.map(bankName).join(", ") + ".";
+    return;
+  }
+
+  $("#reconcileMessage").textContent = state.banks.length > 1
+    ? `Arquivos prontos. Conferindo ${state.banks.length} bancos…`
+    : "Arquivos prontos. Montando conferência diária…";
+  reconcilePreviewTimer = setTimeout(() => reconcileForm.requestSubmit(),550);
 }
 
-reconcileForm.addEventListener("change", scheduleReconcilePreview);
+reconcileForm.addEventListener("change",scheduleReconcilePreview);
 
-reconcileForm.addEventListener("submit", async (event) => {
+reconcileForm.addEventListener("submit",async event => {
   event.preventDefault();
   clearTimeout(reconcilePreviewTimer);
   reconcilePreviewController?.abort();
+
   const controller = new AbortController();
   reconcilePreviewController = controller;
-
   const model = $("#modelFile").files[0];
-  const statements = [...$("#statementFiles").files];
-  if (!model || !statements.length) return $("#reconcileMessage").textContent = "Envie o Modelo Domínio e pelo menos um extrato.";
+  const state = reconcileSelectionState();
 
-  $("#reconcileMessage").textContent = "Conferindo saldos por dia…";
+  if (!model) return $("#reconcileMessage").textContent = "Envie o Modelo Domínio.";
+  if (!state.banks.length) return $("#reconcileMessage").textContent = "Selecione pelo menos um banco.";
+  if (state.missing.length) {
+    return $("#reconcileMessage").textContent = "Envie o extrato de: " + state.missing.map(bankName).join(", ") + ".";
+  }
+
+  $("#reconcileMessage").textContent = state.banks.length > 1
+    ? `Conferindo saldos de ${state.banks.length} bancos por dia…`
+    : "Conferindo saldos por dia…";
+
   try {
-    const response = await fetch(`${API()}/api/v1/conferencia-extrato/${selected.codigo}/preview`, {
-      method:"POST", body:buildReconcileData(), signal:controller.signal
+    const response = await fetch(`${API()}/api/v1/conferencia-extrato/${selected.codigo}/multi/preview`,{
+      method:"POST",body:buildReconcileData(),signal:controller.signal
     });
     if (!response.ok) throw new Error(await responseError(response));
     const result = await response.json();
     if (controller.signal.aborted) return;
 
-    renderDailyReconciliation($("#reconcileResult"), {
+    renderDailyReconciliation($("#reconcileResult"),{
       rows:result.rows || [],
       kind:"modelo",
       download:async () => {
-        const report = await fetch(`${API()}/api/v1/conferencia-extrato/${selected.codigo}`, {method:"POST",body:buildReconcileData()});
+        const report = await fetch(`${API()}/api/v1/conferencia-extrato/${selected.codigo}/multi`,{
+          method:"POST",body:buildReconcileData()
+        });
         if (!report.ok) throw new Error(await responseError(report));
         await downloadBlob(report,`RAZYNC_${selected.codigo}_CONFERENCIA_EXTRATO.xlsx`);
       }
     });
 
+    const errors = result.summary?.errors || [];
     const divergent = (result.rows || []).filter(row => !/BATENDO/i.test(String(row.STATUS || ""))).length;
-    $("#reconcileMessage").textContent = divergent
-      ? `${divergent} dia(s) com divergência. Use o filtro para revisar somente esses dias.`
-      : "Todos os dias analisados estão batendo.";
+    if (errors.length) {
+      $("#reconcileMessage").textContent = `Conferência parcial: ${errors.length} banco(s) precisam de atenção e ${divergent} linha(s) diária(s) estão divergentes.`;
+    } else if (divergent) {
+      $("#reconcileMessage").textContent = `${divergent} banco/dia com divergência. Use os filtros para revisar.`;
+    } else {
+      $("#reconcileMessage").textContent = state.banks.length > 1
+        ? "Todos os bancos selecionados estão batendo."
+        : "Todos os dias analisados estão batendo.";
+    }
   } catch (error) {
     if (error.name === "AbortError") return;
     $("#reconcileResult").hidden = true;
