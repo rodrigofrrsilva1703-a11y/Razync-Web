@@ -429,6 +429,7 @@ function activateTool(name) {
     const active = pane.dataset.pane === name;
     pane.classList.toggle("active", active);
     pane.hidden = !active;
+    pane.style.display = active ? "block" : "none";
     pane.setAttribute("aria-hidden", String(!active));
     pane.style.display = active ? "block" : "none";
   });
@@ -624,11 +625,11 @@ function openCompany(company) {
     quickInfo.appendChild(badge);
   });
 
-  $("#toolUnavailable").hidden = true;
+  $("#toolUnavailable").hidden = available;
   $(".tool-tabs").hidden = !available;
   const adminAccess = $(".admin-access");
   if (adminAccess) adminAccess.hidden = !available;
-  $(".tool-tab").forEach(button => {
+  $$(".tool-tab").forEach(button => {
     if (button.dataset.tool === "francesinhas") return;
     button.hidden = false;
   });
@@ -639,6 +640,7 @@ function openCompany(company) {
     const active = available && pane.dataset.pane === defaultTool;
     pane.classList.toggle("active", active);
     pane.hidden = !active;
+    pane.style.display = active ? "block" : "none";
     pane.setAttribute("aria-hidden", String(!active));
   });
 
