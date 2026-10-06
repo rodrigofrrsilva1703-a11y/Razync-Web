@@ -256,29 +256,16 @@ function renderBankSelector(container, banks, options={}) {
   head.className = "bank-selector-head";
   const copy = document.createElement("div");
   const title = document.createElement("strong");
-  title.textContent = mode === "multi" ? "Bancos deste processamento" : "Banco";
+  title.textContent = mode === "multi" ? "Selecionar bancos" : "Selecionar banco";
   const hint = document.createElement("span");
   hint.textContent = mode === "multi"
-    ? "Marque os bancos que deseja usar nesta ferramenta."
-    : "Selecione o banco usado nesta ferramenta.";
+    ? `${entries.length} banco(s) disponível(is) · escolha quais entram neste processamento.`
+    : "Escolha o banco usado nesta ferramenta.";
   copy.append(title,hint);
   head.appendChild(copy);
 
   const list = document.createElement("div");
   list.className = "bank-selector-options";
-
-  let selectAll = null;
-  if (mode === "multi" && entries.length > 1) {
-    const allLabel = document.createElement("label");
-    allLabel.className = "bank-select-all";
-    selectAll = document.createElement("input");
-    selectAll.type = "checkbox";
-    selectAll.checked = true;
-    const allText = document.createElement("span");
-    allText.textContent = "Selecionar todos";
-    allLabel.append(selectAll, allText);
-    head.appendChild(allLabel);
-  }
 
   const applyBankState = (bank, checked) => {
     if (controlBankFields) {
@@ -307,9 +294,13 @@ function renderBankSelector(container, banks, options={}) {
     }
   };
 
-  const choices = entries.map(([bank, account], index) => {
+  let selectAllButton = null;
+  const choices = [];
+
+  entries.forEach(([bank, account], index) => {
     const label = document.createElement("label");
     label.className = "bank-choice";
+
     const input = document.createElement("input");
     input.type = mode === "multi" ? "checkbox" : "radio";
     input.name = mode === "multi" ? `bank_choice_${container.id}` : `bank_single_${container.id}`;
@@ -324,8 +315,12 @@ function renderBankSelector(container, banks, options={}) {
     const small = document.createElement("small");
     small.textContent = account ? `Conta ${account}` : "Conta não informada";
     textBox.append(strong,small);
+
     label.append(input,textBox);
     list.appendChild(label);
+
+    const choice = {bank,input,label};
+    choices.push(choice);
 
     if (input.checked) applyBankState(bank,true);
     if (mode === "single" && input.checked && selectElement) selectElement.value = bank;
@@ -333,52 +328,65 @@ function renderBankSelector(container, banks, options={}) {
     input.addEventListener("change", () => {
       if (mode === "single") {
         if (selectElement) selectElement.value = bank;
-        choices.forEach(choice => choice.label.classList.toggle("selected", choice.input.checked));
+        choices.forEach(item => item.label.classList.toggle("selected", item.input.checked));
       } else {
         applyBankState(bank,input.checked);
         label.classList.toggle("selected",input.checked);
-        if (selectAll) {
-          const checked = choices.filter(choice=>choice.input.checked).length;
-          selectAll.checked = checked === choices.length;
-          selectAll.indeterminate = checked > 0 && checked < choices.length;
-        }
+        updateSelectAllButton();
       }
     });
+
     label.classList.toggle("selected",input.checked);
-    return {bank,input,label};
   });
 
-  if (selectAll) {
-    selectAll.addEventListener("change", () => {
+  const updateSelectAllButton = () => {
+    if (!selectAllButton) return;
+    const selectedCount = choices.filter(choice => choice.input.checked).length;
+    const allSelected = selectedCount === choices.length;
+    selectAllButton.textContent = allSelected ? "Desmarcar todos" : "Selecionar todos os bancos";
+    selectAllButton.dataset.allSelected = String(allSelected);
+    selectAllButton.setAttribute("aria-pressed",String(allSelected));
+  };
+
+  if (mode === "multi" && entries.length > 1) {
+    selectAllButton = document.createElement("button");
+    selectAllButton.type = "button";
+    selectAllButton.className = "bank-select-all";
+    selectAllButton.addEventListener("click", () => {
+      const shouldSelect = !choices.every(choice => choice.input.checked);
       choices.forEach(choice => {
-        choice.input.checked = selectAll.checked;
-        choice.label.classList.toggle("selected",selectAll.checked);
-        applyBankState(choice.bank,selectAll.checked);
+        choice.input.checked = shouldSelect;
+        choice.label.classList.toggle("selected",shouldSelect);
+        applyBankState(choice.bank,shouldSelect);
       });
-      selectAll.indeterminate = false;
+      updateSelectAllButton();
       form.dispatchEvent(new Event("change",{bubbles:true}));
     });
+    head.appendChild(selectAllButton);
+    updateSelectAllButton();
   }
 
   container.append(head,list);
 }
-
 function activateTool(name) {
   if (!name) return;
   panel.dataset.activeTool = name;
-  $$("[data-tool].tool-tab").forEach(btn => {
+  $("[data-tool].tool-tab").forEach(btn => {
     const active = btn.dataset.tool === name;
     btn.classList.toggle("active", active);
     btn.setAttribute("aria-selected", String(active));
     btn.tabIndex = active ? 0 : -1;
   });
-  $$("[data-pane].tool-pane").forEach(pane => {
+  $("[data-pane].tool-pane").forEach(pane => {
     const active = pane.dataset.pane === name;
     pane.classList.toggle("active", active);
     pane.hidden = !active;
     pane.setAttribute("aria-hidden", String(!active));
     pane.style.display = active ? "block" : "none";
   });
+  if (name === "base" && selected?.capabilities?.status === "api_ready") {
+    refreshBaseStats();
+  }
 }
 
 $$(".tool-tab").forEach(btn => btn.addEventListener("click", () => activateTool(btn.dataset.tool)));
@@ -462,23 +470,32 @@ function renderWorkflow(company) {
 }
 
 async function refreshBaseStats() {
+  if (!baseStats) return;
   if (!selected || selected.capabilities?.status !== "api_ready") {
-    baseStats.innerHTML = "";
+    baseStats.innerHTML = '<span><strong>—</strong> padrões</span><span><strong>—</strong> bancos</span><span><strong>—</strong> períodos</span>';
     return;
   }
+
+  baseStats.classList.add("is-loading");
+  baseStats.innerHTML = '<span><strong>…</strong> padrões</span><span><strong>…</strong> bancos</span><span><strong>…</strong> períodos</span>';
+
   try {
     const r = await fetch(`${API()}/api/v1/base-inteligente/${selected.codigo}/status`);
+    if (!r.ok) throw new Error(await responseError(r));
     const data = await r.json();
     baseStats.innerHTML = `
-      <span><strong>${data.patterns || 0}</strong> padrões</span>
-      <span><strong>${data.banks || 0}</strong> bancos</span>
-      <span><strong>${data.periods || 0}</strong> períodos</span>
+      <span><strong>${Number(data.patterns || 0).toLocaleString("pt-BR")}</strong> padrões salvos</span>
+      <span><strong>${Number(data.banks || 0).toLocaleString("pt-BR")}</strong> bancos aprendidos</span>
+      <span><strong>${Number(data.periods || 0).toLocaleString("pt-BR")}</strong> períodos</span>
     `;
-  } catch {
-    baseStats.innerHTML = "<span>Base temporariamente indisponível</span>";
+    baseStats.title = `Base Inteligente da empresa ${selected.codigo}`;
+  } catch (error) {
+    baseStats.innerHTML = '<span class="base-stat-error"><strong>!</strong> Base indisponível</span>';
+    baseStats.title = error.message || "Não foi possível consultar a Base Inteligente.";
+  } finally {
+    baseStats.classList.remove("is-loading");
   }
 }
-
 function openCompany(company) {
   selected = company;
   const available = ["api_ready","fiscal_only"].includes(company.capabilities?.status);
