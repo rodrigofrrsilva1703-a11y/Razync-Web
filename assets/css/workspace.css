@@ -2461,3 +2461,27 @@ details.connector-box {
     padding:19px;
   }
 }
+
+
+/* Original Razync identity and readable workspace controls. */
+.brand-logo { width:48px; height:48px; object-fit:contain; flex-shrink:0; border-radius:12px; }
+#companyPanel form label { font-size:12px !important; line-height:1.5; }
+#companyPanel form input, #companyPanel form select, #companyPanel form textarea { font-size:13px !important; min-height:42px; }
+#companyPanel .tool-card p { font-size:12px; line-height:1.65; }
+#companyPanel .tool-tab { font-size:12px; min-height:42px; }
+#companyPanel button[type="submit"], #companyPanel .secondary-action, .preview-download { font-size:12px !important; min-height:42px; }
+#companyPanel .form-card-header strong { font-size:13px; }
+#companyPanel .form-card-header small, #companyPanel .file-drop-hint, #companyPanel .file-selection-item, #companyPanel .helper { font-size:12px; line-height:1.5; }
+.preview-results table, .preview-results td { font-size:12px; line-height:1.6; }
+.preview-results th { font-size:11px; color:#40516a; }
+.preview-command-info strong { font-size:14px; }
+.preview-command-info small, .preview-summary-item small, .preview-note { font-size:12px; line-height:1.5; }
+.preview-summary-item strong { font-size:17px; }
+.preview-intro p { font-size:12px; }
+.preview-table-scroll { overscroll-behavior-x:contain; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline:3px solid #0ba8cf; outline-offset:3px; }
+@media(max-width:760px) {
+  .brand-logo { width:38px; height:38px; border-radius:9px; }
+  #companyPanel .tool-tab { white-space:nowrap; }
+  .preview-summary-grid { gap:10px; }
+}
