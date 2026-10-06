@@ -15,7 +15,7 @@ from openpyxl import Workbook, load_workbook
 from app import engine
 from app import classification_service as base
 from app.main import app
-from app.migration_services import workflow, slug, accounts, reconcile
+from app.migration_services import workflow, slug, accounts, reconcile, normalize_selected_banks
 
 ROOT = Path(__file__).resolve().parents[1]
 client = TestClient(app)
@@ -53,6 +53,12 @@ def reference_engine():
                 definitions.append(node)
         exec(compile(ast.Module(body=definitions, type_ignores=[]), filename, 'exec'), namespace)
     return SimpleNamespace(**namespace)
+
+
+def test_bank_selection_alias_keeps_fibra_for_company_266():
+    assert normalize_selected_banks(['Itaú', 'Bradesco', 'Banco Fibra']) == ['Itaú', 'Bradesco', 'Fibra']
+    assert normalize_selected_banks(['fibra']) == ['Fibra']
+
 
 def test_extracted_rules_match_reference_ast_and_hashes():
     manifest = json.loads((ROOT/'resources/engine_manifest.json').read_text())
