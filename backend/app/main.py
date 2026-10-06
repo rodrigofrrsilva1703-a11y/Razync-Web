@@ -94,7 +94,7 @@ def company(company_code: int):
     if not item:
         raise HTTPException(status_code=404, detail="Empresa não cadastrada.")
     row = dict(item)
-    cap = dict(CAPABILITIES.get(company_code, {"status": "fiscal_only", "tools": ["conferencia_fiscal", "conferencia_impostos"]}))
+    cap = dict(CAPABILITIES.get(company_code, {"status": "fiscal_only", "tools": ["conferencia_impostos"]}))
     if cap.get("status") == "api_ready":
         cap["tools"] = COMMON_TOOLS
     row["capabilities"] = cap
