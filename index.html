@@ -78,6 +78,7 @@
           <form id="converterForm">
             <label for="converterFiles">Arquivos</label>
             <input id="converterFiles" type="file" multiple accept=".pdf,.ofx,.csv,.xls,.xlsx">
+            <fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="converterStart">De</label><input id="converterStart" type="date"></div><div><label for="converterEnd">Até</label><input id="converterEnd" type="date"></div></div><p>Deixe em branco para considerar todo o arquivo.</p></fieldset>
             <button type="submit">Converter para Modelo Domínio</button>
             <p id="converterMessage" class="helper"></p>
           </form>
@@ -85,6 +86,7 @@
             <h3>TXT para Domínio</h3>
             <label for="txtModel">Modelo Domínio final (uma ou várias abas)</label>
             <input id="txtModel" type="file" accept=".xlsx" required>
+            <fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="txtStart">De</label><input id="txtStart" type="date"></div><div><label for="txtEnd">Até</label><input id="txtEnd" type="date"></div></div><p>Deixe em branco para exportar todos os lançamentos.</p></fieldset>
             <button type="submit">Baixar TXT para Domínio</button>
             <p id="txtMessage" class="helper"></p>
           </form>
@@ -195,6 +197,7 @@
               <div id="baseStats" class="mini-metrics"></div>
             </div>
             <div class="stack-forms">
+              <fieldset id="basePeriod" class="period-card standard-period-card base-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="baseStart">De</label><input id="baseStart" type="date"></div><div><label for="baseEnd">Até</label><input id="baseEnd" type="date"></div></div><p>O período é aplicado às ações de aprender, classificar e revisar.</p></fieldset>
               <form id="learnForm" class="modern-form compact-form">
                 <div class="form-card-header">
                   <span class="form-card-icon icon-learn" aria-hidden="true"></span>
@@ -292,8 +295,7 @@
                 <input id="taxBalance" type="file" accept=".pdf,.xls,.xlsx,.csv" required>
                 <label for="taxRevenue">Relatório DCTFWeb / Receita</label>
                 <input id="taxRevenue" type="file" accept=".pdf,.xls,.xlsx,.csv" required>
-                <label for="taxCompetence">Competência</label>
-                <input id="taxCompetence" type="month">
+                <fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="taxStart">De</label><input id="taxStart" type="date"></div><div><label for="taxEnd">Até</label><input id="taxEnd" type="date"></div></div><p>Para DCTFWeb, as duas datas devem ficar na mesma competência.</p></fieldset>
                 <button type="submit">Conferir impostos</button>
                 <p id="taxMessage" class="helper"></p>
               </form>
@@ -310,6 +312,7 @@
                 <div><strong>Arquivos ZIP</strong><small>Envie uma ou mais francesinhas para consolidar as liquidações.</small></div>
               </div>
               <label for="francesinhasFiles">ZIPs de francesinhas</label><input id="francesinhasFiles" type="file" multiple accept=".zip" required>
+              <fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="francesinhasStart">De</label><input id="francesinhasStart" type="date"></div><div><label for="francesinhasEnd">Até</label><input id="francesinhasEnd" type="date"></div></div><p>Deixe em branco para considerar todas as liquidações.</p></fieldset>
               <button type="submit">Gerar Modelo Domínio das francesinhas</button>
               <p id="francesinhasMessage" class="helper"></p>
             </form>
