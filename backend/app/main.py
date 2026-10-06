@@ -65,6 +65,27 @@ def _download(data: bytes, filename: str):
     )
 
 
+def _preview_records(frame: pd.DataFrame):
+    """Convert a reconciliation dataframe to compact JSON-safe rows."""
+    rows = []
+    for record in frame.to_dict("records"):
+        item = {}
+        for key, value in record.items():
+            if value is None or (not isinstance(value, str) and pd.isna(value)):
+                item[str(key)] = None
+            elif isinstance(value, pd.Timestamp):
+                item[str(key)] = value.strftime("%Y-%m-%d")
+            elif hasattr(value, "item"):
+                scalar = value.item()
+                item[str(key)] = round(scalar, 2) if isinstance(scalar, float) else scalar
+            elif isinstance(value, float):
+                item[str(key)] = round(value, 2)
+            else:
+                item[str(key)] = value
+        rows.append(item)
+    return rows
+
+
 @app.get("/health")
 def health():
     return {
@@ -310,6 +331,28 @@ async def intelligent_base_classify(company_code: int, file: UploadFile = File(.
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+@app.post("/api/v1/conferencia-extrato/{company_code}/preview")
+async def conferencia_extrato_preview(
+    company_code: int,
+    bank: str = Form(...),
+    model_file: UploadFile = File(...),
+    statement_files: list[UploadFile] = File(...),
+    options_json: str = Form("{}"),
+):
+    try:
+        from app.migration_services import reconcile
+        options = json.loads(options_json)
+        statements = [(upload.filename or 'extrato', await upload.read()) for upload in statement_files]
+        bank = _validated_bank(company_code, bank)
+        resumo, sheets = await run_in_threadpool(
+            reconcile, company_code, bank, await model_file.read(), statements, options
+        )
+        diario = sheets.get("Conferência diária", pd.DataFrame()).copy()
+        return {"summary": resumo, "rows": _preview_records(diario)}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 @app.post("/api/v1/conferencia-extrato/{company_code}")
 async def conferencia_extrato(
     company_code: int,
@@ -375,6 +418,20 @@ async def conversor_extratos(files: list[UploadFile] = File(...)):
         consolidado = pd.concat(frames, ignore_index=True).sort_values("DATA", kind="stable")
         sheets = {"Consolidado": consolidado, **sheets}
         return _download(gerar_modelo_abas(sheets), "RAZYNC_CONVERSOR_EXTRATOS_MODELO_DOMINIO.xlsx")
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/v1/conciliacao-razao/preview")
+async def conciliacao_razao_preview(
+    extrato: UploadFile = File(...),
+    razao: UploadFile = File(...),
+):
+    try:
+        df_ext = await run_in_threadpool(processar_arquivo, await extrato.read(), extrato.filename or "extrato")
+        df_raz = await run_in_threadpool(processar_razao, await razao.read(), razao.filename or "razao")
+        diario, resumo = conciliar_razao(df_ext, df_raz)
+        return {"summary": resumo, "rows": _preview_records(diario)}
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
