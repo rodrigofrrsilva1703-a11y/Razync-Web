@@ -1387,11 +1387,24 @@ function humanFileSize(bytes) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function replaceInputFiles(input, files) {
+  const transfer = new DataTransfer();
+  files.forEach(file => transfer.items.add(file));
+  input.files = transfer.files;
+  input.dispatchEvent(new Event("change",{bubbles:true}));
+}
+
+function removeSelectedFile(input,index) {
+  const files = [...input.files];
+  if (index < 0 || index >= files.length) return;
+  files.splice(index,1);
+  replaceInputFiles(input,files);
+}
+
 function updateFileSelection(input) {
-  input.classList.toggle("has-files", input.files.length > 0);
-  input.title = input.files.length
-    ? [...input.files].map(file => file.name).join("\n")
-    : "";
+  const files = [...input.files];
+  input.classList.toggle("has-files", files.length > 0);
+  input.title = files.length ? files.map(file => file.name).join("\n") : "";
 
   const shell = input.closest(".file-drop-shell");
   let selection = shell?.querySelector(":scope > .file-selection");
@@ -1403,38 +1416,48 @@ function updateFileSelection(input) {
   }
   selection.replaceChildren();
 
-  if (!input.files.length) {
+  if (!files.length) {
     selection.hidden = true;
     return;
   }
 
   selection.hidden = false;
-  [...input.files].slice(0, 4).forEach(file => {
+  files.forEach((file,index) => {
     const item = document.createElement("span");
     item.className = "file-selection-item";
+
     const icon = document.createElement("i");
-    icon.setAttribute("aria-hidden", "true");
+    icon.setAttribute("aria-hidden","true");
+
     const text = document.createElement("span");
     const name = document.createElement("strong");
     name.textContent = file.name;
+    name.title = file.name;
+
     const meta = document.createElement("small");
     meta.textContent = humanFileSize(file.size);
-    text.append(name, meta);
-    item.append(icon, text);
+    text.append(name,meta);
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "file-selection-remove";
+    remove.setAttribute("aria-label",`Remover ${file.name}`);
+    remove.title = "Remover arquivo";
+    remove.innerHTML = '<span aria-hidden="true">×</span>';
+    remove.addEventListener("click",event => {
+      event.preventDefault();
+      event.stopPropagation();
+      removeSelectedFile(input,index);
+    });
+
+    item.append(icon,text,remove);
     selection.appendChild(item);
   });
 
-  if (input.files.length > 4) {
-    const more = document.createElement("span");
-    more.className = "file-selection-more";
-    more.textContent = `+${input.files.length - 4} arquivo(s)`;
-    selection.appendChild(more);
-  }
-
   if (input.closest("#processForm")) {
-    setProcessStage("upload", "Arquivos prontos", input.files.length === 1
+    setProcessStage("upload","Arquivos prontos",files.length === 1
       ? "1 arquivo selecionado para processamento."
-      : `${input.files.length} arquivos selecionados para processamento.`);
+      : `${files.length} arquivos selecionados para processamento.`);
   }
 }
 
