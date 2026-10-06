@@ -166,7 +166,6 @@ function normalize(value) {
 function statusFor(company) {
   const status = company?.capabilities?.status;
   if (status === "api_ready") return "Disponível · em validação";
-  if (status === "fiscal_only") return "Conferência de impostos disponível";
   if (status === "catalog_only") return "Sem ferramenta específica";
   return "Em migração";
 }
@@ -591,9 +590,8 @@ async function refreshBaseStats() {
 function openCompany(company) {
   cancelReconcilePreview();
   selected = company;
-  const available = ["api_ready","fiscal_only"].includes(company.capabilities?.status);
-  const taxOnly = company.capabilities?.status === "fiscal_only";
-  const defaultTool = taxOnly ? "impostos" : "organizar";
+  const available = company.capabilities?.status === "api_ready";
+  const defaultTool = "organizar";
 
   // Mostra a empresa e a ferramenta padrão primeiro. Assim um erro secundário
   // de inicialização nunca deixa todas as ferramentas invisíveis.
@@ -619,9 +617,9 @@ function openCompany(company) {
 
   $("#toolUnavailable").hidden = available;
   $(".tool-tabs").hidden = !available;
-  $$(".tool-tab").forEach(button => {
+  $(".tool-tab").forEach(button => {
     if (button.dataset.tool === "francesinhas") return;
-    button.hidden = taxOnly && button.dataset.tool !== "impostos";
+    button.hidden = false;
   });
 
   // Estado visual determinístico: uma única ferramenta ativa.
