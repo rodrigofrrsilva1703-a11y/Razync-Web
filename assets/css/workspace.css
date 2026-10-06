@@ -2387,3 +2387,78 @@ details.connector-box {
     font-size:6px;
   }
 }
+
+
+/* === Regression fixes: isolate the new company-workspace design === */
+/* The v4/v5 tool-card rules are intentionally for company tools only.
+   Restore the global converter/ledger cards so those pages do not inherit
+   sticky sidebars, transparent cards or zero padding. */
+.global-view .tool-card {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(280px,420px);
+  gap:28px;
+  padding:26px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 2px 5px rgba(20,36,59,.03);
+}
+.global-view .tool-card > div:first-child {
+  position:static;
+  align-self:auto;
+  min-height:0;
+  padding:0 !important;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.global-view .single-card {
+  align-items:start;
+}
+.global-view .tool-card form {
+  min-width:0;
+}
+
+/* Loading spinner follows whichever action actually submitted the form. */
+#companyPanel button.is-loading::before {
+  width:12px !important;
+  height:12px !important;
+  border:2px solid rgba(255,255,255,.45) !important;
+  border-top-color:#fff !important;
+  border-radius:50% !important;
+  background:none !important;
+  -webkit-mask:none !important;
+  mask:none !important;
+  animation:toolSpinner .75s linear infinite !important;
+}
+#companyPanel .secondary-action.is-loading::before {
+  border-color:rgba(70,97,140,.25) !important;
+  border-top-color:#46618c !important;
+}
+
+/* Prevent the drag/drop shell from fighting nested field-group layout. */
+.field-group > .file-drop-shell,
+#standardFields > .file-drop-shell {
+  width:100%;
+  min-width:0;
+}
+.file-drop-shell .file-selection-item {
+  max-width:100%;
+}
+.file-drop-shell .file-selection-item strong {
+  max-width:100%;
+}
+
+/* Keep company workspace stable at smaller desktop widths. */
+@media(max-width:1100px) {
+  .global-view .tool-card {
+    grid-template-columns:1fr;
+    gap:18px;
+  }
+}
+@media(max-width:760px) {
+  .global-view .tool-card {
+    padding:19px;
+  }
+}
