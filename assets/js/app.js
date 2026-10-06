@@ -233,11 +233,13 @@ function activateTool(name) {
     const active = btn.dataset.tool === name;
     btn.classList.toggle("active", active);
     btn.setAttribute("aria-selected", String(active));
+    btn.tabIndex = active ? 0 : -1;
   });
   $(".tool-pane").forEach(pane => {
     const active = pane.dataset.pane === name;
     pane.classList.toggle("active", active);
     pane.hidden = !active;
+    pane.setAttribute("aria-hidden", String(!active));
   });
 }
 
