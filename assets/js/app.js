@@ -906,44 +906,220 @@ classifyForm.addEventListener("submit", async (event) => {
   }
 });
 
+function formatDailyDate(value) {
+  if (!value) return "—";
+  const date = new Date(String(value) + (String(value).length === 10 ? "T00:00:00" : ""));
+  return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat("pt-BR").format(date);
+}
+
+function renderDailyReconciliation(target, {rows=[], kind="modelo", download=null}) {
+  if (!target) return;
+  target.replaceChildren();
+  target.hidden = false;
+  target.className = "daily-reconciliation";
+
+  const normalized = rows.map(row => {
+    const ledger = kind === "razao";
+    const leftIn = Number(row[ledger ? "ENTRADAS_RAZAO" : "ENTRADAS PLANILHA"] || 0);
+    const rightIn = Number(row["ENTRADAS_EXTRATO"] || 0);
+    const leftOut = Number(row[ledger ? "SAIDAS_RAZAO" : "SAÍDAS PLANILHA"] || 0);
+    const rightOut = Number(row[ledger ? "SAIDAS_EXTRATO" : "SAÍDAS EXTRATO"] || 0);
+    const statusText = String(row[ledger ? "SITUAÇÃO" : "STATUS"] || "");
+    const ok = /CONFERE|BATENDO/i.test(statusText);
+    return {
+      date: row.DATA,
+      leftIn, rightIn, leftOut, rightOut,
+      leftNet: leftIn - leftOut,
+      rightNet: rightIn - rightOut,
+      diff: (leftIn - leftOut) - (rightIn - rightOut),
+      ok
+    };
+  });
+
+  const okCount = normalized.filter(row => row.ok).length;
+  const reviewCount = normalized.length - okCount;
+
+  const summary = document.createElement("div");
+  summary.className = "daily-summary";
+  summary.innerHTML = `
+    <div><small>Dias analisados</small><strong>${normalized.length}</strong></div>
+    <div><small>Batendo</small><strong>${okCount}</strong></div>
+    <div><small>Divergentes</small><strong>${reviewCount}</strong></div>
+  `;
+
+  const toolbar = document.createElement("div");
+  toolbar.className = "daily-toolbar";
+  const filters = document.createElement("div");
+  filters.className = "daily-filters";
+  [
+    ["all","Todos"],
+    ["ok","Batendo"],
+    ["review","Divergentes"]
+  ].forEach(([value,label],index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "daily-filter" + (index === 0 ? " active" : "");
+    button.dataset.filter = value;
+    button.textContent = label;
+    filters.appendChild(button);
+  });
+  toolbar.appendChild(filters);
+
+  if (download) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "daily-download";
+    button.textContent = "Baixar relatório Excel";
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      const old = button.textContent;
+      button.textContent = "Gerando relatório…";
+      try { await download(); }
+      finally { button.disabled = false; button.textContent = old; }
+    });
+    toolbar.appendChild(button);
+  }
+
+  const scroll = document.createElement("div");
+  scroll.className = "daily-table-scroll";
+  const table = document.createElement("table");
+  table.className = "daily-table";
+  const leftLabel = kind === "razao" ? "Razão" : "Modelo";
+  table.innerHTML = `
+    <thead><tr>
+      <th>Data</th>
+      <th>Entradas ${leftLabel}</th>
+      <th>Entradas Extrato</th>
+      <th>Saídas ${leftLabel}</th>
+      <th>Saídas Extrato</th>
+      <th>Saldo do dia ${leftLabel}</th>
+      <th>Saldo do dia Extrato</th>
+      <th>Diferença</th>
+      <th>Status</th>
+    </tr></thead>
+    <tbody></tbody>
+  `;
+  const body = table.querySelector("tbody");
+
+  normalized.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.dataset.status = row.ok ? "ok" : "review";
+    tr.className = row.ok ? "daily-ok" : "daily-review";
+    const status = row.ok ? "Batendo" : "Divergente";
+    const cells = [
+      formatDailyDate(row.date),
+      brl(row.leftIn),
+      brl(row.rightIn),
+      brl(row.leftOut),
+      brl(row.rightOut),
+      brl(row.leftNet),
+      brl(row.rightNet),
+      brl(row.diff),
+      status
+    ];
+    cells.forEach((value,index) => {
+      const td = document.createElement("td");
+      td.textContent = value;
+      if (index > 0 && index < 8) td.className = "numeric";
+      if (index === 8) {
+        const badge = document.createElement("span");
+        badge.className = "daily-status " + (row.ok ? "is-ok" : "is-review");
+        badge.textContent = status;
+        td.textContent = "";
+        td.appendChild(badge);
+      }
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+
+  filters.addEventListener("click", event => {
+    const button = event.target.closest(".daily-filter");
+    if (!button) return;
+    filters.querySelectorAll(".daily-filter").forEach(item => item.classList.toggle("active",item === button));
+    const filter = button.dataset.filter;
+    body.querySelectorAll("tr").forEach(row => {
+      row.hidden = filter !== "all" && row.dataset.status !== filter;
+    });
+  });
+
+  scroll.appendChild(table);
+  target.append(summary,toolbar,scroll);
+}
+
+function buildReconcileData() {
+  const data = new FormData();
+  data.append("bank", $("#reconcileBank").value);
+  data.append("model_file", $("#modelFile").files[0]);
+  data.append("options_json", JSON.stringify({
+    data_inicial: $("#reconcileStart").value,
+    data_final: $("#reconcileEnd").value
+  }));
+  [...$("#statementFiles").files].forEach(file => data.append("statement_files",file));
+  return data;
+}
+
+let reconcilePreviewTimer;
+let reconcilePreviewController;
+
+function scheduleReconcilePreview() {
+  clearTimeout(reconcilePreviewTimer);
+  reconcilePreviewController?.abort();
+  const model = $("#modelFile").files[0];
+  const statements = [...$("#statementFiles").files];
+  if (!model || !statements.length) {
+    $("#reconcileResult").hidden = true;
+    $("#reconcileResult").replaceChildren();
+    $("#reconcileMessage").textContent = "";
+    return;
+  }
+  $("#reconcileMessage").textContent = "Arquivos prontos. Montando conferência diária…";
+  reconcilePreviewTimer = setTimeout(() => reconcileForm.requestSubmit(), 550);
+}
+
+reconcileForm.addEventListener("change", scheduleReconcilePreview);
+
 reconcileForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  clearToolResult("#reconcileResult");
+  clearTimeout(reconcilePreviewTimer);
+  reconcilePreviewController?.abort();
+  const controller = new AbortController();
+  reconcilePreviewController = controller;
+
   const model = $("#modelFile").files[0];
   const statements = [...$("#statementFiles").files];
   if (!model || !statements.length) return $("#reconcileMessage").textContent = "Envie o Modelo Domínio e pelo menos um extrato.";
-  const data = new FormData();
-  data.append("bank", $("#reconcileBank").value);
-  data.append("model_file", model);
-  data.append("options_json", JSON.stringify({data_inicial: $("#reconcileStart").value, data_final: $("#reconcileEnd").value}));
-  statements.forEach(file => data.append("statement_files", file));
-  $("#reconcileMessage").textContent = "Conferindo lançamentos…";
+
+  $("#reconcileMessage").textContent = "Conferindo saldos por dia…";
   try {
-    const response = await fetch(`${API()}/api/v1/conferencia-extrato/${selected.codigo}`, {method:"POST", body:data});
-    if (!response.ok) throw new Error(await responseError(response));
-    const raw = response.headers.get("x-razync-summary");
-    const summary = raw ? JSON.parse(raw) : {};
-    const report = await response.blob();
-    const ok = Boolean(summary.ok);
-    renderReportResult($("#reconcileResult"), {
-      title: ok ? "Conferência concluída sem divergências" : "Conferência concluída com diferenças",
-      text: ok ? "Modelo Domínio e extrato estão batendo dentro dos critérios da conferência." : "Revise os lançamentos apontados no relatório antes de finalizar.",
-      tone: ok ? "success" : "warning",
-      metrics: [
-        ["Faltando no Modelo", summary.faltando_planilha || 0],
-        ["A mais no Modelo", summary.a_mais_planilha || 0],
-        ["Extratos enviados", statements.length],
-      ],
-      blob: report,
-      filename: `RAZYNC_${selected.codigo}_CONFERENCIA_EXTRATO.xlsx`
+    const response = await fetch(`${API()}/api/v1/conferencia-extrato/${selected.codigo}/preview`, {
+      method:"POST", body:buildReconcileData(), signal:controller.signal
     });
-    $("#reconcileMessage").textContent = "";
+    if (!response.ok) throw new Error(await responseError(response));
+    const result = await response.json();
+    if (controller.signal.aborted) return;
+
+    renderDailyReconciliation($("#reconcileResult"), {
+      rows:result.rows || [],
+      kind:"modelo",
+      download:async () => {
+        const report = await fetch(`${API()}/api/v1/conferencia-extrato/${selected.codigo}`, {method:"POST",body:buildReconcileData()});
+        if (!report.ok) throw new Error(await responseError(report));
+        await downloadBlob(report,`RAZYNC_${selected.codigo}_CONFERENCIA_EXTRATO.xlsx`);
+      }
+    });
+
+    const divergent = (result.rows || []).filter(row => !/BATENDO/i.test(String(row.STATUS || ""))).length;
+    $("#reconcileMessage").textContent = divergent
+      ? `${divergent} dia(s) com divergência. Use o filtro para revisar somente esses dias.`
+      : "Todos os dias analisados estão batendo.";
   } catch (error) {
+    if (error.name === "AbortError") return;
+    $("#reconcileResult").hidden = true;
+    $("#reconcileResult").replaceChildren();
     $("#reconcileMessage").textContent = error.message;
-    renderReportResult($("#reconcileResult"), {title:"Não foi possível concluir", text:error.message, tone:"error"});
   }
 });
-
 
 function filterCompanies() {
   const query = normalize(search.value.trim());
