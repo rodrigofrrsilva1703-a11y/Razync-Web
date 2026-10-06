@@ -261,12 +261,11 @@
                 <span class="form-card-icon icon-compare" aria-hidden="true"></span>
                 <div><strong>Arquivos para conferência</strong><small>Compare o Modelo Domínio final com um ou vários extratos.</small></div>
               </div>
-              <div id="reconcileBankSelector" class="bank-selector bank-selector-single"></div>
+              <div id="reconcileBankSelector" class="bank-selector"></div>
               <select id="reconcileBank" hidden aria-hidden="true"></select>
               <label for="modelFile">Modelo Domínio final</label>
               <input id="modelFile" type="file" accept=".xlsx,.xls">
-              <label for="statementFiles">Extrato(s)</label>
-              <input id="statementFiles" type="file" multiple accept=".pdf,.xls,.xlsx,.csv,.ofx">
+              <div id="reconcileStatementFields" class="reconcile-bank-files"></div>
               <fieldset class="period-card"><legend>Período da conferência <span>(opcional)</span></legend><div class="period-fields"><div><label for="reconcileStart">De</label><input id="reconcileStart" type="date"></div><div><label for="reconcileEnd">Até</label><input id="reconcileEnd" type="date"></div></div></fieldset>
               <button type="submit">Atualizar conferência</button>
               <p id="reconcileMessage" class="helper"></p>
