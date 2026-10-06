@@ -578,3 +578,76 @@
     grid-template-columns:1fr;
   }
 }
+
+
+/* Correções visuais: seletor de bancos e métricas da Base Inteligente */
+#companyPanel .bank-select-all {
+  appearance:none;
+  -webkit-appearance:none;
+  min-height:36px;
+  padding:8px 12px !important;
+  border:1px solid #b9c9dc !important;
+  border-radius:9px !important;
+  background:#fff !important;
+  color:#3f5877 !important;
+  box-shadow:none !important;
+  font-size:11px !important;
+  font-weight:700 !important;
+  line-height:1.2;
+}
+#companyPanel .bank-select-all:hover {
+  border-color:#91a9c7 !important;
+  background:#f4f8fd !important;
+  color:#315fc5 !important;
+}
+#companyPanel .bank-select-all[data-all-selected="true"] {
+  border-color:#9eb7d8 !important;
+  background:#eef4fb !important;
+  color:#315fc5 !important;
+}
+
+#companyPanel #baseStats {
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  width:100%;
+  margin-top:18px;
+}
+#companyPanel #baseStats > span {
+  display:block;
+  min-width:0;
+  padding:12px 10px;
+  border:1px solid #dfe7ef;
+  border-radius:10px;
+  background:#fff;
+  color:#718297;
+  font-size:10px;
+  line-height:1.35;
+  text-align:center;
+}
+#companyPanel #baseStats > span strong {
+  display:block;
+  margin-bottom:3px;
+  color:#31577f;
+  font-size:18px;
+  font-weight:750;
+}
+#companyPanel #baseStats.is-loading > span {
+  opacity:.68;
+}
+#companyPanel #baseStats .base-stat-error {
+  grid-column:1 / -1;
+  color:#8b6262;
+}
+#companyPanel #baseStats .base-stat-error strong {
+  color:#9b5c5c;
+}
+
+@media(max-width:560px) {
+  #companyPanel #baseStats {
+    grid-template-columns:1fr;
+  }
+  #companyPanel .bank-select-all {
+    width:100%;
+  }
+}
