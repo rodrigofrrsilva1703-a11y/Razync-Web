@@ -8,7 +8,7 @@ O original em Streamlit permanece intacto. FastAPI no Railway e JavaScript no Gi
 - Fluxos completos: Autokraft 3/178/343; Eletro Forte 242/1408; Nova Geração 266/1396; L. Carlos 285; Radani 968; Accede 1000/1001; UP PACK 1096; GZ 1211; RGR 1248; VGV 1402; Dias Pereira/Nibo 1529; adaptadores 47/88/154/625/626/841/912/964/969/1208/1530/1532.
 - Arquivos auxiliares, múltiplos PDFs, XLS/XLSX, ZIP, francesinhas, períodos, bancos, lançamentos retirados e relatórios usam as regras originais.
 - Base Inteligente persistente: importação de modelos classificados/Razão/ZIP, classificação, revisão, aprendizado e backup JSON; preservação de assinaturas, ocorrências, períodos, conflitos e contas.
-- Conferência com Extrato; Conferência Fiscal para 48 empresas; Impostos/DCTFWeb; conversor de extratos; conciliação com Razão; Central de Tarefas; Excel final para TXT Domínio.
+- Conferência com Extrato; Conferência de Impostos por upload; conversor de extratos; conciliação com Razão; Central de Tarefas; Excel final para TXT Domínio. A Conferência Fiscal permanece apenas no backend legado e não é exibida nas empresas enquanto estiver incompleta.
 - Conferência de impostos mantida por upload: balancete + relatório DCTFWeb/Receita, sem automação de eCAC, certificado ou Conector Windows no frontend.
 - Chaves administrativas no Railway. Volume `/data` mantém a base entre deploys. Nunca incluir classificações reais, certificados ou chaves no Git.
 
