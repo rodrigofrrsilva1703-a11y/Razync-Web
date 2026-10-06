@@ -390,6 +390,7 @@ form.addEventListener("submit", async (event) => {
   const companyCode=selected.codigo;
   const cap = selected.capabilities || {};
   const workflow = cap.workflow || "standard";
+  const submitButton = event.submitter || processButton;
   $("#workflowPreview").replaceChildren();
   const data = new FormData();
   let endpoint = `${API()}/api/v1/modelo-dominio/${selected.codigo}`;
@@ -436,8 +437,8 @@ form.addEventListener("submit", async (event) => {
     }
 
     processMessage.textContent = "";
-    processButton.disabled = true;
-    processButton.classList.add("is-loading");
+    submitButton.disabled = true;
+    submitButton.classList.add("is-loading");
     setProcessStage("processing", "Processando arquivos", "O Razync está lendo, organizando e montando os lançamentos.");
     renderProcessingSkeleton();
     const response = await fetch(endpoint, { method: "POST", body: data });
@@ -451,6 +452,7 @@ form.addEventListener("submit", async (event) => {
     }
     if (event.submitter?.dataset.output === "reports") {
       await downloadBlob(response, `RAZYNC_${companyCode}_RELATORIOS.zip`);
+      $("#workflowPreview").replaceChildren();
       processMessage.textContent = "";
       setProcessStage("review", "Relatórios gerados", "Os arquivos foram preparados e baixados com sucesso.");
       return;
@@ -476,8 +478,8 @@ form.addEventListener("submit", async (event) => {
     processMessage.textContent = error.message;
     setProcessStage("error", "Não foi possível processar", error.message);
   } finally {
-    processButton.disabled = false;
-    processButton.classList.remove("is-loading");
+    submitButton.disabled = false;
+    submitButton.classList.remove("is-loading");
   }
 });
 
@@ -617,7 +619,7 @@ async function checkApi() {
 
 loadCompanies();
 checkApi();
-enhanceFileInputs(document);
+enhanceFileInputs(panel);
 
 
 function showGlobalView(name) {
