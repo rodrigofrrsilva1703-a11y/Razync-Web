@@ -971,7 +971,7 @@ function formatDailyDate(value) {
 function reconciliationBalances(row, kind="modelo") {
   const ledger = kind === "razao";
   const leftIn = Number(row[ledger ? "ENTRADAS_RAZAO" : "ENTRADAS PLANILHA"] || 0);
-  const rightIn = Number(row["ENTRADAS_EXTRATO"] || 0);
+  const rightIn = Number(row[ledger ? "ENTRADAS_EXTRATO" : "ENTRADAS EXTRATO"] || 0);
   const leftOut = Number(row[ledger ? "SAIDAS_RAZAO" : "SAÍDAS PLANILHA"] || 0);
   const rightOut = Number(row[ledger ? "SAIDAS_EXTRATO" : "SAÍDAS EXTRATO"] || 0);
   const entryBalance = Math.round((leftIn - rightIn) * 100) / 100;
