@@ -181,4 +181,4 @@ next(r for r in CAPABILITIES[1211]['roles'] if r['name'] == 'boletos')['accept']
 next(r for r in CAPABILITIES[1402]['roles'] if r['name'] == 'extrato')['optional'] = True
 for capability in CAPABILITIES.values():
     capability['validation_status'] = 'pending_real_files'
-COMMON_TOOLS.extend(['conferencia_impostos', 'revisao_inteligente'])
+COMMON_TOOLS.extend(['revisao_inteligente'])
