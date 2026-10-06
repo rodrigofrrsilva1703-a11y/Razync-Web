@@ -414,7 +414,7 @@ function activateTool(name) {
   }
 }
 
-$(".tool-tab").forEach(btn => btn.addEventListener("click", () => activateTool(btn.dataset.tool)));
+$$(".tool-tab").forEach(btn => btn.addEventListener("click", () => activateTool(btn.dataset.tool)));
 
 function selectedReconcileBanks() {
   return $$("#reconcileBankSelector [data-bank-choice]:checked").map(input => input.value);
@@ -422,7 +422,7 @@ function selectedReconcileBanks() {
 
 function syncReconcileBankFields(selectedBanks = selectedReconcileBanks()) {
   const selectedSet = new Set(selectedBanks);
-  $("#reconcileStatementFields [data-reconcile-bank-group]").forEach(group => {
+  $$("#reconcileStatementFields [data-reconcile-bank-group]").forEach(group => {
     const active = selectedSet.has(group.dataset.reconcileBankGroup);
     group.hidden = !active;
     const input = group.querySelector("[data-reconcile-bank]");
@@ -606,7 +606,7 @@ function openCompany(company) {
 
   // Estado visual determinístico: uma única ferramenta ativa.
   panel.dataset.activeTool = available ? defaultTool : "";
-  $(".tool-pane").forEach(pane => {
+  $$(".tool-pane").forEach(pane => {
     const active = available && pane.dataset.pane === defaultTool;
     pane.classList.toggle("active", active);
     pane.hidden = !active;
