@@ -229,17 +229,20 @@ function fillBankSelect(select, banks) {
 }
 
 function activateTool(name) {
-  $$("[data-tool].tool-tab").forEach(btn => {
+  if (!name) return;
+  panel.dataset.activeTool = name;
+  $("[data-tool].tool-tab").forEach(btn => {
     const active = btn.dataset.tool === name;
     btn.classList.toggle("active", active);
     btn.setAttribute("aria-selected", String(active));
     btn.tabIndex = active ? 0 : -1;
   });
-  $$("[data-pane].tool-pane").forEach(pane => {
+  $("[data-pane].tool-pane").forEach(pane => {
     const active = pane.dataset.pane === name;
     pane.classList.toggle("active", active);
     pane.hidden = !active;
     pane.setAttribute("aria-hidden", String(!active));
+    pane.style.display = active ? "block" : "none";
   });
 }
 
@@ -323,6 +326,15 @@ async function refreshBaseStats() {
 
 function openCompany(company) {
   selected = company;
+  const available = ["api_ready", "fiscal_only"].includes(company.capabilities?.status);
+  const defaultTool = company.capabilities?.status === "fiscal_only" ? "fiscal" : "organizar";
+
+  // Mostra a empresa e a ferramenta padrão primeiro. Assim um erro secundário
+  // de inicialização nunca deixa todas as ferramentas invisíveis.
+  workspace.hidden = true;
+  $(".hero").hidden = true;
+  panel.hidden = false;
+
   $('#currentSection').textContent = `Empresa ${company.codigo}`;
   document.querySelectorAll(".global-view").forEach(view => view.classList.remove("active"));
   document.querySelectorAll(".main-nav-btn").forEach(btn => btn.classList.toggle("active",btn.dataset.view==='companies'));
@@ -339,22 +351,36 @@ function openCompany(company) {
     quickInfo.appendChild(badge);
   });
 
-  const available = ["api_ready", "fiscal_only"].includes(company.capabilities?.status);
   $("#toolUnavailable").hidden = available;
-  $$(".tool-tabs, .tool-pane").forEach(el => {
-    if (el.classList.contains("tool-tabs")) el.hidden = !available;
-    else if (!available) el.classList.remove("active");
+  $(".tool-tabs").hidden = !available;
+
+  // Estado visual determinístico: uma única ferramenta ativa.
+  panel.dataset.activeTool = available ? defaultTool : "";
+  $$(".tool-pane").forEach(pane => {
+    const active = available && pane.dataset.pane === defaultTool;
+    pane.classList.toggle("active", active);
+    pane.hidden = !active;
+    pane.setAttribute("aria-hidden", String(!active));
   });
 
   if (available) {
-    renderWorkflow(company);
-    enhanceFileInputs(panel);
-    setProcessStage("upload");
-    activateTool(company.capabilities?.status === "fiscal_only" ? "fiscal" : "organizar");
-    refreshBaseStats();
+    activateTool(defaultTool);
+    try {
+      renderWorkflow(company);
+      enhanceFileInputs(panel);
+      setProcessStage("upload");
+      refreshBaseStats();
+    } catch (error) {
+      console.error("Falha ao inicializar ferramenta da empresa:", error);
+      // Mantém a ferramenta visível mesmo se algum complemento falhar.
+      activateTool(defaultTool);
+      if (defaultTool === "organizar") {
+        processMessage.textContent = "A ferramenta foi aberta, mas um complemento da tela não carregou. Atualize a página se necessário.";
+      }
+    }
   }
 
-  processMessage.textContent = "";
+  processMessage.textContent = processMessage.textContent || "";
   $("#learnMessage").textContent = "";
   $("#classifyMessage").textContent = "";
   $("#reconcileMessage").textContent = "";
@@ -362,9 +388,6 @@ function openCompany(company) {
   clearToolResult("#reconcileResult");
   clearToolResult("#fiscalResult");
   clearToolResult("#taxResult");
-  workspace.hidden = true;
-  $(".hero").hidden = true;
-  panel.hidden = false;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
