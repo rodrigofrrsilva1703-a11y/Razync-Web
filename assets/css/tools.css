@@ -1019,3 +1019,43 @@
     width:100%;
   }
 }
+
+
+/* === Regra clara da conferência diária === */
+.daily-rule {
+  display:grid;
+  gap:3px;
+  padding:10px 12px;
+  border:1px solid #dfe7ef;
+  border-radius:10px;
+  background:#f8fafc;
+}
+.daily-rule strong {
+  color:#425b76;
+  font-size:11px;
+}
+.daily-rule span {
+  color:#708196;
+  font-size:10px;
+  line-height:1.5;
+}
+.daily-rule b {
+  color:#31577f;
+}
+.daily-table-reconciliation {
+  min-width:980px;
+}
+.daily-balance {
+  font-weight:700;
+}
+.daily-balance.is-zero {
+  color:#4d697f;
+  background:#f7fafc;
+}
+.daily-balance.is-different {
+  color:#8a652b;
+  background:#fff4df !important;
+}
+.daily-review .daily-balance.is-different {
+  box-shadow:inset 3px 0 0 #d4a44f;
+}
