@@ -397,8 +397,20 @@ function cancelAutomaticPreview() {
     button.classList.remove("is-loading");
   });
 }
+function updateUploadProgress() {
+  let progress = form.querySelector(".upload-progress");
+  if (!progress) { progress=document.createElement("div");progress.className="upload-progress";progress.setAttribute("role","status");form.querySelector(".form-card-header").after(progress); }
+  const workflow=selected?.capabilities?.workflow;
+  const inputs=workflow==="advanced" ? [...form.querySelectorAll("[data-role]")] : workflow==="standard_multi_bank" ? [...form.querySelectorAll("[data-bank]")] : [fileInput];
+  const required=inputs.filter(input=>input.required);
+  const filled=inputs.filter(input=>input.files.length);
+  const missing=required.filter(input=>!input.files.length);
+  const names=missing.map(input=>form.querySelector(`label[for="${input.id}"]`)?.textContent.trim() || "arquivo");
+  progress.textContent=required.length ? `${required.length-missing.length} de ${required.length} campos obrigatórios preenchidos${missing.length ? " · Falta: "+names.join(", ") : " · Pronto para prévia"}` : `${filled.length} campo(s) com arquivos · Selecione pelo menos um para conferir`;
+}
 function scheduleAutomaticPreview() {
   cancelAutomaticPreview();
+  updateUploadProgress();
   $("#workflowPreview").replaceChildren();
   processMessage.textContent = "";
   const workflow = selected?.capabilities?.workflow;

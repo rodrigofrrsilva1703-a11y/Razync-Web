@@ -69,3 +69,28 @@
 #companyPanel .period-card p { font-size:12px; margin:10px 0 0; }
 #companyPanel #processButton { background:#f3f8fb; color:#41677f; border:1px solid #d9e6ef; box-shadow:none; }
 @media(max-width:480px) { #companyPanel .period-fields { gap:8px; } #companyPanel .period-card { padding:12px; } #companyPanel .period-fields input { padding:10px 6px !important; font-size:12px !important; min-width:0; width:100%; } }
+
+/* Keep document selection close to results. */
+#companyPanel .panel-head { padding:16px 22px; }
+#companyPanel .panel-head h2 { font-size:22px; }
+#companyPanel .tool-card > div:first-child { padding:18px 22px !important; }
+#companyPanel .tool-card h3 { font-size:20px; margin:2px 0 5px; }
+#companyPanel .tool-card > div:first-child p { margin:4px 0; }
+#companyPanel .tool-flow { margin-top:12px; padding-top:12px; }
+#companyPanel .tool-tabs { margin:12px 0; }
+#companyPanel .upload-progress { padding:12px 14px; border-radius:10px; background:#edf8fa; color:#24657a; font-size:13px; line-height:1.6; }
+#companyPanel #advancedFields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+#companyPanel #advancedFields[hidden] { display:none; }
+#companyPanel .preview-table-tools { display:flex; flex-wrap:wrap; gap:12px; padding:14px 18px; }
+#companyPanel .preview-table-tools input { flex:1; min-width:180px; padding:10px 12px; border:1px solid #d5e2ec; border-radius:9px; background:#fff; }
+#companyPanel .preview-table-tools select { padding:10px 12px; border:1px solid #d5e2ec; border-radius:9px; background:#fff; }
+#companyPanel .preview-table-tools span { font-size:12px; color:#60788c; }
+#companyPanel .preview-results .accounts-pending td { background:#fffaf0; }
+#companyPanel .preview-results .accounts-pending td:first-child { border-left:3px solid #d6a344; }
+#companyPanel .preview-commandbar { border-color:#abd8df; }
+@media(max-width:760px) {
+ #companyPanel #advancedFields { grid-template-columns:minmax(0,1fr); }
+ #companyPanel .preview-table-tools input { min-width:0; width:100%; flex-basis:100%; }
+ #companyPanel .preview-table-tools select { max-width:100%; }
+}
+#companyPanel #advancedFields > .bank-options { grid-column:1/-1; }

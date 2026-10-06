@@ -42,6 +42,7 @@ renderWorkflow = function(company) {
     advancedFields.append(label,wrapper);
   }
   francesinhasTab.hidden = !eletro;
+  updateUploadProgress();
   $("#workflowPreview").replaceChildren();
   $("#reviewRows").replaceChildren();
   $("#applyReview").hidden = true;
@@ -267,37 +268,35 @@ function showWorkflowPreview(data) {
     const rows = sheet.rows || [];
     const table = tableFor(sheet.columns || [], rows);
 
-    if (rows.length > 6) {
-      const tools = document.createElement("div");
-      tools.className = "preview-table-tools";
-      const searchWrap = document.createElement("label");
-      searchWrap.className = "preview-table-search";
-      const searchIcon = document.createElement("i");
-      searchIcon.setAttribute("aria-hidden","true");
-      const search = document.createElement("input");
-      search.type = "search";
-      search.placeholder = "Filtrar por data, valor, histórico ou conta";
+    if (rows.length) {
+      const tools = document.createElement("div"); tools.className = "preview-table-tools";
+      const search = document.createElement("input"); search.type = "search";
+      search.placeholder = "Buscar data, histórico ou conta";
       search.setAttribute("aria-label", `Filtrar lançamentos de ${sheet.name}`);
-      searchWrap.append(searchIcon,search);
-
-      const visible = document.createElement("span");
-      visible.textContent = `${rows.length} exibidos`;
-
-      search.addEventListener("input", () => {
-        const query = previewLabel(search.value);
-        let shown = 0;
-        [...table.tBodies[0].rows].forEach(row => {
-          const match = !query || previewLabel(row.textContent).includes(query);
-          row.hidden = !match;
-          if (match) shown += 1;
-        });
-        visible.textContent = query
-          ? `${shown} de ${rows.length}`
-          : `${rows.length} exibidos`;
+      const kind = document.createElement("select"); kind.setAttribute("aria-label", `Tipo de lançamento de ${sheet.name}`);
+      [["all","Todos"],["in","Entradas"],["out","Saídas"],["pending","Contas a revisar"]].forEach(([value,label])=>{
+        const option=document.createElement("option");option.value=value;option.textContent=label;kind.append(option);
       });
-
-      tools.append(searchWrap, visible);
-      block.appendChild(tools);
+      const visible = document.createElement("span");
+      const columns = (sheet.columns || []).map(previewLabel);
+      const amountIndex = columns.indexOf("VALOR");
+      const debitIndex = columns.indexOf("DEBITO"), creditIndex = columns.indexOf("CREDITO");
+      const needsReview = row => [debitIndex,creditIndex].some(index=>index>=0 && (!String(row[index] ?? "").trim() || Number(row[index]) === 0));
+      [...table.tBodies[0].rows].forEach((row,index)=>{
+        if(needsReview(rows[index])) {row.classList.add("accounts-pending");row.title="Há conta em branco ou zero. Confira antes de importar.";}
+      });
+      const applyFilter = () => {
+        const query=previewLabel(search.value); let shown=0;
+        [...table.tBodies[0].rows].forEach((row,index)=>{
+          const amount=Number(rows[index][amountIndex]);
+          const matchType=kind.value==="all" || (kind.value==="in" && amount>0) || (kind.value==="out" && amount<0) || (kind.value==="pending" && needsReview(rows[index]));
+          row.hidden = !matchType || (query && !previewLabel(row.textContent).includes(query));
+          if(!row.hidden)shown++;
+        });
+        visible.textContent=`${shown} de ${rows.length} linhas da prévia`;
+      };
+      search.addEventListener("input",applyFilter);kind.addEventListener("change",applyFilter);
+      applyFilter(); tools.append(search,kind,visible);block.append(tools);
     }
 
     const scroll = document.createElement("div");
