@@ -126,6 +126,9 @@ def companies():
         cap = dict(CAPABILITIES.get(int(item["codigo"]), {"status": "catalog_only", "tools": []}))
         if cap.get("status") == "api_ready":
             cap["tools"] = COMMON_TOOLS
+        else:
+            cap["tools"] = []
+            cap["banks"] = {}
         row["capabilities"] = cap
         result.append(row)
     return result
@@ -140,6 +143,9 @@ def company(company_code: int):
     cap = dict(CAPABILITIES.get(company_code, {"status": "catalog_only", "tools": []}))
     if cap.get("status") == "api_ready":
         cap["tools"] = COMMON_TOOLS
+    else:
+        cap["tools"] = []
+        cap["banks"] = {}
     row["capabilities"] = cap
     return row
 
