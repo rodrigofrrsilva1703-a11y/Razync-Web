@@ -16,11 +16,11 @@ renderWorkflow = function(company) {
   migratedRenderWorkflow(company);
   enableMobileDateFields(advancedFields);
   $("#toolDescription").textContent += " A prévia aparece automaticamente quando os arquivos obrigatórios estiverem preenchidos.";
-  $("#standardPeriod").hidden = false;
   const companyCode = Number(company.codigo);
   const eletro = [242,1408].includes(companyCode);
-  $("#reportPackage").hidden = company.capabilities?.workflow !== "advanced";
-  $("#reportPackage").textContent = eletro ? "Baixar relatórios individuais e consolidado" : "Baixar modelo e conferências";
+  $("#standardPeriod").hidden = companyCode === 1408;
+  $("#reportPackage").hidden = company.capabilities?.workflow !== "advanced" || companyCode === 1408;
+  $("#reportPackage").textContent = companyCode === 242 ? "Baixar relatórios individuais e consolidado" : "Baixar modelo e conferências";
   $("#previewWorkflow").hidden = true;
   $("#eletro242Classification").hidden = companyCode !== 242;
   $("#eletro1408Classification").hidden = companyCode !== 1408;
