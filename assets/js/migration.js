@@ -74,7 +74,7 @@ function previewValue(label, value) {
 
 function tableFor(headers, rows) {
   const table = document.createElement("table");
-  table.className = "dataframe-preview";
+  table.className = "dataframe-preview razync-table";
   const head = document.createElement("thead");
   const line = document.createElement("tr");
   headers.forEach(label => {
@@ -388,7 +388,9 @@ $("#reviewForm").addEventListener("submit", async event=>{
       input.addEventListener("input",()=>reviewPendingRows[i]["Conta da contrapartida"]=input.value);
       tr.lastElementChild.appendChild(input);
     });
-    $("#reviewRows").replaceChildren(table);$("#applyReview").hidden=!reviewPendingRows.length;
+    const scroll = document.createElement("div"); scroll.className = "preview-table-scroll";
+    scroll.appendChild(table);
+    $("#reviewRows").replaceChildren(scroll);$("#applyReview").hidden=!reviewPendingRows.length;
     msg.textContent=`${reviewPendingRows.length} lançamento(s) pendente(s).`;
   }catch(e){msg.textContent=e.message;}
 });

@@ -1119,7 +1119,7 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
   const scroll = document.createElement("div");
   scroll.className = "daily-table-scroll";
   const table = document.createElement("table");
-  table.className = "daily-table daily-table-reconciliation";
+  table.className = "daily-table daily-table-reconciliation razync-table";
   const leftLabel = kind === "razao" ? "Razão" : "Modelo";
   const bankHeader = banks.length ? "<th>Banco</th>" : "";
   table.innerHTML = `
