@@ -1016,7 +1016,7 @@ classifyForm.addEventListener("submit", async (event) => {
     download.addEventListener("click",()=>downloadBlob(new Response(workbook,{headers:disposition ? {"Content-Disposition":disposition} : {}}),`RAZYNC_${companyCode}_CLASSIFICADO.xlsx`));
     target.querySelector(".preview-primary-actions").append(download);
     $("#classifyMessage").textContent = `Classificação concluída: ${summary.automaticos || 0} automáticos. Confira a prévia antes de baixar.`;
-    if (Number(companyCode) === 242 && typeof window.prepareIntelligentReview === "function") {
+    if ([242, 1408].includes(Number(companyCode)) && typeof window.prepareIntelligentReview === "function") {
       const reviewFile = new File([workbook], `RAZYNC_${companyCode}_CLASSIFICADO.xlsx`, {
         type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       });
