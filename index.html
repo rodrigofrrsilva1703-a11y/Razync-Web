@@ -7,7 +7,7 @@
   <title>Razync</title>
   <link rel="icon" type="image/png" href="./assets/razync-icon.png">
   <meta name="description" content="Razync — automação contábil">
-  <link rel="stylesheet" href="./assets/css/app.css?v=empty-companies-3">
+  <link rel="stylesheet" href="./assets/css/app.css?v=base242-streamlit-1">
   <link rel="stylesheet" href="./assets/css/workspace.css?v=12">
   <link rel="stylesheet" href="./assets/css/tools.css?v=23">
   <link rel="stylesheet" href="./assets/css/layout.css?v=2">
@@ -217,12 +217,19 @@
                 </div>
                 <label for="classifyFile">Modelo Domínio para classificar</label>
                 <input id="classifyFile" type="file" accept=".xlsx">
-                <div id="eletroClassification" hidden>
-                  <label><input id="eletroConsolidated" type="checkbox" checked>Substituir contas provisórias do consolidado Eletro Forte</label>
-                  <label for="classificationColumn">Ou substituir somente uma coluna</label>
-                  <select id="classificationColumn"><option value="">Regra do consolidado</option><option value="debito">Débito</option><option value="credito">Crédito</option></select>
-                  <label for="classificationValues">Contas substituíveis (separadas por vírgula)</label>
-                  <input id="classificationValues" type="text" placeholder="0,166">
+                <div id="eletro242Classification" class="eletro-classification" hidden>
+                  <span class="classification-mode-label">Tipo de planilha da 242</span>
+                  <div id="eletro242Modes" class="classification-mode-tabs" role="tablist" aria-label="Tipo de classificação da empresa 242">
+                    <button type="button" class="classification-mode active" data-eletro242-mode="consolidada" aria-pressed="true">Consolidada</button>
+                    <button type="button" class="classification-mode" data-eletro242-mode="despesa" aria-pressed="false">Despesa</button>
+                    <button type="button" class="classification-mode" data-eletro242-mode="fornecedor" aria-pressed="false">Fornecedor</button>
+                    <button type="button" class="classification-mode" data-eletro242-mode="recebido" aria-pressed="false">Recebido</button>
+                    <button type="button" class="classification-mode" data-eletro242-mode="francesinhas" aria-pressed="false">Francesinhas</button>
+                  </div>
+                  <p id="eletro242ModeHelp" class="helper">Classifica todas as abas bancárias. Pagamentos usam DÉBITO e recebimentos usam CRÉDITO; contas já classificadas são preservadas.</p>
+                </div>
+                <div id="eletro1408Classification" class="eletro-classification" hidden>
+                  <p class="helper">Classifica o Modelo Domínio consolidado da 1408 preservando a conta bancária 512.</p>
                 </div>
                 <button type="submit">Classificar Modelo Domínio</button>
                 <p id="classifyMessage" class="helper"></p>
@@ -319,8 +326,8 @@
   <script src="./assets/js/config.js"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
   <script src="./assets/js/workspace-ui.js?v=5"></script>
-  <script src="./assets/js/app.js?v=model-editor-1"></script>
-  <script src="./assets/js/migration.js?v=unified-tables-1"></script>
+  <script src="./assets/js/app.js?v=base242-streamlit-1"></script>
+  <script src="./assets/js/migration.js?v=base242-streamlit-1"></script>
   <script src="./assets/js/model-editor.js?v=2"></script>
 </body>
 </html>
