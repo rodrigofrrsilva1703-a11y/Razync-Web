@@ -953,7 +953,7 @@ const ELETRO_242_MODE_HELP = {
 function setEletro242ClassificationMode(mode) {
   if (!ELETRO_242_MODE_HELP[mode]) mode = "consolidada";
   eletro242ClassificationMode = mode;
-  $("#eletro242Modes [data-eletro242-mode]").forEach(button => {
+  document.querySelectorAll("#eletro242Modes [data-eletro242-mode]").forEach(button => {
     const active = button.dataset.eletro242Mode === mode;
     button.classList.toggle("active", active);
     button.setAttribute("aria-pressed", String(active));
@@ -962,7 +962,7 @@ function setEletro242ClassificationMode(mode) {
   if (help) help.textContent = ELETRO_242_MODE_HELP[mode];
 }
 
-$("#eletro242Modes [data-eletro242-mode]").forEach(button => {
+document.querySelectorAll("#eletro242Modes [data-eletro242-mode]").forEach(button => {
   button.addEventListener("click", () => setEletro242ClassificationMode(button.dataset.eletro242Mode));
 });
 
