@@ -52,6 +52,14 @@ def resolve_classification_options(company, options=None):
             if origem not in ELETRO_242_CLASSIFICATION_PROFILES:
                 raise ValueError('Modo de classificação inválido para a empresa 242.')
             resolved.update(ELETRO_242_CLASSIFICATION_PROFILES[origem])
+    elif int(company) == 1408:
+        # No Streamlit a filial tem apenas "Modelo Domínio consolidado".
+        # Pagamentos e recebimentos substituem somente conta vazia/0.
+        resolved.update({
+            'modo_consolidado': True,
+            'coluna_substituir': '',
+            'valores_substituiveis': [],
+        })
     return resolved
 
 def _db():
