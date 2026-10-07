@@ -25,6 +25,8 @@ const reconcileForm = $("#reconcileForm");
 let companies = [];
 let selected = null;
 let companyFilter = 'all';
+let autokraftSelectedCode = null;
+const AUTOKRAFT_CODES = new Set([3,178,343]);
 
 const API = () => String(window.RAZYNC_CONFIG?.apiBase || "").replace(/\/$/, "");
 
@@ -186,6 +188,103 @@ function bankLabel(bank, account) {
   return account ? `${name} · conta ${account}` : name;
 }
 
+function buildCompanyRow(company,index) {
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "company-card company-card-button company-row";
+  row.dataset.availability = company.capabilities?.status || 'unknown';
+  row.style.setProperty("--row-index", String(Math.min(index, 12)));
+
+  const code = document.createElement("span");
+  code.className = "company-row-code";
+  code.textContent = company.codigo;
+
+  const main = document.createElement("span");
+  main.className = "company-row-main";
+  const name = document.createElement("strong");
+  name.className = "company-row-name";
+  name.textContent = company.nome;
+  const meta = document.createElement("span");
+  meta.className = "company-row-meta";
+  const regime = document.createElement("span");
+  regime.className = "company-row-regime";
+  regime.textContent = company.regime;
+  const status = document.createElement("span");
+  status.className = "mini-status";
+  status.textContent = statusFor(company);
+  meta.append(regime, status);
+  main.append(name, meta);
+
+  const action = document.createElement("span");
+  action.className = "company-row-action";
+  action.innerHTML = '<span>Abrir</span><b aria-hidden="true">→</b>';
+
+  row.append(code, main, action);
+  row.addEventListener("click", () => openCompany(company));
+  return row;
+}
+
+function buildAutokraftGroup(groupCompanies,index) {
+  const group = document.createElement("section");
+  group.className = "company-group company-group-autokraft";
+  group.style.setProperty("--row-index", String(Math.min(index, 12)));
+  group.setAttribute("aria-label","Grupo Autokraft");
+
+  const head = document.createElement("div");
+  head.className = "company-group-head";
+  const title = document.createElement("div");
+  title.className = "company-group-title";
+  title.innerHTML = '<strong>Grupo Autokraft</strong><span>Selecione a empresa</span>';
+  head.appendChild(title);
+
+  const cards = document.createElement("div");
+  cards.className = "autokraft-company-cards";
+  cards.style.setProperty("--autokraft-count",String(Math.max(1,groupCompanies.length)));
+
+  const compactNames = {
+    3:"Autokraft Industrial",
+    178:"Autokraft Projetos",
+    343:"I.S.A"
+  };
+
+  groupCompanies.forEach(company => {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "autokraft-company-card";
+    card.dataset.companyCode = String(company.codigo);
+    card.dataset.availability = company.capabilities?.status || "unknown";
+    card.classList.toggle("selected",Number(autokraftSelectedCode) === Number(company.codigo));
+    card.setAttribute("aria-pressed",String(Number(autokraftSelectedCode) === Number(company.codigo)));
+
+    const code = document.createElement("span");
+    code.className = "autokraft-company-code";
+    code.textContent = company.codigo;
+
+    const copy = document.createElement("span");
+    copy.className = "autokraft-company-copy";
+    const name = document.createElement("strong");
+    name.textContent = compactNames[company.codigo] || company.nome;
+    const regime = document.createElement("small");
+    regime.textContent = company.regime;
+    copy.append(name,regime);
+
+    card.append(code,copy);
+    card.addEventListener("click",() => {
+      autokraftSelectedCode = Number(company.codigo);
+      cards.querySelectorAll(".autokraft-company-card").forEach(item => {
+        const active = Number(item.dataset.companyCode) === autokraftSelectedCode;
+        item.classList.toggle("selected",active);
+        item.setAttribute("aria-pressed",String(active));
+      });
+      requestAnimationFrame(() => openCompany(company));
+    });
+    cards.appendChild(card);
+  });
+
+  group.append(head,cards);
+  return group;
+}
+
 function render(items) {
   grid.innerHTML = "";
   count.textContent = `${items.length} empresa(s)`;
@@ -197,40 +296,19 @@ function render(items) {
     return;
   }
 
-  items.forEach((company, index) => {
-    const row = document.createElement("button");
-    row.type = "button";
-    row.className = "company-card company-card-button company-row";
-    row.dataset.availability = company.capabilities?.status || 'unknown';
-    row.style.setProperty("--row-index", String(Math.min(index, 12)));
+  const autokraft = items.filter(company => AUTOKRAFT_CODES.has(Number(company.codigo)));
+  let autokraftRendered = false;
+  let visualIndex = 0;
 
-    const code = document.createElement("span");
-    code.className = "company-row-code";
-    code.textContent = company.codigo;
-
-    const main = document.createElement("span");
-    main.className = "company-row-main";
-    const name = document.createElement("strong");
-    name.className = "company-row-name";
-    name.textContent = company.nome;
-    const meta = document.createElement("span");
-    meta.className = "company-row-meta";
-    const regime = document.createElement("span");
-    regime.className = "company-row-regime";
-    regime.textContent = company.regime;
-    const status = document.createElement("span");
-    status.className = "mini-status";
-    status.textContent = statusFor(company);
-    meta.append(regime, status);
-    main.append(name, meta);
-
-    const action = document.createElement("span");
-    action.className = "company-row-action";
-    action.innerHTML = '<span>Abrir</span><b aria-hidden="true">→</b>';
-
-    row.append(code, main, action);
-    row.addEventListener("click", () => openCompany(company));
-    grid.appendChild(row);
+  items.forEach(company => {
+    if (AUTOKRAFT_CODES.has(Number(company.codigo))) {
+      if (!autokraftRendered) {
+        grid.appendChild(buildAutokraftGroup(autokraft,visualIndex++));
+        autokraftRendered = true;
+      }
+      return;
+    }
+    grid.appendChild(buildCompanyRow(company,visualIndex++));
   });
 }
 
@@ -682,6 +760,7 @@ function closeCompany() {
   workspace.hidden = false;
   $(".hero").hidden = false;
   selected = null;
+  filterCompanies();
   showGlobalView("companies");
 }
 
