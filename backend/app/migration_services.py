@@ -235,10 +235,12 @@ def _workflow_1408(roles):
         raise ValueError('Não foi possível identificar o ano pelo Extrato Itaú da empresa 1408.')
     year = int(datas.dt.year.mode().iloc[0])
 
-    parts = [
-        processar_zip_francesinhas(content, '512')[0]
-        for _, content in (roles.get('francesinhas') or [])
-    ]
+    parts = []
+    parser_warnings = []
+    for _, content in (roles.get('francesinhas') or []):
+        parsed, warnings = processar_zip_francesinhas(content, '512')
+        parts.append(parsed)
+        parser_warnings.extend(warnings)
     details = pd.concat(parts, ignore_index=True) if parts else None
     frame, summary = montar_modelo_1408(
         movements.to_dict('records'),
@@ -246,6 +248,8 @@ def _workflow_1408(roles):
         year,
         details,
     )
+    summary = dict(summary)
+    summary['avisos_francesinhas'] = parser_warnings + list(summary.get('avisos_francesinhas') or [])
     book = engine.gerar_excel_modelo_dominio(frame)
     return book, 'ELETRO_FORTE_1408_MODELO_DOMINIO.xlsx', summary
 
