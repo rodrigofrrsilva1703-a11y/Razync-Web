@@ -153,7 +153,7 @@ def montar_modelo_1408(
     boletos = modelo.loc[
         (modelo["VALOR"] > 0)
         & modelo["HISTÓRICO"].astype(str).str.contains(
-            r"\bBOLETO\s+RECEBIDO\b", case=False, na=False, regex=True
+            r"\bBOLETOS?\s+RECEBIDOS?\b", case=False, na=False, regex=True
         )
     ]
 
