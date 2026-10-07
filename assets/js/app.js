@@ -941,6 +941,31 @@ learnForm.addEventListener("submit", async (event) => {
   }
 });
 
+let eletro242ClassificationMode = "consolidada";
+const ELETRO_242_MODE_HELP = {
+  consolidada: "Classifica todas as abas bancárias. Pagamentos usam DÉBITO e recebimentos usam CRÉDITO; contas já classificadas são preservadas.",
+  despesa: "Somente as abas bancárias são classificadas. Na Despesa, apenas DÉBITO 0 ou vazio pode ser substituído; a aba Principal é preservada.",
+  fornecedor: "Somente as abas bancárias são classificadas. No Fornecedor, apenas DÉBITO 166, 0 ou vazio pode ser substituído; a aba Principal é preservada.",
+  recebido: "Somente as abas bancárias são classificadas. No Recebido, apenas CRÉDITO 166, 0, 14, 16 ou vazio pode ser substituído; a aba Principal é preservada.",
+  francesinhas: "Classifica a planilha gerada por Francesinhas, preenchendo somente CRÉDITO vazio e mantendo 508 e 509 separados."
+};
+
+function setEletro242ClassificationMode(mode) {
+  if (!ELETRO_242_MODE_HELP[mode]) mode = "consolidada";
+  eletro242ClassificationMode = mode;
+  $("#eletro242Modes [data-eletro242-mode]").forEach(button => {
+    const active = button.dataset.eletro242Mode === mode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  const help = $("#eletro242ModeHelp");
+  if (help) help.textContent = ELETRO_242_MODE_HELP[mode];
+}
+
+$("#eletro242Modes [data-eletro242-mode]").forEach(button => {
+  button.addEventListener("click", () => setEletro242ClassificationMode(button.dataset.eletro242Mode));
+});
+
 let classificationController;
 function cancelClassificationPreview() {
   classificationController?.abort();
@@ -966,13 +991,10 @@ classifyForm.addEventListener("submit", async (event) => {
   const data = new FormData();
   data.append("file", file);
   const classifyOptions = {};
-  if ([242, 1408].includes(Number(selected.codigo))) {
-    const column = $("#classificationColumn").value;
-    Object.assign(classifyOptions,{
-      modo_consolidado: !column && $("#eletroConsolidated").checked,
-      coluna_substituir: column,
-      valores_substituiveis: $("#classificationValues").value.split(",").map(v => v.trim())
-    });
+  if (Number(selected.codigo) === 242) {
+    classifyOptions.origem_242 = eletro242ClassificationMode;
+  } else if (Number(selected.codigo) === 1408) {
+    classifyOptions.modo_consolidado = true;
   }
   data.append("options_json", JSON.stringify(classifyOptions));
   $("#classifyMessage").textContent = "Classificando…";
@@ -994,6 +1016,12 @@ classifyForm.addEventListener("submit", async (event) => {
     download.addEventListener("click",()=>downloadBlob(new Response(workbook,{headers:disposition ? {"Content-Disposition":disposition} : {}}),`RAZYNC_${companyCode}_CLASSIFICADO.xlsx`));
     target.querySelector(".preview-primary-actions").append(download);
     $("#classifyMessage").textContent = `Classificação concluída: ${summary.automaticos || 0} automáticos. Confira a prévia antes de baixar.`;
+    if (Number(companyCode) === 242 && typeof window.prepareIntelligentReview === "function") {
+      const reviewFile = new File([workbook], `RAZYNC_${companyCode}_CLASSIFICADO.xlsx`, {
+        type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      });
+      await window.prepareIntelligentReview(reviewFile, companyCode);
+    }
   } catch (error) {
     if (controller.signal.aborted || selected?.codigo !== companyCode) return;
     $("#classifyMessage").textContent = error.message;
