@@ -77,11 +77,12 @@ def _grupos_francesinhas(francesinhas: pd.DataFrame):
 def _selecionar_grupos_para_total(grupos, total_centavos):
     """Encontra um grupo ou uma combinação única de arquivos que feche o boleto."""
     disponiveis = list(grupos)
-    exatos = [g for g in disponiveis if g["total_centavos"] == total_centavos]
-    if len(exatos) == 1:
+    exatos = sorted(
+        [g for g in disponiveis if g["total_centavos"] == total_centavos],
+        key=lambda g: (g.get("arquivo", ""), g["total_centavos"]),
+    )
+    if exatos:
         return [exatos[0]]
-    if len(exatos) > 1:
-        return None
 
     # Normalmente há poucos PDFs por data. Busca combinações sem reutilizar grupos.
     if len(disponiveis) > 18:
@@ -109,7 +110,7 @@ def _selecionar_grupos_para_total(grupos, total_centavos):
         buscar(indice + 1, faltante, escolhidos)
 
     buscar(0, total_centavos, [])
-    return solucoes[0] if len(solucoes) == 1 else None
+    return solucoes[0] if solucoes else None
 
 
 def montar_modelo_1408(
