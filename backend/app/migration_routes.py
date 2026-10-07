@@ -13,6 +13,23 @@ from app import migration_services as services
 
 router = APIRouter(prefix='/api/v1')
 
+@router.post('/model-editor/open')
+async def open_model_editor(file: UploadFile = File(...)):
+    from app.model_editor import inspect
+    try:
+        return await run_in_threadpool(inspect, await file.read())
+    except Exception as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+@router.post('/model-editor/apply')
+async def apply_model_editor(file: UploadFile = File(...), operations_json: str = Form('[]')):
+    from app.model_editor import apply
+    try:
+        content = await run_in_threadpool(apply, await file.read(), json.loads(operations_json))
+        return download(content, 'MODELO_CORRIGIDO.xlsx')
+    except Exception as exc:
+        raise HTTPException(422, str(exc)) from exc
+
 
 def workbook_preview(content):
     from openpyxl import load_workbook
