@@ -33,13 +33,17 @@ renderWorkflow = function(company) {
     $("#learnFiles").accept = ".xls,.xlsx,.zip";
     if (learnLabel) learnLabel.textContent = "Planilhas já classificadas da 242";
     if (classifyLabel) classifyLabel.textContent = "Planilha Consolidada para classificar";
+  } else if (companyCode === 1408) {
+    $("#learnFiles").accept = ".xls,.xlsx,.zip";
+    if (learnLabel) learnLabel.textContent = "Planilhas já classificadas da 1408";
+    if (classifyLabel) classifyLabel.textContent = "Modelo Domínio consolidado para classificar";
   } else {
     $("#learnFiles").accept = ".xls,.xlsx,.zip,.csv,.json";
     if (learnLabel) learnLabel.textContent = "Arquivos revisados";
-    if (classifyLabel) classifyLabel.textContent = companyCode === 1408 ? "Modelo Domínio consolidado para classificar" : "Modelo Domínio para classificar";
+    if (classifyLabel) classifyLabel.textContent = "Modelo Domínio para classificar";
   }
 
-  francesinhasTab.hidden = !eletro;
+  francesinhasTab.hidden = companyCode !== 242;
   updateUploadProgress();
   $("#workflowPreview").replaceChildren();
   $("#reviewRows").replaceChildren();
