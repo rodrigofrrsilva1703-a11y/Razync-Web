@@ -438,7 +438,13 @@ def diagnostics(code, roles, options):
             return tables
         if code == 1408:
             _, _, summary = _workflow_1408(roles)
-            return {'Resumo extrato 1408': pd.DataFrame([summary])}
+            warnings = list(summary.get('avisos_francesinhas') or [])
+            summary_table = dict(summary)
+            summary_table.pop('avisos_francesinhas', None)
+            tables = {'Resumo extrato 1408': pd.DataFrame([summary_table])}
+            if warnings:
+                tables['Avisos francesinhas 1408'] = pd.DataFrame({'AVISO': warnings})
+            return tables
         return {}
 
 
