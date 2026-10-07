@@ -2485,3 +2485,29 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   #companyPanel .tool-tab { white-space:nowrap; }
   .preview-summary-grid { gap:10px; }
 }
+
+
+/* Grupo Autokraft */
+.company-group-autokraft{padding:11px 14px 13px;border-bottom:1px solid #edf1f5;background:#fbfcfe;animation:rowEnter .22s ease both;animation-delay:calc(var(--row-index,0)*14ms)}
+.company-group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.company-group-title{display:flex;align-items:baseline;gap:8px;min-width:0}
+.company-group-title strong{color:#425570;font-size:10px;font-weight:750}
+.company-group-title span{color:#8b98a8;font-size:8px}
+.autokraft-company-cards{display:grid;grid-template-columns:repeat(var(--autokraft-count,3),minmax(0,1fr));gap:8px}
+.autokraft-company-card{min-width:0;min-height:54px;display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:8px;padding:8px 9px;border:1px solid #e1e7ef;border-radius:8px;background:#fff;color:inherit;text-align:left;cursor:pointer;box-shadow:none;transition:border-color .14s ease,background .14s ease,box-shadow .14s ease}
+.autokraft-company-card:hover{border-color:#b8c7dc;background:#f9fbfe;box-shadow:0 2px 8px rgba(35,55,82,.05)}
+.autokraft-company-card.selected,.autokraft-company-card[aria-pressed="true"]{border-color:#6f91ca;background:#eef4fd;box-shadow:inset 0 0 0 1px rgba(76,112,170,.08)}
+.autokraft-company-code{display:grid;width:34px;height:28px;place-items:center;border-radius:6px;background:#edf2f8;color:#526b8f;font-size:9px;font-weight:800;font-variant-numeric:tabular-nums}
+.autokraft-company-card.selected .autokraft-company-code{background:#dfe9f8;color:#315b97}
+.autokraft-company-copy{min-width:0;display:grid;gap:2px}
+.autokraft-company-copy strong{overflow:hidden;color:#2f4058;font-size:9px;font-weight:700;line-height:1.25;text-overflow:ellipsis;white-space:nowrap}
+.autokraft-company-copy small{color:#8b98a8;font-size:7px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+@media(max-width:760px){
+  .company-group-autokraft{padding:9px 10px 11px}
+  .company-group-title span{display:none}
+  .autokraft-company-cards{gap:5px}
+  .autokraft-company-card{min-height:58px;grid-template-columns:1fr;justify-items:center;gap:4px;padding:7px 5px;text-align:center}
+  .autokraft-company-code{width:30px;height:24px;font-size:8px}
+  .autokraft-company-copy strong{width:100%;font-size:8px;white-space:normal}
+  .autokraft-company-copy small{display:none}
+}
