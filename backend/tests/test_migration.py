@@ -68,6 +68,29 @@ def test_empresa_242_campos_iguais_ao_streamlit():
     assert all(role.get("optional") is True for role in capability["roles"])
 
 
+def test_empresa_1408_campos_iguais_ao_streamlit():
+    capability = CAPABILITIES[1408]
+    assert [role["name"] for role in capability["roles"]] == [
+        "extrato", "recebidos", "francesinhas"
+    ]
+    assert capability["roles"][0].get("optional") is not True
+    assert capability["roles"][1].get("optional") is not True
+    assert capability["roles"][2].get("optional") is True
+    assert capability["options"] == []
+    assert capability["banks"] == {"itau": "512"}
+
+
+def test_empresa_1408_base_inteligente_usa_apenas_consolidado():
+    options = resolve_classification_options(1408, {
+        "modo_consolidado": False,
+        "coluna_substituir": "credito",
+        "valores_substituiveis": ["166"],
+    })
+    assert options["modo_consolidado"] is True
+    assert options["coluna_substituir"] == ""
+    assert options["valores_substituiveis"] == []
+
+
 def test_empresa_242_perfis_base_inteligente_iguais_ao_streamlit():
     expected = {
         "consolidada": (True, "", []),
