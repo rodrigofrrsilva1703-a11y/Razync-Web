@@ -49,6 +49,7 @@
     activeCell = null;
     pending = false;
     host.replaceChildren();
+    host.classList.remove('editor-expanded');
     host.hidden = true;
     balanceView.hidden = false;
     if (clearFile && input.files.length) {
@@ -342,6 +343,9 @@
       const rowCell = tr.insertCell();
       rowCell.className = 'editor-row-number';
       const pick = button(String(index + 1), () => selectRow(index));
+      pick.addEventListener('contextmenu', event => {
+        event.preventDefault(); selectRow(index); openRowMenu(event.clientX,event.clientY);
+      });
       pick.setAttribute('aria-label', `Selecionar linha ${index + 1}`);
       rowCell.append(pick);
 
@@ -452,6 +456,18 @@
     requestAnimationFrame(() => focusCell(index,0));
   }
 
+  function openRowMenu(x,y) {
+    host.querySelector('.editor-row-menu')?.remove();
+    const menu = document.createElement('div'); menu.className = 'editor-row-menu'; menu.setAttribute('role','menu');
+    for (const [label,action] of [['Inserir linha acima', () => insert('before')],['Inserir linha abaixo', () => insert('after')],['Excluir linha', () => host.querySelector('[data-delete]').click()]]) {
+      const item = button(label, () => { action(); menu.remove(); }); item.setAttribute('role','menuitem'); menu.append(item);
+    }
+    menu.style.left = `${Math.max(0,Math.min(x,window.innerWidth-220))}px`;
+    menu.style.top = `${Math.max(0,Math.min(y,window.innerHeight-160))}px`; host.append(menu);
+    menu.addEventListener('keydown', event => { if (event.key === 'Escape') menu.remove(); });
+    setTimeout(() => document.addEventListener('click', () => menu.remove(), {once:true}),0);
+    menu.querySelector('button').focus();
+  }
   function mount() {
     host.replaceChildren();
     host.hidden = false;
@@ -497,7 +513,13 @@
       renderRows();
     });
     label.append(select);
-    tools.append(label);
+    const sheetTabs = document.createElement('div'); sheetTabs.className = 'editor-sheet-tabs';
+    sheets.forEach((sheet,i) => {
+      const tab = button(sheet.name, () => { select.value = String(i); select.dispatchEvent(new Event('change')); });
+      tab.dataset.sheetIndex = String(i); sheetTabs.append(tab);
+    });
+    select.addEventListener('change', () => sheetTabs.querySelectorAll('button').forEach((tab,i) => tab.classList.toggle('active',i === active)));
+    sheetTabs.querySelector('button')?.classList.add('active');
 
     const add = button('+ Linha', () => insert('end'));
     add.title = 'Adicionar uma linha no final';
@@ -522,6 +544,7 @@
       chosen = null;
       renderRows();
     });
+    remove.dataset.delete = '';
     remove.dataset.needsRow = '';
     tools.append(remove);
 
@@ -538,7 +561,10 @@
     const download = button('Baixar corrigido', downloadCorrected,'editor-download');
     download.dataset.download = '';
     download.title = 'Ctrl+S';
-    tools.append(download);
+    const expand = button('Ampliar planilha', () => {
+      const expanded = host.classList.toggle('editor-expanded'); expand.textContent = expanded ? 'Sair da tela ampliada' : 'Ampliar planilha'; expand.setAttribute('aria-pressed',String(expanded));
+    });
+    tools.append(expand,download);
 
     const formula = document.createElement('div');
     formula.className = 'editor-formula-bar';
@@ -614,10 +640,11 @@
     pageLabel.className = 'editor-page-label';
     pager.append(previous,pageLabel,next);
 
-    content.append(intro,tools,formula,searchRow,scroll,pager);
+    content.append(tools,formula,searchRow,scroll,sheetTabs,pager,intro);
     host.append(nav,message,content);
 
-    host.addEventListener('keydown', event => {
+    host.onkeydown = event => {
+      if (event.key === 'Escape') { host.classList.remove('editor-expanded'); expand.textContent = 'Ampliar planilha'; expand.setAttribute('aria-pressed','false'); }
       if (!(event.ctrlKey || event.metaKey)) return;
       const key = event.key.toLowerCase();
       if (key === 'z') {
@@ -630,7 +657,7 @@
         event.preventDefault();
         downloadCorrected();
       }
-    });
+    };
 
     renderRows();
     view('editor');

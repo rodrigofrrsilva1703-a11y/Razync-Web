@@ -7,6 +7,15 @@
   overflow:hidden;
   box-shadow:0 4px 18px rgba(28,48,76,.035);
 }
+.editor-toolbar button, .editor-tabs button, .editor-search, .editor-selection, .editor-pager, .editor-pager button, .model-editor .editor-status { font-size:12px; }
+.editor-sheet-tabs { display:flex; gap:4px; overflow:auto; padding:7px 10px; background:#f3f6fa; border-top:1px solid #dfe6ef; }
+.editor-sheet-tabs button { flex-shrink:0; min-height:34px; padding:6px 18px; border:0; border-bottom:3px solid transparent; background:transparent; color:#52677f; font-size:13px; cursor:pointer; }
+.editor-sheet-tabs button.active { border-bottom-color:#3769bc; background:#fff; color:#285c9e; font-weight:600; }
+.editor-row-menu { position:fixed; z-index:10001; display:grid; width:210px; padding:5px; border:1px solid #d7e2f0; border-radius:8px; background:#fff; box-shadow:0 8px 30px #15294126; }
+.editor-row-menu button { min-height:40px; text-align:left; border:0; border-radius:5px; background:#fff; color:#344a64; padding:8px 12px; font-size:13px; cursor:pointer; }
+.editor-row-menu button:hover, .editor-row-menu button:focus { background:#eaf2ff; }
+.model-editor.editor-expanded { position:fixed; inset:12px; z-index:9999; margin:0; overflow:auto; box-shadow:0 0 0 100vmax #16283d66; }
+.editor-expanded .editor-table-scroll { max-height:calc(100dvh - 295px); min-height:250px; }
 .editor-tabs {
   display:flex;
   gap:2px;
@@ -392,3 +401,12 @@ body .editor-table .editor-selected .editor-row-number > button,
     height:38px;
   }
 }
+
+/* Readable worksheet typography and clear cell boundaries. */
+.model-editor .editor-table td > input { font-size:13px; height:38px; }
+.model-editor .editor-table thead th { font-size:12px; }
+.model-editor .editor-col-letter { font-size:10px; }
+.model-editor .editor-row-number > button { font-size:12px; height:38px; }
+.model-editor .editor-name-box, .model-editor .editor-value-bar { font-size:13px; }
+.model-editor .editor-toolbar button, .model-editor .editor-search, .model-editor .editor-selection, .model-editor .editor-pager, .model-editor .editor-pager button, .model-editor .editor-status { font-size:12px; }
+@media(max-width:760px) { .model-editor .editor-table td > input { font-size:16px; } .model-editor.editor-expanded { inset:4px; } }
