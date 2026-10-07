@@ -626,3 +626,37 @@ footer {
 .company-panel[data-has-tools="false"] .status-pill {
   display: none !important;
 }
+
+.eletro-classification {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.classification-mode-label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.classification-mode-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.classification-mode {
+  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.classification-mode.active {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+.eletro-classification .helper {
+  margin: 10px 0 0;
+}
