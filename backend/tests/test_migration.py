@@ -91,6 +91,64 @@ def test_empresa_1408_base_inteligente_usa_apenas_consolidado():
     assert options["valores_substituiveis"] == []
 
 
+def _frame_1408(rows):
+    return pd.DataFrame(rows, columns=["DESCRIÇÃO","DATA","VALOR","DÉBITO","CRÉDITO","HISTÓRICO"])
+
+
+def test_1408_francesinhas_substituem_boleto_recebido():
+    from razync.eletro_forte_filial_1408 import montar_modelo_1408
+    extrato = _frame_1408([
+        ["BANCO ITAÚ","03/08/2026",300.00,"512","","BOLETO RECEBIDO"],
+        ["BANCO ITAÚ","03/08/2026",75.00,"512","","REDE VISA"],
+    ])
+    francesinhas = pd.DataFrame([
+        ["BANCO ITAÚ","03/08/2026",100.00,"512","","Recebido: CLIENTE A","f1.pdf","1234-5"],
+        ["BANCO ITAÚ","03/08/2026",200.00,"512","","Recebido: CLIENTE B","f1.pdf","1234-5"],
+    ], columns=["DESCRIÇÃO","DATA","VALOR","DÉBITO","CRÉDITO","HISTÓRICO","ARQUIVO","CONTA_ITAU"])
+    result, summary = montar_modelo_1408(extrato.to_dict("records"), None, 2026, francesinhas)
+    assert "BOLETO RECEBIDO" not in " ".join(result["HISTÓRICO"].astype(str))
+    assert sorted(result["VALOR"].tolist()) == [75.0, 100.0, 200.0]
+    assert result.loc[result["VALOR"].isin([100.0,200.0]), "DÉBITO"].astype(str).eq("512").all()
+    assert result.loc[result["VALOR"] == 75.0, "HISTÓRICO"].iloc[0].endswith("REDE VISA")
+    assert summary["boletos_desmembrados"] == 1
+    assert summary["boletos_sem_correspondencia"] == 0
+
+
+def test_1408_francesinhas_nao_substituem_quando_total_nao_fecha():
+    from razync.eletro_forte_filial_1408 import montar_modelo_1408
+    extrato = _frame_1408([
+        ["BANCO ITAÚ","03/08/2026",300.00,"512","","BOLETO RECEBIDO"],
+    ])
+    francesinhas = pd.DataFrame([
+        ["BANCO ITAÚ","03/08/2026",299.99,"512","","Recebido: CLIENTE A","f1.pdf","1234-5"],
+    ], columns=["DESCRIÇÃO","DATA","VALOR","DÉBITO","CRÉDITO","HISTÓRICO","ARQUIVO","CONTA_ITAU"])
+    result, summary = montar_modelo_1408(extrato.to_dict("records"), None, 2026, francesinhas)
+    assert len(result) == 1
+    assert result.iloc[0]["VALOR"] == 300.0
+    assert "BOLETO RECEBIDO" in result.iloc[0]["HISTÓRICO"]
+    assert summary["boletos_desmembrados"] == 0
+    assert summary["boletos_sem_correspondencia"] == 1
+    assert summary["francesinhas_nao_usadas"] == 1
+    assert summary["avisos_francesinhas"]
+
+
+def test_1408_francesinhas_separam_dois_boletos_no_mesmo_dia():
+    from razync.eletro_forte_filial_1408 import montar_modelo_1408
+    extrato = _frame_1408([
+        ["BANCO ITAÚ","03/08/2026",300.00,"512","","BOLETO RECEBIDO"],
+        ["BANCO ITAÚ","03/08/2026",150.00,"512","","BOLETO RECEBIDO"],
+    ])
+    francesinhas = pd.DataFrame([
+        ["BANCO ITAÚ","03/08/2026",100.00,"512","","Recebido: A","grupo1.pdf","1234-5"],
+        ["BANCO ITAÚ","03/08/2026",200.00,"512","","Recebido: B","grupo1.pdf","1234-5"],
+        ["BANCO ITAÚ","03/08/2026",150.00,"512","","Recebido: C","grupo2.pdf","1234-5"],
+    ], columns=["DESCRIÇÃO","DATA","VALOR","DÉBITO","CRÉDITO","HISTÓRICO","ARQUIVO","CONTA_ITAU"])
+    result, summary = montar_modelo_1408(extrato.to_dict("records"), None, 2026, francesinhas)
+    assert sorted(result["VALOR"].tolist()) == [100.0, 150.0, 200.0]
+    assert summary["boletos_desmembrados"] == 2
+    assert summary["francesinhas_nao_usadas"] == 0
+
+
 def test_empresa_242_perfis_base_inteligente_iguais_ao_streamlit():
     expected = {
         "consolidada": (True, "", []),
