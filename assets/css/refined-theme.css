@@ -104,3 +104,33 @@ footer { color:#7d8da2; border-top-color:#e5ebf3; }
  .panel-head { padding:20px !important; }
  .tool-tabs { margin-top:18px; margin-bottom:18px; }
 }
+
+/* Readable secondary text, compact spacing, and fully visible mobile navigation. */
+.directory-heading p, .search-meta, .helper, .form-card-header small { font-size:13px !important; }
+.company-row-regime, .company-row-meta .mini-status, .company-row-action { font-size:11px !important; }
+.overview .overview-card div > span { font-size:11px; line-height:1.45; }
+.company-code { font-size:11px; letter-spacing:.09em; }
+.hero.compact-hero { padding-top:22px; padding-bottom:16px; }
+.directory-heading { padding-bottom:0; }
+.directory-controls { gap:12px; }
+.directory-controls .directory-heading { margin-bottom:0; }
+.directory-controls .search-meta { margin-top:0; }
+#companyPanel .tool-card > div:first-child { padding:18px 22px !important; }
+#companyPanel .modern-form, #companyPanel .stack-forms .modern-form { padding:22px !important; }
+.form-card-header { padding-bottom:12px; margin-bottom:12px; }
+.tool-feature-list { margin-top:10px; }
+@media(max-width:760px) {
+ #companyPanel .tool-tabs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); overflow:visible; gap:8px; padding:0; margin:16px 0; }
+ #companyPanel .tool-tab { width:100%; min-width:0; min-height:52px; margin:0; padding:10px 9px; font-size:12px; line-height:1.4; white-space:normal; justify-content:flex-start; text-align:left; }
+ .main-nav { flex-wrap:wrap; overflow:visible; gap:6px; }
+ .main-nav-btn { font-size:11px; min-height:44px; }
+ .sidebar { max-height:260px; }
+ .overview .overview-card { padding:9px 11px; }
+ .overview .overview-card:first-child { padding-left:11px; }
+ .overview .overview-card div > span { font-size:11px; }
+ .directory-controls { padding:16px; }
+ .hero.compact-hero { padding-top:18px; padding-bottom:14px; }
+ #companyPanel .tool-card > div:first-child, #companyPanel .modern-form,
+ #companyPanel .stack-forms .modern-form { padding:18px !important; }
+ .company-row-regime, .company-row-meta .mini-status { font-size:11px !important; }
+}
