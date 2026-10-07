@@ -215,20 +215,48 @@ def workflow(code, roles, options):
     return result
 
 
+def _workflow_1408(roles):
+    from razync.eletro_forte_filial_1408 import montar_modelo_1408
+    from razync.eletro_forte_francesinhas import processar_zip_francesinhas
+
+    extratos = roles.get('extrato') or []
+    recebidos = roles.get('recebidos') or []
+    if not extratos:
+        raise ValueError('Envie o Extrato Itaú da empresa 1408.')
+    if not recebidos:
+        raise ValueError('Envie a Planilha de recebidos da empresa 1408.')
+
+    movements = pd.concat(
+        [statement(1408, 'itau', content, name) for name, content in extratos],
+        ignore_index=True,
+    )
+    datas = pd.to_datetime(movements.get('DATA'), dayfirst=True, errors='coerce').dropna()
+    if datas.empty:
+        raise ValueError('Não foi possível identificar o ano pelo Extrato Itaú da empresa 1408.')
+    year = int(datas.dt.year.mode().iloc[0])
+
+    parts = [
+        processar_zip_francesinhas(content, '512')[0]
+        for _, content in (roles.get('francesinhas') or [])
+    ]
+    details = pd.concat(parts, ignore_index=True) if parts else None
+    frame, summary = montar_modelo_1408(
+        movements.to_dict('records'),
+        recebidos[0][1],
+        year,
+        details,
+    )
+    book = engine.gerar_excel_modelo_dominio(frame)
+    return book, 'ELETRO_FORTE_1408_MODELO_DOMINIO.xlsx', summary
+
+
 def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
-        if code == 1408 and roles.get('extrato'):
-            from razync.eletro_forte_filial_1408 import montar_modelo_1408
-            from razync.eletro_forte_francesinhas import processar_zip_francesinhas
-            movements = pd.concat([statement(code, 'itau', content, name) for name, content in roles['extrato']], ignore_index=True)
-            receipts = roles.get('recebidos', [(None,None)])[0][1]
-            parts = [processar_zip_francesinhas(content, '512')[0] for _,content in roles.get('francesinhas',[])]
-            details = pd.concat(parts,ignore_index=True) if parts else None
-            frame, summary = montar_modelo_1408(movements.to_dict('records'), receipts, int(options.get('ano') or datetime.now().year), details)
-            book = engine.gerar_excel_modelo_dominio(filter_frame(frame,options))
-            return book, 'ELETRO_FORTE_1408_MODELO_DOMINIO.xlsx'
-        if code in {242, 1408} and any(roles.get(name) for name in ('despesas', 'fornecedores', 'recebidos')):
+        if code == 1408:
+            book, filename, _ = _workflow_1408(roles)
+            return book, filename
+        if code == 242 and any(roles.get(name) for name in ('despesas', 'fornecedores', 'recebidos')):
             reports = eletro_reports(code, roles, options)
             key = f'ELETRO_FORTE_{code}_CONSOLIDADO.xlsx'
             return reports[key], key
@@ -404,18 +432,14 @@ def diagnostics(code, roles, options):
                 tables[f'Detalhamentos {label}'] = result.detalhamentos
                 tables[f'Extrato original {label}'] = frame
             return tables
-        if code == 1408 and roles.get('extrato'):
-            from razync.eletro_forte_filial_1408 import montar_modelo_1408
-            from razync.eletro_forte_francesinhas import processar_zip_francesinhas
-            parts = [statement(code,'itau',content,name) for name,content in roles['extrato']]
-            details = [processar_zip_francesinhas(content,'512')[0] for _,content in roles.get('francesinhas',[])]
-            _,summary = montar_modelo_1408(pd.concat(parts,ignore_index=True).to_dict('records'),roles.get('recebidos',[(None,None)])[0][1],int(options.get('ano') or datetime.now().year),pd.concat(details,ignore_index=True) if details else None)
-            return {'Resumo extrato 1408':pd.DataFrame([summary])}
+        if code == 1408:
+            _, _, summary = _workflow_1408(roles)
+            return {'Resumo extrato 1408': pd.DataFrame([summary])}
         return {}
 
 
 def workflow_reports(code, roles, options):
-    if code in {242,1408} and not roles.get('extrato'):
+    if code == 242:
         return eletro_reports(code,roles,options)
     content,name = workflow(code,roles,options)
     reports = {name:content}
