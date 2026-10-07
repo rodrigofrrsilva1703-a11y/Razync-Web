@@ -15,6 +15,8 @@
 .editor-row-menu button { min-height:40px; text-align:left; border:0; border-radius:5px; background:#fff; color:#344a64; padding:8px 12px; font-size:13px; cursor:pointer; }
 .editor-row-menu button:hover, .editor-row-menu button:focus { background:#eaf2ff; }
 .model-editor.editor-expanded { position:fixed; inset:12px; z-index:9999; margin:0; overflow:auto; box-shadow:0 0 0 100vmax #16283d66; }
+section:has(.editor-expanded) { transform:none !important; animation:none !important; }
+body:has(.editor-expanded) { overflow:hidden; }
 .editor-expanded .editor-table-scroll { max-height:calc(100dvh - 295px); min-height:250px; }
 .editor-tabs {
   display:flex;
