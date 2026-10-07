@@ -114,6 +114,23 @@ def test_1408_francesinhas_substituem_boleto_recebido():
     assert summary["boletos_sem_correspondencia"] == 0
 
 
+def test_1408_francesinhas_mesmo_valor_nao_ficam_ambiguas():
+    from razync.eletro_forte_filial_1408 import montar_modelo_1408
+    extrato = _frame_1408([
+        ["BANCO ITAÚ","03/08/2026",150.00,"512","","BOLETO RECEBIDO"],
+        ["BANCO ITAÚ","03/08/2026",150.00,"512","","BOLETO RECEBIDO"],
+    ])
+    francesinhas = pd.DataFrame([
+        ["BANCO ITAÚ","03/08/2026",150.00,"512","","Recebido: A","a.pdf","1234-5"],
+        ["BANCO ITAÚ","03/08/2026",150.00,"512","","Recebido: B","b.pdf","1234-5"],
+    ], columns=["DESCRIÇÃO","DATA","VALOR","DÉBITO","CRÉDITO","HISTÓRICO","ARQUIVO","CONTA_ITAU"])
+    result, summary = montar_modelo_1408(extrato.to_dict("records"), None, 2026, francesinhas)
+    assert len(result) == 2
+    assert "BOLETO RECEBIDO" not in " ".join(result["HISTÓRICO"].astype(str))
+    assert summary["boletos_desmembrados"] == 2
+    assert summary["francesinhas_nao_usadas"] == 0
+
+
 def test_1408_francesinhas_nao_substituem_quando_total_nao_fecha():
     from razync.eletro_forte_filial_1408 import montar_modelo_1408
     extrato = _frame_1408([
