@@ -127,10 +127,10 @@ CAPABILITIES = {
         "workflow": "advanced",
         "roles": [
             {"name": "extrato", "label": "Extrato Itaú", "accept": ".pdf", "multiple": True},
-            {"name": "recebidos", "label": "Planilha de recebidos", "accept": ".xls,.xlsx", "multiple": False, "optional": True},
+            {"name": "recebidos", "label": "Planilha de recebidos", "accept": ".xls,.xlsx", "multiple": False},
             {"name": "francesinhas", "label": "Francesinhas ZIP", "accept": ".zip", "multiple": False, "optional": True},
         ],
-        "options": [{"name": "ano", "label": "Ano de referência", "type": "number"}],
+        "options": [],
         "banks": {"itau": "512"},
     },
     1529: {
@@ -157,20 +157,18 @@ CAPABILITIES[625]['banks']['caixa'] = '504'
 CAPABILITIES[266]['banks'] = {'itau': '508', 'bradesco': '9', 'fibra': '506'}
 CAPABILITIES[1396]['banks'] = {'itau': '515', 'bradesco': '514'}
 CAPABILITIES[1211]['banks'] = {'itau': '508'}
-for code in (242, 1408):
-    existing = CAPABILITIES[code]['roles']
-    for role in existing:
-        role['optional'] = True
-    for name, label in (('despesas', 'Relatório Despesa'), ('fornecedores', 'Relatório Fornecedor'), ('recebidos', 'Relatório Recebido')):
-        if not any(role['name'] == name for role in existing):
-            existing.append({'name': name, 'label': label, 'accept': '.xls,.xlsx', 'multiple': False, 'optional': True})
-    options = [
-        {'name': 'data_inicial', 'label': 'Data inicial (opcional)', 'type': 'date'},
-        {'name': 'data_final', 'label': 'Data final (opcional)', 'type': 'date'},
-    ]
-    if code == 1408:
-        options.insert(0, {'name': 'ano', 'label': 'Ano de referência', 'type': 'number'})
-    CAPABILITIES[code]['options'] = options
+# A matriz 242 usa os três relatórios bancários e período opcional.
+# A filial 1408 tem fluxo próprio: Extrato Itaú + Recebidos + Francesinhas opcional.
+existing = CAPABILITIES[242]['roles']
+for role in existing:
+    role['optional'] = True
+for name, label in (('despesas', 'Relatório Despesa'), ('fornecedores', 'Relatório Fornecedor'), ('recebidos', 'Relatório Recebido')):
+    if not any(role['name'] == name for role in existing):
+        existing.append({'name': name, 'label': label, 'accept': '.xls,.xlsx', 'multiple': False, 'optional': True})
+CAPABILITIES[242]['options'] = [
+    {'name': 'data_inicial', 'label': 'Data inicial (opcional)', 'type': 'date'},
+    {'name': 'data_final', 'label': 'Data final (opcional)', 'type': 'date'},
+]
 for code in (3, 178, 343, 266, 1396, 1000, 1001, 1064):
     CAPABILITIES[code]['options'] = [
         {'name': 'data_inicial', 'label': 'Data inicial (opcional)', 'type': 'date'},
