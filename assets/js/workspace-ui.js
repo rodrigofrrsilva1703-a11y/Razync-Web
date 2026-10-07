@@ -1,10 +1,6 @@
 function previewRowIssues(headers, row) {
   const labels = headers.map(value => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase());
   const issues = [];
-  if (["DEBITO", "CREDITO"].some(label => {
-    const index = labels.indexOf(label);
-    return index >= 0 && (!String(row[index] ?? "").trim() || Number(row[index]) === 0);
-  })) issues.push("Conta pendente");
   const dateIndex = labels.indexOf("DATA");
   if (dateIndex >= 0) {
     let date = String(row[dateIndex] ?? "").trim();

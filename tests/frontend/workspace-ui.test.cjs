@@ -15,11 +15,12 @@ function setup() {
   return {context};
 }
 
-test('pendências distinguem conta vazia e data impossível',()=> {
+test('prévia sinaliza data impossível sem marcar contas vazias ou zero',()=> {
   const h=setup(),headers=['DATA','DÉBITO','CRÉDITO','VALOR'];
-  assert.deepEqual([...h.context.previewRowIssues(headers,['31/04/2026','',1155,-100])],['Conta pendente','Data inválida']);
+  assert.deepEqual([...h.context.previewRowIssues(headers,['31/04/2026','',1155,-100])],['Data inválida']);
   assert.deepEqual([...h.context.previewRowIssues(headers,['06/10/2026',8,9,100])],[]);
-  assert.deepEqual([...h.context.previewRowIssues(headers,['2024-02-29T00:00:00',0,9,100])],['Conta pendente']);
+  assert.deepEqual([...h.context.previewRowIssues(headers,['2024-02-29T00:00:00',0,9,100])],[]);
+  assert.deepEqual([...h.context.previewRowIssues(headers,['06/10/2026','',0,100])],[]);
 });
 
 test('resumo de arquivos identifica a conta configurada sem inferir bancos desconhecidos',()=> {

@@ -200,7 +200,7 @@ function showWorkflowPreview(data, target = $("#workflowPreview")) {
   const pendingCount = sheets.reduce((sum, sheet) => sum + (sheet.rows || []).filter(row => previewRowIssues(sheet.columns || [], row).length).length, 0);
   if (pendingCount) {
     const notice = document.createElement("div"); notice.className = "preview-pending-summary";
-    const text = document.createElement("span"); text.textContent = `${pendingCount} linha(s) da prévia precisam de revisão: confira contas e datas.`;
+    const text = document.createElement("span"); text.textContent = `${pendingCount} linha(s) da prévia precisam de revisão: confira as datas.`;
     const onlyPending = document.createElement("button"); onlyPending.type = "button"; onlyPending.textContent = "Ver apenas pendências";
     onlyPending.addEventListener("click", () => {
       target.querySelectorAll(".preview-sheet").forEach(block => block.hidden = false);
@@ -279,7 +279,7 @@ function showWorkflowPreview(data, target = $("#workflowPreview")) {
       search.placeholder = "Buscar data, histórico ou conta";
       search.setAttribute("aria-label", `Filtrar lançamentos de ${sheet.name}`);
       const kind = document.createElement("select"); kind.setAttribute("aria-label", `Tipo de lançamento de ${sheet.name}`);
-      [["all","Todos"],["in","Entradas"],["out","Saídas"],["pending","Pendências: contas e datas"]].forEach(([value,label])=>{
+      [["all","Todos"],["in","Entradas"],["out","Saídas"],["pending","Datas inválidas"]].forEach(([value,label])=>{
         const option=document.createElement("option");option.value=value;option.textContent=label;kind.append(option);
       });
       const visible = document.createElement("span");
