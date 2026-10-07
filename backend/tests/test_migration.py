@@ -17,6 +17,7 @@ from app import classification_service as base
 from app.main import app
 from app.migration_services import workflow, slug, accounts, reconcile, normalize_selected_banks
 from app.registry import CAPABILITIES
+from app.classification_service import resolve_classification_options
 
 ROOT = Path(__file__).resolve().parents[1]
 client = TestClient(app)
@@ -65,6 +66,21 @@ def test_empresa_242_campos_iguais_ao_streamlit():
         "data_inicial", "data_final"
     ]
     assert all(role.get("optional") is True for role in capability["roles"])
+
+
+def test_empresa_242_perfis_base_inteligente_iguais_ao_streamlit():
+    expected = {
+        "consolidada": (True, "", []),
+        "despesa": (False, "debito", ["0", ""]),
+        "fornecedor": (False, "debito", ["166", "0", ""]),
+        "recebido": (False, "credito", ["166", "0", "14", "16", ""]),
+        "francesinhas": (False, "credito", [""]),
+    }
+    for origem, (modo, coluna, valores) in expected.items():
+        options = resolve_classification_options(242, {"origem_242": origem})
+        assert options["modo_consolidado"] is modo
+        assert options["coluna_substituir"] == coluna
+        assert options["valores_substituiveis"] == valores
 
 
 def test_bank_selection_aliases_used_by_company_tools():
