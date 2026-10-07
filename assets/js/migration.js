@@ -17,12 +17,27 @@ renderWorkflow = function(company) {
   enableMobileDateFields(advancedFields);
   $("#toolDescription").textContent += " A prévia aparece automaticamente quando os arquivos obrigatórios estiverem preenchidos.";
   $("#standardPeriod").hidden = false;
-  const eletro = [242,1408].includes(Number(company.codigo));
+  const companyCode = Number(company.codigo);
+  const eletro = [242,1408].includes(companyCode);
   $("#reportPackage").hidden = company.capabilities?.workflow !== "advanced";
   $("#reportPackage").textContent = eletro ? "Baixar relatórios individuais e consolidado" : "Baixar modelo e conferências";
   $("#previewWorkflow").hidden = true;
-  $("#eletroClassification").hidden = !eletro;
-  $("#reviewForm").hidden = eletro;
+  $("#eletro242Classification").hidden = companyCode !== 242;
+  $("#eletro1408Classification").hidden = companyCode !== 1408;
+  $("#reviewForm").hidden = false;
+
+  const learnLabel = document.querySelector('label[for="learnFiles"]');
+  const classifyLabel = document.querySelector('label[for="classifyFile"]');
+  if (companyCode === 242) {
+    setEletro242ClassificationMode("consolidada");
+    $("#learnFiles").accept = ".xls,.xlsx,.zip";
+    if (learnLabel) learnLabel.textContent = "Planilhas já classificadas da 242";
+    if (classifyLabel) classifyLabel.textContent = "Planilha Consolidada para classificar";
+  } else {
+    $("#learnFiles").accept = ".xls,.xlsx,.zip,.csv,.json";
+    if (learnLabel) learnLabel.textContent = "Arquivos revisados";
+    if (classifyLabel) classifyLabel.textContent = companyCode === 1408 ? "Modelo Domínio consolidado para classificar" : "Modelo Domínio para classificar";
+  }
 
   francesinhasTab.hidden = !eletro;
   updateUploadProgress();
@@ -370,9 +385,10 @@ $("#importOriginalBase").addEventListener("click",async()=>{
   try {const r=await fetch(`${API()}/api/v1/base-inteligente/${code}/importar-original`,{method:"POST",headers:adminHeaders()});if(!r.ok)throw new Error(await responseError(r));const result=await r.json();msg.textContent=`${result.learned} padrão(ões) copiado(s).`;refreshBaseStats();}catch(e){msg.textContent=e.message;}
 });
 
-$("#reviewForm").addEventListener("submit", async event=>{
-  event.preventDefault(); const code=selected.codigo; const msg=$("#reviewMessage");
-  reviewSourceFile=$("#reviewFile").files[0];if(!reviewSourceFile)return;
+window.prepareIntelligentReview = async function(file, code = selected?.codigo) {
+  const msg=$("#reviewMessage");
+  if (!file || !code) return;
+  reviewSourceFile=file;
   const sourceFile=reviewSourceFile;
   const data=new FormData();data.append("file",reviewSourceFile);
   msg.textContent="Listando pendências…";
@@ -380,7 +396,7 @@ $("#reviewForm").addEventListener("submit", async event=>{
     const r=await fetch(`${API()}/api/v1/base-inteligente/${code}/pendencias`,{method:"POST",body:data});
     if(!r.ok)throw new Error(await responseError(r));
     const result=await r.json();
-    if(selected?.codigo!==code || reviewSourceFile!==sourceFile)return;
+    if(Number(selected?.codigo)!==Number(code) || reviewSourceFile!==sourceFile)return;
     reviewPendingRows=result.pendencias;
     const table=tableFor(["Banco","Data","Valor","Histórico","Classificar em","Conta da contrapartida"],reviewPendingRows.map(row=>[row.Banco,row.Data,row.Valor,row["Histórico"],row["Classificar em"],""]));
     [...table.querySelectorAll("tbody tr")].forEach((tr,i)=>{
@@ -391,8 +407,18 @@ $("#reviewForm").addEventListener("submit", async event=>{
     const scroll = document.createElement("div"); scroll.className = "preview-table-scroll";
     scroll.appendChild(table);
     $("#reviewRows").replaceChildren(scroll);$("#applyReview").hidden=!reviewPendingRows.length;
-    msg.textContent=`${reviewPendingRows.length} lançamento(s) pendente(s).`;
+    msg.textContent=reviewPendingRows.length
+      ? `${reviewPendingRows.length} lançamento(s) pendente(s). Confirme as contas abaixo.`
+      : "Nenhuma pendência de contrapartida encontrada.";
+    $("#reviewForm").scrollIntoView({behavior:"smooth",block:"nearest"});
   }catch(e){msg.textContent=e.message;}
+};
+
+$("#reviewForm").addEventListener("submit", async event=>{
+  event.preventDefault();
+  const file=$("#reviewFile").files[0];
+  if(!file)return;
+  await window.prepareIntelligentReview(file, selected.codigo);
 });
 $("#reviewFile").addEventListener("change",()=>{$("#applyReview").hidden=true;reviewSourceFile=null;$("#reviewRows").replaceChildren();});
 $("#applyReview").addEventListener("click",async()=>{
