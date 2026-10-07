@@ -14,6 +14,46 @@ from app.migration_services import accounts, slug
 
 DB_PATH = Path(os.getenv('RAZYNC_DB_PATH', '/data/razync.db'))
 
+# Perfis originais da Base Inteligente da empresa 242 no Streamlit.
+# O frontend envia apenas a origem; as contas elegíveis são decididas aqui.
+ELETRO_242_CLASSIFICATION_PROFILES = {
+    'consolidada': {
+        'modo_consolidado': True,
+        'coluna_substituir': '',
+        'valores_substituiveis': [],
+    },
+    'despesa': {
+        'modo_consolidado': False,
+        'coluna_substituir': 'debito',
+        'valores_substituiveis': ['0', ''],
+    },
+    'fornecedor': {
+        'modo_consolidado': False,
+        'coluna_substituir': 'debito',
+        'valores_substituiveis': ['166', '0', ''],
+    },
+    'recebido': {
+        'modo_consolidado': False,
+        'coluna_substituir': 'credito',
+        'valores_substituiveis': ['166', '0', '14', '16', ''],
+    },
+    'francesinhas': {
+        'modo_consolidado': False,
+        'coluna_substituir': 'credito',
+        'valores_substituiveis': [''],
+    },
+}
+
+def resolve_classification_options(company, options=None):
+    resolved = dict(options or {})
+    if int(company) == 242:
+        origem = str(resolved.get('origem_242') or '').strip().casefold()
+        if origem:
+            if origem not in ELETRO_242_CLASSIFICATION_PROFILES:
+                raise ValueError('Modo de classificação inválido para a empresa 242.')
+            resolved.update(ELETRO_242_CLASSIFICATION_PROFILES[origem])
+    return resolved
+
 def _db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(DB_PATH, timeout=30)
@@ -179,7 +219,7 @@ def _limit_classified_workbook_to_period(original_content, classified_content, d
 
 
 def classify(company, content, filename, options=None):
-    options = options or {}
+    options = resolve_classification_options(company, options)
     workbook, summary = engine.classificar_planilha_final(
         content, filename, records(company), accounts(company),
         empresa_classificacao=slug(company), coluna_substituir=options.get('coluna_substituir', ''),
