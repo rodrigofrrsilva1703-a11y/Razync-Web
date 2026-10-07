@@ -1,0 +1,22 @@
+.model-editor { margin:22px 0; min-width:0; padding:20px; border:1px solid #dfe7f1; border-radius:20px; background:#fff; box-shadow:0 5px 22px #1c304c05; }
+.editor-tabs, .editor-toolbar, .editor-pager { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.model-editor button, .model-editor select { min-height:42px; padding:9px 12px; border:1px solid #d7e2f0; border-radius:10px; background:#f8fafd; color:#3d608a; font-size:13px; cursor:pointer; }
+.model-editor button:disabled { opacity:.45; cursor:default; }
+.model-editor button.active, .model-editor [data-download] { background:#3769bc; border-color:#3769bc; color:#fff; }
+.model-editor .editor-status { margin:12px 0; color:#486580; font-size:13px; line-height:1.6; }
+.editor-content > p { font-size:13px; color:#657b92; line-height:1.65; }
+.editor-toolbar { padding:12px 0; border-top:1px solid #e8eef6; border-bottom:1px solid #e8eef6; }
+.editor-toolbar label { display:flex; align-items:center; gap:8px; font-size:13px; }
+.editor-selection { margin:10px 0; }
+.editor-search { width:100%; margin-top:12px; padding:11px 13px; min-height:44px; border:1px solid #d7e2f0; border-radius:10px; font:inherit; }
+.editor-pager { justify-content:space-between; margin-top:12px; font-size:13px; color:#657b92; }
+body .editor-table tbody td, #companyPanel .editor-table tbody td { padding:0 !important; }
+.editor-table th:first-child { width:60px; }
+.editor-table td > input { min-width:130px; width:100%; height:44px; padding:10px 12px; border:1px solid transparent; border-radius:0; background:transparent; color:inherit; font:inherit; }
+.editor-table td > input.editor-number { text-align:right; }
+.editor-table td > input:focus { outline:2px solid #3769bc; outline-offset:-2px; background:#fff; }
+.editor-table td > button { width:100%; border:0; border-radius:0; background:transparent; font-variant-numeric:tabular-nums; }
+body .editor-table .editor-selected td, #companyPanel .editor-table .editor-selected td { background:#eaf2ff; }
+.editor-table td:has(input[aria-label^="Histórico"]), .editor-table td:has(input[aria-label^="HISTÓRICO"]) { min-width:300px; }
+.editor-table-scroll { max-height:55vh; }
+@media(max-width:760px) { .model-editor { padding:14px; border-radius:16px; } .editor-tabs > button { flex:1; } .editor-toolbar > button { flex:1 0 40%; } .editor-toolbar label { width:100%; } .editor-toolbar select { min-width:0; flex:1; } .editor-table td > input { font-size:16px; } }
