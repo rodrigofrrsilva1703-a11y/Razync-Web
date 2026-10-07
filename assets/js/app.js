@@ -595,8 +595,6 @@ async function refreshBaseStats() {
 }
 function openCompany(company) {
   cancelReconcilePreview();
-  if (globalThis.RazyncModelEditor && !globalThis.RazyncModelEditor.canLeave()) return;
-  globalThis.RazyncModelEditor?.reset();
   selected = company;
   const available = hasCompanyTools(company);
   const defaultTool = "organizar";
@@ -674,8 +672,6 @@ function openCompany(company) {
 
 function closeCompany() {
   cancelReconcilePreview();
-  if (globalThis.RazyncModelEditor && !globalThis.RazyncModelEditor.canLeave()) return;
-  globalThis.RazyncModelEditor?.reset();
   cancelAutomaticPreview();
   cancelClassificationPreview();
   panel.hidden = true;
@@ -1255,7 +1251,7 @@ function reconcileSelectionState() {
 function buildSingleReconcileData(bank) {
   const data = new FormData();
   data.append("bank",bank);
-  data.append("model_file",globalThis.RazyncModelEditor?.file() || $("#modelFile").files[0]);
+  data.append("model_file",$("#modelFile").files[0]);
   data.append("options_json",JSON.stringify({
     data_inicial:dateApiValue($("#reconcileStart")),
     data_final:dateApiValue($("#reconcileEnd"))
@@ -1270,7 +1266,7 @@ function buildReconcileData() {
   const data = new FormData();
   data.append("banks_json",JSON.stringify(state.banks));
   data.append("file_banks_json",JSON.stringify(state.fileBanks));
-  data.append("model_file",globalThis.RazyncModelEditor?.file() || $("#modelFile").files[0]);
+  data.append("model_file",$("#modelFile").files[0]);
   data.append("options_json",JSON.stringify({
     data_inicial:dateApiValue($("#reconcileStart")),
     data_final:dateApiValue($("#reconcileEnd"))
@@ -1448,8 +1444,6 @@ enhanceFileInputs(panel);
 
 function showGlobalView(name) {
   cancelReconcilePreview();
-  if (globalThis.RazyncModelEditor && !globalThis.RazyncModelEditor.canLeave()) return;
-  globalThis.RazyncModelEditor?.reset();
   $('#currentSection').textContent = {companies:'Empresas',converter:'Conversor de Extratos',ledger:'Conciliação com Razão'}[name];
   panel.hidden = true;
   selected = null;

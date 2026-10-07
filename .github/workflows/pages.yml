@@ -38,7 +38,6 @@ jobs:
           node --check assets/js/date-fields.js
           node --check assets/js/app.js
           node --check assets/js/migration.js
-          node --check assets/js/model-editor.js
 
       - name: Test reconciliation preview lifecycle
         run: node --test tests/frontend/*.test.cjs

@@ -131,19 +131,17 @@ test('as transições de empresa cancelam a conferência',()=> {
   }
 });
 
-test('conferência simples e múltipla enviam o modelo editado mais recente',()=> {
-  const edited = {name:'corrigido.xlsx'}, original = {name:'original.xlsx'};
+test('conferência simples e múltipla enviam o modelo anexado',()=> {
+  const original = {name:'original.xlsx'};
   class Body { constructor(){this.values={};} append(key,value){this.values[key]=value;} }
   const context = {
-    FormData:Body, RazyncModelEditor:{file:()=>edited},
+    FormData:Body,
     $:key=>key==='#modelFile'?{files:[original]}:{value:''},
     dateApiValue:()=>'', document:{querySelector:()=>({files:[]})},
     reconcileSelectionState:()=>({banks:['itau','sicredi'],fileBanks:[],files:[]})
   };
   vm.createContext(context);
   vm.runInContext(source.slice(source.indexOf('function buildSingleReconcileData('),source.indexOf('let reconcilePreviewTimer;')),context);
-  assert.equal(context.buildSingleReconcileData('itau').values.model_file,edited);
-  assert.equal(context.buildReconcileData().values.model_file,edited);
-  context.RazyncModelEditor.file=()=>null;
+  assert.equal(context.buildSingleReconcileData('itau').values.model_file,original);
   assert.equal(context.buildReconcileData().values.model_file,original);
 });
