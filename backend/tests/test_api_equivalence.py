@@ -43,13 +43,13 @@ def test_multi_bank_reconciliation_keeps_each_bank_separate(monkeypatch):
     assert any(name.startswith('Itaú 508') for name in sheets)
     assert any(name.startswith('Banco Fibra') for name in sheets)
 
-@pytest.mark.parametrize('code', [242,1408])
-def test_eletro_reports_preserve_individual_original_and_consolidated(code):
+def test_eletro_reports_preserve_individual_original_and_consolidated():
+    code = 242
     from razync import eletro_forte as ef
     raw = b'<table><tr><th>Data</th><th>Debito</th><th>Credito</th><th>Valor</th><th>Historico</th></tr><tr><td>03/08</td><td>166</td><td>8</td><td>100,50</td><td>CLIENTE TESTE</td></tr></table>'
     roles = {name:[('relatorio.xls',raw)] for name in ('despesas','fornecedores','recebidos')}
     actual = eletro_reports(code,roles,{'ano':2026})
-    groups = [f(raw,2026,'512' if code==1408 else None) for f in (ef.processar_despesas,ef.processar_fornecedores,ef.processar_recebidos)]
+    groups = [f(raw,2026,None) for f in (ef.processar_despesas,ef.processar_fornecedores,ef.processar_recebidos)]
     expected = ef.gerar_consolidado_bancos_eletro_forte(engine.TEMPLATE.read_bytes(),*groups)
     assert workbook_signature(actual[f'ELETRO_FORTE_{code}_CONSOLIDADO.xlsx']) == workbook_signature(expected)
     for index,name in enumerate(('despesas','fornecedores','recebidos')):
@@ -59,6 +59,26 @@ def test_eletro_reports_preserve_individual_original_and_consolidated(code):
     response = client.post(f'/api/v1/workflow/{code}/reports',data={'roles_json':json.dumps(list(roles)),'options_json':'{"ano":2026}'},files=[('files',('relatorio.xls',raw)) for _ in roles])
     assert response.status_code == 200, response.text
     assert response.headers['content-type'] == 'application/zip'
+
+
+def test_1408_rejects_matrix_report_flow_and_requires_statement_plus_receipts():
+    raw = b'<table><tr><th>Data</th><th>Debito</th><th>Credito</th><th>Valor</th><th>Historico</th></tr><tr><td>03/08</td><td>166</td><td>512</td><td>100,50</td><td>CLIENTE TESTE</td></tr></table>'
+    legacy_roles = {name:[('relatorio.xls',raw)] for name in ('despesas','fornecedores','recebidos')}
+    response = client.post(
+        '/api/v1/workflow/1408/reports',
+        data={'roles_json': json.dumps(list(legacy_roles)), 'options_json': '{}'},
+        files=[('files',('relatorio.xls',raw)) for _ in legacy_roles],
+    )
+    assert response.status_code == 422
+    assert 'Extrato Itaú' in response.json()['detail']
+
+    response = client.post(
+        '/api/v1/workflow/1408',
+        data={'roles_json':'["extrato"]','options_json':'{}'},
+        files=[('files',('itau.pdf',b'invalid'))],
+    )
+    assert response.status_code == 422
+
 
 @pytest.mark.parametrize('code,accounts',[(266,['99549-5','451990-6','673947-1']),(1396,['98002-6','3084-8'])])
 def test_nova_geracao_period_removals_and_workbook_match_original(code,accounts):
