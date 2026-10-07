@@ -95,6 +95,23 @@ def _frame_1408(rows):
     return pd.DataFrame(rows, columns=["DESCRIÇÃO","DATA","VALOR","DÉBITO","CRÉDITO","HISTÓRICO"])
 
 
+def test_1408_reconhece_boletos_recebidos_no_plural():
+    from razync.eletro_forte_filial_1408 import montar_modelo_1408
+    extrato = _frame_1408([
+        ["BANCO ITAÚ","10/09/2026",3231.81,"512","","BOLETOS RECEBIDOS 10/09S"],
+    ])
+    francesinhas = pd.DataFrame([
+        ["BANCO ITAÚ","10/09/2026",1000.00,"512","","Recebido: CLIENTE A","FRANC 09.09 FILIAL.pdf","98796-6"],
+        ["BANCO ITAÚ","10/09/2026",2231.81,"512","","Recebido: CLIENTE B","FRANC 09.09 FILIAL.pdf","98796-6"],
+    ], columns=["DESCRIÇÃO","DATA","VALOR","DÉBITO","CRÉDITO","HISTÓRICO","ARQUIVO","CONTA_ITAU"])
+    result, summary = montar_modelo_1408(extrato.to_dict("records"), None, 2026, francesinhas)
+    assert sorted(result["VALOR"].tolist()) == [1000.0, 2231.81]
+    assert "BOLETOS RECEBIDOS" not in " ".join(result["HISTÓRICO"].astype(str))
+    assert summary["boletos_recebidos"] == 1
+    assert summary["boletos_desmembrados"] == 1
+    assert summary["boletos_sem_correspondencia"] == 0
+
+
 def test_1408_francesinhas_substituem_boleto_recebido():
     from razync.eletro_forte_filial_1408 import montar_modelo_1408
     extrato = _frame_1408([
