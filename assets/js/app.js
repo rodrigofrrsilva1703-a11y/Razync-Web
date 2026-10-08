@@ -416,9 +416,80 @@ function renderBankSelector(container, banks, options={}) {
 
   container.append(head,list);
 }
+const COMPANY_TOOL_GUIDES = {
+  266: {
+    organizar: {
+      caption: "Empresa 266 · Nova Geração",
+      intro: "A 266 usa uma única planilha consolidada com os movimentos dos três bancos. Você escolhe quais bancos quer processar e o Razync separa os lançamentos automaticamente.",
+      steps: [
+        ["1", "Selecione os bancos", "Marque Itaú 508, Bradesco 9 e/ou Fibra 506. Se quiser o mês completo, mantenha os três selecionados."],
+        ["2", "Envie a planilha consolidada", "Anexe a planilha mensal recebida da empresa. Não precisa separar um arquivo para cada banco."],
+        ["3", "Informe o período se necessário", "Deixe De/Até em branco para considerar todo o arquivo ou use as datas para limitar os lançamentos."],
+        ["4", "Confira antes de baixar", "Revise a prévia gerada. O Modelo Domínio final fica separado por banco em abas próprias."]
+      ],
+      note: "Contas da 266: Itaú 508 · Bradesco 9 · Fibra 506."
+    },
+    base: {
+      caption: "Empresa 266 · Nova Geração",
+      intro: "Use a Base Inteligente depois da revisão do Modelo Domínio. Ela aprende os padrões da própria 266 e pode aplicar as contas em arquivos futuros.",
+      steps: [
+        ["1", "Ensine com arquivo revisado", "Em “Ensinar à base”, envie um Modelo Domínio da 266 que já esteja conferido e com as contas corretas."],
+        ["2", "Classifique o arquivo novo", "Em “Classificar arquivo”, envie o Modelo Domínio que ainda precisa receber as classificações aprendidas."],
+        ["3", "Revise a prévia", "Confira os lançamentos classificados antes de baixar. Os padrões ficam separados por empresa e banco."]
+      ],
+      note: "Use arquivos da própria empresa 266 para não misturar padrões com outras empresas."
+    },
+    extrato: {
+      caption: "Empresa 266 · Nova Geração",
+      intro: "A conferência compara o Modelo Domínio final com os extratos dos bancos selecionados e mostra as diferenças de entradas e saídas por dia.",
+      steps: [
+        ["1", "Selecione os bancos", "Escolha somente os bancos que serão conferidos: Itaú 508, Bradesco 9 e/ou Fibra 506."],
+        ["2", "Envie o Modelo Domínio final", "Use o arquivo já organizado e, se necessário, classificado pela Base Inteligente."],
+        ["3", "Anexe os extratos correspondentes", "Envie o extrato de cada banco selecionado no campo que aparece para ele."],
+        ["4", "Analise o status diário", "Saldo Entrada = Entrada Modelo − Entrada Extrato e Saldo Saída = Saída Modelo − Saída Extrato. Só fica “Batendo” quando os dois saldos forem zero."]
+      ],
+      note: "Se apenas entradas ou apenas saídas estiverem corretas, o dia continua como Divergente."
+    }
+  }
+};
+
+function renderCompanyToolGuide(toolName) {
+  const guide = $("#companyToolGuide");
+  if (!guide) return;
+  const content = COMPANY_TOOL_GUIDES[Number(selected?.codigo)]?.[toolName];
+  guide.hidden = !content;
+  if (!content) return;
+
+  $("#companyToolGuideCaption").textContent = content.caption || "";
+  $("#companyToolGuideIntro").textContent = content.intro || "";
+  $("#companyToolGuideNote").textContent = content.note || "";
+
+  const steps = $("#companyToolGuideSteps");
+  steps.replaceChildren();
+  (content.steps || []).forEach(([number,title,text]) => {
+    const item = document.createElement("div");
+    item.className = "company-tool-guide-step";
+
+    const index = document.createElement("span");
+    index.className = "company-tool-guide-index";
+    index.textContent = number;
+
+    const copy = document.createElement("div");
+    const heading = document.createElement("strong");
+    heading.textContent = title;
+    const paragraph = document.createElement("p");
+    paragraph.textContent = text;
+    copy.append(heading,paragraph);
+
+    item.append(index,copy);
+    steps.appendChild(item);
+  });
+}
+
 function activateTool(name) {
   if (!name) return;
   panel.dataset.activeTool = name;
+  renderCompanyToolGuide(name);
   $$("[data-tool].tool-tab").forEach(btn => {
     const active = btn.dataset.tool === name;
     btn.classList.toggle("active", active);
