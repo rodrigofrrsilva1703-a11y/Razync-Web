@@ -450,6 +450,19 @@ const COMPANY_TOOL_GUIDES = {
       ],
       note: "Se apenas entradas ou apenas saídas estiverem corretas, o dia continua como Divergente."
     }
+  },
+  242: {
+    francesinhas: {
+      caption: "Empresa 242 · Francesinhas",
+      intro: "Use esta ferramenta quando receber o ZIP das francesinhas do Itaú. O Razync lê as liquidações L e gera o Modelo Domínio separado pelas contas 508 e 509.",
+      steps: [
+        ["1", "Envie o ZIP das francesinhas", "Anexe o arquivo ZIP com os PDFs das francesinhas do período. O sistema ignora arquivos que não sejam PDFs válidos."],
+        ["2", "Informe o período se necessário", "Use De e Até apenas se quiser limitar as liquidações; em branco, todas as francesinhas válidas do ZIP são consideradas."],
+        ["3", "Confira as contas", "As liquidações da conta Itaú 10531-8 vão para a conta Domínio 508 e as da 18153-7 vão para a 509."],
+        ["4", "Revise antes de baixar", "Confira data, valor e histórico dos recebimentos gerados e depois baixe o Excel com as abas das contas encontradas."]
+      ],
+      note: "A data utilizada é a data “Emitido em” da francesinha e somente liquidações com Hist. L entram no arquivo."
+    }
   }
 };
 
