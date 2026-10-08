@@ -453,11 +453,23 @@ const COMPANY_TOOL_GUIDES = {
   }
 };
 
+function closeCompanyToolHelp(restoreFocus = false) {
+  const guide = $("#companyToolGuide");
+  const trigger = $("#companyToolHelpButton");
+  if (!guide || !trigger) return;
+  const wasOpen = !guide.hidden;
+  guide.hidden = true;
+  trigger.setAttribute("aria-expanded", "false");
+  if (wasOpen && restoreFocus) trigger.focus();
+}
+
 function renderCompanyToolGuide(toolName) {
   const guide = $("#companyToolGuide");
-  if (!guide) return;
+  const wrapper = $("#companyToolHelp");
+  if (!guide || !wrapper) return;
+  closeCompanyToolHelp();
   const content = COMPANY_TOOL_GUIDES[Number(selected?.codigo)]?.[toolName];
-  guide.hidden = !content;
+  wrapper.hidden = !content;
   if (!content) return;
 
   $("#companyToolGuideCaption").textContent = content.caption || "";
@@ -485,6 +497,26 @@ function renderCompanyToolGuide(toolName) {
     steps.appendChild(item);
   });
 }
+
+const companyToolHelp = $("#companyToolHelp");
+const companyToolHelpButton = $("#companyToolHelpButton");
+companyToolHelpButton?.addEventListener("click", () => {
+  const guide = $("#companyToolGuide");
+  if (!guide || companyToolHelp.hidden) return;
+  const opening = guide.hidden;
+  guide.hidden = !opening;
+  companyToolHelpButton.setAttribute("aria-expanded", String(opening));
+  if (opening) $("#companyToolGuideClose")?.focus({preventScroll:true});
+});
+$("#companyToolGuideClose")?.addEventListener("click", () => closeCompanyToolHelp(true));
+document.addEventListener("pointerdown", event => {
+  if (companyToolHelp && !companyToolHelp.hidden && !companyToolHelp.contains(event.target)) {
+    closeCompanyToolHelp();
+  }
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !$("#companyToolGuide")?.hidden) closeCompanyToolHelp(true);
+});
 
 function activateTool(name) {
   if (!name) return;
@@ -743,6 +775,8 @@ function openCompany(company) {
 }
 
 function closeCompany() {
+  closeCompanyToolHelp();
+  $("#companyToolHelp").hidden = true;
   cancelReconcilePreview();
   cancelAutomaticPreview();
   cancelClassificationPreview();
@@ -1515,6 +1549,8 @@ enhanceFileInputs(panel);
 
 
 function showGlobalView(name) {
+  closeCompanyToolHelp();
+  $("#companyToolHelp").hidden = true;
   cancelReconcilePreview();
   $('#currentSection').textContent = {companies:'Empresas',converter:'Conversor de Extratos',ledger:'Conciliação com Razão'}[name];
   panel.hidden = true;
