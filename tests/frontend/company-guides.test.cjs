@@ -69,6 +69,7 @@ test('ajuda da 266 abre, arrasta, fecha, lembra a posição e não aparece em ou
     setTimeout:cb=>{timers.push(cb);}
   };
   vm.createContext(context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../../assets/js/company-guides.js'),'utf8'),context);
   const start=app.indexOf('const COMPANY_TOOL_GUIDES =');
   const end=app.indexOf('function activateTool(name)',start);
   assert.ok(start>=0 && end>start);
@@ -113,7 +114,16 @@ test('ajuda da 266 abre, arrasta, fecha, lembra a posição e não aparece em ou
   assert.ok(parseFloat(node('#companyToolHelp').style.left)<=192);
   assert.ok(parseFloat(node('#companyToolHelp').style.top)<=282);
 
-  context.selected={codigo:1402};
+  context.selected={codigo:1402,capabilities:{status:'api_ready',tools:['modelo_dominio'],workflow:'advanced',
+    banks:{btg:'510'},roles:[{name:'planilha',label:'Planilha de caixa'},{name:'extrato',label:'Extrato BTG',optional:true}]}};
   context.renderCompanyToolGuide('organizar');
-  assert.equal(node('#companyToolHelp').hidden,true);
+  assert.equal(node('#companyToolHelp').hidden,false,'a 1402 agora oferece orientações');
+  assert.match(node('#companyToolGuideIntro').textContent,/VGV/);
+  assert.match(node('#companyToolGuideSteps').children[1].children[1].children[1].textContent,/Planilha de caixa/);
+  context.renderCompanyToolGuide('extrato');
+  assert.equal(node('#companyToolGuide').hidden,true,'trocar de ferramenta fecha a ajuda');
+  assert.equal(node('#companyToolHelp').hidden,false,'mantém o botão');
+  context.selected={codigo:257,capabilities:{status:'catalog_only',tools:[]}};
+  context.renderCompanyToolGuide('organizar');
+  assert.equal(node('#companyToolHelp').hidden,true,'sem ferramenta não mostra botão');
 });
