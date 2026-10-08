@@ -2516,10 +2516,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   z-index:45;
   bottom:22px;
   right:24px;
-  display:flex;
-  flex-direction:column;
-  align-items:flex-end;
-  gap:10px;
+  width:43px;
+  height:43px;
   pointer-events:none;
 }
 .company-tool-help > * { pointer-events:auto; }
@@ -2538,9 +2536,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   font-weight:750;
   line-height:1;
   box-shadow:0 5px 16px rgba(22,44,75,.17);
-  cursor:pointer;
-  transition:background .15s ease,box-shadow .15s ease,transform .15s ease;
+  cursor:grab;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+  transition:background .15s ease,box-shadow .15s ease;
 }
+.company-tool-help.is-dragging .company-tool-help-button { cursor:grabbing; }
 .company-tool-help-button:hover,
 .company-tool-help-button[aria-expanded="true"] {
   background:#294d7b;
@@ -2552,6 +2554,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   outline-offset:3px;
 }
 .company-tool-guide {
+  position:fixed;
   width:min(370px,calc(100vw - 32px));
   max-height:min(70vh,620px);
   max-height:min(70dvh,620px);
@@ -2660,6 +2663,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .company-tool-help {
     right:16px;
     bottom:max(16px,env(safe-area-inset-bottom));
+    width:46px;
+    height:46px;
   }
   .company-tool-guide {
     width:min(350px,calc(100vw - 32px));
