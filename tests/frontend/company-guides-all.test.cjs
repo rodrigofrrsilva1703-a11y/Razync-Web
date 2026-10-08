@@ -65,6 +65,7 @@ test('orientações seguem os campos realmente exibidos para fluxos diferentes',
   ]}),'organizar');
   assert.match(g1408.steps[1][2],/Extrato Itaú.*Planilha de recebidos/);
   assert.match(g1408.steps[2][2],/Francesinhas ZIP/);
+  assert.doesNotMatch(g1408.steps[2][2],/De e Até|limitar os lançamentos/);
   assert.match(g1408.note,/512/);
 
   const g242=resolve(demo(242,{workflow:'advanced',banks:{itau_508:'508',itau_509:'509',banco_brasil:'8'},roles:[
@@ -101,4 +102,11 @@ test('frontend carrega as instruções antes do JS principal',()=>{
   const guideIndex=html.indexOf('src="./assets/js/company-guides.js');
   const appIndex=html.indexOf('src="./assets/js/app.js');
   assert.ok(guideIndex>0 && appIndex>guideIndex);
+});
+
+test('não resolve instrução para ferramenta ausente na capacidade da empresa',()=> {
+  const company=demo(1402,{tools:['modelo_dominio'],workflow:'advanced',banks:{btg:'510'},roles:[{name:'planilha',label:'Planilha de caixa'}]});
+  assert.ok(resolve(company,'organizar'));
+  assert.equal(resolve(company,'base'),null);
+  assert.equal(resolve(company,'extrato'),null);
 });
