@@ -127,7 +127,12 @@ test('extrato: timer não submete o formulário de outra empresa',()=> {
 
 test('as transições de empresa cancelam a conferência',()=> {
   for(const name of ['openCompany(company)','closeCompany()','showGlobalView(name)']) {
-    assert.ok(source.includes(`function ${name} {\n  cancelReconcilePreview();`),name);
+    const start = source.indexOf(`function ${name} {`);
+    assert.ok(start>=0,name);
+    const end = source.indexOf('\n}',start);
+    assert.ok(end>start,name);
+    const body = source.slice(start,end);
+    assert.match(body,/cancelReconcilePreview\(\)/,name);
   }
 });
 
