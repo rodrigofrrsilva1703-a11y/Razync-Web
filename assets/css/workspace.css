@@ -2512,11 +2512,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 /* Ajuda flutuante da empresa: visível apenas quando há instruções específicas. */
 .company-tool-help {
-  position:sticky;
+  position:fixed;
   z-index:45;
-  bottom:16px;
-  margin:0 16px 16px auto;
-  width:max-content;
+  right:24px;
+  bottom:22px;
+  margin:0;
   width:43px;
   height:43px;
   pointer-events:none;
@@ -2662,8 +2662,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 @media(max-width:760px) {
   .company-tool-help {
-    bottom:max(12px,env(safe-area-inset-bottom));
-    margin-right:12px;
+    right:16px;
+    bottom:max(16px,env(safe-area-inset-bottom));
     width:46px;
     height:46px;
   }
