@@ -56,6 +56,14 @@ jobs:
           rm -rf _smoke
           cp -R _site _smoke
           printf 'window.RAZYNC_CONFIG={apiBase:""};' > _smoke/assets/js/config.js
+          cp tests/frontend/help-drag-smoke.js _smoke/assets/js/help-drag-smoke.js
+          python3 - <<'PY'
+          from pathlib import Path
+          page = Path("_smoke/index.html")
+          html = page.read_text(encoding="utf-8")
+          assert html.count("</body>") == 1
+          page.write_text(html.replace("</body>", '<script src="./assets/js/help-drag-smoke.js"></script>\n</body>'), encoding="utf-8")
+          PY
           python3 -m http.server 4173 --directory _smoke >/tmp/razync-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
@@ -73,6 +81,13 @@ jobs:
           grep -q 'id="companyGrid"' /tmp/razync-dom.html
           grep -q 'Razync' /tmp/razync-dom.html
           grep -q 'razync-api-production.up.railway.app' _site/assets/js/config.js
+          echo "=== Ajuda flutuante - teste visual ==="
+          if ! grep -q 'data-company-help-smoke="ok"' /tmp/razync-dom.html; then
+            grep -o 'data-company-help-smoke[^>]*' /tmp/razync-dom.html | head -3 || true
+            grep -E 'Uncaught|TypeError|ReferenceError|CONSOLE' /tmp/razync-chrome.log | head -20 || true
+            echo "Arraste real no Chromium (layout) não foi confirmado."
+            exit 1
+          fi
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
