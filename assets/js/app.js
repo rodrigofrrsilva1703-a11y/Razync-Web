@@ -468,7 +468,8 @@ function renderCompanyToolGuide(toolName) {
   const wrapper = $("#companyToolHelp");
   if (!guide || !wrapper) return;
   closeCompanyToolHelp();
-  const content = COMPANY_TOOL_GUIDES[Number(selected?.codigo)]?.[toolName];
+  const content = COMPANY_TOOL_GUIDES[Number(selected?.codigo)]?.[toolName]
+    || window.RAZYNC_COMPANY_HELP?.resolve(selected, toolName);
   wrapper.hidden = !content;
   if (!content) return;
 
