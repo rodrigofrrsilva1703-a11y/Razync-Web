@@ -19,6 +19,7 @@ test('empresa 266 possui instruções para as três ferramentas',()=> {
 
 test('guia é flutuante e abre somente dentro da empresa com instruções',()=> {
   assert.match(html,/id="companyToolHelp"/);
+  assert.ok(html.indexOf('id="companyToolHelp"') > html.indexOf('</main>'),'ajuda fora do painel animado');
   assert.match(html,/id="companyToolHelpButton"/);
   assert.match(html,/aria-expanded="false"/);
   assert.match(html,/id="companyToolGuideClose"/);
@@ -99,7 +100,7 @@ test('ajuda da 266 abre, arrasta, fecha, lembra a posição e não aparece em ou
   assert.equal(node('#companyToolHelp').style.left,'150px');
   assert.equal(node('#companyToolHelp').style.top,'460px');
   trigger.handlers.pointerup({pointerId:7});
-  assert.match(stored['razync-company-help-position-v1'],/"x":150/);
+  assert.match(stored['razync-company-help-position-v2'],/"x":150/);
   trigger.handlers.click();
   assert.equal(node('#companyToolGuide').hidden,true,'arrastar não deve abrir ajuda');
   timers.forEach(fn=>fn());
