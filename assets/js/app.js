@@ -667,6 +667,7 @@ async function refreshBaseStats() {
 function openCompany(company) {
   cancelReconcilePreview();
   selected = company;
+  renderCompanyToolGuide("");
   const available = hasCompanyTools(company);
   const defaultTool = "organizar";
   panel.dataset.hasTools = String(available);
