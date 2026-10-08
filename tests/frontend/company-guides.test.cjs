@@ -127,3 +127,11 @@ test('ajuda da 266 abre, arrasta, fecha, lembra a posição e não aparece em ou
   context.renderCompanyToolGuide('organizar');
   assert.equal(node('#companyToolHelp').hidden,true,'sem ferramenta não mostra botão');
 });
+
+test('Francesinhas da 242 também possui ajuda flutuante específica',()=> {
+  assert.match(app,/Empresa 242 · Francesinhas/);
+  assert.match(app,/10531-8.*508/);
+  assert.match(app,/18153-7.*509/);
+  assert.match(app,/data “Emitido em”/);
+  assert.match(app,/Hist\. L/);
+});
