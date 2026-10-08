@@ -2510,112 +2510,168 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 
-/* Instruções específicas de uso por empresa/ferramenta. */
-.company-tool-guide {
-  margin:10px 0 14px;
-  border:1px solid #dfe6ef;
-  border-radius:10px;
-  background:#fbfcfe;
-  overflow:hidden;
+/* Ajuda flutuante da empresa: visível apenas quando há instruções específicas. */
+.company-tool-help {
+  position:fixed;
+  z-index:45;
+  bottom:22px;
+  right:24px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:10px;
+  pointer-events:none;
 }
-.company-tool-guide > summary {
+.company-tool-help > * { pointer-events:auto; }
+.company-tool-help-button {
+  display:grid;
+  width:43px;
+  height:43px;
+  min-width:43px;
+  place-items:center;
+  padding:0;
+  border:1px solid #486c9e;
+  border-radius:50%;
+  background:#355c90;
+  color:#fff;
+  font-size:19px;
+  font-weight:750;
+  line-height:1;
+  box-shadow:0 5px 16px rgba(22,44,75,.17);
+  cursor:pointer;
+  transition:background .15s ease,box-shadow .15s ease,transform .15s ease;
+}
+.company-tool-help-button:hover,
+.company-tool-help-button[aria-expanded="true"] {
+  background:#294d7b;
+  box-shadow:0 6px 18px rgba(22,44,75,.22);
+}
+.company-tool-help-button:focus-visible,
+#companyToolGuideClose:focus-visible {
+  outline:2px solid #81a4d3;
+  outline-offset:3px;
+}
+.company-tool-guide {
+  width:min(370px,calc(100vw - 32px));
+  max-height:min(70vh,620px);
+  max-height:min(70dvh,620px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  border:1px solid #dae4ee;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 12px 34px rgba(20,42,73,.16);
+}
+.company-tool-guide-heading {
+  position:sticky;
+  z-index:1;
+  top:0;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:14px;
-  min-height:44px;
-  padding:10px 13px;
-  cursor:pointer;
-  list-style:none;
-  color:#405671;
+  gap:12px;
+  padding:13px 14px 11px;
+  border-bottom:1px solid #edf1f6;
+  background:#fff;
 }
-.company-tool-guide > summary::-webkit-details-marker { display:none; }
-.company-tool-guide > summary::after {
-  content:"⌄";
-  flex:none;
-  color:#8290a1;
-  font-size:15px;
-  transition:transform .14s ease;
+.company-tool-guide-heading > div {
+  display:grid;
+  gap:2px;
+  min-width:0;
 }
-.company-tool-guide[open] > summary::after { transform:rotate(180deg); }
-.company-tool-guide > summary span {
-  font-size:11px;
+.company-tool-guide-heading strong {
+  color:#314965;
+  font-size:13px;
   font-weight:750;
 }
-.company-tool-guide > summary small {
-  margin-left:auto;
-  color:#7d8c9f;
-  font-size:9px;
-  font-weight:600;
+.company-tool-guide-heading small {
+  color:#798da4;
+  font-size:10px;
 }
+#companyToolGuideClose {
+  flex:none;
+  display:grid;
+  width:29px;
+  height:29px;
+  place-items:center;
+  padding:0;
+  border:0;
+  border-radius:7px;
+  background:#f1f5fa;
+  color:#667b93;
+  font-size:21px;
+  line-height:1;
+  cursor:pointer;
+}
+#companyToolGuideClose:hover { background:#e7edf6; color:#344e70; }
 .company-tool-guide-body {
-  padding:0 13px 13px;
-  border-top:1px solid #edf1f5;
+  padding:12px 14px 14px;
 }
 .company-tool-guide-body > p:first-child {
-  margin:11px 0;
-  color:#60738a;
-  font-size:10px;
+  margin:0 0 12px;
+  color:#5b6e85;
+  font-size:11px;
   line-height:1.55;
 }
 .company-tool-guide-steps {
   display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:7px;
+  grid-template-columns:1fr;
+  gap:9px;
 }
 .company-tool-guide-step {
   display:grid;
-  grid-template-columns:25px minmax(0,1fr);
-  gap:8px;
+  grid-template-columns:26px minmax(0,1fr);
+  gap:9px;
   align-items:start;
-  padding:9px;
-  border:1px solid #e6ebf1;
-  border-radius:8px;
-  background:#fff;
 }
 .company-tool-guide-index {
   display:grid;
-  width:25px;
-  height:25px;
+  width:26px;
+  height:26px;
   place-items:center;
-  border-radius:6px;
+  border-radius:7px;
   background:#edf2f8;
-  color:#4a668c;
-  font-size:9px;
-  font-weight:800;
+  color:#46668f;
+  font-size:11px;
+  font-weight:750;
 }
 .company-tool-guide-step strong {
   display:block;
-  margin-bottom:2px;
-  color:#354961;
-  font-size:9px;
+  margin:0 0 2px;
+  color:#374d68;
+  font-size:11px;
 }
 .company-tool-guide-step p {
   margin:0;
-  color:#738296;
-  font-size:8px;
+  color:#6b7d92;
+  font-size:10px;
   line-height:1.5;
 }
 .company-tool-guide-note {
-  margin:9px 0 0 !important;
-  padding:8px 10px;
+  margin:13px 0 0;
+  padding:9px 10px;
   border-radius:7px;
-  background:#f2f6fb;
-  color:#586f8b !important;
-  font-size:9px !important;
-  line-height:1.45 !important;
+  background:#f2f6fa;
+  color:#526c8d;
+  font-size:10px;
+  line-height:1.5;
 }
 @media(max-width:760px) {
-  .company-tool-guide > summary {
-    align-items:flex-start;
-    flex-wrap:wrap;
-    gap:3px 8px;
+  .company-tool-help {
+    right:16px;
+    bottom:max(16px,env(safe-area-inset-bottom));
   }
-  .company-tool-guide > summary small {
-    width:100%;
-    margin-left:0;
+  .company-tool-guide {
+    width:min(350px,calc(100vw - 32px));
+    max-height:65vh;
+    max-height:65dvh;
   }
-  .company-tool-guide-steps {
-    grid-template-columns:1fr;
+  .company-tool-help-button {
+    width:46px;
+    height:46px;
+    min-width:46px;
   }
+}
+@media(prefers-reduced-motion:reduce) {
+  .company-tool-help-button { transition:none; }
 }
