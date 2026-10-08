@@ -143,17 +143,25 @@
           <button type="button" class="tool-tab" data-tool="extrato">Conferência com Extrato</button>
         </nav>
 
-        <details id="companyToolGuide" class="company-tool-guide" hidden open>
-          <summary>
-            <span>Como usar esta ferramenta</span>
-            <small id="companyToolGuideCaption"></small>
-          </summary>
-          <div class="company-tool-guide-body">
-            <p id="companyToolGuideIntro"></p>
-            <div id="companyToolGuideSteps" class="company-tool-guide-steps"></div>
-            <p id="companyToolGuideNote" class="company-tool-guide-note"></p>
-          </div>
-        </details>
+        <div id="companyToolHelp" class="company-tool-help" hidden>
+          <section id="companyToolGuide" class="company-tool-guide" role="region" aria-label="Instruções da ferramenta" hidden>
+            <div class="company-tool-guide-heading">
+              <div>
+                <strong>Como usar</strong>
+                <small id="companyToolGuideCaption"></small>
+              </div>
+              <button id="companyToolGuideClose" type="button" aria-label="Fechar instruções" title="Fechar">×</button>
+            </div>
+            <div class="company-tool-guide-body">
+              <p id="companyToolGuideIntro"></p>
+              <div id="companyToolGuideSteps" class="company-tool-guide-steps"></div>
+              <p id="companyToolGuideNote" class="company-tool-guide-note"></p>
+            </div>
+          </section>
+          <button id="companyToolHelpButton" class="company-tool-help-button" type="button"
+            aria-label="Como usar esta ferramenta" aria-controls="companyToolGuide"
+            aria-expanded="false" title="Como usar esta ferramenta">?</button>
+        </div>
 
         <div id="toolUnavailable" class="empty-state" role="status" hidden>
           Esta empresa ainda não possui ferramenta disponível.
