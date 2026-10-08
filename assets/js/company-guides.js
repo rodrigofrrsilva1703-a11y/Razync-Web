@@ -156,6 +156,7 @@
       const hasPicker = PICKER_BANK_CODES.has(code) || docs.some(role=>Object.hasOwn(cap.banks||{},role.name));
       const requiredLabel = required.map(role=>role.label).join(" + ");
       const optionalLabel = optional.map(role=>role.label).join(", ");
+      const hasManualPeriod = code !== 1408;
       steps = [
         step(1,hasPicker ? "Escolha os bancos" : "Confira os documentos",
           hasPicker ? "Marque os bancos que serão processados: "+names+"." :
@@ -163,9 +164,11 @@
         step(2,"Envie os arquivos",requiredLabel ?
           "Preencha os campos obrigatórios: "+requiredLabel+"." :
           "Anexe os arquivos nos campos indicados, conforme os documentos disponíveis."),
-        step(3,optional.length ? "Complementos e período" : "Período dos lançamentos",
-          (optionalLabel ? "Quando disponíveis, inclua: "+optionalLabel+". " : "")+
-          "Se quiser limitar os lançamentos, informe as datas De e Até."),
+        step(3,
+          optional.length ? (hasManualPeriod ? "Complementos e período" : "Complementos") : "Período dos lançamentos",
+          (optionalLabel ? "Quando disponíveis, inclua: "+optionalLabel+"." : "")+
+          (hasManualPeriod ? (optionalLabel ? " " : "")+"Se quiser limitar os lançamentos, informe as datas De e Até." : "")
+        ),
         step(4,"Revise a prévia", "Clique em Atualizar prévia e confira datas, valores e históricos antes de baixar o Modelo Domínio.")
       ];
     } else {
@@ -220,6 +223,8 @@
     if (!cap || cap.status!=="api_ready" || !Array.isArray(cap.tools) || cap.tools.length===0) return null;
     const extra=DETAILS[code];
     if (!extra) return null; // Não apresentar instruções inventadas para novos cadastros.
+    const requiredTool = {organizar:"modelo_dominio",base:"base_inteligente",extrato:"conferencia_extrato"}[toolName];
+    if (!requiredTool || !cap.tools.includes(requiredTool)) return null;
     if (toolName==="organizar") return organizer(company,cap,extra);
     if (toolName==="base") return base(company,cap,extra);
     if (toolName==="extrato") return extrato(company,cap,extra);
