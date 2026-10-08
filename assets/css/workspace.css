@@ -2508,3 +2508,114 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   border-color:#9aacbf !important;
   box-shadow:0 0 0 2px rgba(69,98,136,.08) !important;
 }
+
+
+/* Instruções específicas de uso por empresa/ferramenta. */
+.company-tool-guide {
+  margin:10px 0 14px;
+  border:1px solid #dfe6ef;
+  border-radius:10px;
+  background:#fbfcfe;
+  overflow:hidden;
+}
+.company-tool-guide > summary {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  min-height:44px;
+  padding:10px 13px;
+  cursor:pointer;
+  list-style:none;
+  color:#405671;
+}
+.company-tool-guide > summary::-webkit-details-marker { display:none; }
+.company-tool-guide > summary::after {
+  content:"⌄";
+  flex:none;
+  color:#8290a1;
+  font-size:15px;
+  transition:transform .14s ease;
+}
+.company-tool-guide[open] > summary::after { transform:rotate(180deg); }
+.company-tool-guide > summary span {
+  font-size:11px;
+  font-weight:750;
+}
+.company-tool-guide > summary small {
+  margin-left:auto;
+  color:#7d8c9f;
+  font-size:9px;
+  font-weight:600;
+}
+.company-tool-guide-body {
+  padding:0 13px 13px;
+  border-top:1px solid #edf1f5;
+}
+.company-tool-guide-body > p:first-child {
+  margin:11px 0;
+  color:#60738a;
+  font-size:10px;
+  line-height:1.55;
+}
+.company-tool-guide-steps {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+}
+.company-tool-guide-step {
+  display:grid;
+  grid-template-columns:25px minmax(0,1fr);
+  gap:8px;
+  align-items:start;
+  padding:9px;
+  border:1px solid #e6ebf1;
+  border-radius:8px;
+  background:#fff;
+}
+.company-tool-guide-index {
+  display:grid;
+  width:25px;
+  height:25px;
+  place-items:center;
+  border-radius:6px;
+  background:#edf2f8;
+  color:#4a668c;
+  font-size:9px;
+  font-weight:800;
+}
+.company-tool-guide-step strong {
+  display:block;
+  margin-bottom:2px;
+  color:#354961;
+  font-size:9px;
+}
+.company-tool-guide-step p {
+  margin:0;
+  color:#738296;
+  font-size:8px;
+  line-height:1.5;
+}
+.company-tool-guide-note {
+  margin:9px 0 0 !important;
+  padding:8px 10px;
+  border-radius:7px;
+  background:#f2f6fb;
+  color:#586f8b !important;
+  font-size:9px !important;
+  line-height:1.45 !important;
+}
+@media(max-width:760px) {
+  .company-tool-guide > summary {
+    align-items:flex-start;
+    flex-wrap:wrap;
+    gap:3px 8px;
+  }
+  .company-tool-guide > summary small {
+    width:100%;
+    margin-left:0;
+  }
+  .company-tool-guide-steps {
+    grid-template-columns:1fr;
+  }
+}
