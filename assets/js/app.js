@@ -500,13 +500,116 @@ function renderCompanyToolGuide(toolName) {
 
 const companyToolHelp = $("#companyToolHelp");
 const companyToolHelpButton = $("#companyToolHelpButton");
+const helpPositionKey = "razync-company-help-position-v1";
+const helpClamp = (n,min,max) => Math.max(min,Math.min(n,max));
+let helpDrag = null, suppressHelpClick = false, helpHasCustomPosition = false;
+
+function setCompanyHelpPosition(left,top) {
+  if (!companyToolHelp || !companyToolHelpButton) return;
+  const width = companyToolHelpButton.offsetWidth || 46;
+  const height = companyToolHelpButton.offsetHeight || 46;
+  const x = helpClamp(left,12,Math.max(12,window.innerWidth-width-12));
+  const y = helpClamp(top,12,Math.max(12,window.innerHeight-height-12));
+  companyToolHelp.style.left = x + "px";
+  companyToolHelp.style.top = y + "px";
+  companyToolHelp.style.right = "auto";
+  companyToolHelp.style.bottom = "auto";
+  helpHasCustomPosition = true;
+}
+
+function positionCompanyHelpGuide() {
+  const guide = $("#companyToolGuide");
+  if (!guide || guide.hidden || !companyToolHelpButton) return;
+  const anchor = companyToolHelpButton.getBoundingClientRect();
+  const panelWidth = guide.getBoundingClientRect().width;
+  const allowedHeight = Math.min(window.innerHeight * .7,620);
+  const above = Math.max(0,anchor.top - 22);
+  const below = Math.max(0,window.innerHeight-anchor.bottom-22);
+  const placeAbove = above >= Math.min(guide.scrollHeight,allowedHeight) || above >= below;
+  const availableHeight = placeAbove ? above : below;
+  guide.style.maxHeight = Math.max(70,Math.min(allowedHeight,availableHeight)) + "px";
+  const panelHeight = guide.getBoundingClientRect().height;
+  const x = helpClamp(anchor.right-panelWidth,12,Math.max(12,window.innerWidth-panelWidth-12));
+  const y = placeAbove ? anchor.top-panelHeight-10 : anchor.bottom+10;
+  guide.style.left = x + "px";
+  guide.style.top = helpClamp(y,10,Math.max(10,window.innerHeight-panelHeight-10)) + "px";
+}
+
+function rememberCompanyHelpPosition() {
+  const pos = companyToolHelpButton?.getBoundingClientRect();
+  if (!pos) return;
+  try {
+    localStorage.setItem(helpPositionKey,JSON.stringify({x:pos.left,y:pos.top}));
+  } catch (_) { /* Navegadores com armazenamento bloqueado continuam funcionando. */ }
+}
+
+function restoreCompanyHelpPosition() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(helpPositionKey) || "null");
+    if (Number.isFinite(saved?.x) && Number.isFinite(saved?.y)) {
+      setCompanyHelpPosition(saved.x,saved.y);
+    }
+  } catch (_) { /* Posição padrão no canto. */ }
+}
+
+companyToolHelpButton?.addEventListener("pointerdown",event => {
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  const rect = companyToolHelpButton.getBoundingClientRect();
+  helpDrag = {
+    id:event.pointerId,
+    startX:event.clientX, startY:event.clientY,
+    left:rect.left, top:rect.top, moved:false
+  };
+  companyToolHelpButton.setPointerCapture?.(event.pointerId);
+});
+companyToolHelpButton?.addEventListener("pointermove",event => {
+  if (!helpDrag || event.pointerId !== helpDrag.id) return;
+  const dx = event.clientX-helpDrag.startX, dy = event.clientY-helpDrag.startY;
+  if (!helpDrag.moved && Math.hypot(dx,dy) < 6) return;
+  if (!helpDrag.moved) {
+    helpDrag.moved = true;
+    closeCompanyToolHelp();
+    companyToolHelp.classList.add("is-dragging");
+  }
+  if (event.cancelable) event.preventDefault();
+  setCompanyHelpPosition(helpDrag.left+dx,helpDrag.top+dy);
+});
+function finishCompanyHelpDrag(event) {
+  if (!helpDrag || event.pointerId !== helpDrag.id) return;
+  if (helpDrag.moved) {
+    suppressHelpClick = true;
+    rememberCompanyHelpPosition();
+    // Um arrasto não pode abrir as instruções por acidente.
+    setTimeout(() => { suppressHelpClick = false; },250);
+  }
+  companyToolHelp.classList.remove("is-dragging");
+  helpDrag = null;
+  if (companyToolHelpButton.hasPointerCapture?.(event.pointerId)) {
+    companyToolHelpButton.releasePointerCapture(event.pointerId);
+  }
+}
+companyToolHelpButton?.addEventListener("pointerup",finishCompanyHelpDrag);
+companyToolHelpButton?.addEventListener("pointercancel",finishCompanyHelpDrag);
+window.addEventListener("resize",() => {
+  if (helpHasCustomPosition) {
+    const rect = companyToolHelpButton.getBoundingClientRect();
+    setCompanyHelpPosition(rect.left,rect.top);
+  }
+  positionCompanyHelpGuide();
+});
+restoreCompanyHelpPosition();
+
 companyToolHelpButton?.addEventListener("click", () => {
+  if (suppressHelpClick) { suppressHelpClick = false; return; }
   const guide = $("#companyToolGuide");
   if (!guide || companyToolHelp.hidden) return;
   const opening = guide.hidden;
   guide.hidden = !opening;
   companyToolHelpButton.setAttribute("aria-expanded", String(opening));
-  if (opening) $("#companyToolGuideClose")?.focus({preventScroll:true});
+  if (opening) {
+    positionCompanyHelpGuide();
+    $("#companyToolGuideClose")?.focus({preventScroll:true});
+  }
 });
 $("#companyToolGuideClose")?.addEventListener("click", () => closeCompanyToolHelp(true));
 document.addEventListener("pointerdown", event => {
