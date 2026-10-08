@@ -2485,3 +2485,26 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   #companyPanel .tool-tab { white-space:nowrap; }
   .preview-summary-grid { gap:10px; }
 }
+
+
+/* Foco discreto na busca e no filtro de regime. */
+.directory-controls .search-wrap,
+#regimeFilter {
+  transition:border-color .14s ease,box-shadow .14s ease,background .14s ease;
+}
+.directory-controls .search-wrap:focus-within {
+  border-color:#9aacbf;
+  background:#fff;
+  box-shadow:0 0 0 2px rgba(69,98,136,.08);
+}
+#companySearch:focus,
+#companySearch:focus-visible {
+  outline:none !important;
+  box-shadow:none !important;
+}
+#regimeFilter:focus,
+#regimeFilter:focus-visible {
+  outline:none !important;
+  border-color:#9aacbf !important;
+  box-shadow:0 0 0 2px rgba(69,98,136,.08) !important;
+}
