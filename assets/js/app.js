@@ -500,7 +500,7 @@ function renderCompanyToolGuide(toolName) {
 
 const companyToolHelp = $("#companyToolHelp");
 const companyToolHelpButton = $("#companyToolHelpButton");
-const helpPositionKey = "razync-company-help-position-v1";
+const helpPositionKey = "razync-company-help-position-v2";
 const helpClamp = (n,min,max) => Math.max(min,Math.min(n,max));
 let helpDrag = null, suppressHelpClick = false, helpHasCustomPosition = false;
 
@@ -562,7 +562,7 @@ companyToolHelpButton?.addEventListener("pointerdown",event => {
   };
   companyToolHelpButton.setPointerCapture?.(event.pointerId);
 });
-companyToolHelpButton?.addEventListener("pointermove",event => {
+function moveCompanyHelpDrag(event) {
   if (!helpDrag || event.pointerId !== helpDrag.id) return;
   const dx = event.clientX-helpDrag.startX, dy = event.clientY-helpDrag.startY;
   if (!helpDrag.moved && Math.hypot(dx,dy) < 6) return;
@@ -573,7 +573,9 @@ companyToolHelpButton?.addEventListener("pointermove",event => {
   }
   if (event.cancelable) event.preventDefault();
   setCompanyHelpPosition(helpDrag.left+dx,helpDrag.top+dy);
-});
+}
+companyToolHelpButton?.addEventListener("pointermove",moveCompanyHelpDrag);
+window.addEventListener("pointermove",moveCompanyHelpDrag);
 function finishCompanyHelpDrag(event) {
   if (!helpDrag || event.pointerId !== helpDrag.id) return;
   if (helpDrag.moved) {
@@ -590,6 +592,8 @@ function finishCompanyHelpDrag(event) {
 }
 companyToolHelpButton?.addEventListener("pointerup",finishCompanyHelpDrag);
 companyToolHelpButton?.addEventListener("pointercancel",finishCompanyHelpDrag);
+window.addEventListener("pointerup",finishCompanyHelpDrag);
+window.addEventListener("pointercancel",finishCompanyHelpDrag);
 window.addEventListener("resize",() => {
   if (helpHasCustomPosition) {
     const rect = companyToolHelpButton.getBoundingClientRect();
