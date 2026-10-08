@@ -59,6 +59,35 @@
     button.click();
     if(guide.hidden || button.getAttribute("aria-expanded")!=="true")throw Error("Instruções não abriram após arraste");
     if(!guide.textContent.includes("Selecione os bancos"))throw Error("Guia não mostrou os passos");
+
+    const filial = {
+      codigo:1408, nome:"Eletro Forte Filial", regime:"LUCRO REAL",
+      capabilities:{
+        status:"api_ready",tools:["modelo_dominio","base_inteligente","conferencia_extrato"],
+        workflow:"advanced",banks:{itau:"512"},
+        roles:[
+          {name:"extrato",label:"Extrato Itaú",accept:".pdf",multiple:true},
+          {name:"recebidos",label:"Planilha de recebidos",accept:".xls,.xlsx"},
+          {name:"francesinhas",label:"Francesinhas ZIP",accept:".zip",optional:true}
+        ]
+      }
+    };
+    openCompany(filial);
+    await pause(250);
+    if(wrapper.hidden)throw Error("Botão não aparece na 1408");
+    button.click();
+    if(guide.hidden || !guide.textContent.includes("Planilha de recebidos"))throw Error("Guia de organizar da 1408 incorreto");
+    activateTool("base");
+    if(!guide.hidden)throw Error("Guia deve fechar ao mudar ferramenta");
+    button.click();
+    if(guide.hidden || !guide.textContent.includes("conta Itaú 512"))throw Error("Guia da Base Inteligente da 1408 incorreto");
+
+    const withoutTools = {
+      codigo:257,nome:"Empresa sem ferramenta",regime:"LUCRO PRESUMIDO",
+      capabilities:{status:"catalog_only",tools:[],banks:{}}
+    };
+    openCompany(withoutTools);
+    if(!wrapper.hidden)throw Error("Botão apareceu em empresa sem ferramentas");
     state("ok");
   } catch(error) {
     state("failed",String(error.message||error).slice(0,400));
