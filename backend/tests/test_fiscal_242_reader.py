@@ -52,7 +52,10 @@ def test_fiscal_242_preview_and_excel_same_values():
     resumo = pd.read_excel(io.BytesIO(response.content), sheet_name=book.sheetnames[0])
     assert resumo.iloc[0]["CONTÁBIL COMPATÍVEL"] == 1234.56
     assert resumo.iloc[0]["SITUAÇÃO"] == "CONFERE"
-    assert client.post("/api/v1/conferencia-fiscal/1408/preview", files=files).status_code == 422
+    filial = client.post("/api/v1/conferencia-fiscal/1408/preview", files=files)
+    assert filial.status_code == 200, filial.text
+    assert filial.json()["filial_aplicada"] == "1408"
+    assert filial.json()["contas"][0]["contabil"] == 999.0
 
 
 def test_fiscal_uses_shared_biff_recovery_preserving_all_sheets(monkeypatch):
@@ -138,3 +141,61 @@ def test_dois_acumuladores_mesma_conta_aparecem_no_preview():
         {"codigo": "1153", "descricao": "Outras compras", "valor": 234.56},
     ]
     assert rows[0]["fiscal"] == 1234.56
+
+
+def test_conferencia_universal_exige_filial_quando_razao_tem_multiplas():
+    fiscal, ledger = reports()
+    arquivos = {"acumuladores": ("fiscal.xlsx", fiscal), "razao": ("razao.xlsx", ledger)}
+    client = TestClient(app)
+    indefinida = client.post("/api/v1/conferencia-fiscal/preview", files=arquivos)
+    assert indefinida.status_code == 422
+    assert "várias filiais" in indefinida.json()["detail"]
+    escolhida = client.post(
+        "/api/v1/conferencia-fiscal/preview", files=arquivos,
+        data={"filial": "242", "empresa_codigo": "987"},
+    )
+    assert escolhida.status_code == 200, escolhida.text
+    assert escolhida.json()["empresa"] == 987
+    assert escolhida.json()["filial_aplicada"] == "242"
+    assert escolhida.json()["contas"][0]["fiscal"] == 1234.56
+    assert escolhida.json()["contas"][0]["contabil"] == 1234.56
+    export = client.post(
+        "/api/v1/conferencia-fiscal/exportar", files=arquivos,
+        data={"filial": "242", "empresa_codigo": "987"},
+    )
+    assert export.status_code == 200, export.text
+    assert "987_CONFERENCIA_FISCAL" in export.headers.get("content-disposition", "")
+    sem_empresa = client.post(
+        "/api/v1/conferencia-fiscal/preview", files=arquivos,
+        data={"filial": "1408"},
+    )
+    assert sem_empresa.status_code == 200, sem_empresa.text
+    assert sem_empresa.json()["contas"][0]["contabil"] == 999
+
+
+def test_universal_ignora_codigo_informativo_no_filtro_de_filiais():
+    fiscal, ledger = reports()
+    response = TestClient(app).post(
+        "/api/v1/conferencia-fiscal/preview",
+        files={"acumuladores": ("fiscal.xlsx", fiscal), "razao": ("razao.xlsx", ledger)},
+        data={"empresa_codigo": "9999"},
+    )
+    assert response.status_code == 422
+    assert "várias filiais" in response.json()["detail"]
+
+
+def test_universal_identifica_filial_quando_ha_apenas_uma():
+    fiscal, ledger = reports()
+    import pandas as pd
+    workbook_ledger = pd.ExcelFile(io.BytesIO(ledger))
+    linhas = pd.read_excel(workbook_ledger, sheet_name="Razão", header=None)
+    linhas = linhas[~linhas.astype(str).apply(
+        lambda row: row.str.contains("COMPRA DE MERCADORIA CF NF 2", regex=False).any(), axis=1
+    )]
+    arquivo = workbook({"Razão": linhas.fillna("").values.tolist()})
+    response = TestClient(app).post(
+        "/api/v1/conferencia-fiscal/preview",
+        files={"acumuladores": ("fiscal.xlsx", fiscal), "razao": ("razao.xlsx", arquivo)},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["contas"][0]["contabil"] == 1234.56
