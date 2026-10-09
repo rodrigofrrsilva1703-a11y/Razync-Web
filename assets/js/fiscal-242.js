@@ -6,6 +6,8 @@
   const message = document.querySelector("#fiscal242Message");
   const results = document.querySelector("#fiscal242Results");
   const filter = document.querySelector("#fiscal242Filter");
+  const search = document.querySelector("#fiscal242Search");
+  const resultsCount = document.querySelector("#fiscal242Count");
   const tableBody = document.querySelector("#fiscal242Rows");
   const details = document.querySelector("#fiscal242Detail");
   const download = document.querySelector("#fiscal242Download");
@@ -209,6 +211,8 @@
     byId("fiscal242UnmappedRows").replaceChildren();
     selectedKey = "";
     filter.value = "todas";
+    search.value = "";
+    resultsCount.textContent = "";
     results.hidden = true;
     details.hidden = true;
     details.replaceChildren();
@@ -218,23 +222,43 @@
     download.disabled = false;
   }
 
+  function normalizeSearch(value) {
+    return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  }
   function filteredRows() {
     const contas = data?.contas || [];
-    if (filter.value === "revisar") return contas.filter(row => ["REVISAR", "AUSENTE NO CONTÁBIL"].includes(row.situacao));
-    if (filter.value === "alertas") return contas.filter(row => row.situacao === "CONFERE COM ALERTAS");
-    if (filter.value === "bate") return contas.filter(row => row.situacao === "CONFERE");
-    return contas;
+    const term = normalizeSearch(search.value);
+    return contas.filter(row => {
+      const matchesStatus = filter.value === "revisar" ? ["REVISAR", "AUSENTE NO CONTÁBIL"].includes(row.situacao)
+        : filter.value === "alertas" ? row.situacao === "CONFERE COM ALERTAS"
+        : filter.value === "bate" ? row.situacao === "CONFERE" : true;
+      if (!matchesStatus || !term) return matchesStatus;
+      const key = [row.conta, row.descricao, row.tipo, row.acumuladores,
+        ...accumulatorRows(row).flatMap(acc => [acc.codigo, acc.descricao])].join(" ");
+      return normalizeSearch(key).includes(term);
+    });
   }
   function renderDetails(row) {
     details.replaceChildren();
     if (!row) { details.hidden = true; return; }
     details.hidden = false;
+    details.setAttribute("role", "region");
+    details.setAttribute("aria-label", "Detalhes da conta " + row.conta);
     const heading = node("div", "fiscal-detail-heading");
     const summary = node("div");
     summary.appendChild(node("h3", "", "Conta " + row.conta + " · " + (row.descricao || "Sem descrição")));
     summary.appendChild(node("p", "", "Tipo de movimento: " + row.tipo));
     heading.appendChild(summary);
-    heading.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(row.situacao), statusLabels[row.situacao] || row.situacao));
+    const headingActions = node("div", "fiscal-detail-heading-actions");
+    headingActions.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(row.situacao), statusLabels[row.situacao] || row.situacao));
+    const close = node("button", "fiscal-detail-close", "Fechar detalhes");
+    close.type = "button";
+    close.addEventListener("click", () => {
+      selectedKey = "";
+      renderTable();
+    });
+    headingActions.appendChild(close);
+    heading.appendChild(headingActions);
     details.appendChild(heading);
     details.appendChild(accumulatorBreakdown(row));
 
@@ -251,6 +275,7 @@
       metrics.appendChild(card);
     });
     details.appendChild(metrics);
+    details.appendChild(node("p", "fiscal-disclaimer", "Diferença = contábil considerado menos fiscal. O contábil considerado é uma classificação preliminar por históricos e coincidência de valores, não uma conciliação documental definitiva."));
     if (row.extras) {
       details.appendChild(node("p", "fiscal-detail-alert", row.extras + " lançamento(s) com indício de movimento não fiscal. Valide os históricos e as contrapartidas."));
     }
@@ -308,35 +333,39 @@
   function renderTable() {
     const rows = filteredRows();
     tableBody.replaceChildren();
+    const total = (data?.contas || []).length;
+    resultsCount.textContent = `Exibindo ${rows.length} de ${total} contas. Abra uma conta para consultar os valores detalhados e os lançamentos.`;
     byId("fiscal242Empty").hidden = rows.length > 0;
-    if (!rows.length) { renderDetails(null); return; }
-    if (!rows.some(row => keyOf(row) === selectedKey)) selectedKey = keyOf(rows[0]);
+    if (!rows.some(row => keyOf(row) === selectedKey)) selectedKey = "";
     rows.forEach(row => {
       const tr = node("tr");
       const id = keyOf(row);
       if (id === selectedKey) tr.classList.add("selected");
       const account = cell(tr, "", "fiscal-account");
+      const accountGroup = node("div", "fiscal-account-group");
       const button = node("button", "fiscal-account-link", row.conta);
       button.type = "button";
-      button.setAttribute("aria-label", "Ver detalhes da conta " + row.conta);
+      button.setAttribute("aria-label", (id === selectedKey ? "Fechar detalhes da conta " : "Ver detalhes da conta ") + row.conta);
+      button.setAttribute("aria-expanded", String(id === selectedKey));
+      button.setAttribute("aria-controls", "fiscal242Detail");
       button.addEventListener("click", () => {
-        selectedKey = id;
+        selectedKey = selectedKey === id ? "" : id;
         renderTable();
+        if (selectedKey) details.scrollIntoView?.({behavior:"smooth", block:"nearest"});
       });
-      account.appendChild(button);
-      cell(tr, row.descricao || "—", "fiscal-description");
+      accountGroup.appendChild(button);
+      accountGroup.appendChild(node("span", "fiscal-account-type", row.tipo || ""));
+      account.appendChild(accountGroup);
+      account.appendChild(node("div", "fiscal-account-description", row.descricao || "Descrição não informada"));
       const accumulatorCell = cell(tr, "", "fiscal-accum-cell");
       accumulatorCell.appendChild(accumulatorTags(row));
-      cell(tr, row.tipo);
       cell(tr, money.format(row.fiscal), "fiscal-money");
-      cell(tr, money.format(row.total_conta), "fiscal-money");
-      cell(tr, money.format(row.contabil), "fiscal-money");
-      cell(tr, money.format(row.diferenca), "fiscal-money");
+      cell(tr, money.format(row.diferenca), "fiscal-money fiscal-difference");
       const td = cell(tr, "");
       td.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(row.situacao), statusLabels[row.situacao] || row.situacao));
       tableBody.appendChild(tr);
     });
-    renderDetails(rows.find(row => keyOf(row) === selectedKey));
+    renderDetails(rows.find(row => keyOf(row) === selectedKey) || null);
   }
 
   function renderResponse(report) {
@@ -370,9 +399,11 @@
     results.hidden = false;
     selectedKey = "";
     filter.value = "todas";
+    search.value = "";
     renderTable();
   }
   filter.addEventListener("change", renderTable);
+  search.addEventListener("input", renderTable);
   function showSelectedFile(inputId, labelId) {
     const input = byId(inputId);
     const label = byId(labelId);
