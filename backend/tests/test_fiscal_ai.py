@@ -538,3 +538,51 @@ def test_modo_gratuito_nunca_envia_modelo_pago(monkeypatch):
     monkeypatch.setenv("OPENROUTER_MODELS", "openrouter/free,nvidia/nemotron-3-ultra-550b-a55b:free")
     models=fiscal_ai._openrouter_models()
     assert all(m=="openrouter/free" or m.endswith(":free") for m in models)
+
+
+def test_quota_openrouter_troca_para_gemini_preservando_contexto(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-or")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-gemini")
+    monkeypatch.setenv("GEMINI_FREE_TIER_CONFIRMED", "1")
+    payloads = []
+    def openrouter(payload, models, key):
+        payloads.append(("or", payload))
+        raise HTTPException(429, "Limite atingido")
+    def gemini(payload, key, model, *, legacy):
+        payloads.append(("gemini", payload))
+        return {"analises":[{"grupo":"G1", "explicacao":"Análise consistente.",
+                "verificar":"1. Conferir relatório.", "evidencias":[]}]}, model
+    monkeypatch.setattr(fiscal_ai, "_openrouter_completion", openrouter)
+    monkeypatch.setattr(fiscal_ai, "_gemini_completion", gemini)
+    result = fiscal_ai.explain(report())
+    assert len(payloads) == 2
+    assert payloads[0][1] is payloads[1][1]
+    assert result["provedor"] == "gemini"
+    assert result["fallback_usado"] is True
+    assert result["gratuito"] is True
+    assert result["analises"][0]["conta"] == "22643"
+    assert result["analises"][0]["valores"]["fiscal"] == 9123.45
+
+
+def test_fallback_gemini_nao_configurado_nao_usa_google(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-or")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-gemini")
+    monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED", raising=False)
+    def fail(*args):
+        raise HTTPException(429, "Limite OpenRouter")
+    monkeypatch.setattr(fiscal_ai, "_openrouter_completion", fail)
+    monkeypatch.setattr(fiscal_ai, "_gemini_completion",
+                        lambda *args, **kwargs: pytest.fail("Fallback não autorizado"))
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(report())
+    assert error.value.status_code == 429
+    assert fiscal_ai.status()["fallback_gemini"] is False
+
+
+def test_status_ativa_reserva_apenas_em_projeto_confirmado(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-or")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-gemini")
+    monkeypatch.setenv("GEMINI_FREE_TIER_CONFIRMED", "1")
+    assert fiscal_ai.status()["fallback_gemini"] is True
+    monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED")
+    assert fiscal_ai.status()["fallback_gemini"] is False
