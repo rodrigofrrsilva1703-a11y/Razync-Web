@@ -238,11 +238,11 @@ test('status exibe OpenRouter no campo quando nova chave esta conectada',async (
     API:()=>'/api',aiConfigured:false,previewBody:{},aiController:null,
     aiButton:{disabled:true},aiMessage:{textContent:''},aiResult:{children:[]},
     aiProvider:{textContent:''},
-    fetch:async()=>({ok:true,json:async()=>({configurado:true,provedor:'openrouter'})})};
+    fetch:async()=>({ok:true,json:async()=>({configurado:true,provedor:'openrouter',gratuito:true})})};
   vm.createContext(context);
   vm.runInContext(code,context);
   await context.refreshAIStatus();
   assert.equal(context.aiButton.disabled,false);
-  assert.equal(context.aiProvider.textContent,'OpenRouter');
+  assert.equal(context.aiProvider.textContent,'OpenRouter · gratuito');
   assert.match(context.aiMessage.textContent,/OpenRouter conectado/);
 });
