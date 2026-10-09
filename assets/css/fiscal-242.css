@@ -1,0 +1,259 @@
+/* Ferramenta Fiscal x Contábil da Eletro Forte 242. */
+#companyPanel:has(.tool-tab[data-tool="fiscal"]:not([hidden])) .tool-tabs {
+  overflow-x:auto;
+  scrollbar-width:thin;
+  -webkit-overflow-scrolling:touch;
+}
+#companyPanel:has(.tool-tab[data-tool="fiscal"]:not([hidden])) .tool-tab {
+  flex:1 0 auto;
+  white-space:nowrap;
+}
+#companyPanel .fiscal-upload-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+}
+#companyPanel .fiscal-upload-grid > div {
+  min-width:0;
+}
+#companyPanel .fiscal-upload-grid input {
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
+}
+#companyPanel .fiscal-results {
+  display:grid;
+  gap:16px;
+  margin-top:20px;
+}
+#companyPanel .fiscal-summary {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+}
+#companyPanel .fiscal-summary > div {
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  padding:18px 20px;
+  background:#fff;
+  border:1px solid #e0e8f0;
+  border-radius:14px;
+  min-width:0;
+}
+#companyPanel .fiscal-summary strong {
+  font-size:28px;
+  line-height:1.1;
+  font-weight:750;
+  letter-spacing:-.7px;
+  color:#19324f;
+}
+#companyPanel .fiscal-summary span {
+  color:#617287;
+  font-size:12px;
+  font-weight:550;
+}
+#companyPanel .fiscal-period {
+  font-size:12px;
+  margin:0;
+  color:#627488;
+}
+#companyPanel .fiscal-warnings {
+  display:grid;
+  gap:6px;
+  color:#63738a;
+  font-size:12px;
+}
+#companyPanel .fiscal-warnings p {
+  margin:0;
+}
+#companyPanel .fiscal-results-card,
+#companyPanel .fiscal-detail {
+  border:1px solid #e1e8f0;
+  background:#fff;
+  border-radius:16px;
+  overflow:hidden;
+}
+#companyPanel .fiscal-results-heading {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+  padding:20px 22px;
+}
+#companyPanel .fiscal-results-heading h3,
+#companyPanel .fiscal-detail h3 {
+  font-size:17px;
+  margin:0 0 4px;
+  color:#19324f;
+}
+#companyPanel .fiscal-results-heading p,
+#companyPanel .fiscal-detail-heading p {
+  font-size:12px;
+  margin:0;
+  color:#697c90;
+}
+#companyPanel .fiscal-results-heading label {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:12px;
+  font-weight:650;
+  color:#455b72;
+}
+#companyPanel .fiscal-results-heading select {
+  width:160px;
+  max-width:100%;
+  font-size:13px;
+  background:#fff;
+  border:1px solid #d8e3ed;
+  border-radius:9px;
+  padding:9px 12px;
+}
+#companyPanel .fiscal-table-scroll {
+  overflow:auto;
+  width:100%;
+  scrollbar-width:thin;
+}
+#companyPanel .fiscal-table {
+  width:100%;
+  min-width:795px;
+  border-collapse:collapse;
+  font-size:12.5px;
+}
+#companyPanel .fiscal-table th {
+  text-align:left;
+  background:#f5f8fb;
+  color:#5b6e83;
+  font-size:11px;
+  text-transform:none;
+  font-weight:700;
+  padding:12px 14px;
+  border-bottom:1px solid #e2eaf2;
+  white-space:nowrap;
+}
+#companyPanel .fiscal-table td {
+  padding:12px 14px;
+  border-bottom:1px solid #edf1f5;
+  color:#31465c;
+  vertical-align:middle;
+}
+#companyPanel .fiscal-table tbody tr:hover {
+  background:#f8fbfd;
+}
+#companyPanel .fiscal-table tbody tr.selected {
+  background:#ecf4f9;
+}
+#companyPanel .fiscal-table tbody tr:last-child td {
+  border-bottom:0;
+}
+#companyPanel .fiscal-description {
+  min-width:185px;
+  max-width:265px;
+  line-height:1.45;
+}
+#companyPanel .fiscal-account-link {
+  border:0;
+  background:transparent;
+  padding:0;
+  color:#17618a;
+  text-decoration:underline;
+  text-underline-offset:3px;
+  font-weight:750;
+  cursor:pointer;
+  font-size:13px;
+  min-height:24px;
+  box-shadow:none;
+}
+#companyPanel .fiscal-money {
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+#companyPanel .fiscal-status {
+  display:inline-block;
+  padding:4px 9px;
+  border-radius:7px;
+  font-size:11px;
+  font-weight:700;
+  white-space:nowrap;
+}
+#companyPanel .fiscal-status-ok {background:#e7f3ec;color:#216e48}
+#companyPanel .fiscal-status-alert {background:#fff3db;color:#8a6016}
+#companyPanel .fiscal-status-review {background:#feeeee;color:#a73737}
+#companyPanel .fiscal-empty {
+  font-size:13px;
+  margin:0;
+  padding:16px 22px;
+  color:#66788d;
+}
+#companyPanel .fiscal-detail {
+  padding:20px 22px;
+}
+#companyPanel .fiscal-detail-heading {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+}
+#companyPanel .fiscal-detail-metrics {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin:18px 0;
+}
+#companyPanel .fiscal-detail-metrics > div {
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  background:#f7f9fc;
+  border:1px solid #ecf0f5;
+  border-radius:10px;
+  padding:12px 14px;
+}
+#companyPanel .fiscal-detail-metrics small {
+  color:#627588;
+  font-size:11px;
+}
+#companyPanel .fiscal-detail-metrics strong {
+  color:#213c56;
+  font-size:14px;
+  font-weight:720;
+  font-variant-numeric:tabular-nums;
+}
+#companyPanel .fiscal-detail h4 {
+  margin:16px 0 10px;
+  color:#23435f;
+  font-size:14px;
+}
+#companyPanel .fiscal-detail-alert,
+#companyPanel .fiscal-disclaimer {
+  font-size:12px;
+  color:#71613e;
+  line-height:1.5;
+}
+#companyPanel .fiscal-disclaimer {color:#637387;margin-bottom:0}
+#companyPanel .fiscal-download-row {
+  display:flex;
+  justify-content:flex-end;
+  padding-bottom:8px;
+}
+#companyPanel #fiscal242Message[data-state="error"] {color:#a73737}
+#companyPanel #fiscal242Message[data-state="success"] {color:#216e48}
+#companyPanel #fiscal242Message[data-state="loading"] {color:#375879}
+@media(max-width:830px) {
+  #companyPanel .fiscal-summary {grid-template-columns:repeat(2,minmax(0,1fr))}
+  #companyPanel .fiscal-detail-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
+  #companyPanel .fiscal-upload-grid {grid-template-columns:1fr}
+  #companyPanel .fiscal-results-heading {align-items:stretch}
+}
+@media(max-width:480px) {
+  #companyPanel .fiscal-summary > div {padding:13px 15px}
+  #companyPanel .fiscal-summary strong {font-size:23px}
+  #companyPanel .fiscal-results-heading {padding:15px}
+  #companyPanel .fiscal-detail {padding:15px}
+  #companyPanel .fiscal-results-heading label {width:100%;justify-content:space-between}
+  #companyPanel .fiscal-detail-heading {display:block}
+  #companyPanel .fiscal-detail-heading .fiscal-status {margin-top:10px}
+  #companyPanel .fiscal-download-row button {width:100%}
+}
