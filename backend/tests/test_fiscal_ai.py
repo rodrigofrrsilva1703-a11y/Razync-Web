@@ -396,7 +396,7 @@ def test_openrouter_usa_prompt_integral_fallback_e_contas_originais(monkeypatch)
             ["nvidia/nemotron-3-ultra-550b-a55b:free", "nvidia/nemotron-3.5-lightning:free", "openrouter/free"],
             ["nvidia/nemotron-3.5-lightning:free", "nvidia/nemotron-3-ultra-550b-a55b:free", "openrouter/free"],
         ]
-        assert body["models"] == expected[len(calls)-1]
+        assert body["model"] == expected[len(calls)-1][0]
         assert body["provider"]["require_parameters"] is True
         assert body["provider"]["data_collection"] == "deny"
         assert body["response_format"]["type"] == "json_schema"
@@ -435,7 +435,7 @@ def test_openrouter_status_tem_prioridade_e_gemini_continua_reserva(monkeypatch)
     (401,"recusou a chave"),
     (402,"créditos do OpenRouter"),
     (429,"limites de requisições"),
-    (400,"modelo gratuito compatível"),
+    (400,"rejeitou a análise gratuita"),
 ])
 def test_openrouter_falhas_seguras_sem_expor_dados(monkeypatch,code,needle):
     import io
@@ -493,8 +493,8 @@ def test_openrouter_modo_gratuito_por_padrao_e_precos_zerados(monkeypatch):
     def check(req, timeout):
         assert req.full_url == "https://openrouter.ai/api/v1/chat/completions"
         body = json.loads(req.data)
-        assert set(body["models"]) == set(fiscal_ai.FREE_FISCAL_MODELS)
-        assert "model" not in body
+        assert body["model"] in fiscal_ai.FREE_FISCAL_MODELS
+        assert "models" not in body
         assert body["provider"]["max_price"] == {"prompt":0,"completion":0}
         assert body["provider"]["data_collection"] == "deny"
         assert "require_parameters" not in body["provider"]
@@ -673,10 +673,7 @@ def test_openrouter_formato_estrito_400_tenta_json_compativel_sem_mudar_dados(mo
     result=fiscal_ai.explain(report())
     assert len(requests) == 2
     first, second = requests
-    assert first["models"] == second["models"] == [
-        "nvidia/nemotron-3-ultra-550b-a55b:free",
-        "nvidia/nemotron-3.5-lightning:free",
-    ]
+    assert first["model"] == second["model"] == "nvidia/nemotron-3-ultra-550b-a55b:free"
     assert first["response_format"]["type"] == "json_schema"
     assert "response_format" not in second
     assert first["provider"]["require_parameters"] is True
@@ -725,7 +722,7 @@ def test_openrouter_doispedidos_400_continua_gratuito_erro_legivel(monkeypatch):
     assert len(seen)==2
     assert error.value.status_code==400
     assert "historico de cliente sensivel" not in error.value.detail
-    assert "gratuito" in error.value.detail
+    assert "gratuita" in error.value.detail
     assert all(p["provider"]["max_price"]=={"prompt":0,"completion":0} for p in seen)
 
 
@@ -748,7 +745,7 @@ def test_roteador_free_tenta_json_simples_na_primeira_chamada(monkeypatch):
         body=json.loads(req.data)
         seen.append(body)
         assert timeout == 18
-        assert set(body["models"]) == set(fiscal_ai.FREE_FISCAL_MODELS)
+        assert body["model"] in fiscal_ai.FREE_FISCAL_MODELS
         assert "response_format" not in body
         assert body["max_tokens"] <= 8500
         assert "require_parameters" not in body["provider"]
@@ -795,8 +792,8 @@ def test_modelo_lento_troca_reserva_sem_reduzir_contexto(monkeypatch):
     result = fiscal_ai.explain(report())
     assert result["gratuito"] is True
     assert len(calls) == 2
-    first_model = calls[0]["models"][0]
-    assert first_model not in calls[1]["models"]
+    first_model = calls[0]["model"]
+    assert first_model != calls[1]["model"]
     assert calls[0]["messages"][1] == calls[1]["messages"][1]
     for body in calls:
         assert body["provider"]["sort"] == "latency"

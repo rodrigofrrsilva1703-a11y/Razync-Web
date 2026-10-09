@@ -233,10 +233,7 @@ def _openrouter_completion(payload, models, key):
     }
     # O roteador gratuito recomenda 'model' para uma escolha única.
     # A lista 'models' é usada somente quando houver vários candidatos.
-    if len(models) == 1:
-        request_payload["model"] = models[0]
-    else:
-        request_payload["models"] = models
+    request_payload["model"] = models[0]
 
     # openrouter/free pode rejeitar json_schema estrito (HTTP 400) ou ficar
     # aguardando um endpoint compatível. Peça JSON textual já na 1ª chamada;
@@ -280,10 +277,18 @@ def _openrouter_completion(payload, models, key):
         try:
             response_json = send(request_payload)
         except urllib.error.HTTPError as exc:
-            if exc.code != 400 or free_router:
+            if exc.code == 400 and not free_router:
+                exc.close()
+                response_json = send(compatible_payload(request_payload), seconds=12)
+            elif exc.code in (400, 404, 429, 500, 502, 503, 504) and len(models) > 1:
+                exc.close()
+                with lock:
+                    model_cooldowns[models[0]] = time.monotonic() + 90
+                retry = compatible_payload(request_payload)
+                retry["model"] = models[1]
+                response_json = send(retry)
+            else:
                 raise
-            exc.close()
-            response_json = send(compatible_payload(request_payload), seconds=12)
         except (TimeoutError, urllib.error.URLError) as exc:
             if not isinstance(exc, TimeoutError) and not isinstance(getattr(exc, "reason", None), TimeoutError):
                 raise
@@ -293,12 +298,7 @@ def _openrouter_completion(payload, models, key):
             if not alternatives:
                 raise
             retry = compatible_payload(request_payload)
-            retry.pop("model", None)
-            retry.pop("models", None)
-            if len(alternatives) == 1:
-                retry["model"] = alternatives[0]
-            else:
-                retry["models"] = alternatives
+            retry["model"] = alternatives[0]
             response_json = send(retry)
     except urllib.error.HTTPError as exc:
         # Não repassa mensagens do provedor: podem conter dados privados ou credenciais.
