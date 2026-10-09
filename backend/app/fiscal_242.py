@@ -124,7 +124,7 @@ def conferencia_fiscal_preview(
     razao_bytes, razao_nome = _csv_para_excel(razao_bytes, razao_nome)
     resultado = processar_conferencia(
         acumuladores_bytes, acumuladores_nome,
-        razao_bytes, razao_nome, filial_alvo=filial_alvo or (str(codigo_empresa) if codigo_empresa else None),
+        razao_bytes, razao_nome, filial_alvo=filial_alvo,
     )
     resumo = resultado.get("resumo", pd.DataFrame())
     detalhes = resultado.get("detalhes", pd.DataFrame())
