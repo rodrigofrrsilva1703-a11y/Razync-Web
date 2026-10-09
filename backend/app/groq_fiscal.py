@@ -148,7 +148,8 @@ def complete(payload, key, model):
         request = urllib.request.Request(
             API_URL,
             data=json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8"),
-            headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"},
+            headers={"Authorization": "Bearer " + key, "Content-Type": "application/json",
+                     "Accept": "application/json", "User-Agent": "Razync-Web/1.0"},
         )
         try:
             with urllib.request.urlopen(request, timeout=35) as response:
@@ -157,22 +158,38 @@ def complete(payload, key, model):
             # Inspecionar APENAS um código de erro reconhecido, jamais sua mensagem,
             # conteúdo fiscal, cabeçalhos ou resposta completa.
             status = exc.code
+            raw_error = exc.read(4096)
             try:
-                info = json.loads(exc.read(4096))
+                info = json.loads(raw_error)
                 code = info.get("error", {}).get("code") if isinstance(info, dict) else None
             except (ValueError, TypeError, AttributeError, UnicodeDecodeError):
                 code = None
+            # Diferenciar bloqueio de segurança na borda (HTML) de erro JSON
+            # da API, sem guardar ou exibir o corpo bruto da resposta.
+            mime = exc.headers.get("Content-Type", "").lower() if exc.headers else ""
+            html_error = ("text/html" in mime or
+                          raw_error.lstrip().lower().startswith((b"<!doctype html", b"<html")))
+            cloudflare_1010 = status == 403 and (
+                b"error code: 1010" in raw_error.lower() or
+                b"error code 1010" in raw_error.lower()
+            )
             categories = {
                 "model_permission_blocked_org": "modelo_bloqueado_organizacao",
                 "model_permission_blocked_project": "modelo_bloqueado_projeto",
             }
-            reason = categories.get(code, "sem_codigo_conhecido")
+            reason = ("bloqueio_http_cliente_1010" if cloudflare_1010
+                      else "resposta_html_do_gateway" if html_error
+                      else categories.get(code, "sem_codigo_conhecido"))
             logger.warning("fiscal_groq_error status=%d reason=%s model=%s batch=%d",
                            status, reason, model, start // 2 + 1)
             if status == 401:
                 raise HTTPException(401, "Groq recusou a autenticação. Confira a chave API no Railway.") from None
             if status == 403:
-                if code == "model_permission_blocked_org":
+                if cloudflare_1010 or html_error:
+                    detail = ("A conexão do servidor Razync foi recusada pela camada de proteção "
+                              "de tráfego da Groq (HTTP 403). Chave e permissões do modelo "
+                              "não são necessariamente a causa.")
+                elif code == "model_permission_blocked_org":
                     detail = ("Groq bloqueou o GPT-OSS 120B nas permissões da organização. "
                               "Confira Settings > Organization > Limits no painel GroqCloud.")
                 elif code == "model_permission_blocked_project":
