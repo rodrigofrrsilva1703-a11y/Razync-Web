@@ -603,7 +603,7 @@ async def conferencia_fiscal_preview_web(
             conferencia_fiscal_preview,
             await acumuladores.read(), acumuladores.filename or "acumuladores.xls",
             await razao.read(), razao.filename or "razao.xlsx",
-            company_code,
+            company_code, str(company_code),
         )
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
