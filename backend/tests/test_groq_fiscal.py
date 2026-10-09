@@ -91,6 +91,7 @@ def test_groq_produz_parecer_realmente_validado_sem_alterar_valores(monkeypatch)
         assert data["response_format"]["json_schema"]["strict"] is True
         assert data["response_format"]["json_schema"]["schema"]["properties"]["analises"]["items"]["additionalProperties"] is False
         assert data["reasoning_effort"] == "low"
+        assert data["max_completion_tokens"] == 3000
         assert "R$ 10.000,00" in data["messages"][1]["content"]
         assert "123.456.789-01" not in data["messages"][1]["content"]
         assert "usuario@teste.com" not in data["messages"][1]["content"]
@@ -158,3 +159,56 @@ def test_groq_sem_confirmacao_nao_substitui_openrouter(monkeypatch):
                      "verificar":"Conferir lançamentos", "evidencias":[]}]}, "openrouter/free"))
     result=fiscal_ai.explain(example_report())
     assert result["provedor"] == "openrouter"
+
+
+
+def test_groq_resposta_truncada_identificada_e_preserva_fallback(monkeypatch, caplog):
+    enabled(monkeypatch)
+    monkeypatch.setenv("GEMINI_API_KEY", "gemini-test-key")
+    monkeypatch.setenv("GEMINI_FREE_TIER_CONFIRMED", "1")
+
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_): return None
+        def read(self, n):
+            return json.dumps({"choices": [{
+                "finish_reason": "length",
+                "message": {"content": "{\"analises\": [dado-fiscal-SENSIVEL"}
+            }]}).encode()
+
+    def fake(req, timeout):
+        body = json.loads(req.data)
+        assert body["max_completion_tokens"] == 3000
+        return Response()
+
+    monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen", fake)
+    monkeypatch.setattr(fiscal_ai, "_gemini_completion", lambda *args, **kwargs: (
+        {"analises": [{"grupo": "G1", "explicacao": "Exemplo fictício.",
+                       "verificar": "Conferir documentos.", "evidencias": []}]},
+        "gemini-3.1-flash-lite"))
+    result = fiscal_ai.explain(example_report())
+    assert result["provedor"] == "gemini"
+    assert result["fallback_usado"] is True
+    assert "category=Groq output limited by tokens" in caplog.text
+    assert "dado-fiscal-SENSIVEL" not in caplog.text
+    assert result["analises"][0]["valores"]["diferenca"] == -2000.0
+
+
+def test_groq_resposta_com_json_invalido_registra_apenas_categoria(monkeypatch, caplog):
+    enabled(monkeypatch)
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_): return None
+        def read(self, n):
+            return json.dumps({"choices": [{
+                "finish_reason": "stop",
+                "message": {"content": "PRIVATE-FISCAL-TEXT"}
+            }]}).encode()
+    monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen",
+                        lambda *args, **kwargs: Response())
+    with pytest.raises(HTTPException) as err:
+        fiscal_ai.explain(example_report())
+    assert err.value.status_code == 502
+    assert "category=Groq returned invalid JSON" in caplog.text
+    assert "PRIVATE-FISCAL-TEXT" not in caplog.text
+    assert "PRIVATE-FISCAL-TEXT" not in str(err.value.detail)
