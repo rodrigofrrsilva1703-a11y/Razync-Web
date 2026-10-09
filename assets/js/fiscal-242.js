@@ -175,11 +175,8 @@
     body.append("acumuladores", files.acumuladores);
     body.append("razao", files.razao);
     const filial = byId("fiscalFilialCodigo").value.trim();
-    const empresaCodigo = byId("fiscalEmpresaCodigo").value.trim();
     if (filial && !/^\d+$/.test(filial)) throw new Error("A filial deve conter apenas números.");
-    if (empresaCodigo && !/^\d+$/.test(empresaCodigo)) throw new Error("O código da empresa deve conter apenas números.");
     body.append("filial", filial);
-    body.append("empresa_codigo", empresaCodigo);
     return body;
   }
   function node(tag, className, content) {
@@ -370,6 +367,14 @@
 
   function renderResponse(report) {
     data = report;
+    const detected = report.empresa_nome || "";
+    byId("fiscal242CompanyName").textContent = detected || "Nome não encontrado nos cabeçalhos";
+    const fiscais = Boolean(report.empresa_fiscal);
+    const contabil = Boolean(report.empresa_razao);
+    byId("fiscal242CompanySource").textContent =
+      fiscais && contabil ? "Nome confirmado no Resumo por Acumulador e no Razão." :
+      (fiscais || contabil) ? "Nome encontrado em apenas um dos relatórios. Confira o outro arquivo." :
+      "Não foi possível confirmar a empresa automaticamente. Verifique os arquivos enviados.";
     byId("fiscal242Total").textContent = report.resumo.total;
     byId("fiscal242Matches").textContent = report.resumo.conferem;
     byId("fiscal242Alerts").textContent = report.resumo.com_alertas;
@@ -416,7 +421,7 @@
     showSelectedFile("fiscal242Acumuladores", "fiscal242AcumuladoresName");
     showSelectedFile("fiscal242Razao", "fiscal242RazaoName");
   }
-  form.querySelectorAll("input[type=file], #fiscalEmpresaCodigo, #fiscalFilialCodigo").forEach(input =>
+  form.querySelectorAll("input[type=file], #fiscalFilialCodigo").forEach(input =>
     input.addEventListener("change", () => { clearState(); syncFileNames(); })
   );
   syncFileNames();
@@ -465,8 +470,10 @@
       });
       if (!response.ok) throw new Error(await responseError(response));
       if (previewBody !== body) return;
-      const code = byId("fiscalEmpresaCodigo").value.trim() || "GERAL";
-      await downloadBlob(response, `RAZYNC_${code}_CONFERENCIA_FISCAL.xlsx`);
+      const nome = String(data.empresa_nome || "GERAL")
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0,60) || "GERAL";
+      await downloadBlob(response, `RAZYNC_${nome}_CONFERENCIA_FISCAL.xlsx`);
       setMessage("Relatório Excel gerado.", "success");
     } catch (error) {
       setMessage(error.message || "Não foi possível gerar o Excel.", "error");
