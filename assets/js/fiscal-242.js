@@ -190,37 +190,67 @@
     for (const {card} of aiCards) card.open = false;
   });
 
-  async function analyzeInBatches(snapshot, controller, onProgress) {
-    const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/sessoes", {
-      method:"POST", body:snapshot, signal:controller.signal
+  let pendingAIState = null;
+  function discardPendingAI() {
+    const old = pendingAIState;
+    pendingAIState = null;
+    if (old) fetch(old.url, {method:"DELETE", keepalive:true}).catch(() => {});
+  }
+  function waitForAIQuota(seconds, signal) {
+    return new Promise((resolve, reject) => {
+      if (signal.aborted) return reject(new DOMException("Cancelado", "AbortError"));
+      const cancel = () => { clearTimeout(timer); reject(new DOMException("Cancelado", "AbortError")); };
+      const timer = setTimeout(() => { signal.removeEventListener("abort", cancel); resolve(); }, seconds * 1000);
+      signal.addEventListener("abort", cancel, {once:true});
     });
-    // Durante a publicação, o frontend pode chegar antes da nova API.
-    if (response.status === 404) {
-      const legacy = await fetch(API() + "/api/v1/conferencia-fiscal/ia", {
+  }
+
+  async function analyzeInBatches(snapshot, controller, onProgress) {
+    if (pendingAIState && (pendingAIState.snapshot !== snapshot || pendingAIState.expires <= Date.now())) discardPendingAI();
+    if (!pendingAIState) {
+      const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/sessoes", {
         method:"POST", body:snapshot, signal:controller.signal
       });
-      if (!legacy.ok) throw new Error(await responseError(legacy));
-      return legacy.json();
+      if (response.status === 404) {
+        const legacy = await fetch(API() + "/api/v1/conferencia-fiscal/ia", {
+          method:"POST", body:snapshot, signal:controller.signal
+        });
+        if (!legacy.ok) throw new Error(await responseError(legacy));
+        return legacy.json();
+      }
+      if (!response.ok) throw new Error(await responseError(response));
+      const session = await response.json();
+      const url = API() + "/api/v1/conferencia-fiscal/ia/sessoes/" + encodeURIComponent(session.sessao);
+      pendingAIState = {snapshot, session, url, results:new Map(), expires:Date.now() + 29 * 60 * 1000};
     }
-    if (!response.ok) throw new Error(await responseError(response));
-    const session = await response.json();
-    const url = API() + "/api/v1/conferencia-fiscal/ia/sessoes/" + encodeURIComponent(session.sessao);
-    const results = new Map();
+    const state = pendingAIState;
+    const {session, url, results} = state;
     const failures = [];
-    let completed = 0;
-    const cleanup = () => fetch(url, {method:"DELETE", keepalive:true}).catch(() => {});
+    let completed = [...results.values()].reduce((total, result) => total + result.analises.length, 0);
+    const cleanup = () => { if (pendingAIState === state) discardPendingAI(); };
+    onProgress(completed, session.grupos, 0);
     controller.signal.addEventListener("abort", cleanup, {once:true});
     try {
       const providers = [...new Set(session.lotes.map(batch => batch.provedor))];
       await Promise.all(providers.map(async provider => {
-        for (const batch of session.lotes.filter(item => item.provedor === provider)) {
+        for (const batch of session.lotes.filter(item => item.provedor === provider && !results.has(item.id))) {
           if (controller.signal.aborted) throw new DOMException("Cancelado", "AbortError");
           try {
-            const reply = await fetch(url + "/lotes/" + batch.id, {method:"POST", signal:controller.signal});
-            if (!reply.ok) throw new Error(await responseError(reply));
-            const result = await reply.json();
-            results.set(batch.id, result);
-            completed += result.analises.length;
+            for (let attempt = 0; attempt < 2; attempt++) {
+              const reply = await fetch(url + "/lotes/" + batch.id, {method:"POST", signal:controller.signal});
+              if (reply.status === 429 && attempt === 0) {
+                const rawWait = Number(reply.headers?.get?.("Retry-After") || 60);
+                const wait = Number.isFinite(rawWait) ? Math.max(15, Math.min(120, rawWait)) : 60;
+                onProgress(completed, session.grupos, failures.length, "Aguardando " + wait + " s para renovar a cota gratuita de " + (provider === "groq" ? "Groq" : "Gemini") + ".");
+                await waitForAIQuota(wait, controller.signal);
+                continue;
+              }
+              if (!reply.ok) throw new Error(await responseError(reply));
+              const result = await reply.json();
+              results.set(batch.id, result);
+              completed += result.analises.length;
+              break;
+            }
           } catch (error) {
             if (controller.signal.aborted) throw error;
             failures.push({lote:batch.id, grupos:batch.grupos, mensagem:error.message});
@@ -235,6 +265,7 @@
       const pending = session.grupos - completed;
       return {
         analises:ordered.flatMap(result => result.analises),
+        grupos_pendentes:pending,
         provedor:actualProviders.length > 1 ? "cooperacao" : actualProviders[0],
         nomes_provedores:actualProviders.map(provider => provider === "groq" ? "Groq" : provider === "gemini" ? "Gemini" : "OpenRouter").join(" + "),
         gratuito:ordered.every(result => result.gratuito === true),
@@ -248,7 +279,7 @@
       };
     } finally {
       controller.signal.removeEventListener("abort", cleanup);
-      cleanup();
+      if (controller.signal.aborted || results.size === session.lotes.length) cleanup();
     }
   }
 
@@ -263,12 +294,21 @@
   });
   aiButton.after(aiCancelButton);
 
+  const aiRetry = node("button", "secondary-action", "Repetir lotes pendentes");
+  aiRetry.type = "button";
+  aiRetry.hidden = true;
+  aiRetry.addEventListener("click", () => aiButton.click());
+  aiCancelButton.after(aiRetry);
+
   aiButton.addEventListener("click", async () => {
     if (!previewBody || !aiConfigured) return;
-    aiReport = null;
+    const resuming = pendingAIState?.snapshot === previewBody;
+    if (!resuming) aiReport = null;
+    aiRetry.hidden = true;
     aiExport.disabled = true;
     aiController?.abort(); const controller = new AbortController(); aiController = controller;
-    const snapshot = previewBody; aiButton.disabled = true; aiResult.replaceChildren(); clearAIAccounts();
+    const snapshot = previewBody; aiButton.disabled = true;
+    if (!resuming) { aiResult.replaceChildren(); clearAIAccounts(); }
     aiResult.setAttribute("aria-busy", "true");
     aiCancelButton.hidden = false;
     aiInlineStatus.textContent = "Análise em andamento. Você pode cancelar a espera sem alterar a conferência.";
@@ -281,13 +321,15 @@
         (secs >= 25 ? "Modelos gratuitos podem ter fila; aguarde ou cancele." : "Validando contas e evidências.");
     }, 4000);
     try {
-      const result = await analyzeInBatches(snapshot, controller, (done, total, failed) => {
+      const result = await analyzeInBatches(snapshot, controller, (done, total, failed, waiting) => {
         if (aiController !== controller || controller.signal.aborted) return;
         aiInlineStatus.textContent = done + " de " + total + " grupos concluídos" +
-          (failed ? " · " + failed + " lotes pendentes" : "") + ". Gemini e Groq processam lotes independentes conforme disponibilidade.";
+          (failed ? " · " + failed + " lotes pendentes" : "") + ". " +
+          (waiting || "Gemini e Groq processam lotes independentes conforme disponibilidade.");
       });
       if (controller.signal.aborted || previewBody !== snapshot) return;
       aiReport = result;
+      aiResult.replaceChildren(); clearAIAccounts();
       // A troca de provedor é transparente: os mesmos pareceres são renderizados.
       if (result.provedor === "cooperacao") {
         aiProvider.textContent = (result.nomes_provedores || "Gemini + Groq") + " · gratuito";
@@ -383,6 +425,7 @@
         aiController = null;
         aiCancelButton.hidden = true;
         aiButton.disabled = !aiConfigured || !previewBody;
+        aiRetry.hidden = !pendingAIState || controller.signal.aborted;
       }
     }
   });
@@ -459,6 +502,7 @@
     message.dataset.state = kind || "";
   }
   function clearState() {
+    discardPendingAI(); aiRetry.hidden = true;
     aiController?.abort(); aiController = null;
     aiCancelButton.hidden = true;
     aiReport = null;
@@ -732,6 +776,7 @@
     event.preventDefault();
     let body;
     try { body = buildFormData(); } catch (error) { setMessage(error.message, "error"); return; }
+    discardPendingAI(); aiRetry.hidden = true;
     aiController?.abort(); aiController = null; aiButton.disabled = true; aiResult.replaceChildren(); clearAIAccounts();
     aiReport = null; aiExport.disabled = true;
     aiInlineStatus.textContent = "Preparando uma nova conferência.";

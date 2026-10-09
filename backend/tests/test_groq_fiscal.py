@@ -340,7 +340,7 @@ def test_groq_reserva_bloqueada_continua_com_gemini(monkeypatch, failure, caplog
         {"analises": [{"grupo": "G1", "explicacao": "Revisar documentos.", "verificar": "Conferir conta.", "evidencias": ["L1"]}]},
         "gemini-3.1-flash-lite"))
     result = fiscal_ai.explain(example_report())
-    assert calls == ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+    assert calls == list(groq_fiscal.FREE_MODELS)
     assert result["provedor"] == "gemini"
     assert result["fallback_usado"] is True
     assert result["gratuito"] is True
@@ -384,7 +384,7 @@ def test_indicadores_contam_sinais_sem_concluir_duplicidade_ou_alterar_dados():
     assert "não comprovam" in result["ressalva"]
 
 
-def test_indicadores_examinam_registros_fora_da_amostra_sem_enviar_seus_historicos():
+def test_amostra_prioriza_sinais_no_meio_do_periodo_sem_perder_indicadores_locais():
     rows = [{"referencia": f"L{i}", "data": "2026-08-07", "historico": f"Compra {i}", "contrapartida": "508", "debito": 80, "credito": 0} for i in range(1, 13)]
     rows[5]["historico"] = rows[6]["historico"] = "Estorno intermediário"
     group = groq_fiscal._compact_group({"grupo": "G1", "lancamentos": rows, "cobertura": {"existentes": 100}})
@@ -393,5 +393,65 @@ def test_indicadores_examinam_registros_fora_da_amostra_sem_enviar_seus_historic
     assert group["indicadores_locais"]["registros_examinados_localmente"] == 12
     assert group["indicadores_locais"]["historicos_mencionando_estorno_cancelamento_devolucao"] == 2
     assert group["indicadores_locais"]["conjuntos_com_mesma_data_historico_contrapartida_e_valores"] == 1
-    assert {r["referencia"] for r in group["lancamentos"]}.isdisjoint({"L6", "L7"})
-    assert "Estorno intermediário" not in json.dumps(group)
+    assert {"L6", "L7"}.issubset({r["referencia"] for r in group["lancamentos"]})
+    assert "Estorno intermediário" in json.dumps(group, ensure_ascii=False)
+
+
+
+def test_qwen_reserva_gratuita_apos_cota_dos_dois_gpt_oss(monkeypatch):
+    enabled(monkeypatch)
+    calls = []
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def read(self, n):
+            return json.dumps({"choices":[{"finish_reason":"stop", "message":{"content":json.dumps({"analises":[{"grupo":"G1", "explicacao":"Conferir L1", "verificar":"Conferir documentos", "evidencias":["L1"]}]})}}]}).encode()
+    def send(req, timeout):
+        body = json.loads(req.data)
+        calls.append(body["model"])
+        if body["model"].startswith("openai/"):
+            raise urllib.error.HTTPError(req.full_url, 429, "quota", {"Retry-After":"60"}, io.BytesIO(b"{}"))
+        assert body["model"] == "qwen/qwen3.8-27b"
+        assert body["reasoning_effort"] == "none"
+        assert body["response_format"]["json_schema"]["strict"] is True
+        return Response()
+    monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen", send)
+    result = fiscal_ai.explain(example_report())
+    assert calls == list(groq_fiscal.FREE_MODELS)
+    assert result["provedor"] == "groq"
+    assert result["modelo_usado"] == "qwen/qwen3.8-27b"
+    assert result["analises"][0]["valores"]["fiscal"] == 10000
+    assert result["analises"][0]["evidencias"][0]["referencia"] == "L1"
+    calls.clear()
+    result = fiscal_ai.explain(example_report())
+    assert calls == ["qwen/qwen3.8-27b"]
+
+
+def test_parecer_invalido_e_rejeitado_e_tentado_em_outro_modelo(monkeypatch):
+    enabled(monkeypatch)
+    calls = []
+    class Response:
+        def __init__(self, ref): self.ref = ref
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def read(self, n):
+            return json.dumps({"choices":[{"finish_reason":"stop", "message":{"content":json.dumps({"analises":[{"grupo":"G1", "explicacao":"Conferir", "verificar":"Conferir documentos", "evidencias":[self.ref]}]})}}]}).encode()
+    def send(req, timeout):
+        model = json.loads(req.data)["model"]
+        calls.append(model)
+        return Response("L999" if model.endswith("120b") else "L1")
+    monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen", send)
+    result = fiscal_ai.explain(example_report())
+    assert calls == ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+    assert result["analises"][0]["evidencias"][0]["referencia"] == "L1"
+
+
+def test_todos_modelos_em_cooldown_nao_fazem_requisicoes(monkeypatch):
+    enabled(monkeypatch)
+    monkeypatch.setattr(groq_fiscal.time, "monotonic", lambda:100)
+    groq_fiscal._quota_cooldowns.update({model:160 for model in groq_fiscal.FREE_MODELS})
+    monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen", lambda *a, **k: pytest.fail("Cota em espera"))
+    with pytest.raises(HTTPException) as error:
+        groq_fiscal.complete({}, "synthetic", "openai/gpt-oss-120b")
+    assert error.value.status_code == 429
+    assert error.value.headers["Retry-After"] == "60"

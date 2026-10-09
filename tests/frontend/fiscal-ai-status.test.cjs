@@ -271,10 +271,10 @@ test("botão de teste OpenRouter não aparece na conferência fiscal", () => {
 
 
 function batchContext(fetch) {
-  const context = {fetch, AbortController, DOMException, Map, Set, API:()=>'/api',
+  const context = {fetch, AbortController, DOMException, Map, Set, Date, setTimeout, clearTimeout, API:()=>'/api',
     responseError:async response=>response.error || 'Falha no provedor'};
   vm.createContext(context);
-  const start = source.indexOf('  async function analyzeInBatches(');
+  const start = source.indexOf('  let pendingAIState = null;');
   const end = source.indexOf('  const aiCancelButton =', start);
   vm.runInContext(source.slice(start,end), context);
   return context;
@@ -332,4 +332,41 @@ test('publicação gradual usa endpoint anterior enquanto API de sessões não e
   const result=await context.analyzeInBatches({},new AbortController(),()=>{});
   assert.equal(result.analises.length,1);
   assert.deepEqual(calls,['/api/api/v1/conferencia-fiscal/ia/sessoes','/api/api/v1/conferencia-fiscal/ia']);
+});
+
+
+test('cota 429 aguarda antes de repetir apenas o lote que falhou',async()=>{
+  let attempts=0; const waits=[];
+  const context=batchContext(async(url,options)=>{
+    if(options.method==='DELETE')return {ok:true};
+    if(url.endsWith('/sessoes'))return {ok:true,json:async()=>({sessao:'s',grupos:2,registros:2,lotes:[{id:0,provedor:'groq',grupos:2}]})};
+    attempts++;
+    if(attempts===1)return {ok:false,status:429,headers:{get:()=> '30'}};
+    return {ok:true,json:async()=>({provedor:'groq',gratuito:true,analises:[{conta:'1'},{conta:'2'}]})};
+  });
+  context.waitForAIQuota=async seconds=>waits.push(seconds);
+  const result=await context.analyzeInBatches({},new AbortController(),()=>{});
+  assert.equal(result.analises.length,2);
+  assert.equal(attempts,2);
+  assert.deepEqual(waits,[30]);
+});
+
+test('retomar pendentes preserva resultados e não envia novamente arquivos ou lotes concluídos',async()=>{
+  let reserveReady=false; const calls=[]; const snapshot={};
+  const context=batchContext(async(url,options)=>{
+    calls.push(url);
+    if(options.method==='DELETE')return {ok:true};
+    if(url.endsWith('/sessoes'))return {ok:true,json:async()=>({sessao:'s',grupos:4,registros:4,lotes:[{id:0,provedor:'groq',grupos:2},{id:1,provedor:'gemini',grupos:2}]})};
+    if(url.endsWith('/1')&&!reserveReady)return {ok:false,status:503,error:'Temporariamente indisponível'};
+    return {ok:true,json:async()=>({provedor:url.endsWith('/0')?'groq':'gemini',gratuito:true,analises:[{conta:'1'},{conta:'2'}]})};
+  });
+  const first=await context.analyzeInBatches(snapshot,new AbortController(),()=>{});
+  assert.equal(first.grupos_pendentes,2);
+  reserveReady=true;
+  const second=await context.analyzeInBatches(snapshot,new AbortController(),()=>{});
+  assert.equal(second.analises.length,4);
+  assert.equal(second.grupos_pendentes,0);
+  assert.equal(calls.filter(url=>url.endsWith('/sessoes')).length,1);
+  assert.equal(calls.filter(url=>url.endsWith('/0')).length,1);
+  assert.equal(calls.filter(url=>url.endsWith('/1')).length,2);
 });

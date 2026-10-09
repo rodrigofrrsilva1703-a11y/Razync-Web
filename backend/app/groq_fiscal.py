@@ -12,12 +12,15 @@ import logging
 import os
 import re
 import time
+import threading
 import urllib.error
 import urllib.request
 from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
-FREE_MODELS = ("openai/gpt-oss-120b", "openai/gpt-oss-20b")
+FREE_MODELS = ("openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b")
+_quota_cooldowns = {}
+_quota_lock = threading.Lock()
 API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
@@ -32,7 +35,7 @@ def is_enabled():
 def selected_model():
     model = os.getenv("GROQ_MODEL", FREE_MODELS[0]).strip()
     if model not in FREE_MODELS:
-        raise HTTPException(503, "GROQ_MODEL deve ser um modelo gratuito GPT-OSS permitido.")
+        raise HTTPException(503, "GROQ_MODEL deve ser um dos modelos gratuitos permitidos.")
     return model
 
 
@@ -84,10 +87,36 @@ def _record_indicators(rows):
     }
 
 
+def _evidence_priority(row):
+    """Prioriza sinais para revisão; não classifica um lançamento como errado."""
+    history = str(row.get("historico") or "").strip()
+    score = 1 if not history else 0
+    if re.search(r"\b(?:estorno|estornado|estornada|cancelamento|devolu[çc][aã]o)\b", history, re.I):
+        score += 4
+    classification = str(row.get("classificacao") or "").upper()
+    if "EXTRA" in classification or "SEM EVID" in classification:
+        score += 2
+    for field in ("debito", "credito"):
+        try:
+            amount = Decimal(str(row.get(field, 0)))
+            if amount.is_finite() and amount < 0:
+                score += 5
+                break
+        except (InvalidOperation, ValueError, TypeError):
+            pass
+    return score
+
+
 def _compact_group(group):
     rows = group.get("lancamentos", [])
-    # Balanceia início e fim do período sem afirmar que é amostra representativa.
+    # Preserva início/fim e inclui sinais no meio do período, sem afirmar
+    # representatividade nem que uma linha priorizada esteja incorreta.
     chosen = rows[:5] + rows[-5:] if len(rows) > 10 else rows
+    if len(rows) > 10:
+        ranked = sorted((row for row in rows if _evidence_priority(row) > 0),
+                        key=_evidence_priority, reverse=True)
+        if ranked:
+            chosen = rows[:3] + ranked[:4] + rows[-3:] + chosen
     used, reduced = set(), []
     for row in chosen:
         ref = row.get("referencia")
@@ -104,6 +133,8 @@ def _compact_group(group):
             "natureza": row.get("natureza", ""),
             "classificacao": row.get("classificacao", ""),
         })
+        if len(reduced) == 10:
+            break
     return {
         "grupo": group["grupo"],
         "situacao": group.get("situacao"),
@@ -117,6 +148,35 @@ def _compact_group(group):
     }
 
 
+def _available_model(tried):
+    with _quota_lock:
+        now = time.monotonic()
+        return next((model for model in FREE_MODELS
+                     if model not in tried and _quota_cooldowns.get(model, 0) <= now), None)
+
+
+def complete(payload, key, model, *, _tried_models=None, _deadline=None):
+    """Tenta outro modelo gratuito quando um parecer não passa na validação."""
+    deadline = _deadline if _deadline is not None else time.monotonic() + 75
+    tried = set(_tried_models or ()) | {model}
+    with _quota_lock:
+        cooling = _quota_cooldowns.get(model, 0) > time.monotonic()
+    if cooling:
+        alternate = _available_model(tried)
+        if alternate:
+            return _complete_with_reserve(payload, key, alternate, tried, deadline)
+        raise HTTPException(429, "Os modelos Groq gratuitos aguardam renovação de cota.",
+                            headers={"Retry-After": "60"})
+    try:
+        return _complete(payload, key, model, _tried_models=_tried_models, _deadline=deadline)
+    except ValueError:
+        alternate = _available_model(tried)
+        if not alternate:
+            raise
+        logger.warning("fiscal_groq_invalid_model_switch model=%s reserve=%s", model, alternate)
+        return _complete_with_reserve(payload, key, alternate, tried, deadline)
+
+
 def _complete_with_reserve(payload, key, model, tried_models, deadline):
     """Uma permissão negada só no modelo reserva não é erro da chave principal."""
     try:
@@ -125,13 +185,17 @@ def _complete_with_reserve(payload, key, model, tried_models, deadline):
         if exc.status_code != 403:
             raise
         logger.warning("fiscal_groq_reserve_blocked model=%s backup_required=True", model)
+        tried = set(tried_models) | {model}
+        alternate = _available_model(tried)
+        if alternate:
+            return _complete_with_reserve(payload, key, alternate, tried, deadline)
         raise HTTPException(503,
             "O modelo Groq principal atingiu um limite de disponibilidade e o modelo "
             f"reserva {model} está bloqueado. Habilite o modelo reserva nas permissões "
             "GroqCloud; a análise pode continuar com outro provedor gratuito configurado.") from None
 
 
-def complete(payload, key, model, *, _tried_models=None, _deadline=None):
+def _complete(payload, key, model, *, _tried_models=None, _deadline=None):
     """Retorna análises por grupo; o validador comum confere todas as referências."""
     if not is_enabled():
         raise HTTPException(503, "Groq desabilitada: confirme plano gratuito, ZDR e chave antes de usá-la.")
@@ -230,7 +294,7 @@ def complete(payload, key, model, *, _tried_models=None, _deadline=None):
                 {"role": "user", "content": json.dumps(compact, ensure_ascii=False, separators=(",", ":"))},
             ],
             "temperature": 0.2,
-            "reasoning_effort": "low",
+            "reasoning_effort": "none" if model.startswith("qwen/") else "low",
             "max_completion_tokens": 3000,
             "response_format": {
                 "type": "json_schema",
@@ -254,7 +318,13 @@ def complete(payload, key, model, *, _tried_models=None, _deadline=None):
             # conteúdo fiscal, cabeçalhos ou resposta completa.
             status = exc.code
             if status == 429:
-                alternate = next((candidate for candidate in FREE_MODELS if candidate not in tried_models), None)
+                try:
+                    wait = max(15, min(300, int(exc.headers.get("Retry-After", "60"))))
+                except (ValueError, TypeError, AttributeError):
+                    wait = 60
+                with _quota_lock:
+                    _quota_cooldowns[model] = time.monotonic() + wait
+                alternate = _available_model(tried_models)
                 if alternate:
                     # Mantém os grupos já concluídos e envia apenas os restantes,
                     # sem alterar os IDs e referências usados pelo validador.
@@ -323,7 +393,7 @@ def complete(payload, key, model, *, _tried_models=None, _deadline=None):
         if finish != "stop":
             # Sempre logar apenas códigos fixos, nunca o conteúdo de um cliente.
             if finish == "length":
-                alternate = next((candidate for candidate in FREE_MODELS if candidate not in tried_models), None)
+                alternate = _available_model(tried_models)
                 if alternate:
                     pending_payload = dict(payload)
                     pending_payload["contents"] = [{"role":"user", "parts":[{
