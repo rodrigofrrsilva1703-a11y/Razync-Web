@@ -295,3 +295,69 @@
 @keyframes fiscal-ai-shimmer { from {background-position:100% 0} to {background-position:-100% 0} }
 @media(prefers-reduced-motion:reduce) { #fiscal242AIResult[aria-busy="true"]::before {animation:none} #companyPanel #fiscal242AI:hover:not(:disabled) {transform:none} }
 @media(max-width:600px) { #companyPanel .fiscal-ai {padding:17px; border-radius:16px} .fiscal-ai-provider {display:none} #companyPanel .fiscal-ai h3 {font-size:17px} .fiscal-ai-icon {flex-basis:36px;height:36px;font-size:22px} .fiscal-ai-card {padding:16px} .fiscal-ai-record-metrics {grid-template-columns:repeat(2,minmax(0,1fr))} .fiscal-ai-actions > button {flex:1 1 auto} }
+
+
+/* Piloto 242 — resumo legível, inclusive quando os números do Gemini forem extensos. */
+#companyPanel .fiscal-results[hidden],
+#companyPanel .fiscal-unmapped[hidden] { display:none!important; }
+#companyPanel .fiscal-table-note {
+  padding:10px 18px 15px;
+  margin:0;
+  border-top:1px solid #edf0f5;
+  line-height:1.45;
+}
+#companyPanel .fiscal-table { min-width:970px; }
+#companyPanel .fiscal-ai-values {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin:17px 0 4px;
+}
+#companyPanel .fiscal-ai-value {
+  padding:11px 12px;
+  background:#f5f8fc;
+  border:1px solid #e9eef6;
+  border-radius:10px;
+  min-width:0;
+}
+#companyPanel .fiscal-ai-value small,
+#companyPanel .fiscal-ai-value strong { display:block; }
+#companyPanel .fiscal-ai-value small {
+  font-size:11px;
+  color:#60758b;
+  margin-bottom:5px;
+}
+#companyPanel .fiscal-ai-value strong {
+  font-size:14px;
+  font-variant-numeric:tabular-nums;
+  color:#203a55;
+  overflow-wrap:anywhere;
+}
+#companyPanel .fiscal-unmapped {
+  background:#fff;
+  border:1px solid #e1e8f0;
+  border-radius:14px;
+  padding:15px 18px;
+}
+#companyPanel .fiscal-unmapped summary {
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  color:#314b65;
+}
+#companyPanel .fiscal-unmapped summary span {font-weight:500;color:#677c91}
+#companyPanel .fiscal-unmapped p {
+  font-size:12px;
+  margin:10px 0;
+  color:#60758b;
+  line-height:1.5;
+}
+#companyPanel .fiscal-unmapped .fiscal-table { min-width:610px; }
+@media(max-width:800px) {
+  #companyPanel .fiscal-ai-values { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:420px) {
+  #companyPanel .fiscal-ai-values { gap:7px; }
+  #companyPanel .fiscal-ai-value { padding:9px; }
+  #companyPanel .fiscal-ai-value strong { font-size:12px; }
+}
