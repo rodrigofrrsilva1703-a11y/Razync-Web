@@ -26,6 +26,22 @@ jobs:
           python -m compileall -q backend/legacy/razync
           python -m compileall -q backend/legacy/connector_windows
 
+  native-tests:
+    needs: syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+      - name: Install API and test requirements without Docker Hub
+        run: python -m pip install -r backend/requirements.txt pytest httpx
+      - name: Run fiscal and accounting regression tests
+        working-directory: backend
+        run: python -m pytest tests -q --tb=short
+
   runtime-smoke:
     needs: syntax
     runs-on: ubuntu-latest
