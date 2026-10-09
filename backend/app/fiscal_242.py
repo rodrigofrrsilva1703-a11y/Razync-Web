@@ -109,10 +109,9 @@ def _periodo(dados: dict) -> dict:
 
 def conferencia_fiscal_preview(
     acumuladores_bytes: bytes, acumuladores_nome: str,
-    razao_bytes: bytes, razao_nome: str, codigo_empresa: int = 242,
+    razao_bytes: bytes, razao_nome: str,
+    codigo_empresa: int | None = None, filial_alvo: str | None = None,
 ) -> dict:
-    if codigo_empresa != 242:
-        raise ValueError("A conferência piloto está disponível somente na empresa 242.")
     if not acumuladores_nome.lower().endswith((".xls", ".xlsx")):
         raise ValueError("Envie o Resumo por Acumulador em XLS ou XLSX.")
     if not razao_nome.lower().endswith((".xls", ".xlsx", ".csv")):
@@ -125,7 +124,7 @@ def conferencia_fiscal_preview(
     razao_bytes, razao_nome = _csv_para_excel(razao_bytes, razao_nome)
     resultado = processar_conferencia(
         acumuladores_bytes, acumuladores_nome,
-        razao_bytes, razao_nome, filial_alvo=str(codigo_empresa),
+        razao_bytes, razao_nome, filial_alvo=filial_alvo or (str(codigo_empresa) if codigo_empresa else None),
     )
     resumo = resultado.get("resumo", pd.DataFrame())
     detalhes = resultado.get("detalhes", pd.DataFrame())
