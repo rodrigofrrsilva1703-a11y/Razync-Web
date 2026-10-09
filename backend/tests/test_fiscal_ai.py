@@ -932,7 +932,7 @@ def test_openrouter_em_lotes_aceita_partes_textuais_e_json_completo(monkeypatch)
             ]})}]
             reason = "length"  # JSON integral com metadado length não pode ser perdido.
         else:
-            content = "GRUPO: G3\\nEXPLICACAO: Diferença no acumulador.\\nVERIFICAR: 1. Conferir a origem.\\nEVIDENCIAS: nenhum"
+            content = chr(10).join(["GRUPO: G3", "EXPLICACAO: Diferença no acumulador.", "VERIFICAR: 1. Conferir a origem.", "EVIDENCIAS: nenhum"])
             reason = "stop"
         return Response({"model": "example/free", "choices": [{
             "finish_reason": reason, "message": {"content": content},
