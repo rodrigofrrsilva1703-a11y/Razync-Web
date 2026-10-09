@@ -92,8 +92,12 @@
       throw Error("A conferência universal não abriu pelo menu lateral.");
     }
     if(!document.querySelector("#fiscal242Form") || !document.querySelector("#fiscal242Results") ||
-       !document.querySelector("#fiscalFilialCodigo") || !document.querySelector("#fiscalEmpresaCodigo")) {
-      throw Error("Campos e resultados da conferência universal incompletos.");
+       !document.querySelector("#fiscalFilialCodigo") ||
+       !document.querySelector("#fiscal242CompanyName")) {
+      throw Error("Formulário ou identificação automática da empresa não encontrado.");
+    }
+    if (document.querySelector("#fiscalEmpresaCodigo")) {
+      throw Error("O código manual da empresa não deveria aparecer na conferência.");
     }
     if(document.querySelector('.main-nav-btn[data-view="converter"]') ||
        document.querySelector("#converterView")) {
