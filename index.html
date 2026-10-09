@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="./assets/css/refined-theme.css?v=3">
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
-  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=fiscal-layout-2">
+  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=fiscal-results-ai-3">
 </head>
 <body>
   <div class="app-shell">
@@ -161,24 +161,28 @@
             <div id="fiscal242Warnings" class="fiscal-warnings"></div>
             <div class="fiscal-results-card">
               <div class="fiscal-results-heading">
-                <div><h3>Resultado por conta</h3><p>As divergências aparecem primeiro. Selecione uma conta para examinar os lançamentos.</p></div>
-                <label for="fiscal242Filter">Mostrar
-                  <select id="fiscal242Filter">
-                    <option value="todas">Todas</option>
+                <div><h3>Resultado por conta</h3><p>Comece pelas divergências. Clique no código da conta para consultar valores, acumuladores e lançamentos.</p></div>
+                <div class="fiscal-results-controls">
+                  <label for="fiscal242Search" class="visually-hidden">Buscar por conta ou acumulador</label>
+                  <input id="fiscal242Search" type="search" placeholder="Buscar conta ou acumulador" autocomplete="off" aria-label="Buscar conta, descrição ou acumulador">
+                  <label for="fiscal242Filter" class="visually-hidden">Filtrar situação</label>
+                  <select id="fiscal242Filter" aria-label="Filtrar por situação">
+                    <option value="todas">Todas as situações</option>
                     <option value="revisar">Divergências</option>
-                    <option value="alertas">Alertas</option>
+                    <option value="alertas">Com alertas</option>
                     <option value="bate">Batendo</option>
                   </select>
-                </label>
+                </div>
               </div>
               <div class="fiscal-table-scroll">
                 <table class="fiscal-table">
-                  <thead><tr><th>Conta contábil</th><th>Descrição fiscal</th><th>Acumuladores</th><th>Tipo</th><th>Fiscal</th><th>Total do Razão</th><th>Contábil considerado*</th><th>Diferença*</th><th>Situação</th></tr></thead>
+                  <thead><tr><th>Conta contábil / descrição</th><th>Acumuladores</th><th>Valor fiscal</th><th>Diferença</th><th>Situação</th></tr></thead>
                   <tbody id="fiscal242Rows"></tbody>
                 </table>
               </div>
-              <p class="fiscal-empty" id="fiscal242Empty" hidden>Nenhuma conta encontrada neste filtro.</p>
-              <p class="fiscal-disclaimer fiscal-table-note">*Contábil considerado = lançamentos classificados como fiscais ou fechamento somente por valor (com alerta). Diferença = contábil considerado menos fiscal.</p>
+              <p class="fiscal-empty" id="fiscal242Empty" hidden>Nenhuma conta encontrada. Tente outra busca ou situação.</p>
+              <p class="fiscal-table-count" id="fiscal242Count" aria-live="polite"></p>
+              <p class="fiscal-disclaimer fiscal-table-note">Diferença = contábil considerado − valor fiscal. Confira o total do Razão e os critérios de classificação ao abrir uma conta.</p>
             </div>
             <div id="fiscal242Detail" class="fiscal-detail" hidden></div>
             <details class="fiscal-unmapped" id="fiscal242Unmapped" hidden>
@@ -189,7 +193,7 @@
             <section class="fiscal-ai">
               <div class="fiscal-ai-heading">
                 <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
-                <div><span class="fiscal-ai-eyebrow">ASSISTENTE DE CONFERÊNCIA</span><h3>Uma visão mais clara das diferenças</h3><p>Entenda os valores, revise as hipóteses e confira os lançamentos citados.</p></div>
+                <div><span class="fiscal-ai-eyebrow">ASSISTENTE DE CONFERÊNCIA</span><h3>Entenda o motivo das diferenças</h3><p>Para cada conta, veja o que os relatórios mostram, as causas possíveis e as verificações recomendadas.</p></div>
                 <span class="fiscal-ai-provider">Gemini</span>
               </div>
               <div class="fiscal-ai-actions"><button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button></div>
@@ -434,7 +438,7 @@
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=fiscal-layout-2"></script>
   <script src="./assets/js/migration.js?v=fiscal-universal-1"></script>
-  <script src="./assets/js/fiscal-242.js?v=fiscal-layout-2"></script>
+  <script src="./assets/js/fiscal-242.js?v=fiscal-results-ai-3"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>
