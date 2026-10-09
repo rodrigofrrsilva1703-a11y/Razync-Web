@@ -584,7 +584,10 @@ async def conferencia_fiscal_universal_exportar(
             razao_bytes, razao_nome, filial or None,
         )
         relatorio = await run_in_threadpool(gerar_relatorio_excel, resultado)
-        identificacao = empresa_codigo or "GERAL"
+        from app.fiscal_242 import _normalizar
+        razao_social = resultado.get("empresa_nome", "")
+        nome_arquivo = re.sub(r"[^A-Z0-9]+", "_", _normalizar(razao_social)).strip("_")[:60]
+        identificacao = nome_arquivo or empresa_codigo or "GERAL"
         return _download(relatorio, f"RAZYNC_{identificacao}_CONFERENCIA_FISCAL.xlsx")
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
