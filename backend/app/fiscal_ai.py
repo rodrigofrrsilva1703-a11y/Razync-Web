@@ -192,7 +192,6 @@ def _openrouter_completion(payload, models, key):
         "additionalProperties": False,
     }
     request_payload = {
-        "models": models,
         "messages": [
             {"role": "system", "content": payload["systemInstruction"]["parts"][0]["text"]},
             {"role": "user", "content": payload["contents"][0]["parts"][0]["text"]},
@@ -211,19 +210,55 @@ def _openrouter_completion(payload, models, key):
         "temperature": 0.2,
         "max_tokens": 16384,
     }
-    request = urllib.request.Request(
-        "https://openrouter.ai/api/v1/chat/completions",
-        data=json.dumps(request_payload, ensure_ascii=False).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + key,
-            "HTTP-Referer": "https://rodrigofrrsilva1703-a11y.github.io/Razync-Web/",
-            "X-Title": "Razync Fiscal",
-        },
-    )
-    try:
+    # O roteador gratuito recomenda 'model' para uma escolha única.
+    # A lista 'models' é usada somente quando houver vários candidatos.
+    if len(models) == 1:
+        request_payload["model"] = models[0]
+    else:
+        request_payload["models"] = models
+
+    def send(body):
+        request = urllib.request.Request(
+            "https://openrouter.ai/api/v1/chat/completions",
+            data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + key,
+                "HTTP-Referer": "https://rodrigofrrsilva1703-a11y.github.io/Razync-Web/",
+                "X-Title": "Razync Fiscal",
+            },
+        )
         with urllib.request.urlopen(request, timeout=90) as response:
-            response_json = json.loads(response.read(200000))
+            return json.loads(response.read(200000))
+
+    try:
+        try:
+            response_json = send(request_payload)
+        except urllib.error.HTTPError as exc:
+            if exc.code != 400:
+                raise
+            exc.close()
+            # Nem todos os modelos gratuitos entendem response_format=json_schema
+            # ou max_tokens=16384. Refaça o MESMO contexto uma única vez,
+            # em JSON textual, validando depois pelo mesmo validador contábil.
+            # Nunca afrouxar as travas de preço ou de coleta de dados.
+            compatible = dict(request_payload)
+            compatible.pop("response_format", None)
+            compatible.pop("max_tokens", None)
+            compatible["provider"] = dict(request_payload["provider"])
+            compatible["provider"].pop("require_parameters", None)
+            compatible["messages"] = [dict(item) for item in request_payload["messages"]]
+            allowed_groups = converted_schema["properties"]["analises"]["items"]["properties"]["grupo"]["enum"]
+            compatible["messages"][0]["content"] += (
+                "\\nIMPORTANTE: responda SOMENTE JSON válido, sem markdown e sem texto extra. "
+                'Objeto raiz: {"analises":[{"grupo":"G1","explicacao":"...","verificar":"1. ...",'
+                '"evidencias":["L1"]}]}. '
+                "Substitua G1 e L1 por referências reais do relatório; não invente referências. "
+                "Inclua obrigatoriamente TODOS os grupos: "
+                + ", ".join(allowed_groups) + ". "
+                "Use exclusivamente as quatro chaves acima em cada item."
+            )
+            response_json = send(compatible)
     except urllib.error.HTTPError as exc:
         # Não repassa mensagens do provedor: podem conter dados privados ou credenciais.
         if exc.code in (401, 403):
@@ -233,7 +268,9 @@ def _openrouter_completion(payload, models, key):
         elif exc.code == 429:
             detail = "Todos os modelos disponíveis atingiram limites de requisições. Tente novamente mais tarde ou configure modelos com cota disponível."
         elif exc.code == 400:
-            detail = "O OpenRouter rejeitou os modelos ou o formato de resposta. Revise OPENROUTER_MODELS e a compatibilidade com JSON estruturado."
+            detail = ("O OpenRouter não encontrou um modelo gratuito compatível, mesmo após tentar "
+                      "um formato JSON mais simples. A chave pode estar correta; confira cotas, "
+                      "disponibilidade de modelos gratuitos e políticas de privacidade da conta.")
         else:
             detail = f"OpenRouter temporariamente indisponível (HTTP {exc.code}). A conferência contábil não foi alterada."
         raise HTTPException(429 if exc.code in (402, 429) else 403 if exc.code in (401, 403) else 400 if exc.code == 400 else 502, detail) from None
@@ -246,7 +283,12 @@ def _openrouter_completion(payload, models, key):
     content = message.get("content")
     if not isinstance(content, str) or not content.strip():
         raise ValueError("Resposta vazia do OpenRouter")
-    return json.loads(content), str(response_json.get("model") or "")
+    result_text = content.strip()
+    if result_text.startswith("```"):
+        lines = result_text.splitlines()
+        if len(lines) >= 3 and lines[-1].strip() == "```":
+            result_text = "\\n".join(lines[1:-1]).strip()
+    return json.loads(result_text), str(response_json.get("model") or "")
 
 
 
@@ -430,7 +472,7 @@ def explain(report):
             }
         except HTTPException as exc:
             # 400 e 403 revelam erro de chave/configuração: não ocultar com troca.
-            if exc.status_code in (400, 403, 422, 503):
+            if exc.status_code in (403, 422, 503):
                 raise
             if not gemini_key:
                 raise
