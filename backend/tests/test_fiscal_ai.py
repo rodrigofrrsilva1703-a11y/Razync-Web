@@ -330,7 +330,7 @@ def test_exportar_analise_gemini_em_excel_sem_nova_chamada(monkeypatch):
     assert main["F6"].value == 1234.56
     assert main["G6"].value == 1200
     assert main["I6"].value == -34.56
-    assert "confirmar o histórico" in main["J6"].value
+    assert "confirme o histórico" in main["J6"].value
     assert "Conferir a NF" in main["K6"].value
     acc = workbook["Acumuladores"]
     assert acc["C2"].value == "1152"
