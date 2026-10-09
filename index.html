@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="./assets/css/refined-theme.css?v=3">
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
-  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=fiscal-ai-inline-2">
+  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=fiscal-ai-accounts-1">
 </head>
 <body>
   <div class="app-shell">
@@ -235,7 +235,36 @@
               <p id="fiscal242AIStatus" class="fiscal-ai-inline-status" role="status" aria-live="polite">Faça uma conferência para iniciar a análise.</p>
               <p id="fiscal242AIMessage" role="status" aria-live="polite">Verificando disponibilidade do Gemini…</p>
               <details class="fiscal-ai-privacy"><summary>Como seus dados são analisados</summary><p>O Gemini recebe os dados extraídos dos relatórios: históricos completos (que podem conter nomes e documentos), datas, contas, contrapartidas e valores. O fiscal é um resumo por acumulador. As sugestões exigem revisão humana e não alteram cálculos ou arquivos.</p></details>
+              <div id="fiscal242AIToolbar" class="fiscal-ai-toolbar" hidden>
+                <div class="fiscal-ai-toolbar-heading">
+                  <div>
+                    <span class="fiscal-ai-toolbar-label">PARECERES DO GEMINI</span>
+                    <h4>Análises por conta <span id="fiscal242AITotal" class="fiscal-ai-toolbar-total"></span></h4>
+                  </div>
+                  <span id="fiscal242AICount" class="fiscal-ai-toolbar-count" role="status" aria-live="polite"></span>
+                </div>
+                <div class="fiscal-ai-toolbar-controls">
+                  <label class="fiscal-ai-search-wrap">
+                    <span class="visually-hidden">Pesquisar nos pareceres da IA</span>
+                    <input type="search" id="fiscal242AISearch" placeholder="Buscar conta, descrição ou informação…" autocomplete="off">
+                  </label>
+                  <label class="fiscal-ai-filter-wrap">
+                    <span class="visually-hidden">Filtrar situação dos pareceres</span>
+                    <select id="fiscal242AIFilter" aria-label="Filtrar situação dos pareceres">
+                      <option value="todas">Todas as situações</option>
+                      <option value="revisar">Divergências</option>
+                      <option value="alertas">Com alertas</option>
+                      <option value="bate">Conferidas</option>
+                    </select>
+                  </label>
+                  <div class="fiscal-ai-toggle-actions">
+                    <button type="button" class="fiscal-ai-toggle-action" id="fiscal242AIExpand">Expandir tudo</button>
+                    <button type="button" class="fiscal-ai-toggle-action" id="fiscal242AICollapse">Recolher tudo</button>
+                  </div>
+                </div>
+              </div>
               <div id="fiscal242AIResult"></div>
+              <p class="fiscal-ai-no-results" id="fiscal242AIEmpty" hidden>Nenhum parecer corresponde à busca ou ao filtro. Os resultados continuam disponíveis ao limpar os filtros.</p>
             </section>
             <div class="fiscal-download-row">
               <button type="button" class="secondary-action" id="fiscal242Download">Baixar relatório Excel (opcional)</button>
@@ -474,7 +503,7 @@
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=fiscal-layout-2"></script>
   <script src="./assets/js/migration.js?v=fiscal-universal-1"></script>
-  <script src="./assets/js/fiscal-242.js?v=fiscal-ai-inline-2"></script>
+  <script src="./assets/js/fiscal-242.js?v=fiscal-ai-accounts-1"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>
