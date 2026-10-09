@@ -199,3 +199,26 @@ def test_gemini_recebe_formatos_brl_e_devolve_valores_oficiais(monkeypatch):
     assert item["valores"]["diferenca"] == -9123.45
     assert item["explicacao"] == "Falta R$ 9.123,45."
     assert item["verificar"] == "Verifique R$ 9.123,45."
+
+
+def test_gemini_devolve_codigos_originais_de_acumuladores_e_conta(monkeypatch):
+    source = report()
+    source["contas"][0].update({
+        "acumuladores": "1152, 1153",
+        "detalhes_fiscais": [
+            {"codigo": "1152", "descricao": "Mercadorias", "valor": 8000.00},
+            {"codigo": "1153", "descricao": "Outras entradas", "valor": 1123.45},
+        ],
+    })
+    context, mapping, *_ = fiscal_ai.detailed_context(source)
+    fiscal = context["grupos"][0]["resumo"]["detalhes_fiscais"]
+    assert [row["codigo"] for row in fiscal] == ["1152", "1153"]
+    assert context["grupos"][0]["resumo"]["conta"] == "22643"
+    gateway(monkeypatch, {"analises": [{
+        "grupo": "G1", "explicacao": "Revisar os acumuladores 1152 e 1153.",
+        "verificar": "Conferir a conta 22643.", "evidencias": [],
+    }]})
+    resposta = fiscal_ai.explain(source)["analises"][0]
+    assert resposta["conta"] == "22643"
+    assert resposta["acumuladores"] == "1152, 1153"
+    assert resposta["detalhes_fiscais"] == fiscal
