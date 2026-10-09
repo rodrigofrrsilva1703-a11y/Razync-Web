@@ -152,8 +152,9 @@ def provider_error(exc):
 def _openrouter_models():
     """Modelos alternados a cada conferência; o OpenRouter faz fallback no mesmo pedido."""
     configured = os.getenv("OPENROUTER_MODELS", "openrouter/free")
-    models = list(dict.fromkeys(m.strip() for m in configured.split(",") if m.strip()))
-    if not 1 <= len(models) <= 8 or any(
+    requested = [m.strip() for m in configured.split(",")]
+    models = list(dict.fromkeys(requested))
+    if not 1 <= len(models) <= 8 or any(not m for m in requested) or any(
         model != "openrouter/free" and not re.fullmatch(
             r"[a-zA-Z0-9][a-zA-Z0-9_.-]*/[a-zA-Z0-9_.-]+:free", model
         )
