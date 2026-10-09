@@ -564,7 +564,7 @@ def processar_conferencia(
             "O Razão contém várias filiais (" + ", ".join(filiais_encontradas) +
             "). Informe o código da filial mostrado no Razão para evitar somar estabelecimentos diferentes."
         )
-    filial_aplicada = ""
+    filial_aplicada = filiais_encontradas[0] if len(filiais_encontradas) == 1 and not filial_normalizada else ""
     if filiais_encontradas and filial_normalizada:
         if filial_normalizada in filiais_encontradas:
             filial_aplicada = filial_normalizada
