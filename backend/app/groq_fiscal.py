@@ -154,11 +154,34 @@ def complete(payload, key, model):
             with urllib.request.urlopen(request, timeout=35) as response:
                 raw = json.loads(response.read(130000))
         except urllib.error.HTTPError as exc:
-            # O conteúdo remoto pode conter dados sensíveis: não ler, expor ou logar.
+            # Inspecionar APENAS um código de erro reconhecido, jamais sua mensagem,
+            # conteúdo fiscal, cabeçalhos ou resposta completa.
             status = exc.code
-            logger.warning("fiscal_groq_error status=%d model=%s batch=%d", status, model, start // 2 + 1)
-            if status in (401, 403):
-                raise HTTPException(403, "Chave ou permissão da Groq inválida.") from None
+            try:
+                info = json.loads(exc.read(4096))
+                code = info.get("error", {}).get("code") if isinstance(info, dict) else None
+            except (ValueError, TypeError, AttributeError, UnicodeDecodeError):
+                code = None
+            categories = {
+                "model_permission_blocked_org": "modelo_bloqueado_organizacao",
+                "model_permission_blocked_project": "modelo_bloqueado_projeto",
+            }
+            reason = categories.get(code, "sem_codigo_conhecido")
+            logger.warning("fiscal_groq_error status=%d reason=%s model=%s batch=%d",
+                           status, reason, model, start // 2 + 1)
+            if status == 401:
+                raise HTTPException(401, "Groq recusou a autenticação. Confira a chave API no Railway.") from None
+            if status == 403:
+                if code == "model_permission_blocked_org":
+                    detail = ("Groq bloqueou o GPT-OSS 120B nas permissões da organização. "
+                              "Confira Settings > Organization > Limits no painel GroqCloud.")
+                elif code == "model_permission_blocked_project":
+                    detail = ("Groq bloqueou o modelo nas permissões do projeto. "
+                              "Confira Settings > Projects > Limits no painel GroqCloud.")
+                else:
+                    detail = ("Groq recusou o acesso (HTTP 403). Verifique as permissões "
+                              "da organização e do projeto para o modelo GPT-OSS selecionado.")
+                raise HTTPException(403, detail) from None
             if status == 429:
                 raise HTTPException(429, "Groq gratuita atingiu o limite de requisições ou tokens.") from None
             raise HTTPException(502, "Groq indisponível ou formato incompatível. A conferência está preservada.") from None
