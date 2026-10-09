@@ -58,6 +58,6 @@ test('tabela e detalhe preservam códigos, descrição e valor de cada acumulado
   assert.equal(lines.length, 2);
   assert.equal(lines[0].children[0].textContent, '1152');
   assert.equal(lines[0].children[1].textContent, 'Compras para revenda');
-  assert.match(lines[0].children[2].textContent, /1\\.000,00/);
+  assert.match(lines[0].children[2].textContent, /1\.000,00/);
   assert.equal(lines[1].children[0].textContent, '1153');
 });
