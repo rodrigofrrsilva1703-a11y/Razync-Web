@@ -185,12 +185,14 @@ def _openrouter_models():
     return available or ["openrouter/free"]
 
 
-def _openrouter_completion(payload, models, key):
+def _openrouter_completion(payload, models, key, *, _repair=False):
     """Adapta formatos gratuitos sem reduzir a validação fiscal-contábil."""
     group_ids = payload["generationConfig"]["responseSchema"]["properties"]["analises"]["items"]["properties"]["grupo"]["enum"]
     # A resposta do modelo gratuito estava terminando em finish_reason=length.
     # Requisitar poucos grupos por vez evita um JSON enorme e truncado.
-    if os.getenv("OPENROUTER_ROUTER_FIRST") == "1" and len(group_ids) > 2:
+    # Todos os modelos gratuitos recebem lotes menores, não apenas o roteador.
+    # Mantemos os lançamentos de cada grupo dentro do seu próprio lote.
+    if len(group_ids) > 2:
         source = json.loads(payload["contents"][0]["parts"][0]["text"])
         all_analyses, used_models = [], []
         for start in range(0, len(group_ids), 2):
@@ -455,12 +457,62 @@ def _openrouter_completion(payload, models, key):
     if not isinstance(answer, dict) or not isinstance(answer.get("analises"), list):
         logger.warning("fiscal_openrouter_rejected category=missing_analises")
         raise ValueError("O OpenRouter não retornou a estrutura esperada")
+    # A resposta de um modelo gratuito pode chegar íntegra, mas conter
+    # evidências que não existem no lote. Corrija UMA vez junto ao provedor;
+    # nunca invente, remapeie ou silenciosamente descarte lançamentos.
+    def repair_once(cause):
+        logger.warning(
+            "fiscal_openrouter_rejected category=%s model=%s repair=%s",
+            cause, request_payload["model"], not _repair,
+        )
+        if _repair:
+            raise ValueError({
+                "invalid_evidence": "Invalid evidence reference",
+                "missing_groups": "Resposta de OpenRouter com grupos ausentes",
+                "invalid_json": "JSON ou blocos de texto inválidos do OpenRouter",
+                "empty_content": "Resposta vazia do OpenRouter",
+            }.get(cause, "Resposta inválida do OpenRouter"))
+        corrected = copy.deepcopy(payload)
+        corrected["systemInstruction"]["parts"][0]["text"] += (
+            "\\nCORREÇÃO NECESSÁRIA: a última resposta não atendeu ao contrato. "
+            "Forneça um item para cada grupo solicitado, em JSON válido. "
+            "Cite somente referências L presentes nos lançamentos do próprio grupo. "
+            "Na dúvida use evidencias [] e NÃO cite referências inexistentes no texto. "
+            "Não invente lançamentos, documentos ou valores; mantenha a explicação útil."
+        )
+        return _openrouter_completion(corrected, models, key, _repair=True)
+
     # 'length' não basta para descartar um JSON já completo. Mas não
     # aceitamos qualquer grupo perdido: conferimos contra o lote solicitado.
     items = answer["analises"]
     if len(items) != len(group_ids) or {row.get("grupo", "").strip().upper() for row in items if isinstance(row, dict) and isinstance(row.get("grupo"), str)} != set(group_ids):
-        logger.warning("fiscal_openrouter_rejected category=missing_groups")
-        raise ValueError("Resposta de OpenRouter com grupos ausentes")
+        return repair_once("missing_groups")
+    # Referências são locais e específicas por grupo. A revisão não pode usar
+    # um L de outra conta, nem alegar evidências inexistentes no texto.
+    context = json.loads(payload["contents"][0]["parts"][0]["text"])
+    permitted = {
+        group["grupo"]: {
+            str(row["referencia"]).upper()
+            for row in group.get("lancamentos", [])
+            if isinstance(row, dict) and isinstance(row.get("referencia"), str)
+        }
+        for group in context.get("grupos", [])
+        if isinstance(group, dict) and isinstance(group.get("grupo"), str)
+    }
+    for item in items:
+        group_id = item["grupo"].strip().upper()
+        evidence = item.get("evidencias", [])
+        if isinstance(evidence, str):
+            evidence = [] if evidence.strip().lower() in ("", "nenhum", "nenhuma", "[]", "-") else evidence.split(",")
+        if not isinstance(evidence, list):
+            return repair_once("invalid_evidence")
+        allowed = permitted.get(group_id, set())
+        declared = {x.strip().upper() for x in evidence if isinstance(x, str)}
+        quoted = set(re.findall(r"\\bL\\d+\\b", (
+            str(item.get("explicacao", "")) + " " + str(item.get("verificar", ""))
+        ).upper()))
+        if len(declared) != len(evidence) or not declared.issubset(allowed) or not quoted.issubset(allowed):
+            return repair_once("invalid_evidence")
     return answer, str(response_json.get("model") or "")
 
 
