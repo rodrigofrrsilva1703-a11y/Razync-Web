@@ -304,6 +304,7 @@ def ler_acumuladores(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
     xls = _excel(conteudo, nome)
     periodo = {"inicio": None, "fim": None}
     registros = []
+    sem_conta = []
     for aba in xls.sheet_names:
         bruto = pd.read_excel(xls, sheet_name=aba, header=None, dtype=object)
         tipo = ""
@@ -358,22 +359,28 @@ def ler_acumuladores(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
                     and _codigo_dominio(valor_bruto) not in {"", "0"}
                 ]
                 conta = candidatos[-1] if candidatos else ""
-            if not re.fullmatch(r"\d+", conta):
-                continue
-
             if col_descricao is not None and len(valores) > col_descricao:
                 descricao = _texto(_primeiro_preenchido(valores, col_descricao))
             else:
                 descricao = next(
                     (_texto(v) for v in valores[col_codigo + 1:valor_indice] if _texto(v)), ""
                 )
+            if not re.fullmatch(r"\d+", conta):
+                if tipo:
+                    sem_conta.append({
+                        "tipo": tipo, "acumulador": codigo,
+                        "descricao": descricao, "valor": valor,
+                    })
+                continue
             registros.append({
                 "TIPO": tipo, "ACUMULADOR": codigo, "DESCRIÇÃO": descricao,
                 "CONTA": conta, "VALOR_FISCAL": valor,
             })
     if not registros:
         raise ValueError("Nenhum acumulador com conta contábil preenchida foi encontrado.")
-    return pd.DataFrame(registros), periodo
+    quadro = pd.DataFrame(registros)
+    quadro.attrs["sem_conta"] = sem_conta
+    return quadro, periodo
 
 
 def ler_razao(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
@@ -488,6 +495,7 @@ def conferir_fiscal_contabil(acumuladores: pd.DataFrame, razao: pd.DataFrame):
         movimentos["VALOR_ANALISADO"] = movimentos[lado]
         movimentos = movimentos[movimentos["VALOR_ANALISADO"].abs() >= 0.005].copy()
         movimentos["COMPATÍVEL_FISCAL"] = movimentos["HISTÓRICO"].map(_parece_fiscal)
+        movimentos["SEM_EVIDÊNCIA_HISTÓRICO"] = False
         movimentos["NATUREZA"] = movimentos.apply(
             lambda mov: (
                 f"ESTORNO/REDUTOR ({lado})"
@@ -498,10 +506,10 @@ def conferir_fiscal_contabil(acumuladores: pd.DataFrame, razao: pd.DataFrame):
         )
         valor_fiscal = round(float(fiscal["VALOR_FISCAL"]), 2)
         valor_total = round(float(movimentos["VALOR_ANALISADO"].sum()), 2)
-        # Muitos razões do Domínio trazem somente o código da contrapartida e o
-        # nome da empresa no histórico. Se a coluna contábil correta fecha com o
-        # acumulador, o próprio fechamento é evidência suficiente de compatibilidade.
+        # Fechamento aritmético não comprova origem fiscal. Mantemos o valor
+        # na comparação, mas destacamos históricos sem evidência suficiente.
         if not movimentos.empty and abs(valor_total - valor_fiscal) <= 0.01:
+            movimentos["SEM_EVIDÊNCIA_HISTÓRICO"] = ~movimentos["COMPATÍVEL_FISCAL"]
             movimentos["COMPATÍVEL_FISCAL"] = True
         valor_compativel = round(float(movimentos.loc[movimentos["COMPATÍVEL_FISCAL"], "VALOR_ANALISADO"].sum()), 2)
         total_debitos = round(float(movimentos["DÉBITO"].sum()), 2) if lado == "DÉBITO" else 0.0
@@ -509,8 +517,9 @@ def conferir_fiscal_contabil(acumuladores: pd.DataFrame, razao: pd.DataFrame):
         total_redutores = round(float(-movimentos.loc[movimentos["VALOR_ANALISADO"] < 0, "VALOR_ANALISADO"].sum()), 2)
         diferenca = round(valor_compativel - valor_fiscal, 2)
         extras = movimentos[~movimentos["COMPATÍVEL_FISCAL"]].copy()
+        nao_comprovados = int(movimentos["SEM_EVIDÊNCIA_HISTÓRICO"].sum())
         if abs(diferenca) <= 0.01:
-            situacao = "CONFERE COM ALERTAS" if not extras.empty else "CONFERE"
+            situacao = "CONFERE COM ALERTAS" if not extras.empty or nao_comprovados else "CONFERE"
         elif movimentos.empty:
             situacao = "AUSENTE NO CONTÁBIL"
         else:
@@ -521,7 +530,9 @@ def conferir_fiscal_contabil(acumuladores: pd.DataFrame, razao: pd.DataFrame):
             "TOTAL DA CONTA": valor_total, "DIFERENÇA FISCAL": diferenca,
             "TOTAL DÉBITOS": total_debitos, "TOTAL CRÉDITOS": total_creditos,
             "ESTORNOS/REDUTORES": total_redutores,
-            "LANÇAMENTOS EXTRAS": len(extras), "SITUAÇÃO": situacao,
+            "LANÇAMENTOS EXTRAS": len(extras),
+            "FECHAMENTOS SEM EVIDÊNCIA": nao_comprovados,
+            "SITUAÇÃO": situacao,
         })
         for _, mov in movimentos.iterrows():
             detalhes.append({
@@ -529,7 +540,10 @@ def conferir_fiscal_contabil(acumuladores: pd.DataFrame, razao: pd.DataFrame):
                 "HISTÓRICO": mov["HISTÓRICO"], "CONTRAPARTIDA": mov["CONTRAPARTIDA"],
                 "DÉBITO": mov["DÉBITO"], "CRÉDITO": mov["CRÉDITO"],
                 "NATUREZA": mov["NATUREZA"], "VALOR": mov["VALOR_ANALISADO"],
-                "CLASSIFICAÇÃO": "FISCAL COMPATÍVEL" if mov["COMPATÍVEL_FISCAL"] else "ALERTA - NÃO FISCAL",
+                "CLASSIFICAÇÃO": ("FECHAMENTO POR VALOR - VALIDAR"
+                                  if mov["SEM_EVIDÊNCIA_HISTÓRICO"] else
+                                  "FISCAL PROVÁVEL" if mov["COMPATÍVEL_FISCAL"]
+                                  else "ALERTA - NÃO FISCAL"),
             })
     return pd.DataFrame(resumos), pd.DataFrame(detalhes)
 
@@ -562,8 +576,10 @@ def processar_conferencia(
                 f"O razão contém as filiais {', '.join(filiais_encontradas)}, mas não possui "
                 f"lançamentos da empresa {filial_normalizada}."
             )
+    sem_conta = acumuladores.attrs.get("sem_conta", [])
     resumo, detalhes = conferir_fiscal_contabil(acumuladores, razao)
     return {
+        "sem_conta": sem_conta,
         "resumo": resumo, "detalhes": detalhes, "acumuladores": acumuladores,
         "periodo_fiscal": periodo_fiscal, "periodo_razao": periodo_razao,
         "filial_aplicada": filial_aplicada,
