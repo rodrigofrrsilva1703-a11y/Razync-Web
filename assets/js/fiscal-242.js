@@ -1,7 +1,7 @@
-/* Conferência Fiscal x Contábil: projeto piloto exclusivo da empresa 242. */
+/* Conferência Fiscal x Contábil: ferramenta universal do menu lateral. */
 (() => {
-  const tab = document.querySelector('#companyPanel .tool-tab[data-tool="fiscal"]');
-  const pane = document.querySelector('#companyPanel .tool-pane[data-pane="fiscal"]');
+  const pane = document.querySelector("#fiscalView");
+  const navigation = document.querySelector('.main-nav-btn[data-view="fiscal"]');
   const form = document.querySelector("#fiscal242Form");
   const message = document.querySelector("#fiscal242Message");
   const results = document.querySelector("#fiscal242Results");
@@ -10,7 +10,7 @@
   const details = document.querySelector("#fiscal242Detail");
   const download = document.querySelector("#fiscal242Download");
   const submit = document.querySelector("#fiscal242Submit");
-  if (!tab || !pane || !form || !results) return;
+  if (!pane || !navigation || !form || !results) return;
 
   const money = new Intl.NumberFormat("pt-BR", {style:"currency", currency:"BRL"});
   const statusLabels = {
@@ -37,7 +37,7 @@
     const controller = new AbortController(); statusController = controller;
     const timeout = setTimeout(() => controller.abort(), 12000);
     try {
-      const response = await fetch(API() + "/api/v1/conferencia-fiscal/242/ia/status?t=" + Date.now(), {cache:"no-store", signal:controller.signal});
+      const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/status?t=" + Date.now(), {cache:"no-store", signal:controller.signal});
       if (!response.ok) throw new Error("Status indisponível");
       const result = await response.json();
       if (statusController !== controller) return;
@@ -58,20 +58,20 @@
   refreshConnection.type = "button";
   refreshConnection.addEventListener("click", refreshAIStatus);
   aiButton.after(refreshConnection);
-  tab.addEventListener("click", refreshAIStatus);
-  window.addEventListener("focus", () => { if (Number(selected?.codigo) === 242 && !pane.hidden) refreshAIStatus(); });
+  navigation.addEventListener("click", refreshAIStatus);
+  window.addEventListener("focus", () => { if (pane.classList.contains("active")) refreshAIStatus(); });
   refreshAIStatus();
   aiButton.addEventListener("click", async () => {
-    if (!previewBody || !aiConfigured || Number(selected?.codigo) !== 242) return;
+    if (!previewBody || !aiConfigured) return;
     aiController?.abort(); const controller = new AbortController(); aiController = controller;
     const snapshot = previewBody; aiButton.disabled = true; aiResult.replaceChildren();
     aiResult.setAttribute("aria-busy", "true");
     aiMessage.textContent = "Analisando lançamentos e diferenças com Gemini…";
     try {
-      const response = await fetch(API() + "/api/v1/conferencia-fiscal/242/ia", {method:"POST",body:snapshot,signal:controller.signal});
+      const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia", {method:"POST",body:snapshot,signal:controller.signal});
       if (!response.ok) throw new Error(await responseError(response));
       const result = await response.json();
-      if (controller.signal.aborted || previewBody !== snapshot || Number(selected?.codigo) !== 242) return;
+      if (controller.signal.aborted || previewBody !== snapshot) return;
       for (const item of result.analises || []) {
         const card = node("article", "fiscal-ai-card");
         const heading = node("div", "fiscal-ai-card-heading");
@@ -172,7 +172,12 @@
     const body = new FormData();
     body.append("acumuladores", files.acumuladores);
     body.append("razao", files.razao);
-    body.append("filial", "242");
+    const filial = byId("fiscalFilialCodigo").value.trim();
+    const empresaCodigo = byId("fiscalEmpresaCodigo").value.trim();
+    if (filial && !/^\d+$/.test(filial)) throw new Error("A filial deve conter apenas números.");
+    if (empresaCodigo && !/^\d+$/.test(empresaCodigo)) throw new Error("O código da empresa deve conter apenas números.");
+    body.append("filial", filial);
+    body.append("empresa_codigo", empresaCodigo);
     return body;
   }
   function node(tag, className, content) {
@@ -212,19 +217,6 @@
     submit.disabled = false;
     download.disabled = false;
   }
-
-  // O app original mostra todas as guias disponíveis. A 242 é a única
-  // empresa que recebe esta guia durante a homologação.
-  const previousOpenCompany = openCompany;
-  openCompany = function(company) {
-    clearState();
-    previousOpenCompany(company);
-    const is242 = Number(company && company.codigo) === 242;
-    if (is242) refreshAIStatus();
-    tab.hidden = !is242;
-    if (!is242 && panel.dataset.activeTool === "fiscal") activateTool("organizar");
-  };
-  tab.hidden = true;
 
   function filteredRows() {
     const contas = data?.contas || [];
@@ -381,10 +373,9 @@
     renderTable();
   }
   filter.addEventListener("change", renderTable);
-  form.querySelectorAll("input[type=file]").forEach(input => input.addEventListener("change", clearState));
+  form.querySelectorAll("input[type=file], #fiscalEmpresaCodigo, #fiscalFilialCodigo").forEach(input => input.addEventListener("change", clearState));
   form.addEventListener("submit", async event => {
     event.preventDefault();
-    if (Number(selected?.codigo) !== 242) return;
     let body;
     try { body = buildFormData(); } catch (error) { setMessage(error.message, "error"); return; }
     aiController?.abort(); aiController = null; aiButton.disabled = true; aiResult.replaceChildren();
@@ -395,12 +386,12 @@
     results.hidden = true;
     setMessage("Analisando acumuladores e lançamentos do Razão…", "loading");
     try {
-      const response = await fetch(API() + "/api/v1/conferencia-fiscal/242/preview", {
+      const response = await fetch(API() + "/api/v1/conferencia-fiscal/preview", {
         method:"POST", body, signal: controller.signal
       });
       if (!response.ok) throw new Error(await responseError(response));
       const report = await response.json();
-      if (controller.signal.aborted || Number(selected?.codigo) !== 242) return;
+      if (controller.signal.aborted) return;
       renderResponse(report);
       previewBody = body;
       aiButton.disabled = !aiConfigured;
@@ -418,17 +409,18 @@
   });
 
   download.addEventListener("click", async () => {
-    if (!data || !previewBody || Number(selected?.codigo) !== 242) return;
+    if (!data || !previewBody) return;
     const body = previewBody;
     download.disabled = true;
     setMessage("Preparando relatório Excel…", "loading");
     try {
-      const response = await fetch(API() + "/api/v1/conferencia-fiscal/242", {
+      const response = await fetch(API() + "/api/v1/conferencia-fiscal/exportar", {
         method:"POST", body
       });
       if (!response.ok) throw new Error(await responseError(response));
-      if (previewBody !== body || Number(selected?.codigo) !== 242) return;
-      await downloadBlob(response, "RAZYNC_242_CONFERENCIA_FISCAL.xlsx");
+      if (previewBody !== body) return;
+      const code = byId("fiscalEmpresaCodigo").value.trim() || "GERAL";
+      await downloadBlob(response, `RAZYNC_${code}_CONFERENCIA_FISCAL.xlsx`);
       setMessage("Relatório Excel gerado.", "success");
     } catch (error) {
       setMessage(error.message || "Não foi possível gerar o Excel.", "error");
