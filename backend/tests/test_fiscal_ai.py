@@ -246,3 +246,42 @@ def test_gemini_universal_status_e_filial_independente_da_empresa(monkeypatch):
     assert response.json()["aviso"] == "Teste universal"
     assert len(calls) == 1
     assert calls[0][-2:] == (987, "242")
+
+
+
+def test_gemini_exige_analise_didatica_com_limites_e_verificacoes(monkeypatch):
+    """Mantém a resposta atual, mas orienta o modelo a explicar os dados em profundidade."""
+    source = report()
+    monkeypatch.setenv("GEMINI_API_KEY", "test-secret")
+    monkeypatch.setattr(fiscal_ai, "last_request", 0)
+
+    class Resposta:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, limit):
+            return json.dumps({"candidates": [{
+                "finishReason": "STOP",
+                "content": {"parts": [{"text": json.dumps({"analises": [{
+                    "grupo": "G1", "explicacao": "Os valores precisam ser conferidos.",
+                    "verificar": "1. Conferir a conta.", "evidencias": []
+                }]})}]}
+            }]}).encode()
+
+    def confirmar_instrucoes(req, timeout):
+        dados = json.loads(req.data)
+        prompt = dados["systemInstruction"]["parts"][0]["text"]
+        assert "3 a 4 parágrafos" in prompt
+        assert "3 a 5 etapas objetivas e numeradas" in prompt
+        assert "códigos e descrições dos acumuladores" in prompt
+        assert "não invente citação" in prompt
+        assert "Diferença" in prompt or "DIFERENÇA" in prompt
+        assert "valores_brl" in prompt
+        assert "explicacao" in str(dados["generationConfig"]["responseSchema"])
+        assert timeout == 45
+        return Resposta()
+
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", confirmar_instrucoes)
+    analise = fiscal_ai.explain(source)["analises"][0]
+    assert analise["conta"] == "22643"
+    assert analise["verificar"] == "1. Conferir a conta."
+    assert source["contas"][0]["fiscal"] == 9123.45
