@@ -114,7 +114,7 @@ test('ajuda da 266 abre, arrasta, fecha, lembra a posição e não aparece em ou
   assert.ok(parseFloat(node('#companyToolHelp').style.left)<=192);
   assert.ok(parseFloat(node('#companyToolHelp').style.top)<=282);
 
-  context.selected={codigo:1402,capabilities:{status:'api_ready',tools:['modelo_dominio'],workflow:'advanced',
+  context.selected={codigo:1402,capabilities:{status:'api_ready',tools:['modelo_dominio','base_inteligente','conferencia_extrato'],workflow:'advanced',
     banks:{btg:'510'},roles:[{name:'planilha',label:'Planilha de caixa'},{name:'extrato',label:'Extrato BTG',optional:true}]}};
   context.renderCompanyToolGuide('organizar');
   assert.equal(node('#companyToolHelp').hidden,false,'a 1402 agora oferece orientações');
