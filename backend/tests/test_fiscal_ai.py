@@ -10,6 +10,7 @@ from app.main import app
 @pytest.fixture(autouse=True)
 def _openrouter_disabled_by_default(monkeypatch):
     """Os testes legados usam Gemini; OpenRouter é ativado explicitamente nos novos casos."""
+    monkeypatch.setattr(fiscal_ai, "model_cooldowns", {})
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED", raising=False)
     # Exercita integrações anteriores apenas em testes; produção usa OpenRouter.
@@ -386,16 +387,16 @@ def test_openrouter_usa_prompt_integral_fallback_e_contas_originais(monkeypatch)
                 }]})}
             }]}).encode()
     def urlopen(req, timeout):
-        assert timeout == 38
+        assert timeout == 18
         assert req.full_url == "https://openrouter.ai/api/v1/chat/completions"
         assert req.get_header("Authorization") == "Bearer openrouter-test-secret"
         body = json.loads(req.data)
         calls.append(body)
-        assert body["models"] == [
-            "openrouter/free", "nvidia/nemotron-3-ultra-550b-a55b:free", "nvidia/nemotron-3.5-lightning:free"
-        ] if len(calls) == 1 else [
-            "nvidia/nemotron-3-ultra-550b-a55b:free", "nvidia/nemotron-3.5-lightning:free", "openrouter/free"
+        expected = [
+            ["nvidia/nemotron-3-ultra-550b-a55b:free", "nvidia/nemotron-3.5-lightning:free", "openrouter/free"],
+            ["nvidia/nemotron-3.5-lightning:free", "nvidia/nemotron-3-ultra-550b-a55b:free", "openrouter/free"],
         ]
+        assert body["models"] == expected[len(calls)-1]
         assert body["provider"]["require_parameters"] is True
         assert body["provider"]["data_collection"] == "deny"
         assert body["response_format"]["type"] == "json_schema"
@@ -476,7 +477,7 @@ def test_openrouter_rejeita_lista_de_modelos_invalida(monkeypatch):
 def test_openrouter_modo_gratuito_por_padrao_e_precos_zerados(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "free-key")
     monkeypatch.delenv("OPENROUTER_MODELS", raising=False)
-    assert fiscal_ai._openrouter_models() == ["openrouter/free"]
+    assert fiscal_ai._openrouter_models() == fiscal_ai.FREE_FISCAL_MODELS
     monkeypatch.setattr(fiscal_ai, "model_rotation_index", 0)
     seen = {}
     class Response:
@@ -492,8 +493,8 @@ def test_openrouter_modo_gratuito_por_padrao_e_precos_zerados(monkeypatch):
     def check(req, timeout):
         assert req.full_url == "https://openrouter.ai/api/v1/chat/completions"
         body = json.loads(req.data)
-        assert body["model"] == "openrouter/free"
-        assert "models" not in body
+        assert set(body["models"]) == set(fiscal_ai.FREE_FISCAL_MODELS)
+        assert "model" not in body
         assert body["provider"]["max_price"] == {"prompt":0,"completion":0}
         assert body["provider"]["data_collection"] == "deny"
         assert "require_parameters" not in body["provider"]
@@ -660,7 +661,7 @@ def test_openrouter_formato_estrito_400_tenta_json_compativel_sem_mudar_dados(mo
         body = json.loads(req.data)
         requests.append(body)
         assert req.get_header("Authorization") == "Bearer test-or"
-        assert timeout == (38 if len(requests) == 1 else 24)
+        assert timeout == (18 if len(requests) == 1 else 12)
         if len(requests) == 1:
             raise urllib.error.HTTPError(
                 req.full_url, 400, "Invalid parameters", {},
@@ -746,10 +747,10 @@ def test_roteador_free_tenta_json_simples_na_primeira_chamada(monkeypatch):
     def mock(req,timeout):
         body=json.loads(req.data)
         seen.append(body)
-        assert timeout == 38
-        assert body["model"] == "openrouter/free"
+        assert timeout == 18
+        assert set(body["models"]) == set(fiscal_ai.FREE_FISCAL_MODELS)
         assert "response_format" not in body
-        assert "max_tokens" not in body
+        assert body["max_tokens"] <= 8500
         assert "require_parameters" not in body["provider"]
         assert body["provider"]["max_price"] == {"prompt":0,"completion":0}
         assert body["provider"]["data_collection"] == "deny"
@@ -765,10 +766,50 @@ def test_openrouter_timeout_encerra_sem_esperar_muitos_minutos(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY","test-or")
     monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED",raising=False)
     def slow(req,timeout):
-        assert timeout == 38
+        assert timeout == 18
         raise TimeoutError("provider unavailable")
     monkeypatch.setattr(fiscal_ai.urllib.request,"urlopen",slow)
     with pytest.raises(HTTPException) as error:
         fiscal_ai.explain(report())
     assert error.value.status_code == 504
-    assert "38 segundos" in error.value.detail
+    assert "tentativa de reserva" in error.value.detail
+
+
+def test_modelo_lento_troca_reserva_sem_reduzir_contexto(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-or")
+    monkeypatch.setenv("OPENROUTER_MODELS", "openrouter/free")
+    monkeypatch.setattr(fiscal_ai, "model_rotation_index", 0)
+    calls = []
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, size):
+            return json.dumps({"model":fiscal_ai.FREE_FISCAL_MODELS[1], "choices":[{"finish_reason":"stop", "message":{"content":json.dumps({"analises":[{"grupo":"G1", "explicacao":"Conferir diferença", "verificar":"1. Conferir documento", "evidencias":[]}]})}}]}).encode()
+    def send(req, timeout):
+        calls.append(json.loads(req.data))
+        assert timeout == 18
+        if len(calls) == 1:
+            raise TimeoutError("fila do provedor")
+        return Response()
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", send)
+    result = fiscal_ai.explain(report())
+    assert result["gratuito"] is True
+    assert len(calls) == 2
+    first_model = calls[0]["models"][0]
+    assert first_model not in calls[1]["models"]
+    assert calls[0]["messages"][1] == calls[1]["messages"][1]
+    for body in calls:
+        assert body["provider"]["sort"] == "latency"
+        assert body["provider"]["max_price"] == {"prompt":0, "completion":0}
+        assert body["reasoning"] == {"enabled":False}
+        assert body["max_tokens"] <= 8500
+    assert first_model not in fiscal_ai._openrouter_models()
+
+
+def test_cooldown_expira_e_modelo_volta_ao_pool(monkeypatch):
+    monkeypatch.delenv("OPENROUTER_MODELS", raising=False)
+    monkeypatch.setattr(fiscal_ai.time, "monotonic", lambda:100)
+    fiscal_ai.model_cooldowns[fiscal_ai.FREE_FISCAL_MODELS[0]] = 101
+    assert fiscal_ai.FREE_FISCAL_MODELS[0] not in fiscal_ai._openrouter_models()
+    monkeypatch.setattr(fiscal_ai.time, "monotonic", lambda:102)
+    assert fiscal_ai.FREE_FISCAL_MODELS[0] in fiscal_ai._openrouter_models()

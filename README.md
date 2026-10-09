@@ -83,3 +83,12 @@ O OpenRouter mantém o filtro `data_collection: deny`.
 Continuam existindo limites de requisições e processamento: uma análise
 cobre até **12 grupos e 1.500 lançamentos**, e as cotas gratuitas de cada
 provedor não são ilimitadas.
+
+
+### Alternância gratuita para a conferência fiscal
+
+Sem lista personalizada, ou com OPENROUTER_MODELS=openrouter/free, o Razync alterna os modelos google/gemma-4-26b-a4b-it:free, nvidia/nemotron-3.5-lightning:free e google/gemma-4-31b-it:free. O roteador openrouter/free fica como reserva. Lista revisada no catálogo público em 09/10/2026; é uma seleção para priorizar latência, não uma classificação de precisão contábil.
+
+Endpoints são ordenados por latência, com preço máximo de entrada/saída zero e data_collection=deny. Mantém limite de geração também no JSON textual e desativa raciocínio estendido nesse modo. Timeout de rede de 18 segundos por tentativa; uma tentativa de reserva em caso de timeout, ou 12 segundos para formato alternativo após erro 400 em modelos personalizados. Esses limites de socket não constituem prazo absoluto de ponta a ponta. Modelo cujo pedido expirou fica fora das novas seleções por 90 segundos, no processo atual. Não contorna cotas da conta.
+
+OPENROUTER_MODELS continua aceitando listas personalizadas apenas gratuitas. Todos os modelos recebem o mesmo contexto e passam pelas mesmas verificações de contas, grupos e evidências. O Gemini permanece reserva somente quando GEMINI_FREE_TIER_CONFIRMED=1. Modelos e disponibilidade gratuitos podem mudar; se todos falharem, a conferência calculada segue disponível.

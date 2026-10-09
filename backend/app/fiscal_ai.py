@@ -18,6 +18,15 @@ legacy_router = APIRouter(prefix="/api/v1/conferencia-fiscal/242/ia")
 lock = threading.Lock()
 last_request = 0.0
 model_rotation_index = 0
+# Catálogo público verificado em 09/10/2026: modelos leves, com roteador de reserva.
+FREE_FISCAL_MODELS = [
+    "google/gemma-4-26b-a4b-it:free",
+    "nvidia/nemotron-3.5-lightning:free",
+    "google/gemma-4-31b-it:free",
+    "openrouter/free",
+]
+model_cooldowns = {}
+
 
 
 def formatar_brl(valor):
@@ -165,7 +174,11 @@ def _openrouter_models():
             "OPENROUTER_MODELS aceita somente openrouter/free ou modelos terminados em :free. "
             "Modelos pagos estão bloqueados."
         )
-    return models
+    if models == ["openrouter/free"]:
+        models = list(FREE_FISCAL_MODELS)
+    with lock:
+        available = [m for m in models if model_cooldowns.get(m, 0) <= time.monotonic()]
+    return available or ["openrouter/free"]
 
 
 def _openrouter_completion(payload, models, key):
@@ -207,6 +220,7 @@ def _openrouter_completion(payload, models, key):
             "allow_fallbacks": True,
             "require_parameters": True,
             "data_collection": "deny",
+            "sort": "latency",
             # Proteção adicional: nem erro de configuração nem fallback pode
             # selecionar endpoint tarifado para entrada ou saída.
             "max_price": {"prompt": 0, "completion": 0},
@@ -230,9 +244,9 @@ def _openrouter_completion(payload, models, key):
     def compatible_payload(base):
         candidate = dict(base)
         candidate.pop("response_format", None)
-        candidate.pop("max_tokens", None)
         candidate["provider"] = dict(base["provider"])
         candidate["provider"].pop("require_parameters", None)
+        candidate["reasoning"] = {"enabled": False}
         candidate["messages"] = [dict(item) for item in base["messages"]]
         allowed = converted_schema["properties"]["analises"]["items"]["properties"]["grupo"]["enum"]
         candidate["messages"][0]["content"] += (
@@ -245,10 +259,10 @@ def _openrouter_completion(payload, models, key):
         )
         return candidate
 
-    free_router = models == ["openrouter/free"]
+    free_router = all(m in FREE_FISCAL_MODELS for m in models)
     if free_router:
         request_payload = compatible_payload(request_payload)
-    def send(body, seconds=38):
+    def send(body, seconds=18):
         request = urllib.request.Request(
             "https://openrouter.ai/api/v1/chat/completions",
             data=json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8"),
@@ -269,9 +283,23 @@ def _openrouter_completion(payload, models, key):
             if exc.code != 400 or free_router:
                 raise
             exc.close()
-            # Apenas os IDs gratuitos explícitos tentam alternativa de formato.
-            # O roteador gratuito já usa o formato compatível na primeira vez.
-            response_json = send(compatible_payload(request_payload), seconds=24)
+            response_json = send(compatible_payload(request_payload), seconds=12)
+        except (TimeoutError, urllib.error.URLError) as exc:
+            if not isinstance(exc, TimeoutError) and not isinstance(getattr(exc, "reason", None), TimeoutError):
+                raise
+            with lock:
+                model_cooldowns[models[0]] = time.monotonic() + 90
+            alternatives = models[1:]
+            if not alternatives:
+                raise
+            retry = compatible_payload(request_payload)
+            retry.pop("model", None)
+            retry.pop("models", None)
+            if len(alternatives) == 1:
+                retry["model"] = alternatives[0]
+            else:
+                retry["models"] = alternatives
+            response_json = send(retry)
     except urllib.error.HTTPError as exc:
         # Não repassa mensagens do provedor: podem conter dados privados ou credenciais.
         if exc.code in (401, 403):
@@ -289,7 +317,7 @@ def _openrouter_completion(payload, models, key):
         raise HTTPException(429 if exc.code in (402, 429) else 403 if exc.code in (401, 403) else 400 if exc.code == 400 else 502, detail) from None
     except (urllib.error.URLError, TimeoutError) as exc:
         if isinstance(exc, (TimeoutError,)) or isinstance(getattr(exc, "reason", None), TimeoutError):
-            raise HTTPException(504, "A IA gratuita demorou além do limite de 38 segundos. "
+            raise HTTPException(504, "A IA gratuita demorou além do limite de espera, mesmo após a tentativa de reserva. "
                 "Tente novamente ou reduza a quantidade de contas analisadas. "
                 "A conferência contábil permanece salva.") from None
         raise HTTPException(502, "Não foi possível conectar ao OpenRouter. A conferência contábil permanece salva.") from None
@@ -415,9 +443,13 @@ def explain(report):
                 raise HTTPException(429, "Aguarde 15 segundos antes de analisar novamente.")
             last_request = time.monotonic()
         if models:
-            start = model_rotation_index % len(models)
-            model_rotation_index += 1
-            models = models[start:] + models[:start]
+            # O roteador aleatório fica na reserva; alternamos os modelos selecionados.
+            primary = [m for m in models if m != "openrouter/free"]
+            reserve = [m for m in models if m == "openrouter/free"]
+            if primary:
+                start = model_rotation_index % len(primary)
+                model_rotation_index += 1
+                models = primary[start:] + primary[:start] + reserve
     schema = {"type":"OBJECT", "properties":{"analises":{"type":"ARRAY", "items":{
         "type":"OBJECT", "properties":{
             "grupo":{"type":"STRING", "enum":list(mapping)},
