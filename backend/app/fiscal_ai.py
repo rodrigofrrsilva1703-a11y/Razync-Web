@@ -151,16 +151,19 @@ def provider_error(exc):
 
 def _openrouter_models():
     """Modelos alternados a cada conferência; o OpenRouter faz fallback no mesmo pedido."""
-    configured = os.getenv(
-        "OPENROUTER_MODELS",
-        "openai/gpt-4.1-mini,google/gemini-2.5-flash,anthropic/claude-haiku-4.5",
-    )
+    configured = os.getenv("OPENROUTER_MODELS", "openrouter/free")
     models = list(dict.fromkeys(m.strip() for m in configured.split(",") if m.strip()))
     if not 1 <= len(models) <= 8 or any(
-        not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_.:-]*/[a-zA-Z0-9_.:-]+", model)
+        model != "openrouter/free" and not re.fullmatch(
+            r"[a-zA-Z0-9][a-zA-Z0-9_.-]*/[a-zA-Z0-9_.-]+:free", model
+        )
         for model in models
     ):
-        raise HTTPException(503, "Revise OPENROUTER_MODELS no Railway: use IDs de modelos separados por vírgula.")
+        raise HTTPException(
+            503,
+            "OPENROUTER_MODELS aceita somente openrouter/free ou modelos terminados em :free. "
+            "Modelos pagos estão bloqueados."
+        )
     return models
 
 
@@ -196,7 +199,14 @@ def _openrouter_completion(payload, models, key):
         "response_format": {"type": "json_schema", "json_schema": {
             "name": "razync_fiscal_review", "strict": True, "schema": converted_schema,
         }},
-        "provider": {"allow_fallbacks": True, "require_parameters": True, "data_collection": "deny"},
+        "provider": {
+            "allow_fallbacks": True,
+            "require_parameters": True,
+            "data_collection": "deny",
+            # Proteção adicional: nem erro de configuração nem fallback pode
+            # selecionar endpoint tarifado para entrada ou saída.
+            "max_price": {"prompt": 0, "completion": 0},
+        },
         "temperature": 0.2,
         "max_tokens": 16384,
     }
@@ -240,10 +250,17 @@ def _openrouter_completion(payload, models, key):
 
 def explain(report):
     openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
-    provider = "openrouter" if openrouter_key else "gemini"
-    key = openrouter_key or os.getenv("GEMINI_API_KEY", "").strip()
+    # Modo gratuito: o Gemini legado fica desligado por padrão para não
+    # permitir uso potencialmente tarifado fora do teto de preço do OpenRouter.
+    legacy_gemini = os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1"
+    provider = "openrouter" if openrouter_key or not legacy_gemini else "gemini"
+    key = openrouter_key if provider == "openrouter" else os.getenv("GEMINI_API_KEY", "").strip()
     if not key:
-        raise HTTPException(503, "IA não configurada. Defina OPENROUTER_API_KEY no Railway.")
+        raise HTTPException(
+            503,
+            "IA gratuita ainda não configurada. Defina OPENROUTER_API_KEY no Railway. "
+            "O Gemini direto está desativado para evitar cobranças."
+        )
     context, mapping, references, coverage = detailed_context(report)
     if not mapping:
         return {"analises": [], "aviso": "Nenhuma divergência ou alerta para explicar."}
@@ -375,7 +392,8 @@ def explain(report):
         if seen != set(mapping):
             raise ValueError("Empty answer")
         return {"analises":output, "aviso":"Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
-                "limite":coverage, "provedor":provider, "modelo_usado":used_model}
+                "limite":coverage, "provedor":provider, "modelo_usado":used_model,
+                "gratuito":provider == "openrouter"}
     except HTTPException:
         raise
     except urllib.error.HTTPError as exc:
@@ -388,13 +406,12 @@ def explain(report):
 @router.get("/status")
 @legacy_router.get("/status")
 def status():
-    # OpenRouter tem prioridade quando configurado; Gemini permanece como reserva
-    # até a chave nova ser definida, evitando indisponibilidade na migração.
+    # Em produção, somente OpenRouter gratuito é aceito.
     if os.getenv("OPENROUTER_API_KEY", "").strip():
-        return {"configurado":True, "provedor":"openrouter"}
-    if os.getenv("GEMINI_API_KEY", "").strip():
-        return {"configurado":True, "provedor":"gemini"}
-    return {"configurado":False, "provedor":None}
+        return {"configurado":True, "provedor":"openrouter", "gratuito":True}
+    if os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1" and os.getenv("GEMINI_API_KEY", "").strip():
+        return {"configurado":True, "provedor":"gemini", "gratuito":False}
+    return {"configurado":False, "provedor":None, "gratuito":True}
 
 
 @router.post("")
@@ -403,8 +420,11 @@ async def analyze(
     acumuladores: UploadFile = File(...), razao: UploadFile = File(...),
     filial: str = Form(""), empresa_codigo: str = Form(""),
 ):
-    if not (os.getenv("OPENROUTER_API_KEY", "").strip() or os.getenv("GEMINI_API_KEY", "").strip()):
-        raise HTTPException(503, "IA não configurada. Defina OPENROUTER_API_KEY no Railway.")
+    if not (os.getenv("OPENROUTER_API_KEY", "").strip() or (
+        os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1"
+        and os.getenv("GEMINI_API_KEY", "").strip()
+    )):
+        raise HTTPException(503, "IA gratuita não configurada. Defina OPENROUTER_API_KEY no Railway.")
     if empresa_codigo and not empresa_codigo.isdigit():
         raise HTTPException(422, "Código da empresa inválido.")
     if filial and not filial.isdigit():
