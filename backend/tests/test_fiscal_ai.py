@@ -7,6 +7,12 @@ from app import fiscal_ai
 from app.main import app
 
 
+@pytest.fixture(autouse=True)
+def _openrouter_disabled_by_default(monkeypatch):
+    """Os testes legados usam Gemini; OpenRouter é ativado explicitamente nos novos casos."""
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+
+
 def report():
     return {"empresa":"CONFIDENTIAL", "lancamentos":[{"historico":"JOAO CPF 12345678900", "valor":9123.45}],
         "contas":[{"conta":"22643", "tipo":"ENTRADAS", "descricao":"EMPRESA PRIVADA",
@@ -59,7 +65,7 @@ def test_invalid_group_is_rejected(monkeypatch):
 def test_missing_key_does_not_require_admin(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     client = TestClient(app)
-    assert client.get("/api/v1/conferencia-fiscal/242/ia/status").json() == {"configurado":False}
+    assert client.get("/api/v1/conferencia-fiscal/242/ia/status").json() == {"configurado":False, "provedor":None}
     files = {"acumuladores":("fiscal.xlsx",b"fake"),"razao":("razao.xlsx",b"fake")}
     assert client.post("/api/v1/conferencia-fiscal/242/ia",files=files).status_code == 503
 
@@ -350,3 +356,115 @@ def test_exportar_analise_gemini_rejeita_conteudo_vazio_ou_excessivo():
     ]:
         response = client.post("/api/v1/conferencia-fiscal/ia/exportar", json=payload)
         assert response.status_code == 422, response.text
+
+
+def test_openrouter_usa_prompt_integral_fallback_e_contas_originais(monkeypatch):
+    """A mesma conferência completa segue para o próximo modelo sem perder evidências."""
+    monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-test-secret")
+    monkeypatch.setenv("OPENROUTER_MODELS",
+                       "openai/gpt-4.1-mini,google/gemini-2.5-flash,anthropic/claude-haiku-4.5")
+    monkeypatch.setenv("GEMINI_API_KEY", "legacy-gemini-test")
+    monkeypatch.setattr(fiscal_ai, "model_rotation_index", 0)
+    context = report()
+    context["lancamentos"] = [{
+        "conta":"22643", "historico":"Compra de mercadoria CF NF 100",
+        "data":"03/08/2026", "debito":9123.45, "credito":0,
+    }]
+    calls = []
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, n):
+            return json.dumps({"model": "google/gemini-2.5-flash", "choices":[{
+                "finish_reason": "stop",
+                "message": {"content":json.dumps({"analises":[{
+                    "grupo":"G1","explicacao":"Revisar L1 e acumulador.",
+                    "verificar":"1. Conferir o lançamento L1.","evidencias":["L1"],
+                }]})}
+            }]}).encode()
+    def urlopen(req, timeout):
+        assert timeout == 90
+        assert req.full_url == "https://openrouter.ai/api/v1/chat/completions"
+        assert req.get_header("Authorization") == "Bearer openrouter-test-secret"
+        body = json.loads(req.data)
+        calls.append(body)
+        assert body["models"] == [
+            "openai/gpt-4.1-mini", "google/gemini-2.5-flash", "anthropic/claude-haiku-4.5"
+        ] if len(calls) == 1 else [
+            "google/gemini-2.5-flash", "anthropic/claude-haiku-4.5", "openai/gpt-4.1-mini"
+        ]
+        assert body["provider"]["require_parameters"] is True
+        assert body["provider"]["data_collection"] == "deny"
+        assert body["response_format"]["type"] == "json_schema"
+        assert body["response_format"]["json_schema"]["strict"] is True
+        assert "valores_brl" in body["messages"][0]["content"]
+        assert "9123.45" in body["messages"][1]["content"]
+        assert "22643" in body["messages"][1]["content"]
+        assert "Compra de mercadoria" in body["messages"][1]["content"]
+        assert "openrouter-test-secret" not in str(body)
+        return Response()
+    monkeypatch.setattr(fiscal_ai.urllib.request,"urlopen",urlopen)
+    results = [fiscal_ai.explain(context),fiscal_ai.explain(context)]
+    assert len(calls) == 2
+    for result in results:
+        assert result["provedor"] == "openrouter"
+        assert result["modelo_usado"] == "google/gemini-2.5-flash"
+        assert result["analises"][0]["conta"] == "22643"
+        assert result["analises"][0]["valores"]["fiscal"] == 9123.45
+        assert result["analises"][0]["evidencias"][0]["historico"] == "Compra de mercadoria CF NF 100"
+        assert "L1" in result["analises"][0]["explicacao"]
+
+
+def test_openrouter_status_tem_prioridade_e_gemini_continua_reserva(monkeypatch):
+    client = TestClient(app)
+    monkeypatch.setenv("GEMINI_API_KEY","gemini-legacy")
+    assert client.get("/api/v1/conferencia-fiscal/ia/status").json() == {
+        "configurado": True, "provedor": "gemini"
+    }
+    monkeypatch.setenv("OPENROUTER_API_KEY","or-key")
+    assert client.get("/api/v1/conferencia-fiscal/ia/status").json() == {
+        "configurado": True, "provedor": "openrouter"
+    }
+
+
+@pytest.mark.parametrize("code,needle", [
+    (401,"recusou a chave"),
+    (402,"créditos do OpenRouter"),
+    (429,"limites de requisições"),
+    (400,"formato de resposta"),
+])
+def test_openrouter_falhas_seguras_sem_expor_dados(monkeypatch,code,needle):
+    import io
+    monkeypatch.setenv("OPENROUTER_API_KEY","openrouter-test-secret")
+    monkeypatch.setenv("OPENROUTER_MODELS","openai/gpt-4.1-mini,google/gemini-2.5-flash")
+    def fail(req,timeout):
+        raise urllib.error.HTTPError(
+            req.full_url,code,"Error",{},
+            io.BytesIO(b'{"error":{"message":"openrouter-test-secret e dados sigilosos"}}')
+        )
+    monkeypatch.setattr(fiscal_ai.urllib.request,"urlopen",fail)
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(report())
+    assert needle in error.value.detail
+    assert "openrouter-test-secret" not in error.value.detail
+    assert "sigilosos" not in error.value.detail
+
+
+def test_openrouter_nao_aceita_evidencia_inventada(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY","or-key")
+    monkeypatch.setattr(fiscal_ai,"_openrouter_completion",lambda *_: (
+        {"analises":[{"grupo":"G1","explicacao":"Teste","verificar":"Conferir","evidencias":["L999"]}]},
+        "openai/gpt-4.1-mini",
+    ))
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(report())
+    assert error.value.status_code == 502
+
+
+def test_openrouter_rejeita_lista_de_modelos_invalida(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY","or-key")
+    monkeypatch.setenv("OPENROUTER_MODELS","../../modelo-invalido")
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(report())
+    assert error.value.status_code == 503
+    assert "OPENROUTER_MODELS" in error.value.detail
