@@ -211,6 +211,30 @@ def _numero(valor) -> float:
         return 0.0
 
 
+def _codigo_dominio(valor) -> str:
+    """Preserva códigos inteiros exportados como 22643.0 nos arquivos XLS."""
+    texto = _texto(valor).strip()
+    if not texto:
+        return ""
+    if re.fullmatch(r"\d+[.,]0+", texto):
+        texto = re.split(r"[.,]", texto, maxsplit=1)[0]
+    return texto if re.fullmatch(r"\d+", texto) else ""
+
+
+def _data_dominio(valor):
+    """Datas do Domínio podem ser datas Excel numéricas (ex.: 46237)."""
+    if isinstance(valor, (int, float)) and not isinstance(valor, bool):
+        if pd.notna(valor) and 20000 <= float(valor) <= 100000:
+            return pd.to_datetime(float(valor), unit="D", origin="1899-12-30", errors="coerce")
+    if isinstance(valor, str):
+        texto = valor.strip().replace(",", ".")
+        if re.fullmatch(r"\d+(?:\.0+)?", texto):
+            numero = float(texto)
+            if 20000 <= numero <= 100000:
+                return pd.to_datetime(numero, unit="D", origin="1899-12-30", errors="coerce")
+    return pd.to_datetime(valor, dayfirst=True, errors="coerce")
+
+
 def _rotulo(valor) -> str:
     texto = unicodedata.normalize("NFKD", _texto(valor))
     texto = "".join(letra for letra in texto if not unicodedata.combining(letra))
@@ -294,7 +318,7 @@ def ler_acumuladores(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
                         col_conta = indice
                 continue
 
-            codigo = _texto(_primeiro_preenchido(valores, col_codigo))
+            codigo = _codigo_dominio(_primeiro_preenchido(valores, col_codigo))
             if not codigo.isdigit():
                 continue
             valor_indice = col_valor
@@ -304,14 +328,14 @@ def ler_acumuladores(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
             if abs(valor) < 0.005:
                 continue
 
-            conta = _texto(_primeiro_preenchido(valores, col_conta))
+            conta = _codigo_dominio(_primeiro_preenchido(valores, col_conta))
             if not re.fullmatch(r"\d+", conta):
                 # Em algumas exportações o título "Conta" desaparece, embora o
                 # código permaneça na última coluna preenchida do acumulador.
                 candidatos = [
-                    _texto(valor_bruto) for indice, valor_bruto in enumerate(valores)
-                    if indice >= valor_indice + 20 and re.fullmatch(r"\d+", _texto(valor_bruto))
-                    and _texto(valor_bruto) != "0"
+                    _codigo_dominio(valor_bruto) for indice, valor_bruto in enumerate(valores)
+                    if indice >= valor_indice + 20
+                    and _codigo_dominio(valor_bruto) not in {"", "0"}
                 ]
                 conta = candidatos[-1] if candidatos else ""
             if not re.fullmatch(r"\d+", conta):
@@ -356,7 +380,7 @@ def ler_razao(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
                         "fim": pd.to_datetime(achado[1], dayfirst=True),
                     }
             if primeiro == "CONTA":
-                conta = re.sub(r"\D", "", _texto(_primeiro_preenchido(valores, 1)))
+                conta = _codigo_dominio(_primeiro_preenchido(valores, 1))
                 descricao_conta = _texto(_primeiro_preenchido(valores, 5, 5))
                 continue
 
@@ -383,9 +407,8 @@ def ler_razao(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
                         colunas["FILIAL"] = indice
                 continue
 
-            data = pd.to_datetime(
-                valores[colunas["DATA"]] if len(valores) > colunas["DATA"] else None,
-                dayfirst=True, errors="coerce",
+            data = _data_dominio(
+                valores[colunas["DATA"]] if len(valores) > colunas["DATA"] else None
             )
             if not conta or pd.isna(data):
                 continue
@@ -397,9 +420,8 @@ def ler_razao(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
             if colunas["FILIAL"] is not None and len(valores) > colunas["FILIAL"]:
                 # Nos XLS do Domínio o cabeçalho pode ocupar várias células e o
                 # valor da filial ficar uma ou duas posições após o início dele.
-                filial = re.sub(
-                    r"\D", "",
-                    _texto(_primeiro_preenchido(valores, colunas["FILIAL"], 3)),
+                filial = _codigo_dominio(
+                    _primeiro_preenchido(valores, colunas["FILIAL"], 3)
                 )
                 filial = filial.lstrip("0") or ("0" if filial else "")
             registros.append({
