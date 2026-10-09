@@ -8,11 +8,12 @@ import time
 import urllib.error
 import urllib.request
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from app.fiscal_242 import conferencia_fiscal_preview
 
-router = APIRouter(prefix="/api/v1/conferencia-fiscal/242/ia")
+router = APIRouter(prefix="/api/v1/conferencia-fiscal/ia")
+legacy_router = APIRouter(prefix="/api/v1/conferencia-fiscal/242/ia")
 lock = threading.Lock()
 last_request = 0.0
 
@@ -258,18 +259,28 @@ def explain(report):
 
 
 @router.get("/status")
+@legacy_router.get("/status")
 def status():
     return {"configurado":bool(os.getenv("GEMINI_API_KEY", "").strip())}
 
 
 @router.post("")
-async def analyze(acumuladores: UploadFile = File(...), razao: UploadFile = File(...)):
+@legacy_router.post("")
+async def analyze(
+    acumuladores: UploadFile = File(...), razao: UploadFile = File(...),
+    filial: str = Form(""), empresa_codigo: str = Form(""),
+):
     if not os.getenv("GEMINI_API_KEY", "").strip():
         raise HTTPException(503, "Gemini ainda não configurado. Defina GEMINI_API_KEY no Railway.")
+    if empresa_codigo and not empresa_codigo.isdigit():
+        raise HTTPException(422, "Código da empresa inválido.")
+    if filial and not filial.isdigit():
+        raise HTTPException(422, "Código da filial inválido.")
     try:
         report = await run_in_threadpool(conferencia_fiscal_preview,
             await acumuladores.read(), acumuladores.filename or "fiscal.xlsx",
-            await razao.read(), razao.filename or "razao.xlsx", 242)
+            await razao.read(), razao.filename or "razao.xlsx",
+            int(empresa_codigo) if empresa_codigo else None, filial or None)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     return await run_in_threadpool(explain, report)
