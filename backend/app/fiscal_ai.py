@@ -330,33 +330,32 @@ def _validar_resposta_ia(result, report, mapping, references):
 
 def explain(report):
     openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
-    # Modo gratuito: o Gemini legado fica desligado por padrão para não
-    # permitir uso potencialmente tarifado fora do teto de preço do OpenRouter.
-    legacy_gemini = os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1"
-    provider = "openrouter" if openrouter_key or not legacy_gemini else "gemini"
-    key = openrouter_key if provider == "openrouter" else os.getenv("GEMINI_API_KEY", "").strip()
-    if not key:
-        raise HTTPException(
-            503,
-            "IA gratuita ainda não configurada. Defina OPENROUTER_API_KEY no Railway. "
-            "O Gemini direto está desativado para evitar cobranças."
-        )
+    gemini_key = _gemini_free_key()
+    legacy = os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1"
+    legacy_direct = not openrouter_key and not gemini_key and legacy
+    if legacy_direct:
+        gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not (openrouter_key or gemini_key):
+        raise HTTPException(503, "IA gratuita indisponível. Configure a chave do OpenRouter "
+            "ou confirme o nível gratuito do projeto Gemini no Railway.")
     context, mapping, references, coverage = detailed_context(report)
     if not mapping:
         return {"analises": [], "aviso": "Nenhuma divergência ou alerta para explicar."}
-    model = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite").strip()
-    if provider == "gemini" and not re.fullmatch(r"gemini-[a-zA-Z0-9.-]+", model):
-        raise HTTPException(503, "Revise GEMINI_MODEL no Railway.")
-    models = _openrouter_models() if provider == "openrouter" else []
+    gemini_model = (os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
+        if legacy_direct else os.getenv("GEMINI_FREE_MODEL", "gemini-3.1-flash-lite"))
+    if legacy_direct:
+        if not re.fullmatch(r"gemini-[a-zA-Z0-9.-]+", gemini_model):
+            raise HTTPException(503, "Revise GEMINI_MODEL no Railway.")
+    elif gemini_key and gemini_model not in {"gemini-3.1-flash-lite", "gemini-2.5-flash-lite"}:
+        raise HTTPException(503, "GEMINI_FREE_MODEL deve ser um Flash-Lite gratuito permitido.")
+    models = _openrouter_models() if openrouter_key else []
     global last_request, model_rotation_index
     with lock:
-        if provider == "gemini":
+        if legacy_direct:
             if time.monotonic() - last_request < 15:
                 raise HTTPException(429, "Aguarde 15 segundos antes de analisar novamente.")
             last_request = time.monotonic()
-        else:
-            # Espalha solicitações entre modelos antes dos limites de cada um;
-            # não é possível conhecer/evitar antecipadamente o teto da conta.
+        if models:
             start = model_rotation_index % len(models)
             model_rotation_index += 1
             models = models[start:] + models[:start]
