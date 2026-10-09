@@ -1010,3 +1010,118 @@ def test_openrouter_aceita_id_grupo_com_espacos_e_minusculas(monkeypatch):
         "generationConfig":{"responseSchema":schema}}
     result,_=fiscal_ai._openrouter_completion(payload,["openrouter/free"],"test-key")
     assert fiscal_ai._validar_resposta_ia(result,source,mapping,refs)[0]["conta"]=="22643"
+
+
+def test_openrouter_usa_lotes_em_todos_os_modos_gratuitos(monkeypatch):
+    """Não retorna JSON gigante quando a opção ROUTER_FIRST não está ligada."""
+    monkeypatch.delenv("OPENROUTER_ROUTER_FIRST", raising=False)
+    expected = ["G1", "G2", "G3"]
+    payload = {
+        "systemInstruction": {"parts": [{"text": "Revise os grupos."}]},
+        "contents": [{"role": "user", "parts": [{"text": json.dumps({
+            "grupos": [{"grupo": g, "lancamentos": []} for g in expected],
+            "periodo_fiscal": {"ano": 2026},
+        })}]}],
+        "generationConfig": {"responseSchema": {"properties": {"analises": {
+            "items": {"properties": {"grupo": {"enum": expected}}},
+        }}}},
+    }
+    batches = []
+    class Response:
+        def __init__(self, data): self.data = data
+        def __enter__(self): return self
+        def __exit__(self, *_): pass
+        def read(self, *_): return json.dumps(self.data).encode()
+
+    def fake(request, timeout):
+        body = json.loads(request.data)
+        context = json.loads(body["messages"][1]["content"])
+        groups = [x["grupo"] for x in context["grupos"]]
+        batches.append(groups)
+        assert context["periodo_fiscal"]["ano"] == 2026
+        answer = {"analises": [
+            {"grupo": group, "explicacao": "Sem referências inventadas.",
+             "verificar": "1. Conferir dados.", "evidencias": []}
+            for group in groups
+        ]}
+        return Response({"model": body["model"], "choices": [{
+            "finish_reason": "stop", "message": {"content": json.dumps(answer)}
+        }]})
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", fake)
+    result, _ = fiscal_ai._openrouter_completion(
+        payload, ["openrouter/free"], "test-key")
+    assert batches == [["G1", "G2"], ["G3"]]
+    assert [x["grupo"] for x in result["analises"]] == expected
+
+
+def test_openrouter_corrige_referencia_inventada_uma_vez(monkeypatch):
+    """A segunda chamada não deve perder o contexto, nem aceitar L inventado."""
+    monkeypatch.setenv("OPENROUTER_ROUTER_FIRST", "1")
+    source = report()
+    source["lancamentos"] = [{
+        "conta": "22643", "data": "01/08/2026", "historico": "Movimento",
+        "debito": 10, "credito": 0,
+    }]
+    context, mapping, references, _ = fiscal_ai.detailed_context(source)
+    payload = {
+        "systemInstruction": {"parts": [{"text": "Conferir sem inventar."}]},
+        "contents": [{"role": "user", "parts": [{"text": json.dumps(context)}]}],
+        "generationConfig": {"responseSchema": {"properties": {"analises": {
+            "items": {"properties": {"grupo": {"enum": list(mapping)}}},
+        }}}},
+    }
+    seen = []
+    class Response:
+        def __init__(self, response): self.response = response
+        def __enter__(self): return self
+        def __exit__(self, *_): pass
+        def read(self, *_): return json.dumps(self.response).encode()
+    def fake(request, timeout):
+        body = json.loads(request.data)
+        seen.append(body)
+        evidence = ["L99999"] if len(seen) == 1 else ["L1"]
+        answer = {"analises": [{
+            "grupo": "G1", "explicacao": "Rever " + evidence[0],
+            "verificar": "1. Validar com o Razão.", "evidencias": evidence
+        }]}
+        return Response({"model": "openrouter/free", "choices": [{
+            "finish_reason": "stop", "message": {"content": json.dumps(answer)},
+        }]})
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", fake)
+    answer, _ = fiscal_ai._openrouter_completion(payload, ["openrouter/free"], "key")
+    assert len(seen) == 2
+    assert "CORREÇÃO NECESSÁRIA" in seen[1]["messages"][0]["content"]
+    assert seen[0]["messages"][1] == seen[1]["messages"][1]
+    checked = fiscal_ai._validar_resposta_ia(answer, source, mapping, references)
+    assert checked[0]["evidencias"][0]["referencia"] == "L1"
+
+
+def test_openrouter_nao_aceita_evidencia_inventada_apos_correcao(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_ROUTER_FIRST", "1")
+    source = report()
+    context, mapping, _, _ = fiscal_ai.detailed_context(source)
+    payload = {
+        "systemInstruction": {"parts": [{"text": "Revise sem inventar."}]},
+        "contents": [{"role": "user", "parts": [{"text": json.dumps(context)}]}],
+        "generationConfig": {"responseSchema": {"properties": {"analises": {
+            "items": {"properties": {"grupo": {"enum": list(mapping)}}},
+        }}}},
+    }
+    requests = []
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_): pass
+        def read(self, *_):
+            return json.dumps({"model": "openrouter/free", "choices": [{
+                "finish_reason": "stop", "message": {"content": json.dumps({
+                    "analises": [{"grupo": "G1", "explicacao": "Conferir L99999.",
+                       "verificar": "1. Conferir.", "evidencias": []}]
+                })}
+            }]}).encode()
+    def fake(req, timeout):
+        requests.append(req)
+        return Response()
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", fake)
+    with pytest.raises(ValueError, match="Invalid evidence reference"):
+        fiscal_ai._openrouter_completion(payload, ["openrouter/free"], "test-key")
+    assert len(requests) == 2
