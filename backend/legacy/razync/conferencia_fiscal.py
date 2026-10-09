@@ -300,9 +300,48 @@ def _excel(conteudo: bytes, nome: str) -> pd.ExcelFile:
             shutil.rmtree(pasta, ignore_errors=True)
 
 
+def _empresa_no_cabecalho(valores: list) -> str:
+    """Extrai a razão social do campo Empresa: nos relatórios do Domínio."""
+    for indice, valor in enumerate(valores[:6]):
+        original = _texto(valor).strip()
+        if not re.match(r"^empresa\b\s*:?", original, flags=re.IGNORECASE):
+            continue
+        resto = re.sub(r"^empresa\b\s*:?", "", original, flags=re.IGNORECASE).strip()
+        candidatos = [resto] + [_texto(v).strip() for v in valores[indice + 1:indice + 10]]
+        for texto in candidatos:
+            texto = re.sub(r"^\d{1,8}\s*[-–:]\s*", "", texto).strip()
+            texto = re.split(r"\s{2,}(?=Folha\b|P[aá]gina\b)", texto, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+            if len(texto) < 4 or not re.search(r"[A-Za-zÀ-ÿ]{2,}", texto):
+                continue
+            if _rotulo(texto) in {"CNPJ", "C N P J", "FOLHA", "RAZAO", "PERIODO", "CONSOLIDADO"}:
+                continue
+            return texto
+    return ""
+
+
+def _chave_empresa(nome: str) -> str:
+    """Tolera pontuação e sufixos societários ao comparar a mesma razão social."""
+    partes = _rotulo(nome).split()
+    while partes and partes[-1] in {"LTDA", "LIMITADA", "EIRELI", "SLU", "ME", "EPP"}:
+        partes.pop()
+    if len(partes) >= 2 and partes[-2:] == ["S", "A"]:
+        partes = partes[:-2]
+    return " ".join(partes)
+
+
+def _conferir_empresa_header(periodo: dict, valores: list) -> None:
+    achada = _empresa_no_cabecalho(valores)
+    if not achada:
+        return
+    anterior = periodo.get("empresa_nome", "")
+    if anterior and _chave_empresa(anterior) != _chave_empresa(achada):
+        raise ValueError("O relatório contém cabeçalhos de empresas diferentes. Envie apenas os dados de uma empresa por conferência.")
+    periodo["empresa_nome"] = anterior or achada
+
+
 def ler_acumuladores(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
     xls = _excel(conteudo, nome)
-    periodo = {"inicio": None, "fim": None}
+    periodo = {"inicio": None, "fim": None, "empresa_nome": ""}
     registros = []
     sem_conta = []
     for aba in xls.sheet_names:
@@ -314,11 +353,12 @@ def ler_acumuladores(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
             valores = linha.tolist()
             rotulos = [_rotulo(valor) for valor in valores]
             primeiro = rotulos[0] if rotulos else ""
+            _conferir_empresa_header(periodo, valores)
             if primeiro == "PERIODO":
                 datas = [pd.to_datetime(v, errors="coerce") for v in valores]
                 datas = [d for d in datas if pd.notna(d)]
                 if datas:
-                    periodo = {"inicio": min(datas), "fim": max(datas)}
+                    periodo.update({"inicio": min(datas), "fim": max(datas)})
             if primeiro in {"ENTRADAS", "SAIDAS", "SERVICOS"}:
                 tipo = {"SAIDAS": "SAÍDAS", "SERVICOS": "SERVIÇOS"}.get(primeiro, primeiro)
                 continue
@@ -386,7 +426,7 @@ def ler_acumuladores(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
 def ler_razao(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
     xls = _excel(conteudo, nome)
     registros = []
-    periodo = {"inicio": None, "fim": None}
+    periodo = {"inicio": None, "fim": None, "empresa_nome": ""}
     for aba in xls.sheet_names:
         conta = ""
         descricao_conta = ""
@@ -399,13 +439,14 @@ def ler_razao(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
             valores = linha.tolist()
             rotulos = [_rotulo(valor) for valor in valores]
             primeiro = rotulos[0] if rotulos else ""
+            _conferir_empresa_header(periodo, valores)
             if primeiro == "PERIODO":
                 achado = re.findall(r"\d{2}/\d{2}/\d{4}", " ".join(_texto(v) for v in valores))
                 if len(achado) >= 2:
-                    periodo = {
+                    periodo.update({
                         "inicio": pd.to_datetime(achado[0], dayfirst=True),
                         "fim": pd.to_datetime(achado[1], dayfirst=True),
-                    }
+                    })
             if primeiro == "CONTA":
                 conta = _codigo_dominio(_primeiro_preenchido(valores, 1))
                 descricao_conta = _texto(_primeiro_preenchido(valores, 5, 5))
@@ -554,6 +595,14 @@ def processar_conferencia(
 ):
     acumuladores, periodo_fiscal = ler_acumuladores(acumuladores_bytes, acumuladores_nome)
     razao, periodo_razao = ler_razao(razao_bytes, razao_nome)
+    empresa_fiscal = periodo_fiscal.get("empresa_nome", "")
+    empresa_razao = periodo_razao.get("empresa_nome", "")
+    if empresa_fiscal and empresa_razao and _chave_empresa(empresa_fiscal) != _chave_empresa(empresa_razao):
+        raise ValueError(
+            "Os documentos pertencem a empresas diferentes: Resumo por Acumulador: "
+            f"{empresa_fiscal}; Razão: {empresa_razao}. Envie os dois relatórios da mesma empresa."
+        )
+    empresa_nome = empresa_fiscal or empresa_razao
     filiais_encontradas = sorted(
         filial for filial in razao.get("FILIAL", pd.Series(dtype=str)).astype(str).unique()
         if filial
@@ -587,6 +636,8 @@ def processar_conferencia(
         "sem_conta": sem_conta,
         "resumo": resumo, "detalhes": detalhes, "acumuladores": acumuladores,
         "periodo_fiscal": periodo_fiscal, "periodo_razao": periodo_razao,
+        "empresa_nome": empresa_nome,
+        "empresa_fiscal": empresa_fiscal, "empresa_razao": empresa_razao,
         "filial_aplicada": filial_aplicada,
         "filiais_encontradas": filiais_encontradas,
     }
