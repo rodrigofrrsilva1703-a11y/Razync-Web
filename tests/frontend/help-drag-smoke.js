@@ -95,6 +95,26 @@
        !document.querySelector("#fiscalFilialCodigo") || !document.querySelector("#fiscalEmpresaCodigo")) {
       throw Error("Campos e resultados da conferência universal incompletos.");
     }
+    if(document.querySelector('.main-nav-btn[data-view="converter"]') ||
+       document.querySelector("#converterView")) {
+      throw Error("O Conversor de Extratos ainda aparece no site.");
+    }
+    const fiscalSetup = document.querySelector("#fiscalView .fiscal-setup");
+    const fiscalForm = document.querySelector("#fiscal242Form");
+    const fiscalFile = document.querySelector("#fiscal242Razao");
+    const context = document.querySelector("#fiscalView .fiscal-context-grid");
+    if(!fiscalSetup || !fiscalFile || !context || !document.querySelector("#fiscal242AcumuladoresName")) {
+      throw Error("A conferência não possui todos os componentes do novo layout.");
+    }
+    const setupWidth = fiscalSetup.getBoundingClientRect().width;
+    const formWidth = fiscalForm.getBoundingClientRect().width;
+    if(setupWidth < 400 || formWidth < setupWidth * .85) {
+      throw Error("O formulário continua estreito e deixa uma coluna vazia: " +
+        JSON.stringify({setupWidth,formWidth}));
+    }
+    if(getComputedStyle(context).display !== "grid" || getComputedStyle(fiscalForm).display === "none") {
+      throw Error("O layout central da conferência fiscal não foi aplicado.");
+    }
     openCompany(filial);
     await pause(80);
     fiscalNav.click();
