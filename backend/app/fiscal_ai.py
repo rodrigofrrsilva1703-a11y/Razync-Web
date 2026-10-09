@@ -177,8 +177,8 @@ def _openrouter_models():
             "OPENROUTER_MODELS aceita somente openrouter/free ou modelos terminados em :free. "
             "Modelos pagos estão bloqueados."
         )
-    if models == ["openrouter/free"]:
-        models = list(FREE_FISCAL_MODELS)
+    # Deixe openrouter/free selecionar endpoints gratuitos atuais. A lista
+    # fixa de modelos torna-se apenas reserva, quando explicitamente configurada.
     with lock:
         available = [m for m in models if model_cooldowns.get(m, 0) <= time.monotonic()]
     return available or ["openrouter/free"]
@@ -223,7 +223,7 @@ def _openrouter_completion(payload, models, key):
             "allow_fallbacks": True,
             "require_parameters": True,
             "data_collection": "deny",
-            "sort": "latency",
+            # A seleção automática do roteador gratuito gerencia a latência.
             # Proteção adicional: nem erro de configuração nem fallback pode
             # selecionar endpoint tarifado para entrada ou saída.
             "max_price": {"prompt": 0, "completion": 0},
@@ -244,9 +244,10 @@ def _openrouter_completion(payload, models, key):
     def compatible_payload(base):
         candidate = dict(base)
         candidate.pop("response_format", None)
+        candidate.pop("max_tokens", None)
         candidate["provider"] = dict(base["provider"])
         candidate["provider"].pop("require_parameters", None)
-        candidate["reasoning"] = {"enabled": False}
+        # Não solicite reasoning: endpoints gratuitos podem rejeitar esse parâmetro.
         candidate["messages"] = [dict(item) for item in base["messages"]]
         allowed = converted_schema["properties"]["analises"]["items"]["properties"]["grupo"]["enum"]
         candidate["messages"][0]["content"] += (
@@ -259,7 +260,7 @@ def _openrouter_completion(payload, models, key):
         )
         return candidate
 
-    free_router = all(m in FREE_FISCAL_MODELS for m in models)
+    free_router = all(m == "openrouter/free" or m.endswith(":free") for m in models)
     if free_router:
         request_payload = compatible_payload(request_payload)
     def send(body, seconds=18):
