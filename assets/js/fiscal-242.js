@@ -81,9 +81,9 @@
         const officialRow = (data?.contas || []).find(row => keyOf(row) === keyOf(item)) || item;
         const accumulatorInfo = accumulatorBreakdown(officialRow);
         const analysis = node("div", "fiscal-ai-analysis");
-        analysis.append(node("h5", "", "Análise dos lançamentos"), node("p", "", item.explicacao));
+        analysis.append(node("h5", "", "O que os relatórios mostram e o que pode explicar a diferença"), node("p", "", item.explicacao));
         const review = node("div", "fiscal-ai-review");
-        review.append(node("h5", "", "O que conferir"), node("p", "", item.verificar));
+        review.append(node("h5", "", "O que conferir, passo a passo"), node("p", "", item.verificar));
         card.appendChild(heading);
         card.appendChild(accumulatorInfo);
         if (item.valores) {
