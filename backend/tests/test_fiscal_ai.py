@@ -969,3 +969,24 @@ def test_openrouter_em_lotes_nao_aceita_grupo_omitido(monkeypatch):
     monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", lambda *a, **k: Response())
     with pytest.raises(ValueError):
         fiscal_ai._openrouter_completion(payload, ["openrouter/free"], "secret")
+
+
+def test_openrouter_formatos_normalizados_para_tela_sem_perder_validacao():
+    source = report()
+    groups, mapping, references, _ = fiscal_ai.detailed_context(source)
+    assert "G1" in mapping
+    raw = {"analises": [{"grupo": " g1 ", "explicacao": "Conferência fiscal e contábil.",
+                        "verificar": "1. Conferir acumulador.", "evidencias": "nenhum"}]}
+    normalized = fiscal_ai._validar_resposta_ia(raw, source, mapping, references)
+    assert normalized[0]["conta"] == "22643"
+    assert normalized[0]["evidencias"] == []
+    assert normalized[0]["explicacao"] == "Conferência fiscal e contábil."
+
+
+def test_openrouter_nao_normaliza_evidencia_inventada():
+    source = report()
+    _, mapping, references, _ = fiscal_ai.detailed_context(source)
+    raw = {"analises": [{"grupo": "g1", "explicacao": "Revisão.",
+                        "verificar": "1. Conferir.", "evidencias": "L99999"}]}
+    with pytest.raises(ValueError, match="Invalid evidence reference"):
+        fiscal_ai._validar_resposta_ia(raw, source, mapping, references)
