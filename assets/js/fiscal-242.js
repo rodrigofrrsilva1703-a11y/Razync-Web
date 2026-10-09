@@ -190,6 +190,17 @@
     for (const {card} of aiCards) card.open = false;
   });
 
+  const aiCancelButton = node("button", "secondary-action fiscal-ai-cancel", "Cancelar");
+  aiCancelButton.type = "button";
+  aiCancelButton.hidden = true;
+  aiCancelButton.addEventListener("click", () => {
+    if (!aiController) return;
+    aiController.abort();
+    aiMessage.textContent = "Solicitação cancelada. Os valores da conferência foram preservados.";
+    aiInlineStatus.textContent = "Análise cancelada. Você pode iniciar outra quando quiser.";
+  });
+  aiButton.after(aiCancelButton);
+
   aiButton.addEventListener("click", async () => {
     if (!previewBody || !aiConfigured) return;
     aiReport = null;
@@ -197,7 +208,16 @@
     aiController?.abort(); const controller = new AbortController(); aiController = controller;
     const snapshot = previewBody; aiButton.disabled = true; aiResult.replaceChildren(); clearAIAccounts();
     aiResult.setAttribute("aria-busy", "true");
-    aiMessage.textContent = "Analisando lançamentos e diferenças com IA…";
+    aiCancelButton.hidden = false;
+    aiInlineStatus.textContent = "Análise em andamento. Você pode cancelar a espera sem alterar a conferência.";
+    aiMessage.textContent = "Enviando dados para análise…";
+    const startedAt = Date.now();
+    const progressTimer = window.setInterval(() => {
+      if (aiController !== controller || controller.signal.aborted) return;
+      const secs = Math.floor((Date.now() - startedAt) / 1000);
+      aiMessage.textContent = "A IA está preparando os pareceres (" + secs + " s). " +
+        (secs >= 25 ? "Modelos gratuitos podem ter fila; aguarde ou cancele." : "Validando contas e evidências.");
+    }, 4000);
     try {
       const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia", {method:"POST",body:snapshot,signal:controller.signal});
       if (!response.ok) throw new Error(await responseError(response));
@@ -285,9 +305,11 @@
         aiInlineStatus.textContent = "A análise não foi concluída. Confira o painel e tente novamente.";
       }
     } finally {
+      window.clearInterval(progressTimer);
       if (aiController === controller) {
         aiResult.setAttribute("aria-busy", "false");
         aiController = null;
+        aiCancelButton.hidden = true;
         aiButton.disabled = !aiConfigured || !previewBody;
       }
     }
@@ -366,6 +388,7 @@
   }
   function clearState() {
     aiController?.abort(); aiController = null;
+    aiCancelButton.hidden = true;
     aiReport = null;
     aiExport.disabled = true;
     aiInlineStatus.textContent = "Faça uma conferência para iniciar a análise.";
