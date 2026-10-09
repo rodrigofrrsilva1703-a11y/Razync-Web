@@ -198,4 +198,5 @@ def test_universal_identifica_filial_quando_ha_apenas_uma():
         files={"acumuladores": ("fiscal.xlsx", fiscal), "razao": ("razao.xlsx", arquivo)},
     )
     assert response.status_code == 200, response.text
+    assert response.json()["filial_aplicada"] == "242"
     assert response.json()["contas"][0]["contabil"] == 1234.56
