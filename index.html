@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="./assets/css/refined-theme.css?v=3">
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
-  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=fiscal-ai-float-1">
+  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=fiscal-ai-polish-1">
 </head>
 <body>
   <div class="app-shell">
@@ -223,23 +223,31 @@
               <div class="fiscal-table-scroll"><table class="fiscal-table"><thead><tr><th>Acumulador</th><th>Descrição</th><th>Tipo</th><th>Valor fiscal</th></tr></thead><tbody id="fiscal242UnmappedRows"></tbody></table></div>
             </details>
             <section class="fiscal-ai">
-              <div class="fiscal-ai-heading">
-                <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
-                <div><span class="fiscal-ai-eyebrow">ANÁLISE ASSISTIDA</span><h3>Entenda as diferenças com Gemini</h3><p>Uma leitura guiada dos relatórios, com hipóteses, verificações práticas e referências aos lançamentos.</p></div>
-                <span class="fiscal-ai-provider">Gemini</span>
+              <div class="fiscal-ai-shell">
+                <div class="fiscal-ai-heading">
+                  <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
+                  <div class="fiscal-ai-copy">
+                    <span class="fiscal-ai-eyebrow">ANÁLISE INTELIGENTE</span>
+                    <h3>Revisão assistida da conferência</h3>
+                    <p>O Gemini organiza possíveis causas, verificações e evidências sem alterar os valores oficiais.</p>
+                  </div>
+                  <span class="fiscal-ai-provider">Gemini</span>
+                </div>
+                <div class="fiscal-ai-actions">
+                  <button type="button" class="secondary-action" id="fiscal242AI" disabled>Gerar análise</button>
+                  <button type="button" class="secondary-action fiscal-ai-open-action" id="fiscal242AIOpen" disabled aria-haspopup="dialog" aria-controls="fiscal242AIDrawer">Ver análise</button>
+                </div>
               </div>
-              <div class="fiscal-ai-actions">
-                <button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button>
-                <button type="button" class="secondary-action fiscal-ai-open-action" id="fiscal242AIOpen" disabled aria-haspopup="dialog" aria-controls="fiscal242AIDrawer">Abrir painel de análise</button>
+              <div class="fiscal-ai-foot">
+                <p id="fiscal242AIStatus" class="fiscal-ai-inline-status" role="status" aria-live="polite">Faça uma conferência para iniciar a análise.</p>
+                <details class="fiscal-ai-privacy"><summary>Privacidade e dados analisados</summary><p>O Gemini recebe os dados extraídos dos relatórios: históricos completos (que podem conter nomes e documentos), datas, contas, contrapartidas e valores. O fiscal é um resumo por acumulador. As sugestões exigem revisão humana e não alteram cálculos ou arquivos.</p></details>
               </div>
-              <p id="fiscal242AIStatus" class="fiscal-ai-inline-status" role="status" aria-live="polite">Faça uma conferência para iniciar a análise.</p>
-              <details class="fiscal-ai-privacy"><summary>Como seus dados são analisados</summary><p>O Gemini recebe os dados extraídos dos relatórios: históricos completos (que podem conter nomes e documentos), datas, contas, contrapartidas e valores. O fiscal é um resumo por acumulador. As sugestões exigem revisão humana e não alteram cálculos ou arquivos.</p></details>
               <div class="fiscal-ai-backdrop" id="fiscal242AIBackdrop" hidden></div>
               <aside id="fiscal242AIDrawer" class="fiscal-ai-drawer" role="dialog" aria-modal="true" aria-labelledby="fiscal242AIDrawerTitle" hidden>
                 <header class="fiscal-ai-drawer-head">
                   <div class="fiscal-ai-drawer-heading">
-                    <span class="fiscal-ai-eyebrow">RELATÓRIO INTELIGENTE · RAZYNC</span>
-                    <h3 id="fiscal242AIDrawerTitle">Análise Fiscal × Contábil</h3>
+                    <span class="fiscal-ai-eyebrow">ANÁLISE INTELIGENTE · RAZYNC</span>
+                    <h3 id="fiscal242AIDrawerTitle">Revisão Fiscal × Contábil</h3>
                     <p id="fiscal242AICompany" class="fiscal-ai-drawer-subtitle">Conferência dos relatórios do Domínio</p>
                   </div>
                   <div class="fiscal-ai-drawer-controls">
@@ -248,7 +256,7 @@
                   </div>
                 </header>
                 <div class="fiscal-ai-drawer-toolbar">
-                  <span class="fiscal-ai-drawer-hint">Abra as evidências para consultar os lançamentos citados.</span>
+                  <span class="fiscal-ai-drawer-hint">Consulte as evidências somente quando precisar validar os lançamentos citados.</span>
                   <div class="fiscal-ai-drawer-buttons">
                     <button type="button" id="fiscal242AIRunInside" class="secondary-action fiscal-ai-run-inside" disabled>Gerar análise</button>
                     <button type="button" id="fiscal242AIExport" class="secondary-action fiscal-ai-export" disabled>Exportar Excel (.xlsx)</button>
@@ -261,7 +269,7 @@
               </aside>
               <button type="button" class="fiscal-ai-floating-bubble" id="fiscal242AIBubble" hidden aria-controls="fiscal242AIDrawer" aria-haspopup="dialog">
                 <span class="fiscal-ai-floating-symbol" aria-hidden="true">✦</span>
-                <span>Ver análise do Gemini</span>
+                <span>Análise pronta</span>
                 <span class="fiscal-ai-floating-arrow" aria-hidden="true">↗</span>
               </button>
             </section>
@@ -502,7 +510,7 @@
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=fiscal-layout-2"></script>
   <script src="./assets/js/migration.js?v=fiscal-universal-1"></script>
-  <script src="./assets/js/fiscal-242.js?v=fiscal-ai-float-1"></script>
+  <script src="./assets/js/fiscal-242.js?v=fiscal-ai-polish-1"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>
