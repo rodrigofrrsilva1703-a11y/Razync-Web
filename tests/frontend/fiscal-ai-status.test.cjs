@@ -259,3 +259,12 @@ test('IA fiscal exibe progresso e cancelamento sem tela flutuante', () => {
   assert.match(css,/\.fiscal-ai-cancel\[hidden\]/);
   assert.doesNotMatch(html,/id="fiscal242AIDrawer"/);
 });
+
+
+test("botão de teste OpenRouter não aparece na conferência fiscal", () => {
+  assert.doesNotMatch(source,/Testar OpenRouter/);
+  assert.doesNotMatch(source,/teste-openrouter/);
+  const html = fs.readFileSync(path.join(__dirname,"../../index.html"),"utf8");
+  assert.match(html,/Analisar diferenças com IA/);
+  assert.match(source,/Atualizar conexão/);
+});
