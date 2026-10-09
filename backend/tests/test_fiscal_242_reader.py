@@ -417,7 +417,7 @@ def test_periodo_resumo_na_mesma_celula_ou_colunas_distintas():
 
 
 def test_outra_filial_fora_do_periodo_nao_exige_escolha():
-    fiscal, _ = _relatorios_com_periodo(["Período:", "01/08/2026 - 31/08/2026"]).values()
+    fiscal = _relatorios_com_periodo(["Período:", "01/08/2026 - 31/08/2026"])["acumuladores"][1]
     razao = workbook({"Razão": [
         ["Período:", "01/07/2026 - 30/09/2026"],
         ["Conta:", 22643, "", "", "", "ESTOQUE"],
@@ -437,10 +437,10 @@ def test_outra_filial_fora_do_periodo_nao_exige_escolha():
 
 
 def test_razao_sem_lancamentos_no_periodo_exibe_ausencia_sem_somar_outros_meses():
-    fiscal, ledger = _relatorios_com_periodo(["Período:", "01/10/2026 - 31/10/2026"]).values()
+    files = _relatorios_com_periodo(["Período:", "01/10/2026 - 31/10/2026"])
     response = TestClient(app).post(
         "/api/v1/conferencia-fiscal/preview",
-        files={"acumuladores": ("fiscal.xlsx", fiscal), "razao": ("razao.xlsx", ledger)},
+        files=files,
     )
     assert response.status_code == 200, response.text
     report = response.json()
