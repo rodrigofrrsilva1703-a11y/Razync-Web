@@ -231,9 +231,10 @@
         aiProvider.textContent = "OpenRouter · gratuito";
       }
       aiExport.disabled = !(Array.isArray(result.analises) && result.analises.length);
+      const providerLabel = result.provedor === "openrouter" ? "OpenRouter" : result.provedor === "gemini" ? "Gemini" : "IA";
       aiInlineStatus.textContent = result.analises?.length
-        ? "Análise pronta. Selecione uma conta para consultar o parecer completo ou exporte o Excel."
-        : "A IA concluiu a análise. Não foram identificadas contas a explicar.";
+        ? "Parecer recebido do " + providerLabel + ". Selecione uma conta para ler a análise ou exporte o Excel."
+        : "O " + providerLabel + " concluiu a análise. Não foram identificadas contas a explicar.";
       const entries = Array.isArray(result.analises) ? result.analises : [];
       aiToolbar.hidden = entries.length === 0;
       aiTotal.textContent = entries.length ? "(" + entries.length + ")" : "";
@@ -297,8 +298,10 @@
       // Um resultado isolado pode aparecer aberto para facilitar a leitura.
       if (aiCards.length === 1) aiCards[0].card.open = true;
       updateAIFilters();
-      aiMessage.textContent = result.aviso + (result.limite ? " " + result.limite : "") +
-        (result.modelo_usado ? " Modelo utilizado: " + result.modelo_usado + "." : "");
+      aiMessage.textContent = (result.aviso || "Parecer recebido e validado pelo Razync.") +
+        (result.limite ? " " + result.limite : "") +
+        (result.modelo_usado ? " Modelo utilizado: " + result.modelo_usado + "." : "") +
+        (result.fallback_usado ? " A análise foi concluída pelo provedor de reserva." : "");
     } catch (error) {
       if (!controller.signal.aborted && previewBody === snapshot) {
         aiMessage.textContent = error.message || "Não foi possível gerar a análise.";
