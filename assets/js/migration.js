@@ -44,6 +44,13 @@ renderWorkflow = function(company) {
   }
 
   francesinhasTab.hidden = companyCode !== 242;
+  // Piloto da conferência Fiscal × Contábil: exibida apenas na empresa 242.
+  // O controle fica na rotina que realmente troca as ferramentas da empresa.
+  const fiscalTab242 = document.querySelector('#companyPanel .tool-tab[data-tool="fiscal"]');
+  if (fiscalTab242) {
+    fiscalTab242.hidden = companyCode !== 242;
+    fiscalTab242.setAttribute("aria-hidden", String(companyCode !== 242));
+  }
   updateUploadProgress();
   $("#workflowPreview").replaceChildren();
   $("#reviewRows").replaceChildren();
