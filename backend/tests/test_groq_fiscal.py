@@ -312,3 +312,53 @@ def test_groq_schema_amostra_e_lote_sem_lancamentos(monkeypatch):
     assert calls[1]["grupo"]["enum"] == ["G3"]
     assert calls[1]["evidencias"]["maxItems"] == 0
     assert "enum" not in calls[1]["evidencias"]["items"]
+
+
+@pytest.mark.parametrize("failure", ["quota", "length"])
+def test_groq_reserva_bloqueada_continua_com_gemini(monkeypatch, failure, caplog):
+    enabled(monkeypatch)
+    monkeypatch.setenv("GEMINI_API_KEY", "gemini-test-key")
+    monkeypatch.setenv("GEMINI_FREE_TIER_CONFIRMED", "1")
+    monkeypatch.setattr(fiscal_ai, "gemini_cooldown_until", 0)
+    calls = []
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, n):
+            return json.dumps({"choices": [{"finish_reason": "length", "message": {"content": "incomplete"}}]}).encode()
+    def send(req, timeout):
+        model = json.loads(req.data)["model"]
+        calls.append(model)
+        if model == "openai/gpt-oss-120b":
+            if failure == "length":
+                return Response()
+            raise urllib.error.HTTPError(req.full_url, 429, "rate", {}, io.BytesIO(b"{}"))
+        raise urllib.error.HTTPError(req.full_url, 403, "blocked", {}, io.BytesIO(
+            b'{"error":{"code":"model_permission_blocked_org","message":"PRIVATE-RESPONSE"}}'))
+    monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen", send)
+    monkeypatch.setattr(fiscal_ai, "_gemini_completion", lambda *args, **kwargs: (
+        {"analises": [{"grupo": "G1", "explicacao": "Revisar documentos.", "verificar": "Conferir conta.", "evidencias": ["L1"]}]},
+        "gemini-3.1-flash-lite"))
+    result = fiscal_ai.explain(example_report())
+    assert calls == ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+    assert result["provedor"] == "gemini"
+    assert result["fallback_usado"] is True
+    assert result["gratuito"] is True
+    assert result["analises"][0]["valores"]["diferenca"] == -2000
+    assert "fiscal_groq_reserve_blocked" in caplog.text
+    assert "PRIVATE-RESPONSE" not in caplog.text
+
+
+def test_groq_permissao_principal_nao_e_ocultada_pelo_gemini(monkeypatch):
+    enabled(monkeypatch)
+    monkeypatch.setenv("GEMINI_API_KEY", "gemini-test-key")
+    monkeypatch.setenv("GEMINI_FREE_TIER_CONFIRMED", "1")
+    def send(req, timeout):
+        raise urllib.error.HTTPError(req.full_url, 403, "blocked", {}, io.BytesIO(
+            b'{"error":{"code":"model_permission_blocked_org"}}'))
+    monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen", send)
+    monkeypatch.setattr(fiscal_ai, "_gemini_completion", lambda *args, **kwargs: pytest.fail("Permissão principal deve ser exibida"))
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(example_report())
+    assert error.value.status_code == 403
+    assert "openai/gpt-oss-120b" in error.value.detail

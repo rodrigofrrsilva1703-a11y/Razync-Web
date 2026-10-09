@@ -75,6 +75,20 @@ def _compact_group(group):
     }
 
 
+def _complete_with_reserve(payload, key, model, tried_models, deadline):
+    """Uma permissão negada só no modelo reserva não é erro da chave principal."""
+    try:
+        return complete(payload, key, model, _tried_models=tried_models, _deadline=deadline)
+    except HTTPException as exc:
+        if exc.status_code != 403:
+            raise
+        logger.warning("fiscal_groq_reserve_blocked model=%s backup_required=True", model)
+        raise HTTPException(503,
+            "O modelo Groq principal atingiu um limite de disponibilidade e o modelo "
+            f"reserva {model} está bloqueado. Habilite o modelo reserva nas permissões "
+            "GroqCloud; a análise pode continuar com outro provedor gratuito configurado.") from None
+
+
 def complete(payload, key, model, *, _tried_models=None, _deadline=None):
     """Retorna análises por grupo; o validador comum confere todas as referências."""
     if not is_enabled():
@@ -193,8 +207,8 @@ def complete(payload, key, model, *, _tried_models=None, _deadline=None):
                     logger.warning("fiscal_groq_free_model_switch completed_groups=%d model=%s reserve=%s",
                                    len(output), model, alternate)
                     exc.close()
-                    result, used = complete(pending_payload, key, alternate,
-                                            _tried_models=tried_models, _deadline=deadline)
+                    result, used = _complete_with_reserve(pending_payload, key, alternate,
+                                                          tried_models, deadline)
                     return {"analises":output + result["analises"]}, f"{model} + {used}" if output else used
             raw_error = exc.read(4096)
             try:
@@ -228,7 +242,7 @@ def complete(payload, key, model, *, _tried_models=None, _deadline=None):
                               "de tráfego da Groq (HTTP 403). Chave e permissões do modelo "
                               "não são necessariamente a causa.")
                 elif code == "model_permission_blocked_org":
-                    detail = ("Groq bloqueou o GPT-OSS 120B nas permissões da organização. "
+                    detail = (f"Groq bloqueou o modelo {model} nas permissões da organização. "
                               "Confira Settings > Organization > Limits no painel GroqCloud.")
                 elif code == "model_permission_blocked_project":
                     detail = ("Groq bloqueou o modelo nas permissões do projeto. "
@@ -258,8 +272,8 @@ def complete(payload, key, model, *, _tried_models=None, _deadline=None):
                         "text":json.dumps(dict(context, grupos=groups[start:]), ensure_ascii=False)}]}]
                     logger.warning("fiscal_groq_truncated_model_switch completed_groups=%d model=%s reserve=%s",
                                    len(output), model, alternate)
-                    result, used = complete(pending_payload, key, alternate,
-                                            _tried_models=tried_models, _deadline=deadline)
+                    result, used = _complete_with_reserve(pending_payload, key, alternate,
+                                                          tried_models, deadline)
                     return {"analises":output + result["analises"]}, f"{model} + {used}" if output else used
                 raise ValueError("Groq output limited by tokens")
             if finish == "content_filter":
