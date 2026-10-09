@@ -990,3 +990,23 @@ def test_openrouter_nao_normaliza_evidencia_inventada():
                         "verificar": "1. Conferir.", "evidencias": "L99999"}]}
     with pytest.raises(ValueError, match="Invalid evidence reference"):
         fiscal_ai._validar_resposta_ia(raw, source, mapping, references)
+
+
+def test_openrouter_aceita_id_grupo_com_espacos_e_minusculas(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_ROUTER_FIRST", "1")
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self,*args): pass
+        def read(self,size):
+            return json.dumps({"model":"openrouter/free","choices":[{"finish_reason":"stop","message":{
+                "content":json.dumps({"analises":[{"grupo":" g1 ","explicacao":"Verificar acumulador.",
+                    "verificar":"1. Conferir a origem.","evidencias":[]}]})}}]}).encode()
+    monkeypatch.setattr(fiscal_ai.urllib.request,"urlopen",lambda *a,**k: Response())
+    source=report()
+    context,mapping,refs,_=fiscal_ai.detailed_context(source)
+    schema={"properties":{"analises":{"items":{"properties":{"grupo":{"enum":list(mapping)}}}}}}
+    payload={"systemInstruction":{"parts":[{"text":"Conciliação segura"}]},
+        "contents":[{"parts":[{"text":json.dumps(context)}]}],
+        "generationConfig":{"responseSchema":schema}}
+    result,_=fiscal_ai._openrouter_completion(payload,["openrouter/free"],"test-key")
+    assert fiscal_ai._validar_resposta_ia(result,source,mapping,refs)[0]["conta"]=="22643"
