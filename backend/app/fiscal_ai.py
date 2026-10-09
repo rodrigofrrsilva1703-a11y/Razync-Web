@@ -250,7 +250,7 @@ def _openrouter_completion(payload, models, key):
             compatible["messages"] = [dict(item) for item in request_payload["messages"]]
             allowed_groups = converted_schema["properties"]["analises"]["items"]["properties"]["grupo"]["enum"]
             compatible["messages"][0]["content"] += (
-                "\\nIMPORTANTE: responda SOMENTE JSON válido, sem markdown e sem texto extra. "
+                chr(10) + "IMPORTANTE: responda SOMENTE JSON válido, sem markdown e sem texto extra. "
                 'Objeto raiz: {"analises":[{"grupo":"G1","explicacao":"...","verificar":"1. ...",'
                 '"evidencias":["L1"]}]}. '
                 "Substitua G1 e L1 por referências reais do relatório; não invente referências. "
@@ -287,7 +287,7 @@ def _openrouter_completion(payload, models, key):
     if result_text.startswith("```"):
         lines = result_text.splitlines()
         if len(lines) >= 3 and lines[-1].strip() == "```":
-            result_text = "\\n".join(lines[1:-1]).strip()
+            result_text = chr(10).join(lines[1:-1]).strip()
     return json.loads(result_text), str(response_json.get("model") or "")
 
 
