@@ -44,3 +44,62 @@ def test_relatorio_individual_nao_confunde_empresa_com_filial(monkeypatch):
 
     assert resultado["filial_aplicada"] == "1"
     assert resultado["resumo"].iloc[0]["SITUAÇÃO"] == "CONFERE"
+
+
+def test_razao_xls_dominio_com_datas_e_codigos_numericos(monkeypatch):
+    """Layout real do Domínio: conta/filial como números e data em serial Excel."""
+    import pandas as pd
+
+    colunas = 14
+    def linha(celulas):
+        valores = [None] * colunas
+        for pos, value in celulas.items():
+            valores[pos] = value
+        return valores
+
+    linhas = [
+        linha({0: "Empresa:", 2: "ELETRO FORTE COMERCIAL ELETRICA LTDA"}),
+        linha({0: "Período:", 2: "01/08/2026 - 30/09/2026"}),
+        linha({0: "Data", 1: "Lote", 2: "Histórico", 6: "Cta.C.Part.",
+               7: "Filial", 8: "Débito", 9: "Crédito"}),
+        linha({0: "Conta:", 1: 22643.0, 2: "1.1.4.01.001",
+               5: "MERCADORIAS PARA REVENDA (MATRIZ)"}),
+        linha({0: 46237.0, 1: 281697789.0, 2: "COMPRA DE MERCADORIA CF NF",
+               6: 22644.0, 7: 1408.0, 8: 111.27}),
+        linha({0: 46237.0, 1: 281713311.0, 2: "COMPRA DE MERCADORIA CF NF",
+               6: 22644.0, 7: 242.0, 8: 111.27}),
+    ]
+    monkeypatch.setattr(conferencia_fiscal, "_excel",
+                        lambda conteudo, nome: type("Xls", (), {"sheet_names": ["Razão"]})())
+    monkeypatch.setattr(conferencia_fiscal.pd, "read_excel",
+                        lambda *args, **kwargs: pd.DataFrame(linhas))
+    movimentos, _ = conferencia_fiscal.ler_razao(b"ole-biff", "Razão.xls")
+
+    assert movimentos["CONTA"].tolist() == ["22643", "22643"]
+    assert movimentos["FILIAL"].tolist() == ["1408", "242"]
+    assert movimentos["DATA"].dt.strftime("%Y-%m-%d").tolist() == [
+        "2026-08-03", "2026-08-03"
+    ]
+
+    acumuladores = pd.DataFrame([{
+        "CONTA": "22643", "TIPO": "ENTRADAS", "ACUMULADOR": "1152",
+        "DESCRIÇÃO": "Mercadorias", "VALOR_FISCAL": 111.27,
+    }])
+    monkeypatch.setattr(conferencia_fiscal, "ler_acumuladores",
+                        lambda *_: (acumuladores, {}))
+    monkeypatch.setattr(conferencia_fiscal, "ler_razao",
+                        lambda *_: (movimentos, {}))
+    resultado = conferencia_fiscal.processar_conferencia(
+        b"acumuladores", "acumuladores.xls", b"razao", "Razão.xls", filial_alvo="242"
+    )
+    assert resultado["filial_aplicada"] == "242"
+    assert resultado["resumo"].iloc[0]["SITUAÇÃO"] == "CONFERE"
+    assert resultado["resumo"].iloc[0]["TOTAL DA CONTA"] == 111.27
+
+
+def test_codigos_xls_preservam_numero_sem_decimal():
+    assert conferencia_fiscal._codigo_dominio(22643.0) == "22643"
+    assert conferencia_fiscal._codigo_dominio("22643.0") == "22643"
+    assert conferencia_fiscal._codigo_dominio(242.0) == "242"
+    assert conferencia_fiscal._codigo_dominio(1408.0) == "1408"
+    assert conferencia_fiscal._codigo_dominio(None) == ""
