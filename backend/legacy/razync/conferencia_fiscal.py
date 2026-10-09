@@ -256,11 +256,31 @@ def _excel(conteudo: bytes, nome: str) -> pd.ExcelFile:
     except Exception as erro_original:
         if Path(nome).suffix.lower() != ".xls":
             raise ValueError(f"Não foi possível abrir {nome}: {erro_original}") from erro_original
+        # Same BIFF recovery used by the working Domínio reader, preserving every sheet.
+        from razync.dominio_ledger import _recuperar_xls_biff_irregular
+        recuperado = _recuperar_xls_biff_irregular(conteudo, workbook=True)
+        if recuperado is not None:
+            return recuperado
+        # Some exports named .xls are actually HTML tables.
+        if b"<table" in conteudo[:65536].lower():
+            try:
+                try:
+                    texto_html = conteudo.decode("utf-8-sig")
+                except UnicodeDecodeError:
+                    texto_html = conteudo.decode("cp1252")
+                tabelas = pd.read_html(io.StringIO(texto_html), header=None, decimal=",", thousands=".")
+                convertido = io.BytesIO()
+                with pd.ExcelWriter(convertido, engine="openpyxl") as writer:
+                    for indice, tabela in enumerate(tabelas):
+                        tabela.to_excel(writer, sheet_name=f"Relatorio_{indice + 1}", index=False, header=False)
+                return pd.ExcelFile(io.BytesIO(convertido.getvalue()))
+            except Exception:
+                pass
         conversor = shutil.which("soffice") or shutil.which("libreoffice")
         if not conversor:
             raise ValueError(
-                "O arquivo XLS veio com a estrutura interna danificada. Exporte novamente "
-                "pelo Domínio em XLSX ou instale o LibreOffice no servidor."
+                f"Não foi possível ler {nome}, mesmo após tentar recuperar o XLS do Domínio. "
+                "Envie o arquivo original para análise ou exporte novamente em XLSX."
             ) from erro_original
         pasta = tempfile.mkdtemp(prefix="razync_fiscal_")
         origem = Path(pasta) / "origem.xls"
@@ -358,11 +378,11 @@ def ler_acumuladores(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
 
 def ler_razao(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
     xls = _excel(conteudo, nome)
-    conta = ""
-    descricao_conta = ""
     registros = []
     periodo = {"inicio": None, "fim": None}
     for aba in xls.sheet_names:
+        conta = ""
+        descricao_conta = ""
         bruto = pd.read_excel(xls, sheet_name=aba, header=None, dtype=object)
         colunas = {
             "DATA": 0, "LOTE": 1, "HISTÓRICO": 2, "CONTRAPARTIDA": 7,
@@ -429,7 +449,7 @@ def ler_razao(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
                 "DATA": data.normalize(),
                 "LOTE": _texto(valores[colunas["LOTE"]] if len(valores) > colunas["LOTE"] else ""),
                 "HISTÓRICO": _texto(valores[colunas["HISTÓRICO"]] if len(valores) > colunas["HISTÓRICO"] else ""),
-                "CONTRAPARTIDA": _texto(valores[colunas["CONTRAPARTIDA"]] if len(valores) > colunas["CONTRAPARTIDA"] else ""),
+                "CONTRAPARTIDA": _codigo_dominio(valores[colunas["CONTRAPARTIDA"]] if len(valores) > colunas["CONTRAPARTIDA"] else ""),
                 "DÉBITO": debito, "CRÉDITO": credito,
             })
     if not registros:

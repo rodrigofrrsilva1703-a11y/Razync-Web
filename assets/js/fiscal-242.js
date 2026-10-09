@@ -20,6 +20,7 @@
     "AUSENTE NO CONTÁBIL": "Sem razão"
   };
   let data = null;
+  let previewBody = null;
   let selectedKey = "";
   let pendingRequest = null;
 
@@ -60,6 +61,7 @@
       pendingRequest = null;
     }
     data = null;
+    previewBody = null;
     selectedKey = "";
     filter.value = "todas";
     results.hidden = true;
@@ -215,6 +217,7 @@
     renderTable();
   }
   filter.addEventListener("change", renderTable);
+  form.querySelectorAll("input[type=file]").forEach(input => input.addEventListener("change", clearState));
   form.addEventListener("submit", async event => {
     event.preventDefault();
     if (Number(selected?.codigo) !== 242) return;
@@ -234,6 +237,7 @@
       const report = await response.json();
       if (controller.signal.aborted || Number(selected?.codigo) !== 242) return;
       renderResponse(report);
+      previewBody = body;
       setMessage("Conferência concluída. Os resultados estão abaixo.", "success");
     } catch (error) {
       if (error.name === "AbortError") return;
@@ -247,9 +251,8 @@
   });
 
   download.addEventListener("click", async () => {
-    if (!data || Number(selected?.codigo) !== 242) return;
-    let body;
-    try { body = buildFormData(); } catch (error) { setMessage(error.message, "error"); return; }
+    if (!data || !previewBody || Number(selected?.codigo) !== 242) return;
+    const body = previewBody;
     download.disabled = true;
     setMessage("Preparando relatório Excel…", "loading");
     try {
@@ -257,6 +260,7 @@
         method:"POST", body
       });
       if (!response.ok) throw new Error(await responseError(response));
+      if (previewBody !== body || Number(selected?.codigo) !== 242) return;
       await downloadBlob(response, "RAZYNC_242_CONFERENCIA_FISCAL.xlsx");
       setMessage("Relatório Excel gerado.", "success");
     } catch (error) {

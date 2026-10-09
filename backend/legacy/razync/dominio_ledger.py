@@ -42,7 +42,7 @@ def _numero(valor) -> float:
         return 0.0
 
 
-def _recuperar_xls_biff_irregular(file_bytes: bytes):
+def _recuperar_xls_biff_irregular(file_bytes: bytes, *, workbook: bool = False):
     try:
         from xlrd.compdoc import CompDoc
 
@@ -89,7 +89,10 @@ def _recuperar_xls_biff_irregular(file_bytes: bytes):
         for registro, inicio in zip(registros_abas, inicios):
             struct.pack_into("<I", fluxo, registro + 4, inicio)
         xls = pd.ExcelFile(io.BytesIO(bytes(fluxo)), engine="xlrd")
-        return pd.read_excel(xls, sheet_name=xls.sheet_names[0], header=None, dtype=object)
+        if workbook:
+            return xls
+        with xls:
+            return pd.read_excel(xls, sheet_name=xls.sheet_names[0], header=None, dtype=object)
     except Exception:
         return None
 
