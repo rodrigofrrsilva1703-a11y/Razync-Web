@@ -169,7 +169,11 @@ def _openrouter_models():
 
 
 def _openrouter_completion(payload, models, key):
-    """Envia o mesmo contexto completo para qualquer modelo da cadeia de fallback."""
+    """Prioriza o modo JSON textual no roteador grátis para evitar fila e segunda chamada.
+
+    A validação integral das contas e referências ocorre após a resposta, para
+    ambos os provedores. O limite de preço zero nunca é removido.
+    """
     converted_schema = {
         "type": "object",
         "properties": {
@@ -208,7 +212,10 @@ def _openrouter_completion(payload, models, key):
             "max_price": {"prompt": 0, "completion": 0},
         },
         "temperature": 0.2,
-        "max_tokens": 16384,
+        # Limita o teto de geração sem retirar grupos ou lançamentos do contexto.
+        "max_tokens": min(8500, max(2300, 1200 + 550 * len(
+            payload["generationConfig"]["responseSchema"]["properties"]["analises"]["items"]["properties"]["grupo"]["enum"]
+        ))),
     }
     # O roteador gratuito recomenda 'model' para uma escolha única.
     # A lista 'models' é usada somente quando houver vários candidatos.
@@ -217,10 +224,34 @@ def _openrouter_completion(payload, models, key):
     else:
         request_payload["models"] = models
 
-    def send(body):
+    # openrouter/free pode rejeitar json_schema estrito (HTTP 400) ou ficar
+    # aguardando um endpoint compatível. Peça JSON textual já na 1ª chamada;
+    # validação contábil continua igualmente rígida no próprio Razync.
+    def compatible_payload(base):
+        candidate = dict(base)
+        candidate.pop("response_format", None)
+        candidate.pop("max_tokens", None)
+        candidate["provider"] = dict(base["provider"])
+        candidate["provider"].pop("require_parameters", None)
+        candidate["messages"] = [dict(item) for item in base["messages"]]
+        allowed = converted_schema["properties"]["analises"]["items"]["properties"]["grupo"]["enum"]
+        candidate["messages"][0]["content"] += (
+            chr(10) + "IMPORTANTE: responda APENAS JSON válido, sem markdown. "
+            'Objeto: {"analises":[{"grupo":"G1","explicacao":"...","verificar":"1. ...",'
+            '"evidencias":["L1"]}]}. '
+            "Inclua todos os grupos: " + ", ".join(allowed) + ". "
+            "Use somente referências de lançamento que existam nos dados. "
+            "Não invente valores, grupos ou evidências."
+        )
+        return candidate
+
+    free_router = models == ["openrouter/free"]
+    if free_router:
+        request_payload = compatible_payload(request_payload)
+    def send(body, seconds=38):
         request = urllib.request.Request(
             "https://openrouter.ai/api/v1/chat/completions",
-            data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+            data=json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
                 "Authorization": "Bearer " + key,
@@ -228,37 +259,19 @@ def _openrouter_completion(payload, models, key):
                 "X-Title": "Razync Fiscal",
             },
         )
-        with urllib.request.urlopen(request, timeout=90) as response:
+        with urllib.request.urlopen(request, timeout=seconds) as response:
             return json.loads(response.read(200000))
 
     try:
         try:
             response_json = send(request_payload)
         except urllib.error.HTTPError as exc:
-            if exc.code != 400:
+            if exc.code != 400 or free_router:
                 raise
             exc.close()
-            # Nem todos os modelos gratuitos entendem response_format=json_schema
-            # ou max_tokens=16384. Refaça o MESMO contexto uma única vez,
-            # em JSON textual, validando depois pelo mesmo validador contábil.
-            # Nunca afrouxar as travas de preço ou de coleta de dados.
-            compatible = dict(request_payload)
-            compatible.pop("response_format", None)
-            compatible.pop("max_tokens", None)
-            compatible["provider"] = dict(request_payload["provider"])
-            compatible["provider"].pop("require_parameters", None)
-            compatible["messages"] = [dict(item) for item in request_payload["messages"]]
-            allowed_groups = converted_schema["properties"]["analises"]["items"]["properties"]["grupo"]["enum"]
-            compatible["messages"][0]["content"] += (
-                chr(10) + "IMPORTANTE: responda SOMENTE JSON válido, sem markdown e sem texto extra. "
-                'Objeto raiz: {"analises":[{"grupo":"G1","explicacao":"...","verificar":"1. ...",'
-                '"evidencias":["L1"]}]}. '
-                "Substitua G1 e L1 por referências reais do relatório; não invente referências. "
-                "Inclua obrigatoriamente TODOS os grupos: "
-                + ", ".join(allowed_groups) + ". "
-                "Use exclusivamente as quatro chaves acima em cada item."
-            )
-            response_json = send(compatible)
+            # Apenas os IDs gratuitos explícitos tentam alternativa de formato.
+            # O roteador gratuito já usa o formato compatível na primeira vez.
+            response_json = send(compatible_payload(request_payload), seconds=24)
     except urllib.error.HTTPError as exc:
         # Não repassa mensagens do provedor: podem conter dados privados ou credenciais.
         if exc.code in (401, 403):
@@ -274,7 +287,11 @@ def _openrouter_completion(payload, models, key):
         else:
             detail = f"OpenRouter temporariamente indisponível (HTTP {exc.code}). A conferência contábil não foi alterada."
         raise HTTPException(429 if exc.code in (402, 429) else 403 if exc.code in (401, 403) else 400 if exc.code == 400 else 502, detail) from None
-    except (urllib.error.URLError, TimeoutError):
+    except (urllib.error.URLError, TimeoutError) as exc:
+        if isinstance(exc, (TimeoutError,)) or isinstance(getattr(exc, "reason", None), TimeoutError):
+            raise HTTPException(504, "A IA gratuita demorou além do limite de 38 segundos. "
+                "Tente novamente ou reduza a quantidade de contas analisadas. "
+                "A conferência contábil permanece salva.") from None
         raise HTTPException(502, "Não foi possível conectar ao OpenRouter. A conferência contábil permanece salva.") from None
     choices = response_json.get("choices") or []
     if not choices or choices[0].get("finish_reason") not in ("stop",):
@@ -451,11 +468,11 @@ def explain(report):
             "qual conclusão essa checagem permite tirar. Quando faltar documento, recomende obtê-lo, "
             "não presuma seu conteúdo. Se só houver alerta por fechamento aritmético, priorize conferir "
             "a origem fiscal e a contrapartida, mesmo com diferença zero. "
-            "Busque de 200 a 300 palavras no total por grupo, conforme a quantidade de evidências "
-            "disponíveis; seja mais breve quando não houver dados suficientes. "
+            "Busque de 140 a 190 palavras no total por grupo, mantendo fatos, causas, limites e verificações, "
+            "sem alongar a resposta quando não houver dados suficientes. "
             "Separe nitidamente fatos demonstrados, hipóteses e orientações de conferência. "
             "Responda todos os grupos fornecidos, sem incluir outros."}]},
-        "contents":[{"role":"user","parts":[{"text":json.dumps(context, ensure_ascii=False)}]}],
+        "contents":[{"role":"user","parts":[{"text":json.dumps(context, ensure_ascii=False, separators=(",", ":"))}]}],
         "generationConfig":{"responseMimeType":"application/json", "responseSchema":schema,
                             "temperature":0.2, "maxOutputTokens":16384}}
     # Todos os provedores usam o mesmo prompt e os mesmos dados de entrada.
