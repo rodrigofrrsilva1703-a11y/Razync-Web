@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tempfile
 import unicodedata
+from datetime import date, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -363,13 +364,16 @@ def _periodo_relatorio(valores: list) -> tuple[pd.Timestamp, pd.Timestamp] | Non
     else:
         datas = []
         for valor in valores:
-            if isinstance(valor, (pd.Timestamp,)):
+            if isinstance(valor, (pd.Timestamp, datetime, date)):
                 data = _data_dominio(valor)
             elif isinstance(valor, (int, float)) and not isinstance(valor, bool):
                 data = _data_dominio(valor)
             else:
                 celula = _texto(valor)
-                data = _data_dominio(celula) if re.fullmatch(r"\d{1,2}/\d{1,2}/\d{4}", celula) else pd.NaT
+                data = _data_dominio(celula) if (
+                    re.fullmatch(r"\d{1,2}/\d{1,2}/\d{4}", celula)
+                    or re.fullmatch(r"\d{4}-\d{2}-\d{2}(?: 00:00:00)?", celula)
+                ) else pd.NaT
             if pd.notna(data):
                 datas.append(data)
         if len(datas) < 2:
