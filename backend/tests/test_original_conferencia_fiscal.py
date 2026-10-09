@@ -58,16 +58,16 @@ def test_razao_xls_dominio_com_datas_e_codigos_numericos(monkeypatch):
         return valores
 
     linhas = [
-        linha({0: "Empresa:", 2: "ELETRO FORTE COMERCIAL ELETRICA LTDA"}),
+        linha({0: "Empresa:", 2: "EMPRESA DE TESTE"}),
         linha({0: "Período:", 2: "01/08/2026 - 30/09/2026"}),
         linha({0: "Data", 1: "Lote", 2: "Histórico", 6: "Cta.C.Part.",
                7: "Filial", 8: "Débito", 9: "Crédito"}),
         linha({0: "Conta:", 1: 22643.0, 2: "1.1.4.01.001",
-               5: "MERCADORIAS PARA REVENDA (MATRIZ)"}),
+               5: "ESTOQUE DE TESTE"}),
         linha({0: 46237.0, 1: 281697789.0, 2: "COMPRA DE MERCADORIA CF NF",
-               6: 22644.0, 7: 1408.0, 8: 111.27}),
+               6: 22644.0, 7: 1408.0, 8: 123.45}),
         linha({0: 46237.0, 1: 281713311.0, 2: "COMPRA DE MERCADORIA CF NF",
-               6: 22644.0, 7: 242.0, 8: 111.27}),
+               6: 22644.0, 7: 242.0, 8: 123.45}),
     ]
     monkeypatch.setattr(conferencia_fiscal, "_excel",
                         lambda conteudo, nome: type("Xls", (), {"sheet_names": ["Razão"]})())
@@ -83,7 +83,7 @@ def test_razao_xls_dominio_com_datas_e_codigos_numericos(monkeypatch):
 
     acumuladores = pd.DataFrame([{
         "CONTA": "22643", "TIPO": "ENTRADAS", "ACUMULADOR": "1152",
-        "DESCRIÇÃO": "Mercadorias", "VALOR_FISCAL": 111.27,
+        "DESCRIÇÃO": "Mercadorias", "VALOR_FISCAL": 123.45,
     }])
     monkeypatch.setattr(conferencia_fiscal, "ler_acumuladores",
                         lambda *_: (acumuladores, {}))
@@ -94,7 +94,7 @@ def test_razao_xls_dominio_com_datas_e_codigos_numericos(monkeypatch):
     )
     assert resultado["filial_aplicada"] == "242"
     assert resultado["resumo"].iloc[0]["SITUAÇÃO"] == "CONFERE"
-    assert resultado["resumo"].iloc[0]["TOTAL DA CONTA"] == 111.27
+    assert resultado["resumo"].iloc[0]["TOTAL DA CONTA"] == 123.45
 
 
 def test_codigos_xls_preservam_numero_sem_decimal():
