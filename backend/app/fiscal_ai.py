@@ -474,7 +474,7 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
             }.get(cause, "Resposta inválida do OpenRouter"))
         corrected = copy.deepcopy(payload)
         corrected["systemInstruction"]["parts"][0]["text"] += (
-            "\\nCORREÇÃO NECESSÁRIA: a última resposta não atendeu ao contrato. "
+            "\nCORREÇÃO NECESSÁRIA: a última resposta não atendeu ao contrato. "
             "Forneça um item para cada grupo solicitado, em JSON válido. "
             "Cite somente referências L presentes nos lançamentos do próprio grupo. "
             "Na dúvida use evidencias [] e NÃO cite referências inexistentes no texto. "
@@ -508,10 +508,10 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
             return repair_once("invalid_evidence")
         allowed = permitted.get(group_id, set())
         declared = {x.strip().upper() for x in evidence if isinstance(x, str)}
-        quoted = set(re.findall(r"\\bL\\d+\\b", (
+        quoted = set(re.findall(r"\bL\d+\b", (
             str(item.get("explicacao", "")) + " " + str(item.get("verificar", ""))
         ).upper()))
-        if len(declared) != len(evidence) or not declared.issubset(allowed) or not quoted.issubset(allowed):
+        if len(evidence) > 8 or any(not isinstance(x, str) for x in evidence) or not declared.issubset(allowed) or not quoted.issubset(allowed):
             return repair_once("invalid_evidence")
     return answer, str(response_json.get("model") or "")
 
