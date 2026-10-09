@@ -160,3 +160,42 @@ def test_coverage_explicit_when_context_is_limited():
     assert len(refs) == 1500
     assert context["grupos"][0]["cobertura"] == {"enviados":1500, "existentes":1501}
     assert "12 de 15" in coverage
+
+
+def test_moeda_do_gemini_sempre_em_formato_brasileiro():
+    assert fiscal_ai.formatar_brl(1234567.8) == "R$ 1.234.567,80"
+    assert fiscal_ai.formatar_brl(-4282.5) == "-R$ 4.282,50"
+    assert fiscal_ai.formatar_brl(0) == "R$ 0,00"
+    fonte = "Conta 22643: R$ 1234.56; R$ 1,234.56; R$ 1.234,56. Diferença R$ -91.52."
+    corrigido = fiscal_ai.padronizar_moeda(fonte)
+    assert corrigido == (
+        "Conta 22643: R$ 1.234,56; R$ 1.234,56; R$ 1.234,56. "
+        "Diferença -R$ 91,52."
+    )
+
+
+def test_gemini_recebe_formatos_brl_e_devolve_valores_oficiais(monkeypatch):
+    source = report()
+    captured = {}
+    monkeypatch.setenv("GEMINI_API_KEY", "test-secret")
+    monkeypatch.setattr(fiscal_ai, "last_request", 0)
+    class Resposta:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, limit):
+            return json.dumps({"candidates":[{"finishReason":"STOP","content":{"parts":[{"text":json.dumps({
+                "analises":[{"grupo":"G1","explicacao":"Falta R$ 9123.45.",
+                             "verificar":"Verifique R$ 9,123.45.", "evidencias":[]}],
+            })}]}}]}).encode()
+    def fake_urlopen(req, timeout):
+        body = json.loads(req.data)
+        captured["payload"] = body
+        assert "R$ 9.123,45" in body["contents"][0]["parts"][0]["text"]
+        return Resposta()
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", fake_urlopen)
+    result = fiscal_ai.explain(source)
+    item = result["analises"][0]
+    assert item["valores"]["fiscal"] == 9123.45
+    assert item["valores"]["diferenca"] == -9123.45
+    assert item["explicacao"] == "Falta R$ 9.123,45."
+    assert item["verificar"] == "Verifique R$ 9.123,45."
