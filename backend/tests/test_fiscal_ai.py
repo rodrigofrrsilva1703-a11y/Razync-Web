@@ -71,7 +71,7 @@ def test_invalid_group_is_rejected(monkeypatch):
 def test_missing_key_does_not_require_admin(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     client = TestClient(app)
-    assert client.get("/api/v1/conferencia-fiscal/242/ia/status").json() == {"configurado":False, "provedor":None, "gratuito":True, "fallback_gemini":False}
+    assert client.get("/api/v1/conferencia-fiscal/242/ia/status").json() == {"configurado":False, "provedor":None, "gratuito":True, "fallback_gemini":False, "cooperacao":False}
     files = {"acumuladores":("fiscal.xlsx",b"fake"),"razao":("razao.xlsx",b"fake")}
     assert client.post("/api/v1/conferencia-fiscal/242/ia",files=files).status_code == 503
 
@@ -163,15 +163,15 @@ def test_evidence_returns_original_record_and_full_history(monkeypatch):
     assert result["analises"][0]["evidencias"][0]["debito"] == 1000
 
 
-def test_coverage_explicit_when_context_is_limited():
+def test_context_preserva_todos_grupos_e_registros():
     source = report()
     source["contas"] = [dict(source["contas"][0], conta=str(i)) for i in range(15)]
     source["lancamentos"] = [dict(conta="0", historico="Original", debito=1) for _ in range(1501)]
     context, mapping, refs, coverage = fiscal_ai.detailed_context(source)
-    assert len(mapping) == 12
-    assert len(refs) == 1500
-    assert context["grupos"][0]["cobertura"] == {"enviados":1500, "existentes":1501}
-    assert "12 de 15" in coverage
+    assert len(mapping) == 15
+    assert len(refs) == 1501
+    assert context["grupos"][0]["cobertura"] == {"enviados":1501, "existentes":1501}
+    assert "15 de 15" in coverage
 
 
 def test_moeda_do_gemini_sempre_em_formato_brasileiro():
@@ -357,7 +357,6 @@ def test_exportar_analise_gemini_rejeita_conteudo_vazio_ou_excessivo():
     client = TestClient(app)
     for payload in [
         {"analises":[]},
-        {"analises":[{"conta":"1"}] * 16},
         {"analises":[{"conta":"1", "explicacao":"X" * 6001}]},
     ]:
         response = client.post("/api/v1/conferencia-fiscal/ia/exportar", json=payload)
@@ -425,11 +424,11 @@ def test_openrouter_status_tem_prioridade_e_gemini_continua_reserva(monkeypatch)
     client = TestClient(app)
     monkeypatch.setenv("GEMINI_API_KEY","gemini-legacy")
     assert client.get("/api/v1/conferencia-fiscal/ia/status").json() == {
-        "configurado": True, "provedor": "gemini", "gratuito": False, "fallback_gemini":False
+        "configurado": True, "provedor": "gemini", "gratuito": False, "fallback_gemini":False, "cooperacao":False
     }
     monkeypatch.setenv("OPENROUTER_API_KEY","or-key")
     assert client.get("/api/v1/conferencia-fiscal/ia/status").json() == {
-        "configurado": True, "provedor": "openrouter", "gratuito": True, "fallback_gemini":False
+        "configurado": True, "provedor": "openrouter", "gratuito": True, "fallback_gemini":False, "cooperacao":False
     }
 
 
@@ -532,7 +531,7 @@ def test_sem_chave_openrouter_nao_ativa_gemini_por_padrao(monkeypatch):
     monkeypatch.delenv("RAZYNC_AI_LEGACY_GEMINI", raising=False)
     monkeypatch.setenv("GEMINI_API_KEY", "gemini-key")
     response = TestClient(app).get("/api/v1/conferencia-fiscal/ia/status")
-    assert response.json() == {"configurado":False, "provedor":None, "gratuito":True, "fallback_gemini":False}
+    assert response.json() == {"configurado":False, "provedor":None, "gratuito":True, "fallback_gemini":False, "cooperacao":False}
     files={"acumuladores":("fiscal.xlsx",b"x"),"razao":("razao.xlsx",b"y")}
     response = TestClient(app).post("/api/v1/conferencia-fiscal/ia",files=files)
     assert response.status_code == 503

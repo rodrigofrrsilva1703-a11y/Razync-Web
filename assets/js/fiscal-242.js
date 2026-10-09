@@ -57,9 +57,9 @@
       const result = await response.json();
       if (statusController !== controller) return;
       aiConfigured = result.configurado === true;
-      const providerName = result.provedor === "groq" ? "GroqCloud" : result.provedor === "openrouter" ? "OpenRouter" : "Gemini";
+      const providerName = result.cooperacao === true ? "Gemini + Groq" : result.provedor === "groq" ? "GroqCloud" : result.provedor === "openrouter" ? "OpenRouter" : "Gemini";
       aiProvider.textContent = aiConfigured
-        ? (result.gratuito === true && result.provedor === "openrouter" ? "OpenRouter · gratuito" : result.gratuito === true && result.provedor === "groq" ? "GroqCloud · gratuito" : providerName)
+        ? (result.cooperacao === true ? "Gemini + Groq · gratuito" : result.gratuito === true && result.provedor === "openrouter" ? "OpenRouter · gratuito" : result.gratuito === true && result.provedor === "groq" ? "GroqCloud · gratuito" : providerName)
         : "IA";
       aiButton.disabled = !aiConfigured || !previewBody || Boolean(aiController);
       if (!aiController && !aiResult.children.length) aiMessage.textContent = aiConfigured
@@ -190,6 +190,68 @@
     for (const {card} of aiCards) card.open = false;
   });
 
+  async function analyzeInBatches(snapshot, controller, onProgress) {
+    const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/sessoes", {
+      method:"POST", body:snapshot, signal:controller.signal
+    });
+    // Durante a publicação, o frontend pode chegar antes da nova API.
+    if (response.status === 404) {
+      const legacy = await fetch(API() + "/api/v1/conferencia-fiscal/ia", {
+        method:"POST", body:snapshot, signal:controller.signal
+      });
+      if (!legacy.ok) throw new Error(await responseError(legacy));
+      return legacy.json();
+    }
+    if (!response.ok) throw new Error(await responseError(response));
+    const session = await response.json();
+    const url = API() + "/api/v1/conferencia-fiscal/ia/sessoes/" + encodeURIComponent(session.sessao);
+    const results = new Map();
+    const failures = [];
+    let completed = 0;
+    const cleanup = () => fetch(url, {method:"DELETE", keepalive:true}).catch(() => {});
+    controller.signal.addEventListener("abort", cleanup, {once:true});
+    try {
+      const providers = [...new Set(session.lotes.map(batch => batch.provedor))];
+      await Promise.all(providers.map(async provider => {
+        for (const batch of session.lotes.filter(item => item.provedor === provider)) {
+          if (controller.signal.aborted) throw new DOMException("Cancelado", "AbortError");
+          try {
+            const reply = await fetch(url + "/lotes/" + batch.id, {method:"POST", signal:controller.signal});
+            if (!reply.ok) throw new Error(await responseError(reply));
+            const result = await reply.json();
+            results.set(batch.id, result);
+            completed += result.analises.length;
+          } catch (error) {
+            if (controller.signal.aborted) throw error;
+            failures.push({lote:batch.id, grupos:batch.grupos, mensagem:error.message});
+          }
+          onProgress(completed, session.grupos, failures.length);
+        }
+      }));
+      if (controller.signal.aborted) throw new DOMException("Cancelado", "AbortError");
+      if (!results.size && failures.length) throw new Error(failures[0].mensagem);
+      const ordered = [...results.entries()].sort((a,b) => a[0] - b[0]).map(entry => entry[1]);
+      const actualProviders = [...new Set(ordered.map(result => result.provedor))];
+      const pending = session.grupos - completed;
+      return {
+        analises:ordered.flatMap(result => result.analises),
+        provedor:actualProviders.length > 1 ? "cooperacao" : actualProviders[0],
+        nomes_provedores:actualProviders.map(provider => provider === "groq" ? "Groq" : provider === "gemini" ? "Gemini" : "OpenRouter").join(" + "),
+        gratuito:ordered.every(result => result.gratuito === true),
+        modelo_usado:[...new Set(ordered.map(result => result.modelo_usado).filter(Boolean))].join("; "),
+        fallback_usado:ordered.some(result => result.fallback_usado),
+        aviso:pending ? "Análise parcial: " + completed + " de " + session.grupos + " grupos concluídos; " + pending + " pendentes. " + failures.map(item => item.mensagem).join(" ")
+          : "Análise concluída para todos os " + session.grupos + " grupos com alertas/divergências. Sugestões para revisão humana; os cálculos foram preservados.",
+        limite:session.registros + " registros disponíveis no processamento local, sem corte global de 1.500 registros ou 12 grupos. " +
+          (actualProviders.includes("groq") ? "Groq recebeu até 10 históricos de 180 caracteres por grupo e indicadores locais; não fez leitura integral dos lançamentos. " : "") +
+          "Cada lote segue os limites de contexto e cota do provedor."
+      };
+    } finally {
+      controller.signal.removeEventListener("abort", cleanup);
+      cleanup();
+    }
+  }
+
   const aiCancelButton = node("button", "secondary-action fiscal-ai-cancel", "Cancelar");
   aiCancelButton.type = "button";
   aiCancelButton.hidden = true;
@@ -219,13 +281,17 @@
         (secs >= 25 ? "Modelos gratuitos podem ter fila; aguarde ou cancele." : "Validando contas e evidências.");
     }, 4000);
     try {
-      const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia", {method:"POST",body:snapshot,signal:controller.signal});
-      if (!response.ok) throw new Error(await responseError(response));
-      const result = await response.json();
+      const result = await analyzeInBatches(snapshot, controller, (done, total, failed) => {
+        if (aiController !== controller || controller.signal.aborted) return;
+        aiInlineStatus.textContent = done + " de " + total + " grupos concluídos" +
+          (failed ? " · " + failed + " lotes pendentes" : "") + ". Gemini e Groq processam lotes independentes conforme disponibilidade.";
+      });
       if (controller.signal.aborted || previewBody !== snapshot) return;
       aiReport = result;
       // A troca de provedor é transparente: os mesmos pareceres são renderizados.
-      if (result.provedor === "gemini") {
+      if (result.provedor === "cooperacao") {
+        aiProvider.textContent = (result.nomes_provedores || "Gemini + Groq") + " · gratuito";
+      } else if (result.provedor === "gemini") {
         aiProvider.textContent = result.gratuito === true ? "Gemini · gratuito" : "Gemini";
       } else if (result.provedor === "openrouter") {
         aiProvider.textContent = "OpenRouter · gratuito";
@@ -233,7 +299,7 @@
         aiProvider.textContent = "GroqCloud · gratuito";
       }
       aiExport.disabled = !(Array.isArray(result.analises) && result.analises.length);
-      const providerLabel = result.provedor === "groq" ? "GroqCloud" : result.provedor === "openrouter" ? "OpenRouter" : result.provedor === "gemini" ? "Gemini" : "IA";
+      const providerLabel = result.provedor === "cooperacao" ? (result.nomes_provedores || "Gemini + Groq") : result.provedor === "groq" ? "GroqCloud" : result.provedor === "openrouter" ? "OpenRouter" : result.provedor === "gemini" ? "Gemini" : "IA";
       aiInlineStatus.textContent = result.analises?.length
         ? "Parecer recebido do " + providerLabel + ". Selecione uma conta para ler a análise ou exporte o Excel."
         : "O " + providerLabel + " concluiu a análise. Não foram identificadas contas a explicar.";
@@ -247,6 +313,7 @@
         title.appendChild(node("h4", "", `Conta ${item.conta}`));
         if (item.descricao) title.appendChild(node("p", "fiscal-ai-card-description", item.descricao));
         const metadata = node("div", "fiscal-ai-card-meta");
+        if (item.provedor) metadata.appendChild(node("span", "fiscal-ai-type", item.provedor === "groq" ? "Groq" : item.provedor === "gemini" ? "Gemini" : "OpenRouter"));
         if (item.tipo) metadata.appendChild(node("span", "fiscal-ai-type", item.tipo));
         if (item.situacao) metadata.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(item.situacao), statusLabels[item.situacao] || item.situacao));
         const compact = node("div", "fiscal-ai-account-compact");

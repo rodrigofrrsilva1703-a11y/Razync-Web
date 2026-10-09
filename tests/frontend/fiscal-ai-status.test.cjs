@@ -268,3 +268,68 @@ test("botão de teste OpenRouter não aparece na conferência fiscal", () => {
   assert.match(html,/Analisar diferenças com IA/);
   assert.match(source,/Atualizar conexão/);
 });
+
+
+function batchContext(fetch) {
+  const context = {fetch, AbortController, DOMException, Map, Set, API:()=>'/api',
+    responseError:async response=>response.error || 'Falha no provedor'};
+  vm.createContext(context);
+  const start = source.indexOf('  async function analyzeInBatches(');
+  const end = source.indexOf('  const aiCancelButton =', start);
+  vm.runInContext(source.slice(start,end), context);
+  return context;
+}
+
+test('lotes executam Gemini e Groq juntos, sem duas chamadas simultâneas no mesmo provedor', async()=>{
+  const active = new Set(); const maxima = []; const progress = []; const calls=[];
+  const manifest={sessao:'ficticia', grupos:8, registros:2001, lotes:[
+    {id:0,provedor:'groq',grupos:2}, {id:1,provedor:'gemini',grupos:2},
+    {id:2,provedor:'groq',grupos:2}, {id:3,provedor:'gemini',grupos:2}]};
+  const context = batchContext(async (url, options)=>{
+    calls.push(url);
+    if (options.method==='DELETE') return {ok:true};
+    if (url.endsWith('/sessoes')) return {ok:true,json:async()=>manifest};
+    const id = Number(url.split('/').pop()); const provider=manifest.lotes[id].provedor;
+    assert.ok(!active.has(provider)); active.add(provider); maxima.push(active.size);
+    await new Promise(resolve=>setImmediate(resolve));
+    active.delete(provider);
+    return {ok:true,json:async()=>({provedor:provider,gratuito:true,modelo_usado:provider,
+      analises:[{conta:String(id*2)},{conta:String(id*2+1)}]})};
+  });
+  const result = await context.analyzeInBatches({},new AbortController(),(...args)=>progress.push(args));
+  assert.equal(Math.max(...maxima),2);
+  assert.equal(result.analises.length,8);
+  assert.deepEqual(Array.from(result.analises,a=>a.conta),['0','1','2','3','4','5','6','7']);
+  assert.equal(result.provedor,'cooperacao');
+  assert.equal(result.gratuito,true);
+  assert.match(result.limite,/2001 registros/);
+  assert.equal(calls.filter(url=>url.endsWith('/sessoes')).length,1);
+  assert.deepEqual(progress.at(-1),[8,8,0]);
+});
+
+test('falha de um lote mantém os pareceres concluídos e informa análise parcial',async()=>{
+  const manifest={sessao:'ficticia', grupos:4, registros:2001, lotes:[
+    {id:0,provedor:'groq',grupos:2},{id:1,provedor:'gemini',grupos:2}]};
+  const context=batchContext(async (url,options)=>{
+    if(options.method==='DELETE')return {ok:true};
+    if(url.endsWith('/sessoes'))return {ok:true,json:async()=>manifest};
+    if(url.endsWith('/1'))return {ok:false,error:'Cota Gemini esgotada'};
+    return {ok:true,json:async()=>({provedor:'groq',gratuito:true,analises:[{conta:'1'},{conta:'2'}]})};
+  });
+  const result=await context.analyzeInBatches({},new AbortController(),()=>{});
+  assert.equal(result.analises.length,2);
+  assert.match(result.aviso,/Análise parcial: 2 de 4/);
+  assert.match(result.aviso,/Cota Gemini esgotada/);
+});
+
+test('publicação gradual usa endpoint anterior enquanto API de sessões não está pronta',async()=>{
+  const calls=[];
+  const context=batchContext(async(url,options)=>{
+    calls.push(url);
+    if(url.endsWith('/sessoes'))return {ok:false,status:404};
+    return {ok:true,json:async()=>({analises:[{conta:'1'}],provedor:'groq'})};
+  });
+  const result=await context.analyzeInBatches({},new AbortController(),()=>{});
+  assert.equal(result.analises.length,1);
+  assert.deepEqual(calls,['/api/api/v1/conferencia-fiscal/ia/sessoes','/api/api/v1/conferencia-fiscal/ia']);
+});

@@ -815,3 +815,6 @@ app.include_router(migration_router)
 
 from app.fiscal_ai import legacy_router as fiscal_ai_legacy_router
 app.include_router(fiscal_ai_legacy_router)
+
+from app.fiscal_ai_sessions import router as fiscal_ai_sessions_router
+app.include_router(fiscal_ai_sessions_router)

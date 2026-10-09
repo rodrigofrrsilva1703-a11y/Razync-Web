@@ -84,8 +84,6 @@ def sanitized(report):
     for row in report["contas"]:
         if row["situacao"] == "CONFERE":
             continue
-        if len(groups) == 60:
-            break
         ident = f"G{len(groups) + 1}"
         mapping[ident] = {"conta": row["conta"], "tipo": row["tipo"]}
         groups.append({"grupo": ident,
@@ -99,11 +97,11 @@ def sanitized(report):
 def detailed_context(report):
     """Send extracted records with stable references and explicit coverage limits."""
     groups, mapping = sanitized(report)
-    groups = groups[:12]
-    mapping = {g["grupo"]: mapping[g["grupo"]] for g in groups}
     rows = report.get("lancamentos", [])
     references = {}
-    remaining = 1500
+    indexed = {}
+    for i, row in enumerate(rows, 1):
+        indexed.setdefault(row.get("conta"), []).append((i, row))
     for group in groups:
         account = mapping[group["grupo"]]
         summary = next(r for r in report["contas"] if r["conta"] == account["conta"] and r["tipo"] == account["tipo"])
@@ -111,12 +109,11 @@ def detailed_context(report):
             "conta", "tipo", "descricao", "acumuladores", "detalhes_fiscais", "fiscal", "contabil", "total_conta", "diferenca", "extras", "sem_evidencia")}
         group["valores_brl"] = {campo: formatar_brl(summary.get(campo, 0))
             for campo in ("fiscal", "contabil", "total_conta", "diferenca")}
-        candidates = [(i, r) for i, r in enumerate(rows, 1) if r.get("conta") == account["conta"]]
-        selected = candidates[:remaining]
-        remaining -= len(selected)
+        candidates = indexed.get(account["conta"], [])
+        selected = candidates
         group["lancamentos"] = []
         for i, row in selected:
-            ref = f"L{i}"
+            ref = row.get("_referencia_ia") or f"L{i}"
             record = {k: row.get(k, "") for k in (
                 "conta", "data", "historico", "contrapartida", "debito", "credito", "natureza", "classificacao")}
             record["referencia"] = ref
@@ -133,7 +130,7 @@ def detailed_context(report):
         "fonte_fiscal": "Resumo por acumulador, sem documentos fiscais individuais",
         "escopo_razao": "Lançamentos das contas vinculadas aos acumuladores, com filtro da filial aplicado",
     }
-    coverage = f"Analisados {len(groups)} de {sum(r['situacao'] != 'CONFERE' for r in report['contas'])} grupos com alertas/divergências; {len(references)} lançamentos distintos enviados. Limite: 12 grupos e 1.500 registros por análise."
+    coverage = f"Analisados {len(groups)} de {sum(r['situacao'] != 'CONFERE' for r in report['contas'])} grupos com alertas/divergências; {len(references)} lançamentos distintos enviados. Sem corte por quantidade de grupos ou registros no contexto local."
     if len(json.dumps(context, ensure_ascii=False).encode()) > 2_000_000:
         raise HTTPException(422, "Os históricos excedem o limite da análise com IA. Envie relatórios de um período menor.")
     return context, mapping, references, coverage
@@ -646,10 +643,11 @@ def _validar_resposta_ia(result, report, mapping, references):
     return output
 
 
-def explain(report):
+def explain(report, preferred_provider=None):
     openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
     gemini_key = _gemini_free_key()
-    groq_ready = _groq_enabled() and os.getenv("RAZYNC_AI_PRIMARY") == "groq"
+    provider_choice = preferred_provider or os.getenv("RAZYNC_AI_PRIMARY", "openrouter")
+    groq_ready = _groq_enabled() and provider_choice == "groq"
     legacy = os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1"
     legacy_direct = not openrouter_key and not gemini_key and legacy
     if legacy_direct:
@@ -792,7 +790,7 @@ def explain(report):
             groq_failed = True
 
     gemini_attempted = False
-    prefer_gemini = (os.getenv("RAZYNC_AI_PRIMARY", "openrouter") == "gemini" or groq_failed) and bool(gemini_key)
+    prefer_gemini = (provider_choice == "gemini" or groq_failed) and bool(gemini_key)
     global gemini_cooldown_until
     if prefer_gemini:
         gemini_attempted = True
@@ -897,6 +895,7 @@ def status():
             else None,
         "gratuito": not (legacy and not gemini_free and not openrouter and not groq_selected),
         "fallback_gemini": bool((openrouter or groq_selected) and gemini_free),
+        "cooperacao": bool(_groq_enabled() and gemini_free),
     }
 
 
@@ -933,9 +932,9 @@ def gerar_excel_analise(payload: dict) -> bytes:
     from openpyxl.utils import get_column_letter
 
     analises = payload.get("analises")
-    if not isinstance(analises, list) or not 1 <= len(analises) <= 15:
-        raise ValueError("Não há análises válidas para exportar (limite de 15 contas).")
-    if len(json.dumps(payload, ensure_ascii=False, default=str)) > 350000:
+    if not isinstance(analises, list) or not analises:
+        raise ValueError("Não há análises válidas para exportar.")
+    if len(json.dumps(payload, ensure_ascii=False, default=str)) > 8_000_000:
         raise ValueError("A análise excede o tamanho permitido para exportação.")
 
     def texto(value, limite=6000):
