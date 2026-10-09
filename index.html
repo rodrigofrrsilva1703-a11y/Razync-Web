@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="./assets/css/refined-theme.css?v=3">
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
-  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=fiscal-universal-1">
+  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=fiscal-layout-2">
 </head>
 <body>
   <div class="app-shell">
@@ -28,7 +28,6 @@
 
     <nav class="main-nav" aria-label="Navegação principal">
       <button class="main-nav-btn active" data-view="companies">Empresas</button>
-      <button class="main-nav-btn" data-view="converter">Conversor de Extratos</button>
       <button class="main-nav-btn" data-view="ledger">Conciliação com Razão</button>
       <button class="main-nav-btn" data-view="fiscal">Conferência Fiscal × Contábil</button>
     </nav>
@@ -69,35 +68,6 @@
         </section>
       </section>
 
-      <section id="converterView" class="global-view">
-        <div class="page-head">
-          <span class="company-code">CONVERSÃO BANCÁRIA</span>
-          <h1>Conversor de Extratos</h1>
-          <p>Envie PDFs, OFX, CSV ou Excel. O Razync identifica o banco, remove saldos e gera um Modelo Domínio consolidado.</p>
-        </div>
-        <div class="tool-card single-card">
-          <div>
-            <h3>Extratos bancários</h3>
-            <p>Você pode enviar vários arquivos de uma vez.</p>
-          </div>
-          <form id="converterForm">
-            <label for="converterFiles">Arquivos</label>
-            <input id="converterFiles" type="file" multiple accept=".pdf,.ofx,.csv,.xls,.xlsx">
-            <fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="converterStart">De</label><input id="converterStart" type="date"></div><div><label for="converterEnd">Até</label><input id="converterEnd" type="date"></div></div><p>Deixe em branco para considerar todo o arquivo.</p></fieldset>
-            <button type="submit">Converter para Modelo Domínio</button>
-            <p id="converterMessage" class="helper"></p>
-          </form>
-          <form id="txtForm">
-            <h3>TXT para Domínio</h3>
-            <label for="txtModel">Modelo Domínio final (uma ou várias abas)</label>
-            <input id="txtModel" type="file" accept=".xlsx" required>
-            <fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="txtStart">De</label><input id="txtStart" type="date"></div><div><label for="txtEnd">Até</label><input id="txtEnd" type="date"></div></div><p>Deixe em branco para exportar todos os lançamentos.</p></fieldset>
-            <button type="submit">Baixar TXT para Domínio</button>
-            <p id="txtMessage" class="helper"></p>
-          </form>
-        </div>
-      </section>
-
       <section id="ledgerView" class="global-view">
         <div class="page-head">
           <span class="company-code">CONFERÊNCIA CONTÁBIL</span>
@@ -123,33 +93,63 @@
       </section>
 
       <section id="fiscalView" class="global-view">
-        <div class="page-head">
-          <span class="company-code">FERRAMENTA UNIVERSAL</span>
+        <div class="page-head fiscal-page-head">
+          <span class="company-code">CONFERÊNCIA DE DOCUMENTOS · DOMÍNIO</span>
           <h1>Conferência Fiscal × Contábil</h1>
-          <p>Compare os relatórios do Domínio de qualquer empresa, sem configurar uma ferramenta por cliente.</p>
+          <p>Envie o Resumo por Acumulador e o Razão da mesma competência. Compare contas, acumuladores e diferenças em um único lugar.</p>
         </div>
-          <div class="tool-card">
+        <div class="fiscal-setup" aria-labelledby="fiscalSetupTitle">
+          <div class="fiscal-setup-heading">
             <div>
-              <span class="company-code">QUALQUER EMPRESA · DOMÍNIO</span>
-              <h3>Conferência Fiscal × Contábil</h3>
-              <p>Envie o Resumo por Acumulador e o Razão da mesma competência. As contas, acumuladores e divergências aparecem nesta página.</p>
+              <h2 id="fiscalSetupTitle">Preparar conferência</h2>
+              <p>Dois relatórios e, se necessário, um filtro de filial. Sem configuração individual por empresa.</p>
             </div>
-            <form id="fiscal242Form" class="modern-form">
-              <div class="form-card-header">
-                <div><strong>Relatórios do Domínio</strong><small>Os dois arquivos devem ser do mesmo período. Os resultados aparecem abaixo.</small></div>
+            <span class="fiscal-setup-filetype">Arquivos Domínio</span>
+          </div>
+          <form id="fiscal242Form" class="fiscal-form">
+            <div class="fiscal-step">
+              <div class="fiscal-step-heading">
+                <span class="fiscal-step-index" aria-hidden="true">01</span>
+                <div><h3>Identificação e filial</h3><p>Preencha somente o que for necessário para esta conferência.</p></div>
               </div>
               <div class="fiscal-context-grid">
-                <div><label for="fiscalEmpresaCodigo">Código da empresa <span>(opcional)</span></label><input id="fiscalEmpresaCodigo" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Ex.: 242"><small>Identificação para o relatório, sem alterar o cálculo.</small></div>
-                <div><label for="fiscalFilialCodigo">Filial no Razão <span>(quando houver várias)</span></label><input id="fiscalFilialCodigo" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Ex.: 1, 242 ou 1408"><small>Use o código da coluna Filial no arquivo. Se houver só uma, o sistema identifica automaticamente.</small></div>
+                <div class="fiscal-field">
+                  <label for="fiscalEmpresaCodigo">Código da empresa <span>(opcional)</span></label>
+                  <input id="fiscalEmpresaCodigo" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Ex.: 242">
+                  <small>Usado para identificar o relatório; não altera os valores.</small>
+                </div>
+                <div class="fiscal-field">
+                  <label for="fiscalFilialCodigo">Filial do Razão <span>(se houver várias)</span></label>
+                  <input id="fiscalFilialCodigo" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Ex.: 242 ou 1408">
+                  <small>Use o código presente na coluna Filial. Com apenas uma filial, o Razync a identifica.</small>
+                </div>
+              </div>
+            </div>
+            <div class="fiscal-step">
+              <div class="fiscal-step-heading">
+                <span class="fiscal-step-index" aria-hidden="true">02</span>
+                <div><h3>Relatórios para comparação</h3><p>Selecione os dois arquivos exportados do Domínio, referentes ao mesmo período.</p></div>
               </div>
               <div class="fiscal-upload-grid">
-                <div><label for="fiscal242Acumuladores">Resumo por Acumulador</label><input type="file" id="fiscal242Acumuladores" accept=".xls,.xlsx" required></div>
-                <div><label for="fiscal242Razao">Razão Domínio (.xls, .xlsx ou .csv)</label><input type="file" id="fiscal242Razao" accept=".csv,.xls,.xlsx" required><small>Envie o arquivo Razão.xls original; não é necessário convertê-lo.</small></div>
+                <div class="fiscal-upload-item">
+                  <div class="fiscal-upload-label"><span class="fiscal-upload-symbol" aria-hidden="true">▤</span><div><label for="fiscal242Acumuladores">Resumo por Acumulador</label><small>Planilha fiscal · XLS ou XLSX</small></div></div>
+                  <input type="file" id="fiscal242Acumuladores" accept=".xls,.xlsx" required>
+                  <span class="fiscal-file-selected" id="fiscal242AcumuladoresName" aria-live="polite">Nenhum arquivo selecionado</span>
+                </div>
+                <div class="fiscal-upload-item">
+                  <div class="fiscal-upload-label"><span class="fiscal-upload-symbol" aria-hidden="true">▤</span><div><label for="fiscal242Razao">Razão contábil</label><small>Planilha do Domínio · XLS, XLSX ou CSV</small></div></div>
+                  <input type="file" id="fiscal242Razao" accept=".csv,.xls,.xlsx" required>
+                  <span class="fiscal-file-selected" id="fiscal242RazaoName" aria-live="polite">Nenhum arquivo selecionado</span>
+                </div>
               </div>
-              <button type="submit" id="fiscal242Submit">Conferir contas</button>
-              <p id="fiscal242Message" class="helper" role="status" aria-live="polite"></p>
-            </form>
-          </div>
+            </div>
+            <div class="fiscal-form-actions">
+              <p>Os resultados aparecerão nesta página, com as contas e os acumuladores fiscais correspondentes.</p>
+              <button type="submit" id="fiscal242Submit">Conferir contas <span aria-hidden="true">→</span></button>
+            </div>
+            <p id="fiscal242Message" class="helper" role="status" aria-live="polite"></p>
+          </form>
+        </div>
           <section id="fiscal242Results" class="fiscal-results" aria-live="polite" hidden>
             <div class="fiscal-summary">
               <div><strong id="fiscal242Total">—</strong><span>Contas analisadas</span></div>
@@ -432,9 +432,9 @@
   <script src="./assets/js/date-fields.js?v=1"></script>
   <script src="./assets/js/workspace-ui.js?v=5"></script>
   <script src="./assets/js/company-guides.js?v=2"></script>
-  <script src="./assets/js/app.js?v=fiscal-universal-1"></script>
+  <script src="./assets/js/app.js?v=fiscal-layout-2"></script>
   <script src="./assets/js/migration.js?v=fiscal-universal-1"></script>
-  <script src="./assets/js/fiscal-242.js?v=fiscal-universal-1"></script>
+  <script src="./assets/js/fiscal-242.js?v=fiscal-layout-2"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>
