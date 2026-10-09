@@ -33,7 +33,7 @@ def gateway(monkeypatch, answer):
         assert "test-secret" not in req.full_url
         assert timeout == 45
         payload = req.data.decode()
-        assert "9123" not in payload and "22643" not in payload and "JOAO" not in payload
+        assert "9123" in payload and "22643" in payload and "JOAO" not in payload
         return Response()
     monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", request)
 
@@ -122,3 +122,41 @@ def test_unavailable_configured_model_retries_flash_lite(monkeypatch):
     assert fiscal_ai.explain(report())["analises"][0]["conta"] == "22643"
     assert len(calls) == 2
     assert "gemini-3.1-flash-lite" in calls[1]
+
+
+def test_detailed_context_includes_authorized_records_and_totals():
+    source = report()
+    source["lancamentos"] = [{"conta":"22643", "historico":"Fornecedor JOAO CPF 12345678900", "data":"03/08/2026", "debito":1000, "credito":0}]
+    context, mapping, refs, coverage = fiscal_ai.detailed_context(source)
+    assert context["grupos"][0]["resumo"]["diferenca"] == -9123.45
+    assert refs["L1"]["historico"] == "Fornecedor JOAO CPF 12345678900"
+    assert refs["L1"]["debito"] == 1000
+    assert "1 lançamentos" in coverage
+    assert "sem documentos fiscais individuais" in context["fonte_fiscal"]
+
+
+def test_invented_evidence_is_rejected(monkeypatch):
+    gateway(monkeypatch, {"analises":[{"grupo":"G1", "explicacao":"Teste", "verificar":"Conferir", "evidencias":["L999"]}]})
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(report())
+    assert error.value.status_code == 502
+
+
+def test_evidence_returns_original_record_and_full_history(monkeypatch):
+    gateway(monkeypatch, {"analises":[{"grupo":"G1", "explicacao":"Revisar L1", "verificar":"Conferir documento", "evidencias":["L1"]}]})
+    source = report()
+    source["lancamentos"] = [{"conta":"22643", "historico":"Histórico completo do fornecedor", "debito":1000, "credito":0}]
+    result = fiscal_ai.explain(source)
+    assert result["analises"][0]["evidencias"][0]["historico"] == "Histórico completo do fornecedor"
+    assert result["analises"][0]["evidencias"][0]["debito"] == 1000
+
+
+def test_coverage_explicit_when_context_is_limited():
+    source = report()
+    source["contas"] = [dict(source["contas"][0], conta=str(i)) for i in range(15)]
+    source["lancamentos"] = [dict(conta="0", historico="Original", debito=1) for _ in range(1501)]
+    context, mapping, refs, coverage = fiscal_ai.detailed_context(source)
+    assert len(mapping) == 12
+    assert len(refs) == 1500
+    assert context["grupos"][0]["cobertura"] == {"enviados":1500, "existentes":1501}
+    assert "12 de 15" in coverage

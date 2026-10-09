@@ -1,16 +1,13 @@
-# Gemini — piloto fiscal da 242
+# Gemini — Conferência Fiscal 242
 
-No Railway, serviço `razync-api`, configure em Variables:
+Configure GEMINI_API_KEY no Railway. Modelo padrão: gemini-3.1-flash-lite.
+Não exige senha administrativa. Intervalo mínimo de 15 segundos entre análises.
+Se o modelo configurado retornar 404, tenta Flash Lite uma vez.
 
-- `GEMINI_API_KEY`: chave criada no Google AI Studio. Nunca salvar no GitHub ou no frontend.
-- `GEMINI_MODEL`: modelo compatível com generateContent e saída JSON; padrão `gemini-3.1-flash-lite`. Confirme disponibilidade e cota no seu projeto Google.
+## Dados e resultado
 
-Após a publicação, abra a 242, faça a conferência. Não é necessária senha administrativa. Clique em “Analisar diferenças com IA”. Não informe a chave Gemini no site.
+Mediante autorização do usuário, o Google recebe os dados extraídos dos relatórios: totais fiscais e contábeis, datas, contas, contrapartidas, débitos, créditos e históricos completos (inclusive eventuais nomes e documentos). Os arquivos binários não são enviados. O aviso na interface informa esse tratamento.
 
-O servidor relê os mesmos arquivos da prévia. Somente categorias anônimas são enviadas ao Google: grupo temporário G1/G2, situação, débito/crédito, falta/excesso/zero e existência de adicionais. Não envia valores, datas, históricos, nomes, números de contas, documentos ou arquivos. O código da conta é associado novamente à resposta somente no servidor.
+A análise considera até 12 grupos com divergências/alertas e 1.500 registros, com cobertura declarada. Os registros pertencem às contas vinculadas aos acumuladores e à filial selecionada. Não representa auditoria integral do razão. Históricos excedendo 2 MB no contexto exigem um período menor.
 
-A IA explica categorias e propõe verificações; não lê os documentos originais, identifica duplicidade como fato nem altera cálculos, classificação ou Excel. As respostas são sugestões para revisão humana. Limite de 60 grupos e intervalo de 15 segundos entre chamadas por processo. Sem cache persistente de relatórios ou respostas.
-
-Sem chave, sem cota, em falha de rede ou resposta inválida, a conferência normal permanece disponível. Testes usam respostas simuladas; é necessária uma chave válida para homologar uma chamada real ao Gemini.
-
-Se o modelo configurado retornar 404, a integração tenta uma vez gemini-3.1-flash-lite. Outros erros não provocam troca de modelo.
+O fiscal é resumo por acumulador, sem notas individuais. A IA deve distinguir fatos de hipóteses, respeitar diferença = contábil compatível - fiscal e não afirmar uma nota faltante sem evidência. Referências de evidências são verificadas no servidor e exibidas com os registros originais. A IA não altera cálculos ou arquivos; suas conclusões exigem revisão humana.

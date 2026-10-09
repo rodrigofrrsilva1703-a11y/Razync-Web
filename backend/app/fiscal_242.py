@@ -149,6 +149,9 @@ def conferencia_fiscal_preview(
             "descricao": " | ".join(descricoes[:2]),
             "tipo": tipo,
             "acumuladores": str(item["ACUMULADORES"]),
+            "detalhes_fiscais": [{"codigo": str(a["ACUMULADOR"]),
+                "descricao": str(a["DESCRIÇÃO"]), "valor": round(float(a["VALOR_FISCAL"]), 2)}
+                for _, a in vinculados.iterrows()],
             "fiscal": round(float(item["VALOR FISCAL"]), 2),
             "contabil": round(float(item["CONTÁBIL COMPATÍVEL"]), 2),
             "total_conta": round(float(item["TOTAL DA CONTA"]), 2),

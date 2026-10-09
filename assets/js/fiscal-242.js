@@ -65,7 +65,7 @@
     if (!previewBody || !aiConfigured || Number(selected?.codigo) !== 242) return;
     aiController?.abort(); const controller = new AbortController(); aiController = controller;
     const snapshot = previewBody; aiButton.disabled = true; aiResult.replaceChildren();
-    aiMessage.textContent = "Analisando diferenças com Gemini…";
+    aiMessage.textContent = "Analisando lançamentos e diferenças com Gemini…";
     try {
       const response = await fetch(API() + "/api/v1/conferencia-fiscal/242/ia", {method:"POST",body:snapshot,signal:controller.signal});
       if (!response.ok) throw new Error(await responseError(response));
@@ -74,6 +74,15 @@
       for (const item of result.analises || []) {
         const card = node("article", "");
         card.append(node("strong", "", `Conta ${item.conta} · ${item.tipo}`), node("p", "", item.explicacao), node("p", "", "Verificar: " + item.verificar));
+        if (item.evidencias?.length) {
+          const details = node("details", "");
+          details.append(node("summary", "", `Lançamentos citados (${item.evidencias.length})`));
+          for (const row of item.evidencias) {
+            const value = n => Number(n || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+            details.append(node("p", "", `${row.referencia} · ${row.data} · Conta ${row.conta} · Contrapartida ${row.contrapartida} · Débito ${value(row.debito)} · Crédito ${value(row.credito)}`), node("p", "", row.historico));
+          }
+          card.append(details);
+        }
         aiResult.append(card);
       }
       aiMessage.textContent = result.aviso + (result.limite ? " " + result.limite : "");
