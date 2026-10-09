@@ -33,6 +33,18 @@
   const aiButton = byId("fiscal242AI");
   const aiMessage = byId("fiscal242AIMessage");
   const aiResult = byId("fiscal242AIResult");
+  const aiDrawer = byId("fiscal242AIDrawer");
+  const aiBackdrop = byId("fiscal242AIBackdrop");
+  const aiOpen = byId("fiscal242AIOpen");
+  const aiBubble = byId("fiscal242AIBubble");
+  const aiMinimize = byId("fiscal242AIMinimize");
+  const aiClose = byId("fiscal242AIClose");
+  const aiExport = byId("fiscal242AIExport");
+  const aiRunInside = byId("fiscal242AIRunInside");
+  const aiInlineStatus = byId("fiscal242AIStatus");
+  const aiCompany = byId("fiscal242AICompany");
+  let aiReport = null;
+  let aiReturnFocus = null;
   let statusController = null;
   async function refreshAIStatus() {
     statusController?.abort();
@@ -45,6 +57,7 @@
       if (statusController !== controller) return;
       aiConfigured = result.configurado === true;
       aiButton.disabled = !aiConfigured || !previewBody || Boolean(aiController);
+      if (typeof aiRunInside !== "undefined" && aiRunInside) aiRunInside.disabled = aiButton.disabled;
       if (!aiController && !aiResult.children.length) aiMessage.textContent = aiConfigured
         ? (previewBody ? "Gemini conectado. Clique em Analisar diferenças com IA." : "Gemini conectado. Faça a conferência para analisar as diferenças.")
         : "Gemini ainda não configurado. Após adicionar a chave no Railway, clique em Atualizar conexão.";
@@ -63,6 +76,86 @@
   navigation.addEventListener("click", refreshAIStatus);
   window.addEventListener("focus", () => { if (pane.classList.contains("active")) refreshAIStatus(); });
   refreshAIStatus();
+
+  function showAIPanel() {
+    if (!previewBody) return;
+    aiReturnFocus = document.activeElement;
+    aiDrawer.hidden = false;
+    aiBackdrop.hidden = false;
+    aiBubble.hidden = true;
+    aiOpen.setAttribute("aria-expanded", "true");
+    aiMinimize.focus();
+  }
+  function hideAIPanel(minimized = false) {
+    aiDrawer.hidden = true;
+    aiBackdrop.hidden = true;
+    aiBubble.hidden = !minimized || !previewBody;
+    aiOpen.setAttribute("aria-expanded", "false");
+    if (minimized && !aiBubble.hidden) aiBubble.focus();
+    else if (aiReturnFocus && aiReturnFocus.isConnected && !aiReturnFocus.closest("[hidden]")) aiReturnFocus.focus();
+    else if (!aiOpen.disabled && aiOpen.isConnected) aiOpen.focus();
+  }
+  aiOpen.addEventListener("click", showAIPanel);
+  aiBubble.addEventListener("click", showAIPanel);
+  aiMinimize.addEventListener("click", () => hideAIPanel(true));
+  aiClose.addEventListener("click", () => hideAIPanel(false));
+  aiBackdrop.addEventListener("click", () => hideAIPanel(true));
+  aiRunInside.addEventListener("click", () => { if (!aiButton.disabled) aiButton.click(); });
+  document.addEventListener("keydown", event => {
+    if (aiDrawer.hidden) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      hideAIPanel(true);
+    } else if (event.key === "Tab") {
+      const focusable = Array.from(aiDrawer.querySelectorAll(
+        'button:not(:disabled), summary, a[href], input:not(:disabled), select:not(:disabled), [tabindex="0"]'
+      )).filter(el => el.getClientRects().length > 0);
+      if (!focusable.length) return;
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+  });
+  document.querySelectorAll(".main-nav-btn").forEach(button => {
+    if (button.dataset.view !== "fiscal") {
+      button.addEventListener("click", () => { if (!aiDrawer.hidden) hideAIPanel(false); });
+    }
+  });
+
+  aiExport.addEventListener("click", async () => {
+    if (!aiReport?.analises?.length || !data) return;
+    const current = aiReport;
+    const company = String(data.empresa_nome || "GERAL");
+    aiExport.disabled = true;
+    aiMessage.textContent = "Preparando a planilha Excel com o parecer e os lançamentos citados…";
+    try {
+      const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/exportar", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          empresa_nome: company,
+          filial: data.filial_aplicada || "",
+          analises: current.analises
+        })
+      });
+      if (!response.ok) throw new Error(await responseError(response));
+      if (aiReport !== current) return;
+      const safeName = company.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0,48) || "GERAL";
+      await downloadBlob(response, "RAZYNC_" + safeName + "_ANALISE_GEMINI.xlsx");
+      aiMessage.textContent = "Excel gerado com sucesso. O arquivo inclui análises, acumuladores e lançamentos citados.";
+    } catch (error) {
+      if (aiReport === current) aiMessage.textContent = error.message || "Não foi possível exportar a análise.";
+    } finally {
+      aiExport.disabled = aiReport !== current || !aiReport?.analises?.length;
+    }
+  });
+
   function renderNarrative(textValue) {
     const wrap = node("div", "fiscal-ai-narrative");
     const segments = String(textValue || "").trim().split(/\n\s*\n/).map(x => x.trim()).filter(Boolean);
@@ -97,8 +190,11 @@
   }
   aiButton.addEventListener("click", async () => {
     if (!previewBody || !aiConfigured) return;
+    showAIPanel();
+    aiReport = null;
+    aiExport.disabled = true;
     aiController?.abort(); const controller = new AbortController(); aiController = controller;
-    const snapshot = previewBody; aiButton.disabled = true; aiResult.replaceChildren();
+    const snapshot = previewBody; aiButton.disabled = true; aiRunInside.disabled = true; aiResult.replaceChildren();
     aiResult.setAttribute("aria-busy", "true");
     aiMessage.textContent = "Analisando lançamentos e diferenças com Gemini…";
     try {
@@ -106,6 +202,11 @@
       if (!response.ok) throw new Error(await responseError(response));
       const result = await response.json();
       if (controller.signal.aborted || previewBody !== snapshot) return;
+      aiReport = result;
+      aiExport.disabled = !(Array.isArray(result.analises) && result.analises.length);
+      aiInlineStatus.textContent = result.analises?.length
+        ? "Análise pronta. Abra o painel para ler ou exportar para Excel."
+        : "Gemini concluiu a análise. Não foram identificadas contas a explicar.";
       for (const item of result.analises || []) {
         const card = node("article", "fiscal-ai-card");
         const heading = node("div", "fiscal-ai-card-heading");
@@ -155,9 +256,17 @@
       }
       aiMessage.textContent = result.aviso + (result.limite ? " " + result.limite : "");
     } catch (error) {
-      if (!controller.signal.aborted && previewBody === snapshot) aiMessage.textContent = error.message;
+      if (!controller.signal.aborted && previewBody === snapshot) {
+        aiMessage.textContent = error.message || "Não foi possível gerar a análise.";
+        aiInlineStatus.textContent = "A análise não foi concluída. Confira o painel e tente novamente.";
+      }
     } finally {
-      if (aiController === controller) { aiResult.setAttribute("aria-busy", "false"); aiController = null; aiButton.disabled = !aiConfigured || !previewBody; }
+      if (aiController === controller) {
+        aiResult.setAttribute("aria-busy", "false");
+        aiController = null;
+        aiButton.disabled = !aiConfigured || !previewBody;
+        aiRunInside.disabled = aiButton.disabled;
+      }
     }
   });
   function accumulatorRows(row) {
@@ -234,6 +343,12 @@
   }
   function clearState() {
     aiController?.abort(); aiController = null;
+    aiReport = null;
+    aiExport.disabled = true;
+    aiOpen.disabled = true;
+    aiRunInside.disabled = true;
+    aiInlineStatus.textContent = "Faça uma conferência para iniciar a análise.";
+    hideAIPanel(false);
     aiButton.disabled = true; aiResult.replaceChildren(); aiResult.setAttribute("aria-busy", "false");
     aiMessage.textContent = aiConfigured ? "Faça a conferência antes de analisar com IA." : "Gemini ainda não configurado no servidor.";
     if (pendingRequest) {
@@ -474,6 +589,9 @@
       pendentesCorpo.appendChild(tr);
     });
     results.hidden = false;
+    aiOpen.disabled = false;
+    aiCompany.textContent = report.empresa_nome || "Empresa não identificada";
+    aiInlineStatus.textContent = "Conferência pronta. Use o Gemini para analisar diferenças e alertas.";
     selectedKey = "";
     filter.value = "todas";
     search.value = "";
@@ -502,6 +620,8 @@
     let body;
     try { body = buildFormData(); } catch (error) { setMessage(error.message, "error"); return; }
     aiController?.abort(); aiController = null; aiButton.disabled = true; aiResult.replaceChildren();
+    aiReport = null; aiExport.disabled = true; aiOpen.disabled = true; aiRunInside.disabled = true;
+    hideAIPanel(false);
     if (pendingRequest) pendingRequest.abort();
     const controller = new AbortController();
     pendingRequest = controller;
@@ -518,6 +638,7 @@
       renderResponse(report);
       previewBody = body;
       aiButton.disabled = !aiConfigured;
+      aiRunInside.disabled = aiButton.disabled;
       refreshAIStatus();
       setMessage("Conferência concluída. Os resultados estão abaixo.", "success");
     } catch (error) {
