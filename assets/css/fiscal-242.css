@@ -698,3 +698,177 @@
   #fiscalView #fiscal242Message { padding-inline:16px; }
   #fiscalView .fiscal-upload-item { padding:13px; }
 }
+
+
+/* Conferência objetiva: cinco colunas essenciais e detalhes sob demanda. */
+#fiscalView .fiscal-results-card {
+  border-radius:14px;
+}
+#fiscalView .fiscal-results-heading {
+  gap:18px;
+  padding:18px 20px;
+  align-items:center;
+}
+#fiscalView .fiscal-results-heading h3 {
+  font-size:16px;
+}
+#fiscalView .fiscal-results-heading p {
+  max-width:570px;
+  line-height:1.55;
+}
+#fiscalView .fiscal-results-controls {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:9px;
+}
+#fiscalView #fiscal242Search,
+#fiscalView #fiscal242Filter {
+  height:40px;
+  min-height:40px;
+  max-width:100%;
+  border:1px solid #dce5ef;
+  border-radius:9px;
+  background:#fff;
+  padding:9px 11px;
+  color:#304760;
+  font-size:12px;
+}
+#fiscalView #fiscal242Search { width:235px; }
+#fiscalView #fiscal242Filter { width:164px; }
+#fiscalView #fiscal242Search:focus-visible,
+#fiscalView #fiscal242Filter:focus-visible,
+#fiscalView .fiscal-account-link:focus-visible,
+#fiscalView .fiscal-detail-close:focus-visible {
+  outline:2px solid #6d91c0;
+  outline-offset:2px;
+}
+#fiscalView .fiscal-table {
+  min-width:720px;
+  font-size:12px;
+}
+#fiscalView .fiscal-table th {
+  white-space:nowrap;
+  padding:12px 15px;
+  color:#65758a;
+}
+#fiscalView .fiscal-table td {
+  padding:14px 15px;
+  line-height:1.45;
+}
+#fiscalView .fiscal-table th:first-child,
+#fiscalView .fiscal-table td:first-child {
+  width:33%;
+}
+#fiscalView .fiscal-table th:nth-child(2),
+#fiscalView .fiscal-table td:nth-child(2) {
+  width:18%;
+}
+#fiscalView .fiscal-table th:nth-child(3),
+#fiscalView .fiscal-table th:nth-child(4),
+#fiscalView .fiscal-table td:nth-child(3),
+#fiscalView .fiscal-table td:nth-child(4) {
+  text-align:right;
+  width:17%;
+}
+#fiscalView .fiscal-table th:last-child,
+#fiscalView .fiscal-table td:last-child {
+  width:15%;
+}
+#fiscalView .fiscal-table tbody tr.selected {
+  background:#eef4fb;
+}
+#fiscalView .fiscal-account-group {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:9px;
+}
+#fiscalView .fiscal-account-description {
+  margin-top:5px;
+  font-size:11.5px;
+  color:#66798e;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+#fiscalView .fiscal-account-type {
+  font-size:10px;
+  font-weight:600;
+  color:#7890a7;
+}
+#fiscalView .fiscal-account-link {
+  color:#235c8c;
+  text-underline-offset:3px;
+}
+#fiscalView .fiscal-account-link[aria-expanded="true"] {
+  color:#1a3c65;
+}
+#fiscalView .fiscal-accum-cell {
+  min-width:118px;
+}
+#fiscalView .fiscal-accum-tags { max-width:200px; }
+#fiscalView .fiscal-table-count {
+  margin:0;
+  padding:12px 19px 2px;
+  font-size:11px;
+  color:#778ba1;
+}
+#fiscalView .fiscal-table-note {
+  padding:7px 19px 15px;
+  border-top:0;
+  line-height:1.55;
+}
+#fiscalView .fiscal-detail {
+  scroll-margin-top:85px;
+}
+#fiscalView .fiscal-detail-heading-actions {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:12px;
+}
+#fiscalView .fiscal-detail-close {
+  border:1px solid #dae5f1;
+  background:#fff;
+  color:#436282;
+  border-radius:8px;
+  padding:8px 12px;
+  font-size:11px;
+  cursor:pointer;
+}
+#fiscalView .fiscal-detail-close:hover {
+  background:#f4f7fa;
+}
+#fiscalView .fiscal-detail-table { min-width:800px; }
+#fiscalView .fiscal-detail-table th,
+#fiscalView .fiscal-detail-table td {
+  width:auto!important;
+  text-align:left!important;
+}
+#fiscalView .fiscal-ai-analysis p,
+#fiscalView .fiscal-ai-review p {
+  white-space:pre-line;
+  line-height:1.85;
+}
+#fiscalView .fiscal-ai-analysis {
+  border-top:1px solid #edf0f5;
+  padding:17px 0 20px;
+}
+#fiscalView .fiscal-ai-review {
+  background:#f7f9fc;
+}
+@media(max-width:900px) {
+  #fiscalView .fiscal-results-heading {align-items:stretch;}
+  #fiscalView .fiscal-results-controls {width:100%;}
+  #fiscalView #fiscal242Search {flex:1 1 185px;}
+}
+@media(max-width:590px) {
+  #fiscalView .fiscal-results-heading {padding:16px;}
+  #fiscalView .fiscal-results-controls {display:grid;grid-template-columns:1fr;}
+  #fiscalView #fiscal242Search,
+  #fiscalView #fiscal242Filter {width:100%;min-width:0;}
+  #fiscalView .fiscal-table {min-width:680px;}
+  #fiscalView .fiscal-detail-heading-actions {justify-content:flex-start;margin-top:12px;}
+  #fiscalView .fiscal-account-description {font-size:11px;}
+}
