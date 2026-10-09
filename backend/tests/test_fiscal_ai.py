@@ -640,6 +640,7 @@ def test_openrouter_formato_estrito_400_tenta_json_compativel_sem_mudar_dados(mo
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-or")
     monkeypatch.setenv("OPENROUTER_MODELS",
         "nvidia/nemotron-3-ultra-550b-a55b:free,nvidia/nemotron-3.5-lightning:free")
+    monkeypatch.setattr(fiscal_ai, "model_rotation_index", 0)
     monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED", raising=False)
     requests = []
 
