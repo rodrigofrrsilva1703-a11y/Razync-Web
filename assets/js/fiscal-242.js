@@ -58,7 +58,9 @@
       if (statusController !== controller) return;
       aiConfigured = result.configurado === true;
       const providerName = result.provedor === "openrouter" ? "OpenRouter" : "Gemini";
-      aiProvider.textContent = aiConfigured ? providerName : "IA";
+      aiProvider.textContent = aiConfigured
+        ? (result.gratuito === true && result.provedor === "openrouter" ? "OpenRouter · gratuito" : providerName)
+        : "IA";
       aiButton.disabled = !aiConfigured || !previewBody || Boolean(aiController);
       if (!aiController && !aiResult.children.length) aiMessage.textContent = aiConfigured
         ? (previewBody ? providerName + " conectado. Clique em Analisar diferenças com IA." : providerName + " conectado. Faça a conferência para analisar as diferenças.")
