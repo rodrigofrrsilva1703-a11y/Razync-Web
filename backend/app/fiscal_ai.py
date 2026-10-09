@@ -471,12 +471,18 @@ def explain(report):
 @router.get("/status")
 @legacy_router.get("/status")
 def status():
-    # Em produção, somente OpenRouter gratuito é aceito.
-    if os.getenv("OPENROUTER_API_KEY", "").strip():
-        return {"configurado":True, "provedor":"openrouter", "gratuito":True}
-    if os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1" and os.getenv("GEMINI_API_KEY", "").strip():
-        return {"configurado":True, "provedor":"gemini", "gratuito":False}
-    return {"configurado":False, "provedor":None, "gratuito":True}
+    openrouter = bool(os.getenv("OPENROUTER_API_KEY", "").strip())
+    gemini_free = bool(_gemini_free_key())
+    legacy = bool(
+        os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1"
+        and os.getenv("GEMINI_API_KEY", "").strip()
+    )
+    return {
+        "configurado": openrouter or gemini_free or legacy,
+        "provedor": "openrouter" if openrouter else "gemini" if (gemini_free or legacy) else None,
+        "gratuito": not (legacy and not gemini_free and not openrouter),
+        "fallback_gemini": bool(openrouter and gemini_free),
+    }
 
 
 @router.post("")
@@ -485,11 +491,11 @@ async def analyze(
     acumuladores: UploadFile = File(...), razao: UploadFile = File(...),
     filial: str = Form(""), empresa_codigo: str = Form(""),
 ):
-    if not (os.getenv("OPENROUTER_API_KEY", "").strip() or (
-        os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1"
-        and os.getenv("GEMINI_API_KEY", "").strip()
-    )):
-        raise HTTPException(503, "IA gratuita não configurada. Defina OPENROUTER_API_KEY no Railway.")
+    if not status()["configurado"]:
+        raise HTTPException(
+            503, "IA não configurada. Configure o OpenRouter ou habilite o Gemini "
+            "no nível gratuito confirmado do Railway."
+        )
     if empresa_codigo and not empresa_codigo.isdigit():
         raise HTTPException(422, "Código da empresa inválido.")
     if filial and not filial.isdigit():
