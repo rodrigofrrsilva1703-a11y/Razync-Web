@@ -354,7 +354,11 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
     # Modelos gratuitos podem devolver 502/503 mesmo com o backend saudável.
     # Tente até três modelos diferentes antes de usar o Gemini de reserva.
     # O mesmo contexto e as restrições gratuitas/privacidade são preservados.
-    candidates = models[:3]
+    with lock:
+        candidates = [model for model in models
+                      if model_cooldowns.get(model, 0) <= time.monotonic()][:3]
+    if not candidates:
+        candidates = ["openrouter/free"]
     try:
         for attempt, model in enumerate(candidates):
             request = dict(request_payload) if attempt == 0 else compatible_payload(request_payload)
