@@ -350,3 +350,113 @@ def test_empresa_em_a1_diferente_do_razao_bloqueia_conferencia():
     })
     assert response.status_code == 422
     assert "empresas diferentes" in response.json()["detail"]
+
+
+def _relatorios_com_periodo(periodo_fiscal):
+    fiscal = workbook({"Resumo": [
+        ["COMERCIAL PERIODO TESTE LTDA"],
+        periodo_fiscal,
+        ["ENTRADAS"],
+        ["Código", "Descrição", "Vlr Contábil", "Conta"],
+        [1152, "Mercadorias do mês", 100.0, 22643],
+    ]})
+    razao = workbook({"Razão": [
+        ["Empresa:", "", "COMERCIAL PERIODO TESTE LTDA"],
+        ["Período:", "01/07/2026 - 30/09/2026"],
+        ["Conta:", 22643, "", "", "", "ESTOQUE"],
+        ["Data", "Lote", "Histórico", "Cta.C.Part.", "Filial", "Débito", "Crédito"],
+        ["30/07/2026", 1, "COMPRA DE MERCADORIA CF NF JULHO", 22644, 242, 900.0, 0],
+        ["03/08/2026", 2, "COMPRA DE MERCADORIA CF NF AGOSTO", 22644, 242, 100.0, 0],
+        ["02/09/2026", 3, "COMPRA DE MERCADORIA CF NF SETEMBRO", 22644, 242, 700.0, 0],
+    ]})
+    return {"acumuladores": ("resumo.xlsx", fiscal), "razao": ("razao.xlsx", razao)}
+
+
+def test_periodo_resumo_filtra_razao_de_varios_meses_e_exportacao():
+    """Somente agosto entra no total, nos detalhes, na IA e no Excel."""
+    client = TestClient(app)
+    files = _relatorios_com_periodo(["Período:", "01/08/2026 a 31/08/2026"])
+    response = client.post("/api/v1/conferencia-fiscal/preview", files=files)
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["periodo_fiscal"] == {"inicio": "01/08/2026", "fim": "31/08/2026"}
+    assert result["periodo_razao"] == {"inicio": "01/07/2026", "fim": "30/09/2026"}
+    assert result["periodo_aplicado"] is True
+    assert result["movimentos_fora_periodo"] == 2
+    assert result["contas"][0]["contabil"] == 100.0
+    assert result["contas"][0]["total_conta"] == 100.0
+    assert result["contas"][0]["situacao"] == "CONFERE"
+    assert len(result["lancamentos"]) == 1
+    assert result["lancamentos"][0]["data"] == "03/08/2026"
+    assert any("2 lançamento(s)" in aviso for aviso in result["avisos"])
+
+    export = client.post("/api/v1/conferencia-fiscal/exportar", files=files)
+    assert export.status_code == 200, export.text
+    movimentos = pd.read_excel(io.BytesIO(export.content), sheet_name="Todos os lançamentos")
+    assert len(movimentos) == 1
+    assert movimentos["DÉBITO"].sum() == 100.0
+
+
+def test_periodo_resumo_na_mesma_celula_ou_colunas_distintas():
+    client = TestClient(app)
+    for linha in [
+        ["Período: 01/08/2026 - 31/08/2026"],
+        ["Período:", "01/08/2026", "31/08/2026"],
+        ["Período:", pd.Timestamp("2026-08-01"), pd.Timestamp("2026-08-31")],
+        ["Período:", "08/2026"],
+    ]:
+        response = client.post(
+            "/api/v1/conferencia-fiscal/preview",
+            files=_relatorios_com_periodo(linha),
+        )
+        assert response.status_code == 200, (linha, response.text)
+        report = response.json()
+        assert report["periodo_fiscal"] == {"inicio": "01/08/2026", "fim": "31/08/2026"}
+        assert report["contas"][0]["contabil"] == 100.0
+        assert report["movimentos_fora_periodo"] == 2
+
+
+def test_outra_filial_fora_do_periodo_nao_exige_escolha():
+    fiscal, _ = _relatorios_com_periodo(["Período:", "01/08/2026 - 31/08/2026"]).values()
+    razao = workbook({"Razão": [
+        ["Período:", "01/07/2026 - 30/09/2026"],
+        ["Conta:", 22643, "", "", "", "ESTOQUE"],
+        ["Data", "Lote", "Histórico", "Cta.C.Part.", "Filial", "Débito", "Crédito"],
+        ["30/07/2026", 1, "COMPRA DE JULHO", 22644, 1408, 900, 0],
+        ["03/08/2026", 2, "COMPRA DE AGOSTO CF NF", 22644, 242, 100, 0],
+    ]})
+    response = TestClient(app).post(
+        "/api/v1/conferencia-fiscal/preview",
+        files={"acumuladores": ("fiscal.xlsx", fiscal), "razao": ("razao.xlsx", razao)},
+    )
+    assert response.status_code == 200, response.text
+    report = response.json()
+    assert report["filial_aplicada"] == "242"
+    assert report["filiais_encontradas"] == ["242"]
+    assert report["contas"][0]["contabil"] == 100.0
+
+
+def test_razao_sem_lancamentos_no_periodo_exibe_ausencia_sem_somar_outros_meses():
+    fiscal, ledger = _relatorios_com_periodo(["Período:", "01/10/2026 - 31/10/2026"]).values()
+    response = TestClient(app).post(
+        "/api/v1/conferencia-fiscal/preview",
+        files={"acumuladores": ("fiscal.xlsx", fiscal), "razao": ("razao.xlsx", ledger)},
+    )
+    assert response.status_code == 200, response.text
+    report = response.json()
+    assert report["contas"][0]["situacao"] == "AUSENTE NO CONTÁBIL"
+    assert report["contas"][0]["contabil"] == 0
+    assert report["lancamentos"] == []
+    assert report["movimentos_fora_periodo"] == 3
+
+
+def test_sem_periodo_fiscal_explica_que_filtragem_nao_pode_ser_aplicada():
+    response = TestClient(app).post(
+        "/api/v1/conferencia-fiscal/preview",
+        files=_relatorios_com_periodo(["Período:"]),
+    )
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["periodo_aplicado"] is False
+    assert result["movimentos_fora_periodo"] == 0
+    assert any("não foi filtrado por data" in aviso for aviso in result["avisos"])
