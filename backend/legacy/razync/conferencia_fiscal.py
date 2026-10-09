@@ -559,6 +559,11 @@ def processar_conferencia(
         if filial
     )
     filial_normalizada = re.sub(r"\D", "", str(filial_alvo or "")).lstrip("0")
+    if len(filiais_encontradas) > 1 and not filial_normalizada:
+        raise ValueError(
+            "O Razão contém várias filiais (" + ", ".join(filiais_encontradas) +
+            "). Informe o código da filial mostrado no Razão para evitar somar estabelecimentos diferentes."
+        )
     filial_aplicada = ""
     if filiais_encontradas and filial_normalizada:
         if filial_normalizada in filiais_encontradas:
