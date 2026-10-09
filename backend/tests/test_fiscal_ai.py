@@ -285,3 +285,68 @@ def test_gemini_exige_analise_didatica_com_limites_e_verificacoes(monkeypatch):
     assert analise["conta"] == "22643"
     assert analise["verificar"] == "1. Conferir a conta."
     assert source["contas"][0]["fiscal"] == 9123.45
+
+
+
+def test_exportar_analise_gemini_em_excel_sem_nova_chamada(monkeypatch):
+    """Exporta o parecer já recebido, preservando moedas, acumuladores e evidências."""
+    import io
+    from openpyxl import load_workbook
+
+    monkeypatch.setattr(
+        fiscal_ai, "explain",
+        lambda *_: pytest.fail("Exportação não pode chamar Gemini novamente"),
+    )
+    payload = {
+        "empresa_nome": "EMPRESA EXEMPLO LTDA",
+        "analises": [{
+            "conta": "22643", "tipo": "ENTRADAS", "descricao": "Compras",
+            "situacao": "REVISAR", "acumuladores": "1152",
+            "detalhes_fiscais": [{"codigo": "1152", "descricao": "Compras para revenda",
+                                  "valor": 1234.56}],
+            "valores": {"fiscal": 1234.56, "contabil": 1200,
+                        "total_conta": 1400, "diferenca": -34.56},
+            "explicacao": "A diferença é R$ 34,56; confirme o histórico.",
+            "verificar": "1. Conferir a NF.\n2. Validar acumulador.",
+            "evidencias": [{
+                "referencia": "L1", "data": "09/10/2026",
+                "historico": "=HYPERLINK(\"http://invalid\", \"teste\")",
+                "conta": "22643", "contrapartida": "508",
+                "debito": 1200, "credito": 0
+            }]
+        }]
+    }
+    response = TestClient(app).post("/api/v1/conferencia-fiscal/ia/exportar", json=payload)
+    assert response.status_code == 200, response.text
+    assert response.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    assert response.content[:2] == b"PK"
+    workbook = load_workbook(io.BytesIO(response.content), data_only=False)
+    assert workbook.sheetnames == ["Análises Gemini", "Acumuladores", "Lançamentos citados"]
+    main = workbook["Análises Gemini"]
+    assert main["A2"].value == "Empresa: EMPRESA EXEMPLO LTDA"
+    assert main["A6"].value == "22643"
+    assert main["F6"].value == 1234.56
+    assert main["G6"].value == 1200
+    assert main["I6"].value == -34.56
+    assert "confirmar o histórico" in main["J6"].value
+    assert "Conferir a NF" in main["K6"].value
+    acc = workbook["Acumuladores"]
+    assert acc["C2"].value == "1152"
+    assert acc["E2"].value == 1234.56
+    evidence = workbook["Lançamentos citados"]
+    assert evidence["B2"].value == "L1"
+    assert evidence["D2"].data_type != "f", "Históricos externos nunca viram fórmulas"
+    assert "HYPERLINK" in evidence["D2"].value
+
+
+def test_exportar_analise_gemini_rejeita_conteudo_vazio_ou_excessivo():
+    client = TestClient(app)
+    for payload in [
+        {"analises":[]},
+        {"analises":[{"conta":"1"}] * 16},
+        {"analises":[{"conta":"1", "explicacao":"X" * 6001}]},
+    ]:
+        response = client.post("/api/v1/conferencia-fiscal/ia/exportar", json=payload)
+        assert response.status_code == 422, response.text
