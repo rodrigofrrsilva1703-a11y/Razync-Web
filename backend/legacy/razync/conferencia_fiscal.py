@@ -350,6 +350,44 @@ def _conferir_empresa_header(periodo: dict, valores: list, primeira_linha: bool 
     periodo["empresa_nome"] = anterior or achada
 
 
+def _periodo_relatorio(valores: list) -> tuple[pd.Timestamp, pd.Timestamp] | None:
+    """Lê o intervalo do cabeçalho Domínio, inclusive quando as datas estão na mesma célula.
+
+    Reconhece 01/08/2026 a 31/08/2026, datas em colunas separadas,
+    datas Excel e a competência 08/2026. Não deduz datas dos lançamentos.
+    """
+    texto = " ".join(_texto(v) for v in valores if _texto(v))
+    datas_texto = re.findall(r"(?<!\d)\d{1,2}/\d{1,2}/\d{4}(?!\d)", texto)
+    if len(datas_texto) >= 2:
+        datas = [pd.to_datetime(v, dayfirst=True, errors="coerce") for v in datas_texto[:2]]
+    else:
+        datas = []
+        for valor in valores:
+            if isinstance(valor, (pd.Timestamp,)):
+                data = _data_dominio(valor)
+            elif isinstance(valor, (int, float)) and not isinstance(valor, bool):
+                data = _data_dominio(valor)
+            else:
+                celula = _texto(valor)
+                data = _data_dominio(celula) if re.fullmatch(r"\d{1,2}/\d{1,2}/\d{4}", celula) else pd.NaT
+            if pd.notna(data):
+                datas.append(data)
+        if len(datas) < 2:
+            competencia = re.search(r"(?<!\d)(0?[1-9]|1[0-2])/(\d{4})(?!\d)", texto)
+            if competencia and not datas_texto:
+                mes, ano = map(int, competencia.groups())
+                inicio = pd.Timestamp(ano, mes, 1)
+                return inicio, inicio + pd.offsets.MonthEnd(0)
+            return None
+        datas = datas[:2]
+    if len(datas) < 2 or any(pd.isna(d) for d in datas):
+        return None
+    inicio, fim = (pd.Timestamp(d).normalize() for d in datas)
+    if inicio > fim:
+        raise ValueError("O período do relatório tem data inicial posterior à data final.")
+    return inicio, fim
+
+
 def ler_acumuladores(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
     xls = _excel(conteudo, nome)
     periodo = {"inicio": None, "fim": None, "empresa_nome": ""}
@@ -365,11 +403,16 @@ def ler_acumuladores(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
             rotulos = [_rotulo(valor) for valor in valores]
             primeiro = rotulos[0] if rotulos else ""
             _conferir_empresa_header(periodo, valores, primeira_linha=indice_linha == 0)
-            if primeiro == "PERIODO":
-                datas = [pd.to_datetime(v, errors="coerce") for v in valores]
-                datas = [d for d in datas if pd.notna(d)]
-                if datas:
-                    periodo.update({"inicio": min(datas), "fim": max(datas)})
+            if primeiro == "PERIODO" or primeiro.startswith("PERIODO "):
+                intervalo = _periodo_relatorio(valores)
+                if intervalo:
+                    anterior = (periodo["inicio"], periodo["fim"])
+                    if anterior[0] is not None and anterior != intervalo:
+                        raise ValueError(
+                            "O Resumo por Acumulador contém períodos diferentes entre as páginas. "
+                            "Envie um relatório fiscal de uma única competência."
+                        )
+                    periodo.update({"inicio": intervalo[0], "fim": intervalo[1]})
             if primeiro in {"ENTRADAS", "SAIDAS", "SERVICOS"}:
                 tipo = {"SAIDAS": "SAÍDAS", "SERVICOS": "SERVIÇOS"}.get(primeiro, primeiro)
                 continue
@@ -451,13 +494,10 @@ def ler_razao(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
             rotulos = [_rotulo(valor) for valor in valores]
             primeiro = rotulos[0] if rotulos else ""
             _conferir_empresa_header(periodo, valores, primeira_linha=indice_linha == 0)
-            if primeiro == "PERIODO":
-                achado = re.findall(r"\d{2}/\d{2}/\d{4}", " ".join(_texto(v) for v in valores))
-                if len(achado) >= 2:
-                    periodo.update({
-                        "inicio": pd.to_datetime(achado[0], dayfirst=True),
-                        "fim": pd.to_datetime(achado[1], dayfirst=True),
-                    })
+            if primeiro == "PERIODO" or primeiro.startswith("PERIODO "):
+                intervalo = _periodo_relatorio(valores)
+                if intervalo:
+                    periodo.update({"inicio": intervalo[0], "fim": intervalo[1]})
             if primeiro == "CONTA":
                 conta = _codigo_dominio(_primeiro_preenchido(valores, 1))
                 descricao_conta = _texto(_primeiro_preenchido(valores, 5, 5))
@@ -614,6 +654,23 @@ def processar_conferencia(
             f"{empresa_fiscal}; Razão: {empresa_razao}. Envie os dois relatórios da mesma empresa."
         )
     empresa_nome = empresa_fiscal or empresa_razao
+
+    # O Resumo por Acumulador define a competência da conferência. O Razão
+    # pode conter meses anteriores/posteriores, mas eles não participam das
+    # somas, dos alertas, do detalhamento, da exportação ou da análise Gemini.
+    inicio = pd.to_datetime(periodo_fiscal.get("inicio"), errors="coerce")
+    fim = pd.to_datetime(periodo_fiscal.get("fim"), errors="coerce")
+    periodo_aplicado = pd.notna(inicio) and pd.notna(fim)
+    movimentos_fora_periodo = 0
+    if periodo_aplicado:
+        inicio, fim = inicio.normalize(), fim.normalize()
+        if inicio > fim:
+            raise ValueError("O período do Resumo por Acumulador está invertido.")
+        quantidade_original = len(razao)
+        datas = pd.to_datetime(razao["DATA"], errors="coerce").dt.normalize()
+        razao = razao.loc[datas.between(inicio, fim, inclusive="both")].copy()
+        movimentos_fora_periodo = quantidade_original - len(razao)
+
     filiais_encontradas = sorted(
         filial for filial in razao.get("FILIAL", pd.Series(dtype=str)).astype(str).unique()
         if filial
@@ -647,6 +704,8 @@ def processar_conferencia(
         "sem_conta": sem_conta,
         "resumo": resumo, "detalhes": detalhes, "acumuladores": acumuladores,
         "periodo_fiscal": periodo_fiscal, "periodo_razao": periodo_razao,
+        "periodo_aplicado": bool(periodo_aplicado),
+        "movimentos_fora_periodo": movimentos_fora_periodo,
         "empresa_nome": empresa_nome,
         "empresa_fiscal": empresa_fiscal, "empresa_razao": empresa_razao,
         "filial_aplicada": filial_aplicada,
