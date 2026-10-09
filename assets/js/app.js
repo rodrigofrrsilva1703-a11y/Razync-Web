@@ -1673,7 +1673,7 @@ function showGlobalView(name) {
   closeCompanyToolHelp();
   $("#companyToolHelp").hidden = true;
   cancelReconcilePreview();
-  $('#currentSection').textContent = {companies:'Empresas',converter:'Conversor de Extratos',ledger:'Conciliação com Razão'}[name];
+  $('#currentSection').textContent = {companies:'Empresas',converter:'Conversor de Extratos',ledger:'Conciliação com Razão',fiscal:'Conferência Fiscal × Contábil'}[name];
   panel.hidden = true;
   selected = null;
   if (name === "companies") {
