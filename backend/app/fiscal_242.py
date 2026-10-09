@@ -157,6 +157,7 @@ def conferencia_fiscal_preview(
             "total_conta": round(float(item["TOTAL DA CONTA"]), 2),
             "diferenca": round(float(item["DIFERENÇA FISCAL"]), 2),
             "extras": int(item["LANÇAMENTOS EXTRAS"]),
+            "sem_evidencia": int(item.get("FECHAMENTOS SEM EVIDÊNCIA", 0)),
             "situacao": str(item["SITUAÇÃO"]),
         })
 
@@ -188,11 +189,21 @@ def conferencia_fiscal_preview(
         "revisar": situacoes.count("REVISAR") + situacoes.count("AUSENTE NO CONTÁBIL"),
     }
 
+    sem_conta = resultado.get("sem_conta", [])
     avisos = [
-        "Resultado preliminar: o histórico dos lançamentos ajuda a classificar os valores, "
-        "mas não comprova sozinho que a integração fiscal está correta.",
-        "Acumuladores sem conta contábil informada não entram na comparação.",
+        "Conferência preliminar: igualdade de valores e classificação por histórico não "
+        "substituem a validação dos documentos e contrapartidas.",
     ]
+    if sem_conta:
+        avisos.append(
+            f"{len(sem_conta)} acumulador(es) sem conta vinculada foram excluídos "
+            "da comparação e estão disponíveis para revisão abaixo."
+        )
+    if any(linha["sem_evidencia"] for linha in linhas):
+        avisos.append(
+            "Contas que fecharam apenas pelo valor, sem histórico fiscal comprovado, "
+            "estão marcadas como 'Com alertas'."
+        )
     fiscal = _periodo(resultado.get("periodo_fiscal", {}))
     razao = _periodo(resultado.get("periodo_razao", {}))
     if fiscal["inicio"] and razao["inicio"] and fiscal != razao:
@@ -206,6 +217,7 @@ def conferencia_fiscal_preview(
         "periodo_razao": razao,
         "resumo": resumo_contagens,
         "contas": linhas,
+        "sem_conta": sem_conta,
         "lancamentos": movimentos,
         "avisos": avisos,
     }
