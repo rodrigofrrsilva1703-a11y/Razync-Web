@@ -32,6 +32,9 @@ def padronizar_moeda(texto):
     """Padroniza exclusivamente valores explícitos em R$, sem tocar códigos de conta."""
     def converter(match):
         origem = match.group(1).replace(" ", "")
+        corpo_sem_pontuacao = origem.rstrip(".,")
+        pontuacao_final = origem[len(corpo_sem_pontuacao):]
+        origem = corpo_sem_pontuacao
         negativo = origem.startswith("-")
         corpo = origem.lstrip("-")
         if not corpo or not re.fullmatch(r"\d[\d.,]*", corpo):
@@ -53,7 +56,7 @@ def padronizar_moeda(texto):
             quantidade = Decimal(limpo) * (-1 if negativo else 1)
         except InvalidOperation:
             return match.group(0)
-        return formatar_brl(quantidade)
+        return formatar_brl(quantidade) + pontuacao_final
     return re.sub(r"R\$\s*(-?\s*\d[\d.,]*)", converter, texto)
 
 
