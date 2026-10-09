@@ -1673,7 +1673,7 @@ function showGlobalView(name) {
   closeCompanyToolHelp();
   $("#companyToolHelp").hidden = true;
   cancelReconcilePreview();
-  $('#currentSection').textContent = {companies:'Empresas',converter:'Conversor de Extratos',ledger:'Conciliação com Razão',fiscal:'Conferência Fiscal × Contábil'}[name];
+  $('#currentSection').textContent = {companies:'Empresas',ledger:'Conciliação com Razão',fiscal:'Conferência Fiscal × Contábil'}[name];
   panel.hidden = true;
   selected = null;
   if (name === "companies") {
@@ -1783,26 +1783,6 @@ panel.addEventListener("change", event => {
   const input = event.target;
   if (!(input instanceof HTMLInputElement) || input.type !== "file") return;
   updateFileSelection(input);
-});
-
-$("#converterForm")?.addEventListener("submit", async event => {
-  event.preventDefault();
-  const files = [...$("#converterFiles").files];
-  const msg = $("#converterMessage");
-  if (!files.length) return msg.textContent = "Selecione pelo menos um extrato.";
-  const data = new FormData();
-  files.forEach(file => data.append("files", file));
-  try { appendPeriod(data,"#converterStart","#converterEnd"); }
-  catch (error) { return msg.textContent = error.message; }
-  msg.textContent = "Convertendo extratos…";
-  try {
-    const response = await fetch(`${API()}/api/v1/conversor-extratos`, {method:"POST", body:data});
-    if (!response.ok) throw new Error(await responseError(response));
-    await downloadBlob(response, "RAZYNC_CONVERSOR_EXTRATOS_MODELO_DOMINIO.xlsx");
-    msg.textContent = "Modelo Domínio gerado com sucesso.";
-  } catch (error) {
-    msg.textContent = error.message;
-  }
 });
 
 let ledgerPreviewTimer;
