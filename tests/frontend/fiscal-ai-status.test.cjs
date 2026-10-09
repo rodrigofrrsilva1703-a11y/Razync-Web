@@ -246,3 +246,16 @@ test('status exibe OpenRouter no campo quando nova chave esta conectada',async (
   assert.equal(context.aiProvider.textContent,'OpenRouter · gratuito');
   assert.match(context.aiMessage.textContent,/OpenRouter conectado/);
 });
+
+
+test('IA fiscal exibe progresso e cancelamento sem tela flutuante', () => {
+  const html = fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8');
+  const css = fs.readFileSync(path.join(__dirname,'../../assets/css/fiscal-242.css'),'utf8');
+  assert.match(source,/const aiCancelButton = node\("button", "secondary-action fiscal-ai-cancel", "Cancelar"\)/);
+  assert.match(source,/aiCancelButton\.addEventListener\("click"/);
+  assert.match(source,/aiController\.abort\(\)/);
+  assert.match(source,/progressTimer = window\.setInterval/);
+  assert.match(source,/window\.clearInterval\(progressTimer\)/);
+  assert.match(css,/\.fiscal-ai-cancel\[hidden\]/);
+  assert.doesNotMatch(html,/id="fiscal242AIDrawer"/);
+});
