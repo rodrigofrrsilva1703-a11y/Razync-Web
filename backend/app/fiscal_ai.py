@@ -8,7 +8,8 @@ import time
 import urllib.error
 import urllib.request
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile
+from fastapi.responses import Response
 from fastapi.concurrency import run_in_threadpool
 from app.fiscal_242 import conferencia_fiscal_preview
 
@@ -303,3 +304,143 @@ async def analyze(
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     return await run_in_threadpool(explain, report)
+
+
+
+def gerar_excel_analise(payload: dict) -> bytes:
+    """Exporta a análise já retornada, sem reprocessar os arquivos nem chamar Gemini."""
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    analises = payload.get("analises")
+    if not isinstance(analises, list) or not 1 <= len(analises) <= 15:
+        raise ValueError("Não há análises válidas para exportar (limite de 15 contas).")
+    if len(json.dumps(payload, ensure_ascii=False, default=str)) > 350000:
+        raise ValueError("A análise excede o tamanho permitido para exportação.")
+
+    def texto(value, limite=6000):
+        value = str(value if value is not None else "").strip()
+        if len(value) > limite:
+            raise ValueError("O texto de uma análise excede o limite permitido.")
+        # Evita que textos vindos de históricos ou IA virem fórmulas no Excel.
+        if value.startswith(("=", "+", "-", "@", "\t", "\r", "\n")):
+            return "'" + value
+        return value
+
+    def numero(value):
+        if value in ("", None):
+            return None
+        try:
+            n = float(value)
+            if not -1e15 < n < 1e15:
+                raise ValueError()
+            return n
+        except (TypeError, ValueError, OverflowError):
+            raise ValueError("Uma análise contém um valor monetário inválido.") from None
+
+    book = Workbook()
+    main = book.active
+    main.title = "Análises Gemini"
+    codes = book.create_sheet("Acumuladores")
+    evidences = book.create_sheet("Lançamentos citados")
+    cor_titulo, cor_cabecalho, cor_texto = "203B59", "EAF0F7", "30485F"
+    main.merge_cells("A1:L1")
+    main["A1"] = "RAZYNC | CONFERÊNCIA FISCAL × CONTÁBIL · ANÁLISE GEMINI"
+    main["A1"].font = Font(name="Aptos", size=14, bold=True, color="FFFFFF")
+    main["A1"].fill = PatternFill("solid", fgColor=cor_titulo)
+    main["A1"].alignment = Alignment(vertical="center")
+    main.row_dimensions[1].height = 34
+    main.merge_cells("A2:L2")
+    main["A2"] = "Empresa: " + texto(payload.get("empresa_nome") or "Não identificada", 180)
+    main.merge_cells("A3:L3")
+    main["A3"] = "As explicações são sugestões de IA para revisão humana. Valores oficiais vêm da conferência."
+    main["A3"].font = Font(name="Aptos", size=10, italic=True, color="647B94")
+    main.row_dimensions[3].height = 23
+
+    head = ["Conta", "Descrição", "Tipo", "Situação", "Acumuladores",
+            "Fiscal", "Contábil considerado", "Total do Razão", "Diferença",
+            "Explicação do Gemini", "O que conferir", "Referências citadas"]
+    main.append([""] * len(head))
+    main.append(head)
+    codes.append(["Conta", "Tipo", "Acumulador", "Descrição", "Valor fiscal"])
+    evidences.append(["Conta", "Referência", "Data", "Histórico", "Contrapartida",
+                      "Débito", "Crédito", "Tipo"])
+    for item in analises:
+        if not isinstance(item, dict):
+            raise ValueError("Formato inválido de análise do Gemini.")
+        valores = item.get("valores") or {}
+        if not isinstance(valores, dict):
+            raise ValueError("Valores inválidos no resultado da análise.")
+        conta = texto(item.get("conta", ""), 48)
+        tipo = texto(item.get("tipo", ""), 48)
+        codigos = item.get("detalhes_fiscais") or []
+        fatos = item.get("evidencias") or []
+        if not isinstance(codigos, list) or not isinstance(fatos, list) or len(codigos) > 100 or len(fatos) > 12:
+            raise ValueError("A lista de acumuladores ou lançamentos é inválida.")
+        main.append([
+            conta, texto(item.get("descricao"), 300), tipo, texto(item.get("situacao"), 80),
+            texto(item.get("acumuladores"), 400),
+            numero(valores.get("fiscal")), numero(valores.get("contabil")),
+            numero(valores.get("total_conta")), numero(valores.get("diferenca")),
+            texto(item.get("explicacao")), texto(item.get("verificar")),
+            texto(", ".join(str(e.get("referencia", "")) for e in fatos if isinstance(e, dict)), 600)
+        ])
+        for code in codigos:
+            if not isinstance(code, dict):
+                raise ValueError("Acumulador inválido.")
+            codes.append([conta, tipo, texto(code.get("codigo"), 40),
+                          texto(code.get("descricao"), 500), numero(code.get("valor"))])
+        for ev in fatos:
+            if not isinstance(ev, dict):
+                raise ValueError("Lançamento inválido.")
+            evidences.append([
+                conta, texto(ev.get("referencia"), 80), texto(ev.get("data"), 40),
+                texto(ev.get("historico"), 1800), texto(ev.get("contrapartida"), 80),
+                numero(ev.get("debito")), numero(ev.get("credito")), tipo
+            ])
+
+    def formato(sheet, header_row, money_columns, widths, height=28):
+        sheet.freeze_panes = f"C{header_row + 1}" if header_row == 1 else f"F{header_row + 1}"
+        sheet.auto_filter.ref = f"A{header_row}:{get_column_letter(sheet.max_column)}{sheet.max_row}"
+        sheet.row_dimensions[header_row].height = height
+        for idx, width in enumerate(widths, 1):
+            sheet.column_dimensions[get_column_letter(idx)].width = width
+        for cell in sheet[header_row]:
+            cell.font = Font(name="Aptos", size=10, bold=True, color=cor_titulo)
+            cell.fill = PatternFill("solid", fgColor=cor_cabecalho)
+            cell.alignment = Alignment(vertical="center", wrap_text=True)
+        for row in sheet.iter_rows(min_row=header_row + 1):
+            sheet.row_dimensions[row[0].row].height = 62 if sheet == main else 29
+            for cell in row:
+                cell.font = Font(name="Aptos", size=10, color=cor_texto)
+                cell.alignment = Alignment(vertical="top", wrap_text=True)
+                if cell.column in money_columns and isinstance(cell.value, (int, float)):
+                    cell.number_format = '"R$" #,##0.00;-"R$" #,##0.00'
+                    cell.alignment = Alignment(vertical="top", horizontal="right")
+            if row[0].row % 2 == 0:
+                for cell in row:
+                    cell.fill = PatternFill("solid", fgColor="F8FAFC")
+
+    formato(main, 5, {6, 7, 8, 9}, [15, 29, 14, 20, 22, 19, 22, 20, 19, 82, 68, 23])
+    formato(codes, 1, {5}, [17, 17, 17, 55, 21])
+    formato(evidences, 1, {6, 7}, [17, 18, 18, 95, 22, 22, 22, 16])
+    out = io.BytesIO()
+    book.save(out)
+    return out.getvalue()
+
+
+@router.post("/exportar")
+async def exportar_analise(payload: dict = Body(...)):
+    """Gera planilha com o parecer já existente; não chama nem cobra Gemini novamente."""
+    try:
+        workbook = await run_in_threadpool(gerar_excel_analise, payload)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return Response(
+        workbook,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="RAZYNC_ANALISE_GEMINI.xlsx"',
+                 "Cache-Control": "no-store"},
+    )
