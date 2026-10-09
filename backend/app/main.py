@@ -535,6 +535,61 @@ async def conferencia_extrato(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+@app.post("/api/v1/conferencia-fiscal/preview")
+async def conferencia_fiscal_universal_preview(
+    acumuladores: UploadFile = File(...),
+    razao: UploadFile = File(...),
+    filial: str = Form(""),
+    empresa_codigo: str = Form(""),
+):
+    """Prévia para qualquer empresa, com filtro explícito da filial do Domínio."""
+    if empresa_codigo and not empresa_codigo.isdigit():
+        raise HTTPException(status_code=422, detail="O código da empresa deve conter apenas números.")
+    if filial and not filial.isdigit():
+        raise HTTPException(status_code=422, detail="O código da filial deve conter apenas números.")
+    try:
+        from app.fiscal_242 import conferencia_fiscal_preview
+        return await run_in_threadpool(
+            conferencia_fiscal_preview,
+            await acumuladores.read(), acumuladores.filename or "acumuladores.xls",
+            await razao.read(), razao.filename or "razao.xlsx",
+            int(empresa_codigo) if empresa_codigo else None,
+            filial or None,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/v1/conferencia-fiscal/exportar")
+async def conferencia_fiscal_universal_exportar(
+    acumuladores: UploadFile = File(...),
+    razao: UploadFile = File(...),
+    filial: str = Form(""),
+    empresa_codigo: str = Form(""),
+):
+    """Exporta a mesma comparação exibida no site, independente da empresa."""
+    if empresa_codigo and not empresa_codigo.isdigit():
+        raise HTTPException(status_code=422, detail="O código da empresa deve conter apenas números.")
+    if filial and not filial.isdigit():
+        raise HTTPException(status_code=422, detail="O código da filial deve conter apenas números.")
+    try:
+        from razync.conferencia_fiscal import processar_conferencia, gerar_relatorio_excel
+        from app.fiscal_242 import _csv_para_excel
+        razao_bytes, razao_nome = _csv_para_excel(
+            await razao.read(), razao.filename or "razao.xlsx"
+        )
+        resultado = await run_in_threadpool(
+            processar_conferencia,
+            await acumuladores.read(), acumuladores.filename or "acumuladores.xls",
+            razao_bytes, razao_nome, filial or None,
+        )
+        relatorio = await run_in_threadpool(gerar_relatorio_excel, resultado)
+        identificacao = empresa_codigo or "GERAL"
+        return _download(relatorio, f"RAZYNC_{identificacao}_CONFERENCIA_FISCAL.xlsx")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 @app.post("/api/v1/conferencia-fiscal/{company_code}/preview")
 async def conferencia_fiscal_preview_web(
     company_code: int,
