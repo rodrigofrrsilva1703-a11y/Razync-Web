@@ -157,50 +157,19 @@ test('Gemini apresenta parecer por etapas e checklist sem tratar texto como HTML
 });
 
 
-test('painel Gemini flutua, recolhe em bolha e reabre sem perder análise', () => {
-  const html = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');
-  const css = fs.readFileSync(path.join(__dirname, '../../assets/css/fiscal-242.css'), 'utf8');
-  for (const id of ['fiscal242AIOpen','fiscal242AIDrawer','fiscal242AIMinimize',
-                    'fiscal242AIClose','fiscal242AIBubble','fiscal242AIBackdrop',
-                    'fiscal242AIExport','fiscal242AIRunInside']) {
-    assert.ok(html.includes('id="' + id + '"'), 'Elemento ausente: ' + id);
+test('Gemini exibe análise diretamente na página sem painel flutuante', () => {
+  const html = fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8');
+  const css = fs.readFileSync(path.join(__dirname,'../../assets/css/fiscal-242.css'),'utf8');
+  const segment = html.slice(html.indexOf('<section class="fiscal-ai">'),html.indexOf('<div class="fiscal-download-row">'));
+  for (const id of ['fiscal242AI','fiscal242AIExport','fiscal242AIMessage','fiscal242AIResult']) {
+    assert.ok(segment.includes('id="' + id + '"'),id);
   }
-  assert.match(html, /aria-modal="true"/);
-  assert.match(css, /fiscal-ai-drawer\s*\{[\s\S]*?position:fixed/);
-  const start = source.indexOf('  function showAIPanel() {');
-  const end = source.indexOf('  aiOpen.addEventListener("click"', start);
-  assert.ok(start >= 0 && end > start);
-  let focusRestored = 0, bubbleFocused = 0, minimizeFocused = 0;
-  const previous = {isConnected:true,closest:()=>null,focus:()=>focusRestored++};
-  const makeElement = () => ({hidden:true,attrs:{},setAttribute(k,v){this.attrs[k]=v;}});
-  const context = {
-    document:{activeElement:previous},
-    previewBody:{},
-    aiReturnFocus:null,
-    aiDrawer:makeElement(),
-    aiBackdrop:makeElement(),
-    aiBubble:{...makeElement(),focus:()=>bubbleFocused++},
-    aiOpen:{...makeElement(),disabled:false,focus:()=>{}},
-    aiMinimize:{focus:()=>minimizeFocused++}
-  };
-  vm.createContext(context);
-  vm.runInContext(source.slice(start,end),context);
-  context.showAIPanel();
-  assert.equal(context.aiDrawer.hidden,false);
-  assert.equal(context.aiBackdrop.hidden,false);
-  assert.equal(context.aiBubble.hidden,true);
-  assert.equal(context.aiOpen.attrs['aria-expanded'],'true');
-  assert.equal(minimizeFocused,1);
-  context.hideAIPanel(true);
-  assert.equal(context.aiDrawer.hidden,true);
-  assert.equal(context.aiBackdrop.hidden,true);
-  assert.equal(context.aiBubble.hidden,false);
-  assert.equal(bubbleFocused,1);
-  context.showAIPanel();
-  assert.equal(context.aiDrawer.hidden,false);
-  context.hideAIPanel(false);
-  assert.equal(context.aiBubble.hidden,true);
-  assert.ok(focusRestored>=1);
+  assert.ok(segment.indexOf('id="fiscal242AIResult"') > segment.indexOf('id="fiscal242AI"'));
+  for (const modal of ['fiscal242AIDrawer','fiscal242AIBackdrop','fiscal242AIBubble','fiscal242AIOpen']) {
+    assert.equal(html.includes('id="' + modal + '"'),false);
+    assert.equal(source.includes('"' + modal + '"'),false);
+  }
+  assert.match(css,/#fiscalView #fiscal242AIResult/);
 });
 
 test('exportação Gemini usa relatório pronto, sem nova chamada ao modelo', () => {
@@ -216,30 +185,3 @@ test('exportação Gemini usa relatório pronto, sem nova chamada ao modelo', ()
 });
 
 
-test('IA fiscal usa bloco compacto e mantém o painel completo separado', () => {
-  const html = fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8');
-  const css = fs.readFileSync(path.join(__dirname,'../../assets/css/fiscal-242.css'),'utf8');
-  assert.ok(html.includes('class="fiscal-ai-shell"'));
-  assert.ok(html.includes('class="fiscal-ai-foot"'));
-  assert.ok(html.includes('Revisão assistida da conferência'));
-  assert.ok(html.includes('id="fiscal242AIDrawer"'));
-  assert.ok(html.includes('id="fiscal242AIExport"'));
-  assert.match(css,/Painel Fiscal • IA v5/);
-  assert.match(css,/\.fiscal-ai-shell\s*\{[\s\S]*grid-template-columns:minmax\(0,1fr\) auto/);
-  assert.match(css,/\.fiscal-ai-drawer\s*\{[\s\S]*width:min\(850px/);
-  assert.match(css,/\.fiscal-ai-narrative-section\s*\{[\s\S]*border-left:2px solid/);
-  assert.match(source,/fiscal-ai-refresh/);
-});
-
-
-test('bolha flutuante compacta abre side-sheet discreto', () => {
-  const html = fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8');
-  const css = fs.readFileSync(path.join(__dirname,'../../assets/css/fiscal-242.css'),'utf8');
-  assert.ok(html.includes('aria-label="Abrir análise inteligente"'));
-  assert.ok(html.includes('class="visually-hidden">Abrir análise inteligente</span>'));
-  assert.match(css,/Painel Fiscal • IA flutuante v6/);
-  assert.match(css,/\.fiscal-ai-floating-bubble\s*\{[\s\S]*width:48px;[\s\S]*border-radius:50%/);
-  assert.match(css,/\.fiscal-ai-drawer\s*\{[\s\S]*width:min\(720px/);
-  assert.match(css,/fiscal-ai-sheet-in/);
-  assert.match(css,/backdrop-filter:none/);
-});
