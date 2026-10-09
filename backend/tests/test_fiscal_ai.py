@@ -892,3 +892,80 @@ def test_openrouter_nao_aceita_json_parcial_com_texto_extra(monkeypatch):
     with pytest.raises(HTTPException) as error:
         fiscal_ai.explain(report())
     assert error.value.status_code==502
+
+
+def test_openrouter_em_lotes_aceita_partes_textuais_e_json_completo(monkeypatch):
+    """Modelo gratuito pode retornar content array, JSON ou blocos marcados."""
+    monkeypatch.setenv("OPENROUTER_ROUTER_FIRST", "1")
+    seen = []
+    allowed = ["G1", "G2", "G3"]
+    payload = {
+        "systemInstruction": {"parts": [{"text": "Concilie contas sem inventar valores."}]},
+        "contents": [{"role": "user", "parts": [{"text": json.dumps({
+            "grupos": [{"grupo": x, "lancamentos": [{"referencia": "L" + x[1:]}]} for x in allowed],
+            "periodo_fiscal": {"ano": 2026},
+        })}]}],
+        "generationConfig": {"responseSchema": {"properties": {"analises": {"items": {"properties": {
+            "grupo": {"enum": allowed},
+        }}}}}},
+    }
+    class Response:
+        def __init__(self, response): self.response = response
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, size): return json.dumps(self.response).encode()
+
+    def mock(req, timeout):
+        body = json.loads(req.data)
+        context = json.loads(body["messages"][1]["content"])
+        current = [row["grupo"] for row in context["grupos"]]
+        seen.append(current)
+        assert body["model"] == "openrouter/free"
+        assert body["provider"]["max_price"] == {"prompt": 0, "completion": 0}
+        assert body["provider"]["data_collection"] == "deny"
+        assert len(current) <= 2
+        assert context["periodo_fiscal"]["ano"] == 2026
+        if len(current) == 2:
+            content = [{"type": "text", "text": json.dumps({"analises": [
+                {"grupo": x, "explicacao": "Descrição", "verificar": "1. Conferir", "evidencias": []}
+                for x in current
+            ]})}]
+            reason = "length"  # JSON integral com metadado length não pode ser perdido.
+        else:
+            content = "GRUPO: G3\\nEXPLICACAO: Diferença no acumulador.\\nVERIFICAR: 1. Conferir a origem.\\nEVIDENCIAS: nenhum"
+            reason = "stop"
+        return Response({"model": "example/free", "choices": [{
+            "finish_reason": reason, "message": {"content": content},
+        }]})
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", mock)
+    result, provider = fiscal_ai._openrouter_completion(payload, ["openrouter/free"], "secret")
+    assert seen == [["G1", "G2"], ["G3"]]
+    assert [x["grupo"] for x in result["analises"]] == allowed
+    assert result["analises"][2]["evidencias"] == []
+    assert provider == "example/free"
+
+
+def test_openrouter_em_lotes_nao_aceita_grupo_omitido(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_ROUTER_FIRST", "1")
+    ids = ["G1", "G2", "G3"]
+    payload = {
+        "systemInstruction": {"parts": [{"text": "Concilie sem inventar"}]},
+        "contents": [{"role": "user", "parts": [{"text": json.dumps({
+            "grupos": [{"grupo": x} for x in ids],
+        })}]}],
+        "generationConfig": {"responseSchema": {"properties": {"analises": {"items": {"properties": {
+            "grupo": {"enum": ids},
+        }}}}}},
+    }
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, size):
+            return json.dumps({"model": "example/free", "choices": [{
+                "finish_reason": "stop", "message": {"content": json.dumps({
+                    "analises": [{"grupo": "G1", "explicacao": "X", "verificar": "1. Conferir", "evidencias": []}]
+                })},
+            }]}).encode()
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", lambda *a, **k: Response())
+    with pytest.raises(ValueError):
+        fiscal_ai._openrouter_completion(payload, ["openrouter/free"], "secret")
