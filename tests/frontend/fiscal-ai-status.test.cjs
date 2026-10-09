@@ -99,10 +99,13 @@ test('tabela compacta preserva acumuladores e reserva totais técnicos para deta
   assert.ok(match);
   const headings = [...match[1].matchAll(/<th>([^<]+)<\/th>/g)].map(x=>x[1]);
   assert.deepEqual(headings,[
-    'Conta contábil / descrição','Acumuladores','Valor fiscal','Diferença','Situação'
+    'Conta contábil / descrição','Acumuladores','Valor fiscal','Valor contábil*','Diferença','Situação'
   ]);
   assert.ok(html.includes('id="fiscal242Search"'));
   assert.ok(html.includes('id="fiscal242Detail"'));
+  assert.ok(html.includes('id="fiscal242CompanyName"'));
+  assert.ok(!html.includes('id="fiscalEmpresaCodigo"'));
+  assert.match(source, /money\.format\(row\.contabil\).*fiscal-money-accounting/);
   assert.ok(html.includes('id="fiscal242Count"'));
   const renderTable = source.slice(source.indexOf('  function renderTable() {'),
     source.indexOf('  function renderResponse(report) {'));
