@@ -230,3 +230,16 @@ test('IA fiscal usa bloco compacto e mantém o painel completo separado', () => 
   assert.match(css,/\.fiscal-ai-narrative-section\s*\{[\s\S]*border-left:2px solid/);
   assert.match(source,/fiscal-ai-refresh/);
 });
+
+
+test('bolha flutuante compacta abre side-sheet discreto', () => {
+  const html = fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8');
+  const css = fs.readFileSync(path.join(__dirname,'../../assets/css/fiscal-242.css'),'utf8');
+  assert.ok(html.includes('aria-label="Abrir análise inteligente"'));
+  assert.ok(html.includes('class="visually-hidden">Abrir análise inteligente</span>'));
+  assert.match(css,/Painel Fiscal • IA flutuante v6/);
+  assert.match(css,/\.fiscal-ai-floating-bubble\s*\{[\s\S]*width:48px;[\s\S]*border-radius:50%/);
+  assert.match(css,/\.fiscal-ai-drawer\s*\{[\s\S]*width:min\(720px/);
+  assert.match(css,/fiscal-ai-sheet-in/);
+  assert.match(css,/backdrop-filter:none/);
+});
