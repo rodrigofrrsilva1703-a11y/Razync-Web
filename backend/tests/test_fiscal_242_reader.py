@@ -114,3 +114,27 @@ def test_biff_recovery_keeps_multiple_sheets_and_legacy_dataframe(monkeypatch):
     assert pd.read_excel(book, sheet_name="Two", header=None).iloc[0, 0] == 456
     first = dominio_ledger._recuperar_xls_biff_irregular(b"synthetic-container")
     assert first.iloc[0, 0] == 123
+
+
+def test_dois_acumuladores_mesma_conta_aparecem_no_preview():
+    """O Razão é por conta, mas a apresentação precisa preservar cada acumulador fiscal."""
+    _, ledger = reports()
+    fiscal = workbook({"Fiscal": [
+        ["ENTRADAS"], ["Codigo", "Descrição", "Valor Contabil", "Conta"],
+        [1152, "Compras para revenda", 1000.00, 22643],
+        [1153, "Outras compras", 234.56, 22643],
+    ]})
+    response = TestClient(app).post("/api/v1/conferencia-fiscal/242/preview", files={
+        "acumuladores": ("fiscal.xlsx", fiscal),
+        "razao": ("razao.xlsx", ledger),
+    })
+    assert response.status_code == 200, response.text
+    rows = response.json()["contas"]
+    assert len(rows) == 1
+    assert rows[0]["conta"] == "22643"
+    assert rows[0]["acumuladores"] == "1152, 1153"
+    assert rows[0]["detalhes_fiscais"] == [
+        {"codigo": "1152", "descricao": "Compras para revenda", "valor": 1000.00},
+        {"codigo": "1153", "descricao": "Outras compras", "valor": 234.56},
+    ]
+    assert rows[0]["fiscal"] == 1234.56
