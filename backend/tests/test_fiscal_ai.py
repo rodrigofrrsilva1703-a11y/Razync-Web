@@ -861,3 +861,34 @@ def test_cota_gemini_alterna_openrouter_sem_repetir_google(monkeypatch):
         assert result["gratuito"] is True
         assert result["fallback_usado"] is True
     assert len(calls) == 1
+
+
+def test_openrouter_extrai_json_valido_com_texto_adicional(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setenv("OPENROUTER_MODELS", "openrouter/free")
+    monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED", raising=False)
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self,*args): pass
+        def read(self,size):
+            answer = {"analises":[{"grupo":"G1","explicacao":"Verificar os valores do acumulador.","verificar":"1. Conferir o relatório.","evidencias":[]}]}
+            return json.dumps({"model":"openrouter/free","choices":[{"finish_reason":"stop","message":{"content":"Resultado solicitado: " + json.dumps(answer) + " Fim."}}]}).encode()
+    monkeypatch.setattr(fiscal_ai.urllib.request,"urlopen",lambda *a,**k: Response())
+    result=fiscal_ai.explain(report())
+    assert result["provedor"]=="openrouter"
+    assert result["analises"][0]["conta"]=="22643"
+
+
+def test_openrouter_nao_aceita_json_parcial_com_texto_extra(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setenv("OPENROUTER_MODELS", "openrouter/free")
+    monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED", raising=False)
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self,*args): pass
+        def read(self,size):
+            return json.dumps({"model":"openrouter/free","choices":[{"finish_reason":"stop","message":{"content":"Texto { \"analises\": ["}}]}).encode()
+    monkeypatch.setattr(fiscal_ai.urllib.request,"urlopen",lambda *a,**k: Response())
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(report())
+    assert error.value.status_code==502
