@@ -33,18 +33,9 @@
   const aiButton = byId("fiscal242AI");
   const aiMessage = byId("fiscal242AIMessage");
   const aiResult = byId("fiscal242AIResult");
-  const aiDrawer = byId("fiscal242AIDrawer");
-  const aiBackdrop = byId("fiscal242AIBackdrop");
-  const aiOpen = byId("fiscal242AIOpen");
-  const aiBubble = byId("fiscal242AIBubble");
-  const aiMinimize = byId("fiscal242AIMinimize");
-  const aiClose = byId("fiscal242AIClose");
   const aiExport = byId("fiscal242AIExport");
-  const aiRunInside = byId("fiscal242AIRunInside");
   const aiInlineStatus = byId("fiscal242AIStatus");
-  const aiCompany = byId("fiscal242AICompany");
   let aiReport = null;
-  let aiReturnFocus = null;
   let statusController = null;
   async function refreshAIStatus() {
     statusController?.abort();
@@ -57,7 +48,6 @@
       if (statusController !== controller) return;
       aiConfigured = result.configurado === true;
       aiButton.disabled = !aiConfigured || !previewBody || Boolean(aiController);
-      if (typeof aiRunInside !== "undefined" && aiRunInside) aiRunInside.disabled = aiButton.disabled;
       if (!aiController && !aiResult.children.length) aiMessage.textContent = aiConfigured
         ? (previewBody ? "Gemini conectado. Clique em Gerar análise." : "Gemini conectado. Faça a conferência para analisar as diferenças.")
         : "Gemini ainda não configurado. Após adicionar a chave no Railway, clique em Atualizar conexão.";
@@ -69,63 +59,13 @@
       if (statusController === controller) statusController = null;
     }
   }
-  const refreshConnection = node("button", "fiscal-ai-refresh", "Verificar conexão");
+  const refreshConnection = node("button", "secondary-action", "Atualizar conexão");
   refreshConnection.type = "button";
   refreshConnection.addEventListener("click", refreshAIStatus);
-  aiOpen.after(refreshConnection);
+  aiButton.after(refreshConnection);
   navigation.addEventListener("click", refreshAIStatus);
   window.addEventListener("focus", () => { if (pane.classList.contains("active")) refreshAIStatus(); });
   refreshAIStatus();
-
-  function showAIPanel() {
-    if (!previewBody) return;
-    aiReturnFocus = document.activeElement;
-    aiDrawer.hidden = false;
-    aiBackdrop.hidden = false;
-    aiBubble.hidden = true;
-    aiOpen.setAttribute("aria-expanded", "true");
-    aiMinimize.focus();
-  }
-  function hideAIPanel(minimized = false) {
-    aiDrawer.hidden = true;
-    aiBackdrop.hidden = true;
-    aiBubble.hidden = !minimized || !previewBody;
-    aiOpen.setAttribute("aria-expanded", "false");
-    if (minimized && !aiBubble.hidden) aiBubble.focus();
-    else if (aiReturnFocus && aiReturnFocus.isConnected && !aiReturnFocus.closest("[hidden]")) aiReturnFocus.focus();
-    else if (!aiOpen.disabled && aiOpen.isConnected) aiOpen.focus();
-  }
-  aiOpen.addEventListener("click", showAIPanel);
-  aiBubble.addEventListener("click", showAIPanel);
-  aiMinimize.addEventListener("click", () => hideAIPanel(true));
-  aiClose.addEventListener("click", () => hideAIPanel(false));
-  aiBackdrop.addEventListener("click", () => hideAIPanel(true));
-  aiRunInside.addEventListener("click", () => { if (!aiButton.disabled) aiButton.click(); });
-  document.addEventListener("keydown", event => {
-    if (aiDrawer.hidden) return;
-    if (event.key === "Escape") {
-      event.preventDefault();
-      hideAIPanel(true);
-    } else if (event.key === "Tab") {
-      const focusable = Array.from(aiDrawer.querySelectorAll(
-        'button:not(:disabled), summary, a[href], input:not(:disabled), select:not(:disabled), [tabindex="0"]'
-      )).filter(el => el.getClientRects().length > 0);
-      if (!focusable.length) return;
-      const first = focusable[0], last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-  });
-  document.querySelectorAll(".main-nav-btn").forEach(button => {
-    if (button.dataset.view !== "fiscal") {
-      button.addEventListener("click", () => { if (!aiDrawer.hidden) hideAIPanel(false); });
-    }
-  });
 
   aiExport.addEventListener("click", async () => {
     if (!aiReport?.analises?.length || !data) return;
@@ -190,11 +130,10 @@
   }
   aiButton.addEventListener("click", async () => {
     if (!previewBody || !aiConfigured) return;
-    showAIPanel();
     aiReport = null;
     aiExport.disabled = true;
     aiController?.abort(); const controller = new AbortController(); aiController = controller;
-    const snapshot = previewBody; aiButton.disabled = true; aiRunInside.disabled = true; aiResult.replaceChildren();
+    const snapshot = previewBody; aiButton.disabled = true; aiResult.replaceChildren();
     aiResult.setAttribute("aria-busy", "true");
     aiMessage.textContent = "Analisando lançamentos e diferenças com Gemini…";
     try {
@@ -265,7 +204,6 @@
         aiResult.setAttribute("aria-busy", "false");
         aiController = null;
         aiButton.disabled = !aiConfigured || !previewBody;
-        aiRunInside.disabled = aiButton.disabled;
       }
     }
   });
@@ -345,10 +283,7 @@
     aiController?.abort(); aiController = null;
     aiReport = null;
     aiExport.disabled = true;
-    aiOpen.disabled = true;
-    aiRunInside.disabled = true;
     aiInlineStatus.textContent = "Faça uma conferência para iniciar a análise.";
-    hideAIPanel(false);
     aiButton.disabled = true; aiResult.replaceChildren(); aiResult.setAttribute("aria-busy", "false");
     aiMessage.textContent = aiConfigured ? "Faça a conferência antes de analisar com IA." : "Gemini ainda não configurado no servidor.";
     if (pendingRequest) {
@@ -589,8 +524,6 @@
       pendentesCorpo.appendChild(tr);
     });
     results.hidden = false;
-    aiOpen.disabled = false;
-    aiCompany.textContent = report.empresa_nome || "Empresa não identificada";
     aiInlineStatus.textContent = "Conferência pronta. Use a análise inteligente para revisar diferenças e alertas.";
     selectedKey = "";
     filter.value = "todas";
@@ -620,8 +553,8 @@
     let body;
     try { body = buildFormData(); } catch (error) { setMessage(error.message, "error"); return; }
     aiController?.abort(); aiController = null; aiButton.disabled = true; aiResult.replaceChildren();
-    aiReport = null; aiExport.disabled = true; aiOpen.disabled = true; aiRunInside.disabled = true;
-    hideAIPanel(false);
+    aiReport = null; aiExport.disabled = true;
+    aiInlineStatus.textContent = "Preparando uma nova conferência.";
     if (pendingRequest) pendingRequest.abort();
     const controller = new AbortController();
     pendingRequest = controller;
@@ -638,7 +571,6 @@
       renderResponse(report);
       previewBody = body;
       aiButton.disabled = !aiConfigured;
-      aiRunInside.disabled = aiButton.disabled;
       refreshAIStatus();
       setMessage("Conferência concluída. Os resultados estão abaixo.", "success");
     } catch (error) {
