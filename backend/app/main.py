@@ -535,6 +535,25 @@ async def conferencia_extrato(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+@app.post("/api/v1/conferencia-fiscal/{company_code}/preview")
+async def conferencia_fiscal_preview_web(
+    company_code: int,
+    acumuladores: UploadFile = File(...),
+    razao: UploadFile = File(...),
+):
+    """Devolve os resultados na tela, sem obrigar o usuário a baixar o Excel."""
+    try:
+        from app.fiscal_242 import conferencia_fiscal_preview
+        return await run_in_threadpool(
+            conferencia_fiscal_preview,
+            await acumuladores.read(), acumuladores.filename or "acumuladores.xls",
+            await razao.read(), razao.filename or "razao.xlsx",
+            company_code,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 @app.post("/api/v1/conferencia-fiscal/{company_code}")
 async def conferencia_fiscal(
     company_code: int,
