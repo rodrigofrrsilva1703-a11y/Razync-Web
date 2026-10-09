@@ -758,7 +758,9 @@ def explain(report):
         except HTTPException as exc:
             logger.warning("fiscal_ia_groq_failure status=%d backup_available=%s",
                            exc.status_code, bool(gemini_key or openrouter_key))
-            if not (gemini_key or openrouter_key):
+            # Erro permanente de chave/permissão: nunca ocultar com Gemini.
+            # Reserva automática só para indisponibilidade temporária da Groq.
+            if exc.status_code not in (429, 502, 503, 504) or not (gemini_key or openrouter_key):
                 raise
             groq_failed = True
         except (ValueError, TypeError, KeyError, IndexError):
