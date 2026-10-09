@@ -389,7 +389,7 @@ def _openrouter_completion(payload, models, key):
     if isinstance(content, dict):
         content = content.get("text")
     if isinstance(content, list):
-        content = "\\n".join(str(part.get("text", "")) for part in content
+        content = chr(10).join(str(part.get("text", "")) for part in content
                            if isinstance(part, dict) and part.get("type") in ("text", "output_text"))
     if not isinstance(content, str) or not content.strip():
         parsed = message.get("parsed")
@@ -422,21 +422,21 @@ def _openrouter_completion(payload, models, key):
         if answer is None:
             # Compatibilidade com modelos que não suportam modo JSON:
             # blocos textuais identificados por grupo, sem inferir valores.
-            blocks = re.split(r"(?im)^\\s*GRUPO\\s*:\\s*", result_text)
+            blocks = re.split(r"(?im)^\s*GRUPO\s*:\s*", result_text)
             parsed = []
             for block in blocks[1:]:
-                matched = re.match(r"\\s*(G\\d+)\\s*\\n", block)
+                matched = re.match(r"\s*(G\d+)\s*\n", block)
                 if not matched:
                     continue
                 ident = matched.group(1)
                 text_body = block[matched.end():]
                 sections = re.search(
-                    r"(?is)\\bEXPLICACAO\\s*:\\s*(.*?)\\s*\\bVERIFICAR\\s*:\\s*(.*?)"
-                    r"\\s*\\bEVIDENCIAS\\s*:\\s*(.*)\\Z", text_body)
+                    r"(?is)\bEXPLICACAO\s*:\s*(.*?)\s*\bVERIFICAR\s*:\s*(.*?)"
+                    r"\s*\bEVIDENCIAS\s*:\s*(.*)\Z", text_body)
                 if not sections:
                     continue
                 evidence_text = sections.group(3).strip()
-                refs = re.findall(r"\\bL\\d+\\b", evidence_text) if evidence_text.lower() not in ("nenhum", "nenhuma", "-", "") else []
+                refs = re.findall(r"\bL\d+\b", evidence_text) if evidence_text.lower() not in ("nenhum", "nenhuma", "-", "") else []
                 parsed.append({"grupo": ident, "explicacao": sections.group(1).strip(),
                     "verificar": sections.group(2).strip(), "evidencias": refs})
             if parsed:
