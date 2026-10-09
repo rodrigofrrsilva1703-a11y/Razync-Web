@@ -10,7 +10,7 @@ import time
 import urllib.error
 import urllib.request
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 from fastapi.concurrency import run_in_threadpool
 from app.fiscal_242 import conferencia_fiscal_preview
