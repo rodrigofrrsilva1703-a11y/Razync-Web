@@ -27,40 +27,49 @@ Cada ferramenta migrada deve ser comparada com o resultado da versão atual ante
 - `MIGRATION.md` — controle das etapas da migração.
 
 
-## Conferência Fiscal × Contábil — IA via OpenRouter
+## Conferência Fiscal × Contábil — IA 100% gratuita no OpenRouter
 
-O backend prefere **OpenRouter** quando `OPENROUTER_API_KEY` estiver configurada no
-serviço `razync-api` do Railway. Até configurar essa chave, mantém a integração
-existente do Gemini (`GEMINI_API_KEY`) para não interromper o site.
+O Razync usa **exclusivamente o OpenRouter gratuito por padrão**, sem executar
+nenhum modelo de IA pago. O Gemini direto permanece desativado, mesmo se a
+variável `GEMINI_API_KEY` antiga estiver presente no Railway. A única exceção
+de compatibilidade é o modo legado explícito
+`RAZYNC_AI_LEGACY_GEMINI=1`, reservado a testes de integração de versões
+anteriores — **não configure essa variável na produção**.
 
 ### Configuração no Railway
 
-- `OPENROUTER_API_KEY`: chave de acesso, **somente no backend**. Nunca coloque
-  essa chave em `index.html`, JavaScript ou repositórios Git.
-- `OPENROUTER_MODELS` (opcional): modelos em ordem de prioridade, separados
-  por vírgulas. Padrão:
-  `openai/gpt-4.1-mini,google/gemini-2.5-flash,anthropic/claude-haiku-4.5`.
+- `OPENROUTER_API_KEY`: chave privada, armazenada nas variáveis de ambiente
+  do serviço `razync-api`, nunca no GitHub ou em arquivos JavaScript.
+- `OPENROUTER_MODELS` (opcional): lista separada por vírgulas de IDs
+  exclusivamente gratuitos, como `openrouter/free` e
+  `nvidia/nemotron-3-ultra-550b-a55b:free`. Padrão **`openrouter/free`**.
+  Modelos comuns (sem o sufixo `:free`) e `openrouter/auto` são rejeitados.
 
-O Razync alterna o modelo inicial em cada conferência (rotação circular).
-Na mesma solicitação, envia o conjunto de modelos para o OpenRouter, que
-automaticamente tenta outro quando o primeiro fica indisponível, sujeito a
-limites ou apresenta erros de roteamento. **Todos recebem o mesmo prompt,
-período fiscal, acumuladores, Razão e referências dos lançamentos**. As
-respostas continuam sendo conferidas pelo Razync antes da exibição, e
-valores fiscais/contábeis não são recalculados pela IA.
+O roteador `openrouter/free` escolhe entre modelos gratuitos disponíveis e
+compatíveis com o formato exigido na análise. Se uma lista de vários modelos
+`:free` for configurada, o modelo prioritário também alterna a cada nova
+análise, com fallback. Todos os candidatos recebem o mesmo contexto fiscal,
+período, acumuladores, Razão e referências.
 
-O pedido exige JSON estruturado e somente provedores que respeitam os
-parâmetros; a configuração `data_collection: deny` exclui provedores que
-declaram usar os dados para treinamento. Ainda assim, as informações contábeis
-são processadas por terceiros: avalie as permissões e políticas de privacidade
-antes de enviar arquivos reais.
+### Travamentos de custo
 
-**Não existe limite infinito garantido:** os modelos gratuitos, saldos de
-crédito, limites por minuto, limites do provedor e limites de contexto ainda
-se aplicam. Recomenda-se definir um **teto de gastos na chave do OpenRouter**
-antes de habilitar a integração. Se não houver saldo ou nenhuma alternativa
-puder atender, o sistema mostra o erro e preserva os resultados locais.
+1. Uma lista configurada com modelo pago causa erro **antes de enviar dados**.
+2. A chamada exige `provider.max_price.prompt=0` e
+   `provider.max_price.completion=0`, bloqueando endpoints cobrados.
+3. Se nenhum serviço grátis estiver disponível ou a cota se esgotar, o Razync
+   mostra um erro, **sem tentar uma IA paga**.
+4. Nenhum cálculo contábil é feito pela IA; os resultados e referências
+   continuam validados e a exportação Excel usa a análise já concluída.
 
-A conferência atual continua limitada a **12 grupos e 1.500 lançamentos por
-análise**, independentemente do provedor. O filtro temporal do Razão continua
-sendo determinado pelo Resumo por Acumulador.
+A política de privacidade mantém `data_collection: deny` e
+`require_parameters: true`. Isso reduz o conjunto de modelos elegíveis e
+pode fazer a solicitação falhar — intencionalmente — quando não há provedores
+gratuitos que respeitem essas condições. Dados contábeis são compartilhados
+com o prestador de IA escolhido: verifique autorização, confidencialidade e
+políticas de tratamento de dados antes de utilizar relatórios reais.
+
+**Grátis não é ilimitado:** a conta Free do OpenRouter tem limite anunciado
+de 50 requisições por dia, além de eventuais limites por modelo/provedor.
+A conferência segue limitada a 12 grupos e 1.500 registros por análise.
+É possível alterar a lista de modelos gratuitos; isso não remove os limites
+compartilhados da conta OpenRouter.
