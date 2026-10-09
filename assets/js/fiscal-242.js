@@ -31,11 +31,36 @@
   const aiButton = byId("fiscal242AI");
   const aiMessage = byId("fiscal242AIMessage");
   const aiResult = byId("fiscal242AIResult");
-  fetch(API() + "/api/v1/conferencia-fiscal/242/ia/status")
-    .then(response => response.ok ? response.json() : {configurado:false})
-    .then(result => { aiConfigured = result.configurado === true; aiButton.disabled = !aiConfigured || !previewBody;
-      aiMessage.textContent = aiConfigured ? "Disponível após a conferência. Use a chave de Acesso administrativo para analisar." : "Gemini ainda não configurado no servidor. A conferência funciona normalmente.";
-    }).catch(() => { aiMessage.textContent = "Não foi possível verificar o Gemini. A conferência funciona normalmente."; });
+  let statusController = null;
+  async function refreshAIStatus() {
+    statusController?.abort();
+    const controller = new AbortController(); statusController = controller;
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch(API() + "/api/v1/conferencia-fiscal/242/ia/status?t=" + Date.now(), {cache:"no-store", signal:controller.signal});
+      if (!response.ok) throw new Error("Status indisponível");
+      const result = await response.json();
+      if (statusController !== controller) return;
+      aiConfigured = result.configurado === true;
+      aiButton.disabled = !aiConfigured || !previewBody || Boolean(aiController);
+      if (!aiController && !aiResult.children.length) aiMessage.textContent = aiConfigured
+        ? (previewBody ? "Gemini conectado. Informe o acesso administrativo e clique em Analisar diferenças com IA." : "Gemini conectado. Faça a conferência para analisar as diferenças.")
+        : "Gemini ainda não configurado. Após adicionar a chave no Railway, clique em Atualizar conexão.";
+    } catch (error) {
+      if (statusController !== controller) return;
+      if (!aiController) aiMessage.textContent = "Não foi possível verificar a conexão. Clique em Atualizar conexão para tentar novamente.";
+    } finally {
+      clearTimeout(timeout);
+      if (statusController === controller) statusController = null;
+    }
+  }
+  const refreshConnection = node("button", "secondary-action", "Atualizar conexão");
+  refreshConnection.type = "button";
+  refreshConnection.addEventListener("click", refreshAIStatus);
+  aiButton.after(refreshConnection);
+  tab.addEventListener("click", refreshAIStatus);
+  window.addEventListener("focus", () => { if (Number(selected?.codigo) === 242 && !pane.hidden) refreshAIStatus(); });
+  refreshAIStatus();
   aiButton.addEventListener("click", async () => {
     if (!previewBody || !aiConfigured || Number(selected?.codigo) !== 242) return;
     let headers;
@@ -118,6 +143,7 @@
     clearState();
     previousOpenCompany(company);
     const is242 = Number(company && company.codigo) === 242;
+    if (is242) refreshAIStatus();
     tab.hidden = !is242;
     if (!is242 && panel.dataset.activeTool === "fiscal") activateTool("organizar");
   };
@@ -278,6 +304,7 @@
       renderResponse(report);
       previewBody = body;
       aiButton.disabled = !aiConfigured;
+      refreshAIStatus();
       setMessage("Conferência concluída. Os resultados estão abaixo.", "success");
     } catch (error) {
       if (error.name === "AbortError") return;
