@@ -65,6 +65,7 @@
     if (!previewBody || !aiConfigured || Number(selected?.codigo) !== 242) return;
     aiController?.abort(); const controller = new AbortController(); aiController = controller;
     const snapshot = previewBody; aiButton.disabled = true; aiResult.replaceChildren();
+    aiResult.setAttribute("aria-busy", "true");
     aiMessage.textContent = "Analisando lançamentos e diferenças com Gemini…";
     try {
       const response = await fetch(API() + "/api/v1/conferencia-fiscal/242/ia", {method:"POST",body:snapshot,signal:controller.signal});
@@ -72,14 +73,27 @@
       const result = await response.json();
       if (controller.signal.aborted || previewBody !== snapshot || Number(selected?.codigo) !== 242) return;
       for (const item of result.analises || []) {
-        const card = node("article", "");
-        card.append(node("strong", "", `Conta ${item.conta} · ${item.tipo}`), node("p", "", item.explicacao), node("p", "", "Verificar: " + item.verificar));
+        const card = node("article", "fiscal-ai-card");
+        const heading = node("div", "fiscal-ai-card-heading");
+        heading.append(node("h4", "", `Conta ${item.conta}`), node("span", "fiscal-ai-type", item.tipo));
+        const analysis = node("div", "fiscal-ai-analysis");
+        analysis.append(node("h5", "", "Análise dos lançamentos"), node("p", "", item.explicacao));
+        const review = node("div", "fiscal-ai-review");
+        review.append(node("h5", "", "O que conferir"), node("p", "", item.verificar));
+        card.append(heading, analysis, review);
         if (item.evidencias?.length) {
-          const details = node("details", "");
+          const details = node("details", "fiscal-ai-evidence");
           details.append(node("summary", "", `Lançamentos citados (${item.evidencias.length})`));
           for (const row of item.evidencias) {
             const value = n => Number(n || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
-            details.append(node("p", "", `${row.referencia} · ${row.data} · Conta ${row.conta} · Contrapartida ${row.contrapartida} · Débito ${value(row.debito)} · Crédito ${value(row.credito)}`), node("p", "", row.historico));
+            const record = node("div", "fiscal-ai-record");
+            const title = node("div", "fiscal-ai-record-title");
+            title.append(node("strong", "", row.referencia), node("span", "", row.data));
+            const metrics = node("dl", "fiscal-ai-record-metrics");
+            for (const [label, content] of [["Conta", row.conta], ["Contrapartida", row.contrapartida], ["Débito", value(row.debito)], ["Crédito", value(row.credito)]]) {
+              const metric = node("div", ""); metric.append(node("dt", "", label), node("dd", "", content)); metrics.append(metric);
+            }
+            record.append(title, node("p", "", row.historico), metrics); details.append(record);
           }
           card.append(details);
         }
@@ -89,7 +103,7 @@
     } catch (error) {
       if (!controller.signal.aborted && previewBody === snapshot) aiMessage.textContent = error.message;
     } finally {
-      if (aiController === controller) { aiController = null; aiButton.disabled = !aiConfigured || !previewBody; }
+      if (aiController === controller) { aiResult.setAttribute("aria-busy", "false"); aiController = null; aiButton.disabled = !aiConfigured || !previewBody; }
     }
   });
   const keyOf = row => String(row.conta) + ":" + String(row.tipo);
@@ -124,7 +138,7 @@
   }
   function clearState() {
     aiController?.abort(); aiController = null;
-    aiButton.disabled = true; aiResult.replaceChildren();
+    aiButton.disabled = true; aiResult.replaceChildren(); aiResult.setAttribute("aria-busy", "false");
     aiMessage.textContent = aiConfigured ? "Faça a conferência antes de analisar com IA." : "Gemini ainda não configurado no servidor.";
     if (pendingRequest) {
       pendingRequest.abort();

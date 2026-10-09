@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="./assets/css/refined-theme.css?v=3">
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
-  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=gemini-detailed-2">
+  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=gemini-design-3">
 </head>
 <body>
   <div class="app-shell">
@@ -318,10 +318,14 @@
             <p class="fiscal-period" id="fiscal242Period"></p>
             <div id="fiscal242Warnings" class="fiscal-warnings"></div>
             <section class="fiscal-ai">
-              <h3>Análise assistida com Gemini</h3>
-              <p>O Gemini analisa os dados extraídos dos relatórios: históricos completos (que podem conter nomes e documentos), datas, contas, contrapartidas e valores. O fiscal é um resumo por acumulador. A IA aponta evidências e hipóteses para revisão; não altera cálculos ou arquivos.</p>
-              <button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button>
+              <div class="fiscal-ai-heading">
+                <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
+                <div><span class="fiscal-ai-eyebrow">ASSISTENTE DE CONFERÊNCIA</span><h3>Uma visão mais clara das diferenças</h3><p>Entenda os valores, revise as hipóteses e confira os lançamentos citados.</p></div>
+                <span class="fiscal-ai-provider">Gemini</span>
+              </div>
+              <div class="fiscal-ai-actions"><button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button></div>
               <p id="fiscal242AIMessage" role="status">Verificando disponibilidade do Gemini…</p>
+              <details class="fiscal-ai-privacy"><summary>Como seus dados são analisados</summary><p>O Gemini recebe os dados extraídos dos relatórios: históricos completos (que podem conter nomes e documentos), datas, contas, contrapartidas e valores. O fiscal é um resumo por acumulador. As sugestões exigem revisão humana e não alteram cálculos ou arquivos.</p></details>
               <div id="fiscal242AIResult"></div>
             </section>
             <div class="fiscal-results-card">
@@ -413,7 +417,7 @@
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=company-guides-all-3"></script>
   <script src="./assets/js/migration.js?v=fiscal242-pilot-2"></script>
-  <script src="./assets/js/fiscal-242.js?v=gemini-detailed-4"></script>
+  <script src="./assets/js/fiscal-242.js?v=gemini-design-5"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>
