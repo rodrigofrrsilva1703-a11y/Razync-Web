@@ -169,3 +169,19 @@ def test_api_le_arquivos_uma_vez_e_cacheia_resultado(monkeypatch):
     assert ai_calls == ["groq", "gemini"]
     assert client.delete(f"/api/v1/conferencia-fiscal/ia/sessoes/{token}").status_code == 200
     assert client.post(f"/api/v1/conferencia-fiscal/ia/sessoes/{token}/lotes/0").status_code == 410
+
+
+
+def test_limpeza_cancela_temporizador_da_sessao(monkeypatch):
+    timers = []
+    class Timer:
+        def __init__(self, *args, **kwargs):
+            self.started = self.cancelled = False
+            timers.append(self)
+        def start(self): self.started = True
+        def cancel(self): self.cancelled = True
+    monkeypatch.setattr(sessions.threading, "Timer", Timer)
+    manifest = sessions.prepare(report(1))
+    assert timers[0].started is True
+    sessions.discard(manifest["sessao"])
+    assert timers[0].cancelled is True

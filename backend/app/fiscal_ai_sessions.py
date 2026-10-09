@@ -17,7 +17,7 @@ def _get(token):
     with _guard:
         session = _sessions.get(token)
         if session is None or session["expires"] <= time.monotonic():
-            _sessions.pop(token, None)
+            discard(token)
             raise HTTPException(410, "A sessão de análise expirou. Anexe os arquivos novamente.")
         return session
 
@@ -48,7 +48,7 @@ def prepare(report):
     with _guard:
         now = time.monotonic()
         for expired in [key for key, value in _sessions.items() if value["expires"] <= now]:
-            _sessions.pop(expired, None)
+            discard(expired)
         if len(_sessions) >= 8:
             raise HTTPException(503, "O servidor está com várias análises abertas. Aguarde alguns minutos.")
         session = {"expires": now + TTL_SECONDS, "batches": batches, "active_providers": set()}
@@ -56,6 +56,7 @@ def prepare(report):
     # Limpeza também acontece sem novas requisições, inclusive dados financeiros.
     timer = threading.Timer(TTL_SECONDS, discard, args=(token,))
     timer.daemon = True
+    session["timer"] = timer
     timer.start()
     return {"sessao": token, "grupos": len(eligible), "registros": len(report.get("lancamentos", [])),
             "cooperacao": len(providers) == 2,
@@ -64,7 +65,9 @@ def prepare(report):
 
 def discard(token):
     with _guard:
-        _sessions.pop(token, None)
+        session = _sessions.pop(token, None)
+    if session is not None and session.get("timer") is not None:
+        session["timer"].cancel()
 
 
 def process(token, batch_id):
