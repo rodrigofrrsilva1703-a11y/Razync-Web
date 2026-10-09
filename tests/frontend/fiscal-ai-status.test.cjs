@@ -97,9 +97,9 @@ test('tabela compacta preserva acumuladores e reserva totais técnicos para deta
   const html = fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8');
   const match = html.match(/<table class="fiscal-table">([\s\S]*?)<\/table>/);
   assert.ok(match);
-  const headings = [...match[1].matchAll(/<th>([^<]+)<\/th>/g)].map(x=>x[1]);
+  const headings = [...match[1].matchAll(/<th\b[^>]*>([^<]+)<\/th>/g)].map(x=>x[1]);
   assert.deepEqual(headings,[
-    'Conta contábil / descrição','Acumuladores','Valor fiscal','Valor contábil*','Diferença','Situação'
+    'Conta / descrição','Acumuladores','Fiscal','Contábil considerado','Diferença','Situação'
   ]);
   assert.ok(html.includes('id="fiscal242Search"'));
   assert.ok(html.includes('id="fiscal242Detail"'));
@@ -111,4 +111,47 @@ test('tabela compacta preserva acumuladores e reserva totais técnicos para deta
     source.indexOf('  function renderResponse(report) {'));
   assert.ok(renderTable.includes('renderDetails(rows.find(row => keyOf(row) === selectedKey) || null)'));
   assert.doesNotMatch(renderTable,/selectedKey\s*=\s*keyOf\(rows\[0\]\)/);
+});
+
+
+test('painel moderno inclui cartões, indicadores e lançamentos sob demanda', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(__dirname, '../../assets/css/fiscal-242.css'), 'utf8');
+  for (const id of ['fiscal242Total', 'fiscal242Matches', 'fiscal242Alerts',
+                    'fiscal242Pending', 'fiscal242ProgressMatches',
+                    'fiscal242ProgressAlerts', 'fiscal242ProgressPending']) {
+    assert.ok(html.includes('id="' + id + '"'), 'Faltou ' + id);
+  }
+  assert.match(source, /fiscal-ledger-disclosure/);
+  assert.match(source, /fiscal-detail-metric-accounting/);
+  assert.match(source, /fiscal242ProgressMatches/);
+  assert.match(css, /@media\(max-width:760px\)/);
+  assert.match(css, /fiscal-results-card \.fiscal-table tbody tr \{\s*display:grid/);
+  assert.ok(html.includes('fiscal-summary-card'), 'Cards de resumo não encontrados');
+});
+
+test('Gemini apresenta parecer por etapas e checklist sem tratar texto como HTML', () => {
+  const start = source.indexOf('  function renderNarrative(textValue) {');
+  const end = source.indexOf('  aiButton.addEventListener("click"', start);
+  assert.ok(start >= 0 && end > start);
+  const node = (tag, className, value) => ({
+    tag, className, textContent: value === undefined ? '' : String(value),
+    children: [], append(...entries) { this.children.push(...entries); },
+    appendChild(entry) { this.children.push(entry); }
+  });
+  const context = {node};
+  vm.createContext(context);
+  vm.runInContext(source.slice(start,end), context);
+  const explanation = context.renderNarrative(
+    'Fatos da conta.\n\nHipótese baseada na divergência.\n\nVerificação necessária.\n\nLimites do relatório.'
+  );
+  assert.equal(explanation.children.length, 4);
+  assert.equal(explanation.children[0].children[0].textContent, 'O que foi encontrado');
+  assert.equal(explanation.children[3].children[0].textContent, 'Limitações e cuidados');
+  const checklist = context.renderChecklist('1. Confira NF.\n2. Valide o acumulador.\n3. Compare o Razão.');
+  const steps = checklist.children[0].children;
+  assert.equal(steps.length, 3);
+  assert.equal(steps[0].textContent, 'Confira NF.');
+  const malicious = context.renderNarrative('<script>alert(1)</script>');
+  assert.equal(malicious.children[0].textContent, '<script>alert(1)</script>');
 });
