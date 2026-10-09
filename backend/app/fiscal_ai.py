@@ -864,15 +864,16 @@ def status():
         os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1"
         and os.getenv("GEMINI_API_KEY", "").strip()
     )
+    groq_selected = _groq_enabled() and os.getenv("RAZYNC_AI_PRIMARY") == "groq"
     return {
-        "configurado": openrouter or gemini_free or legacy or _groq_enabled(),
-        "provedor": "groq" if _groq_enabled() and os.getenv("RAZYNC_AI_PRIMARY") == "groq"
+        "configurado": openrouter or gemini_free or legacy or groq_selected,
+        "provedor": "groq" if groq_selected
             else "gemini" if gemini_free and os.getenv("RAZYNC_AI_PRIMARY", "openrouter") == "gemini"
             else "openrouter" if openrouter
             else "gemini" if (gemini_free or legacy)
-            else "groq" if _groq_enabled() else None,
-        "gratuito": not (legacy and not gemini_free and not openrouter and not _groq_enabled()),
-        "fallback_gemini": bool((openrouter or _groq_enabled()) and gemini_free),
+            else None,
+        "gratuito": not (legacy and not gemini_free and not openrouter and not groq_selected),
+        "fallback_gemini": bool((openrouter or groq_selected) and gemini_free),
     }
 
 
