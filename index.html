@@ -225,8 +225,8 @@
             <section class="fiscal-ai">
               <div class="fiscal-ai-heading">
                 <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
-                <div><span class="fiscal-ai-eyebrow">ANÁLISE ASSISTIDA</span><h3>Entenda as diferenças com Gemini</h3><p>Uma leitura guiada dos relatórios, com hipóteses, verificações práticas e referências aos lançamentos.</p></div>
-                <span class="fiscal-ai-provider">Gemini</span>
+                <div><span class="fiscal-ai-eyebrow">ANÁLISE ASSISTIDA</span><h3>Entenda as diferenças com IA</h3><p>Uma leitura guiada dos relatórios, com hipóteses, verificações práticas e referências aos lançamentos.</p></div>
+                <span class="fiscal-ai-provider" id="fiscal242AIProvider">IA</span>
               </div>
               <div class="fiscal-ai-actions">
                 <button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button>
@@ -234,7 +234,7 @@
               </div>
               <p id="fiscal242AIStatus" class="fiscal-ai-inline-status" role="status" aria-live="polite">Faça uma conferência para iniciar a análise.</p>
               <p id="fiscal242AIMessage" role="status" aria-live="polite">Verificando disponibilidade do Gemini…</p>
-              <details class="fiscal-ai-privacy"><summary>Como seus dados são analisados</summary><p>O Gemini recebe os dados extraídos dos relatórios: históricos completos (que podem conter nomes e documentos), datas, contas, contrapartidas e valores. O fiscal é um resumo por acumulador. As sugestões exigem revisão humana e não alteram cálculos ou arquivos.</p></details>
+              <details class="fiscal-ai-privacy"><summary>Como seus dados são analisados</summary><p>O provedor de IA conectado (OpenRouter ou Gemini) recebe os dados extraídos dos relatórios: históricos completos (que podem conter nomes e documentos), datas, contas, contrapartidas e valores. O fiscal é um resumo por acumulador. As sugestões exigem revisão humana e não alteram cálculos ou arquivos.</p></details>
               <div id="fiscal242AIToolbar" class="fiscal-ai-toolbar" hidden>
                 <div class="fiscal-ai-toolbar-heading">
                   <div>
@@ -503,7 +503,7 @@
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=fiscal-layout-2"></script>
   <script src="./assets/js/migration.js?v=fiscal-universal-1"></script>
-  <script src="./assets/js/fiscal-242.js?v=fiscal-ai-accounts-1"></script>
+  <script src="./assets/js/fiscal-242.js?v=openrouter-provider-1"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>
