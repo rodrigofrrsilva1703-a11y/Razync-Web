@@ -16,7 +16,7 @@ test('status Gemini reconhece chave adicionada após abrir o site, sem cache',as
   await context.refreshAIStatus(); assert.equal(context.aiButton.disabled,true);
   configured = true;
   await context.refreshAIStatus(); assert.equal(context.aiButton.disabled,false);
-  assert.match(context.aiMessage.textContent,/Gemini conectado/);
+  assert.match(context.aiMessage.textContent,/Gemini configurado/);
   assert.equal(context.aiProvider.textContent, 'Gemini');
 });
 
@@ -244,7 +244,7 @@ test('status exibe OpenRouter no campo quando nova chave esta conectada',async (
   await context.refreshAIStatus();
   assert.equal(context.aiButton.disabled,false);
   assert.equal(context.aiProvider.textContent,'OpenRouter · gratuito');
-  assert.match(context.aiMessage.textContent,/OpenRouter conectado/);
+  assert.match(context.aiMessage.textContent,/OpenRouter configurado/);
 });
 
 
