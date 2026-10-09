@@ -748,3 +748,6 @@ def tasks_delete(task_id: str):
 
 from app.migration_routes import router as migration_router
 app.include_router(migration_router)
+
+from app.fiscal_ai import router as fiscal_ai_router
+app.include_router(fiscal_ai_router)

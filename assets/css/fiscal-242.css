@@ -257,3 +257,7 @@
   #companyPanel .fiscal-detail-heading .fiscal-status {margin-top:10px}
   #companyPanel .fiscal-download-row button {width:100%}
 }
+
+.fiscal-ai { padding:20px; margin:16px 0; border:1px solid #dce6f3; border-radius:14px; background:#f8faff; }
+.fiscal-ai p { color:#526981; line-height:1.6; font-size:13px; }
+.fiscal-ai article { background:#fff; border:1px solid #e2e8f1; border-radius:10px; padding:14px; margin-top:12px; }

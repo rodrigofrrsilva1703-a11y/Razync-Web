@@ -3,7 +3,7 @@
   const selector = '[id$="Message"]';
   function update(element) {
     const text = element.textContent.trim();
-    const busy = /^(Classificando|Conferindo|Processando|Carregando|Abrindo|Montando|Gerando|Preparando)\b/i.test(text)
+    const busy = /^(Analisando|Classificando|Conferindo|Processando|Carregando|Abrindo|Montando|Gerando|Preparando)\b/i.test(text)
       || /^Arquivos prontos\..*(Montando|Conferindo)/i.test(text);
     element.classList.toggle('preview-loading', busy);
     element.setAttribute('aria-busy', String(busy));

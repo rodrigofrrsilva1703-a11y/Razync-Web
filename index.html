@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="./assets/css/refined-theme.css?v=3">
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
-  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=fiscal242-pilot-2">
+  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=gemini-pilot-1">
 </head>
 <body>
   <div class="app-shell">
@@ -317,6 +317,13 @@
             </div>
             <p class="fiscal-period" id="fiscal242Period"></p>
             <div id="fiscal242Warnings" class="fiscal-warnings"></div>
+            <section class="fiscal-ai">
+              <h3>Análise assistida com Gemini</h3>
+              <p>O Google recebe apenas categorias anônimas de divergência. Arquivos, históricos, nomes, contas, datas e valores não são enviados. A IA sugere verificações e não altera a conferência.</p>
+              <button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button>
+              <p id="fiscal242AIMessage" role="status">Verificando disponibilidade do Gemini…</p>
+              <div id="fiscal242AIResult"></div>
+            </section>
             <div class="fiscal-results-card">
               <div class="fiscal-results-heading">
                 <div><h3>Resultado por conta</h3><p>As divergências aparecem primeiro. Selecione uma conta para examinar os lançamentos.</p></div>
@@ -406,7 +413,7 @@
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=company-guides-all-3"></script>
   <script src="./assets/js/migration.js?v=fiscal242-pilot-2"></script>
-  <script src="./assets/js/fiscal-242.js?v=dominio-reader-2"></script>
+  <script src="./assets/js/fiscal-242.js?v=gemini-pilot-1"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>

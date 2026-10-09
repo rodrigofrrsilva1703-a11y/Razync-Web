@@ -21,10 +21,45 @@
   };
   let data = null;
   let previewBody = null;
+  let aiController = null;
+  let aiConfigured = false;
+
   let selectedKey = "";
   let pendingRequest = null;
 
   const byId = id => document.getElementById(id);
+  const aiButton = byId("fiscal242AI");
+  const aiMessage = byId("fiscal242AIMessage");
+  const aiResult = byId("fiscal242AIResult");
+  fetch(API() + "/api/v1/conferencia-fiscal/242/ia/status")
+    .then(response => response.ok ? response.json() : {configurado:false})
+    .then(result => { aiConfigured = result.configurado === true; aiButton.disabled = !aiConfigured || !previewBody;
+      aiMessage.textContent = aiConfigured ? "Disponível após a conferência. Use a chave de Acesso administrativo para analisar." : "Gemini ainda não configurado no servidor. A conferência funciona normalmente.";
+    }).catch(() => { aiMessage.textContent = "Não foi possível verificar o Gemini. A conferência funciona normalmente."; });
+  aiButton.addEventListener("click", async () => {
+    if (!previewBody || !aiConfigured || Number(selected?.codigo) !== 242) return;
+    let headers;
+    try { headers = adminHeaders(); } catch (error) { aiMessage.textContent = error.message; return; }
+    aiController?.abort(); const controller = new AbortController(); aiController = controller;
+    const snapshot = previewBody; aiButton.disabled = true; aiResult.replaceChildren();
+    aiMessage.textContent = "Analisando diferenças com Gemini…";
+    try {
+      const response = await fetch(API() + "/api/v1/conferencia-fiscal/242/ia", {method:"POST",body:snapshot,headers,signal:controller.signal});
+      if (!response.ok) throw new Error(await responseError(response));
+      const result = await response.json();
+      if (controller.signal.aborted || previewBody !== snapshot || Number(selected?.codigo) !== 242) return;
+      for (const item of result.analises || []) {
+        const card = node("article", "");
+        card.append(node("strong", "", `Conta ${item.conta} · ${item.tipo}`), node("p", "", item.explicacao), node("p", "", "Verificar: " + item.verificar));
+        aiResult.append(card);
+      }
+      aiMessage.textContent = result.aviso + (result.limite ? " " + result.limite : "");
+    } catch (error) {
+      if (!controller.signal.aborted && previewBody === snapshot) aiMessage.textContent = error.message;
+    } finally {
+      if (aiController === controller) { aiController = null; aiButton.disabled = !aiConfigured || !previewBody; }
+    }
+  });
   const keyOf = row => String(row.conta) + ":" + String(row.tipo);
   const selectedFiles = () => {
     const acumuladores = byId("fiscal242Acumuladores").files[0];
@@ -56,6 +91,9 @@
     message.dataset.state = kind || "";
   }
   function clearState() {
+    aiController?.abort(); aiController = null;
+    aiButton.disabled = true; aiResult.replaceChildren();
+    aiMessage.textContent = aiConfigured ? "Faça a conferência antes de analisar com IA." : "Gemini ainda não configurado no servidor.";
     if (pendingRequest) {
       pendingRequest.abort();
       pendingRequest = null;
@@ -223,6 +261,7 @@
     if (Number(selected?.codigo) !== 242) return;
     let body;
     try { body = buildFormData(); } catch (error) { setMessage(error.message, "error"); return; }
+    aiController?.abort(); aiController = null; aiButton.disabled = true; aiResult.replaceChildren();
     if (pendingRequest) pendingRequest.abort();
     const controller = new AbortController();
     pendingRequest = controller;
@@ -238,6 +277,7 @@
       if (controller.signal.aborted || Number(selected?.codigo) !== 242) return;
       renderResponse(report);
       previewBody = body;
+      aiButton.disabled = !aiConfigured;
       setMessage("Conferência concluída. Os resultados estão abaixo.", "success");
     } catch (error) {
       if (error.name === "AbortError") return;
