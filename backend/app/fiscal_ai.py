@@ -763,9 +763,30 @@ def explain(report):
             if exc.status_code not in (429, 502, 503, 504) or not (gemini_key or openrouter_key):
                 raise
             groq_failed = True
-        except (ValueError, TypeError, KeyError, IndexError):
-            logger.warning("fiscal_ia_groq_invalid_response backup_available=%s",
-                           bool(gemini_key or openrouter_key))
+        except (ValueError, TypeError, KeyError, IndexError) as exc:
+            # Categoria técnica fixa; nunca expor prompts, respostas brutas,
+            # identificadores fiscais ou mensagens arbitrárias da API.
+            allowed = {
+                "Groq output limited by tokens",
+                "Groq output filtered",
+                "Groq did not complete JSON output",
+                "Groq returned empty content",
+                "Groq returned invalid JSON",
+                "Groq returned missing groups",
+                "Groq returned invalid item",
+                "Groq returned invalid groups",
+                "Groq returned invented evidence",
+                "Groq cited nonexistent transactions",
+                "Groq returned incomplete batch",
+                "Invalid analysis item",
+                "Unknown or repeated group",
+                "Invalid explanation",
+                "Invalid evidence reference",
+                "Empty answer",
+            }
+            cause = str(exc) if isinstance(exc, ValueError) and str(exc) in allowed else type(exc).__name__
+            logger.warning("fiscal_ia_groq_invalid_response category=%s backup_available=%s",
+                           cause, bool(gemini_key or openrouter_key))
             if not (gemini_key or openrouter_key):
                 raise HTTPException(502, "A Groq retornou análise inválida. A conferência permanece disponível.") from None
             groq_failed = True
