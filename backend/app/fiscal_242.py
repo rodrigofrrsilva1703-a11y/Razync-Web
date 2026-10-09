@@ -216,8 +216,8 @@ def conferencia_fiscal_preview(
         )
     else:
         avisos.append(
-            "Não foi possível identificar um intervalo completo no Resumo por Acumulador. "
-            "Confira o cabeçalho do relatório: sem período identificado, o Razão não foi filtrado por data."
+            "O Resumo por Acumulador não informa um intervalo completo de competência. "
+            "Confira o cabeçalho do relatório: sem período fiscal, o Razão não foi filtrado por data."
         )
 
     nome_empresa = resultado.get("empresa_nome", "")
