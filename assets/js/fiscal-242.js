@@ -57,9 +57,9 @@
       const result = await response.json();
       if (statusController !== controller) return;
       aiConfigured = result.configurado === true;
-      const providerName = result.provedor === "openrouter" ? "OpenRouter" : "Gemini";
+      const providerName = result.provedor === "groq" ? "GroqCloud" : result.provedor === "openrouter" ? "OpenRouter" : "Gemini";
       aiProvider.textContent = aiConfigured
-        ? (result.gratuito === true && result.provedor === "openrouter" ? "OpenRouter · gratuito" : providerName)
+        ? (result.gratuito === true && result.provedor === "openrouter" ? "OpenRouter · gratuito" : result.gratuito === true && result.provedor === "groq" ? "GroqCloud · gratuito" : providerName)
         : "IA";
       aiButton.disabled = !aiConfigured || !previewBody || Boolean(aiController);
       if (!aiController && !aiResult.children.length) aiMessage.textContent = aiConfigured
@@ -229,9 +229,11 @@
         aiProvider.textContent = result.gratuito === true ? "Gemini · gratuito" : "Gemini";
       } else if (result.provedor === "openrouter") {
         aiProvider.textContent = "OpenRouter · gratuito";
+      } else if (result.provedor === "groq") {
+        aiProvider.textContent = "GroqCloud · gratuito";
       }
       aiExport.disabled = !(Array.isArray(result.analises) && result.analises.length);
-      const providerLabel = result.provedor === "openrouter" ? "OpenRouter" : result.provedor === "gemini" ? "Gemini" : "IA";
+      const providerLabel = result.provedor === "groq" ? "GroqCloud" : result.provedor === "openrouter" ? "OpenRouter" : result.provedor === "gemini" ? "Gemini" : "IA";
       aiInlineStatus.textContent = result.analises?.length
         ? "Parecer recebido do " + providerLabel + ". Selecione uma conta para ler a análise ou exporte o Excel."
         : "O " + providerLabel + " concluiu a análise. Não foram identificadas contas a explicar.";
