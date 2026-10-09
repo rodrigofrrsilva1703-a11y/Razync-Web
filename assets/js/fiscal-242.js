@@ -373,7 +373,22 @@
     renderTable();
   }
   filter.addEventListener("change", renderTable);
-  form.querySelectorAll("input[type=file], #fiscalEmpresaCodigo, #fiscalFilialCodigo").forEach(input => input.addEventListener("change", clearState));
+  function showSelectedFile(inputId, labelId) {
+    const input = byId(inputId);
+    const label = byId(labelId);
+    if (!input || !label) return;
+    const file = input.files?.[0];
+    label.textContent = file ? file.name : "Nenhum arquivo selecionado";
+    label.dataset.ready = file ? "true" : "false";
+  }
+  function syncFileNames() {
+    showSelectedFile("fiscal242Acumuladores", "fiscal242AcumuladoresName");
+    showSelectedFile("fiscal242Razao", "fiscal242RazaoName");
+  }
+  form.querySelectorAll("input[type=file], #fiscalEmpresaCodigo, #fiscalFilialCodigo").forEach(input =>
+    input.addEventListener("change", () => { clearState(); syncFileNames(); })
+  );
+  syncFileNames();
   form.addEventListener("submit", async event => {
     event.preventDefault();
     let body;
