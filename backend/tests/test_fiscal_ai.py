@@ -222,3 +222,27 @@ def test_gemini_devolve_codigos_originais_de_acumuladores_e_conta(monkeypatch):
     assert resposta["conta"] == "22643"
     assert resposta["acumuladores"] == "1152, 1153"
     assert resposta["detalhes_fiscais"] == fiscal
+
+
+def test_gemini_universal_status_e_filial_independente_da_empresa(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-secret")
+    calls = []
+    def preview(*args):
+        calls.append(args)
+        return report()
+    monkeypatch.setattr(fiscal_ai, "conferencia_fiscal_preview", preview)
+    monkeypatch.setattr(fiscal_ai, "explain", lambda value: {"analises": [], "aviso": "Teste universal"})
+    client = TestClient(app)
+    assert client.get("/api/v1/conferencia-fiscal/ia/status").json()["configurado"] is True
+    response = client.post(
+        "/api/v1/conferencia-fiscal/ia",
+        files={
+            "acumuladores": ("fiscal.xlsx", b"fiscal"),
+            "razao": ("razao.xlsx", b"razao"),
+        },
+        data={"empresa_codigo": "987", "filial": "242"},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["aviso"] == "Teste universal"
+    assert len(calls) == 1
+    assert calls[0][-2:] == (987, "242")
