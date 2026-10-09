@@ -236,7 +236,7 @@ def _openrouter_completion(payload, models, key):
             detail = "O OpenRouter rejeitou os modelos ou o formato de resposta. Revise OPENROUTER_MODELS e a compatibilidade com JSON estruturado."
         else:
             detail = f"OpenRouter temporariamente indisponível (HTTP {exc.code}). A conferência contábil não foi alterada."
-        raise HTTPException(429 if exc.code == 429 else 502, detail) from None
+        raise HTTPException(429 if exc.code in (402, 429) else 403 if exc.code in (401, 403) else 400 if exc.code == 400 else 502, detail) from None
     except (urllib.error.URLError, TimeoutError):
         raise HTTPException(502, "Não foi possível conectar ao OpenRouter. A conferência contábil permanece salva.") from None
     choices = response_json.get("choices") or []
@@ -416,70 +416,56 @@ def explain(report):
         "contents":[{"role":"user","parts":[{"text":json.dumps(context, ensure_ascii=False)}]}],
         "generationConfig":{"responseMimeType":"application/json", "responseSchema":schema,
                             "temperature":0.2, "maxOutputTokens":16384}}
-    try:
-        if provider == "openrouter":
-            result, used_model = _openrouter_completion(payload, models, key)
-        else:
-            request = urllib.request.Request(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                data=json.dumps(payload).encode(), headers={"Content-Type":"application/json","x-goog-api-key":key})
-            try:
-                response = urllib.request.urlopen(request, timeout=45)
-            except urllib.error.HTTPError as exc:
-                if exc.code != 404 or model == "gemini-3.1-flash-lite":
-                    raise
-                exc.close()
-                fallback = urllib.request.Request(
-                    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
-                    data=request.data, headers={"Content-Type":"application/json", "x-goog-api-key":key})
-                response = urllib.request.urlopen(fallback, timeout=45)
-            with response:
-                raw = json.loads(response.read(150000))
-            candidate = raw["candidates"][0]
-            if candidate.get("finishReason") != "STOP":
-                raise ValueError("Incomplete answer")
-            text = "".join(part.get("text", "") for part in candidate["content"]["parts"] if not part.get("thought"))
-            result = json.loads(text)
-            used_model = model
-        output, seen = [], set()
-        for item in result["analises"]:
-            ident = item["grupo"]
-            if ident not in mapping or ident in seen:
-                raise ValueError("Unknown or repeated group")
-            if not all(isinstance(item.get(k), str) and 0 < len(item[k]) <= 6000 for k in ("explicacao", "verificar")):
-                raise ValueError("Invalid explanation")
-            evidence = item.get("evidencias", [])
-            if not isinstance(evidence, list) or len(evidence) > 8 or any(
-                not isinstance(ref, str) or ref not in references
-                or references[ref]["conta"] != mapping[ident]["conta"] for ref in evidence
-            ):
-                raise ValueError("Invalid evidence reference")
-            seen.add(ident)
-            conta_atual = next(row for row in report["contas"]
-                if row["conta"] == mapping[ident]["conta"] and row["tipo"] == mapping[ident]["tipo"])
-            valores = {campo: conta_atual.get(campo, 0)
-                for campo in ("fiscal", "contabil", "total_conta", "diferenca")}
-            output.append({**mapping[ident],
-                           "descricao": conta_atual.get("descricao", ""),
-                           "acumuladores": conta_atual.get("acumuladores", ""),
-                           "detalhes_fiscais": conta_atual.get("detalhes_fiscais", []),
-                           "situacao": conta_atual.get("situacao", "REVISAR"),
-                           "valores": valores,
-                           "explicacao": padronizar_moeda(item["explicacao"]),
-                           "verificar": padronizar_moeda(item["verificar"]),
-                           "evidencias":[references[ref] for ref in dict.fromkeys(evidence)]})
-        if seen != set(mapping):
-            raise ValueError("Empty answer")
-        return {"analises":output, "aviso":"Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
-                "limite":coverage, "provedor":provider, "modelo_usado":used_model,
-                "gratuito":provider == "openrouter"}
-    except HTTPException:
-        raise
-    except urllib.error.HTTPError as exc:
-        raise provider_error(exc) from None
-    except Exception:
-        service = "OpenRouter" if provider == "openrouter" else "Gemini"
-        raise HTTPException(502, f"Não foi possível obter uma análise válida do {service}. A conferência permanece disponível.") from None
+    # Todos os provedores usam o mesmo prompt e os mesmos dados de entrada.
+    # Um resultado só é aceito após validação integral das contas e evidências.
+    or_failed = False
+    if openrouter_key:
+        try:
+            answer, used_model = _openrouter_completion(payload, models, openrouter_key)
+            analyses = _validar_resposta_ia(answer, report, mapping, references)
+            return {
+                "analises": analyses, "aviso": "Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
+                "limite": coverage, "provedor": "openrouter", "modelo_usado": used_model,
+                "gratuito": True, "fallback_usado": False,
+            }
+        except HTTPException as exc:
+            # 400 e 403 revelam erro de chave/configuração: não ocultar com troca.
+            if exc.status_code in (400, 403, 422, 503):
+                raise
+            if not gemini_key:
+                raise
+            or_failed = True
+        except (ValueError, TypeError, KeyError, IndexError):
+            if not gemini_key:
+                raise HTTPException(
+                    502, "Não foi possível obter análise válida do OpenRouter. A conferência permanece disponível."
+                ) from None
+            or_failed = True
+
+    if gemini_key:
+        try:
+            answer, used_model = _gemini_completion(
+                payload, gemini_key, gemini_model, legacy=legacy_direct
+            )
+            analyses = _validar_resposta_ia(answer, report, mapping, references)
+            return {
+                "analises": analyses, "aviso": "Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
+                "limite": coverage, "provedor": "gemini", "modelo_usado": used_model,
+                "gratuito": not legacy_direct, "fallback_usado": or_failed,
+            }
+        except HTTPException:
+            if not or_failed:
+                raise
+        except (ValueError, TypeError, KeyError, IndexError):
+            if not or_failed:
+                raise HTTPException(
+                    502, "Não foi possível obter análise válida do Gemini. A conferência permanece disponível."
+                ) from None
+
+    raise HTTPException(
+        429, "OpenRouter e Gemini gratuito estão indisponíveis ou atingiram seus limites. "
+        "Tente novamente mais tarde. Nenhum valor da conferência foi modificado."
+    )
 
 
 @router.get("/status")
