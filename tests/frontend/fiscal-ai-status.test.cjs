@@ -61,3 +61,51 @@ test('tabela e detalhe preservam códigos, descrição e valor de cada acumulado
   assert.match(lines[0].children[2].textContent, /1\.000,00/);
   assert.equal(lines[1].children[0].textContent, '1153');
 });
+
+
+test('busca da conferência localiza contas, acumuladores e descrições sem perder filtros', () => {
+  const start = source.indexOf('  function normalizeSearch(value) {');
+  const end = source.indexOf('  function renderDetails(row) {', start);
+  assert.ok(start >= 0 && end > start);
+  const entries = [
+    {conta:'22643', descricao:'Mercadorias para revenda', tipo:'ENTRADAS',
+     acumuladores:'1152', detalhes_fiscais:[{codigo:'1152',descricao:'COMPRAS PARA REVENDA'}],situacao:'REVISAR'},
+    {conta:'361', descricao:'Honorários contábeis', tipo:'SERVIÇOS',
+     acumuladores:'404', detalhes_fiscais:[{codigo:'404',descricao:'Prestação de serviços'}],situacao:'CONFERE'},
+    {conta:'470', descricao:'Fretes', tipo:'ENTRADAS',
+     acumuladores:'517', detalhes_fiscais:[{codigo:'517',descricao:'Frete do mês'}],situacao:'CONFERE COM ALERTAS'}
+  ];
+  const input = {value:''};
+  const filter = {value:'todas'};
+  const context = {data:{contas:entries},filter,search:input,
+    accumulatorRows:row=>row.detalhes_fiscais};
+  vm.createContext(context);
+  vm.runInContext(source.slice(start,end),context);
+  assert.equal(context.filteredRows().length,3);
+  input.value='1152';
+  assert.deepEqual(Array.from(context.filteredRows(),row=>row.conta),['22643']);
+  input.value='honorarios';
+  assert.deepEqual(Array.from(context.filteredRows(),row=>row.conta),['361']);
+  input.value='Frete';
+  filter.value='alertas';
+  assert.deepEqual(Array.from(context.filteredRows(),row=>row.conta),['470']);
+  filter.value='revisar';
+  assert.equal(context.filteredRows().length,0);
+});
+
+test('tabela compacta preserva acumuladores e reserva totais técnicos para detalhes', () => {
+  const html = fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8');
+  const match = html.match(/<table class="fiscal-table">([\s\S]*?)<\/table>/);
+  assert.ok(match);
+  const headings = [...match[1].matchAll(/<th>([^<]+)<\/th>/g)].map(x=>x[1]);
+  assert.deepEqual(headings,[
+    'Conta contábil / descrição','Acumuladores','Valor fiscal','Diferença','Situação'
+  ]);
+  assert.ok(html.includes('id="fiscal242Search"'));
+  assert.ok(html.includes('id="fiscal242Detail"'));
+  assert.ok(html.includes('id="fiscal242Count"'));
+  const renderTable = source.slice(source.indexOf('  function renderTable() {'),
+    source.indexOf('  function renderResponse(report) {'));
+  assert.ok(renderTable.includes('renderDetails(rows.find(row => keyOf(row) === selectedKey) || null)'));
+  assert.doesNotMatch(renderTable,/selectedKey\s*=\s*keyOf\(rows\[0\]\)/);
+});
