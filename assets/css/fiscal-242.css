@@ -928,3 +928,77 @@
   #fiscalView .fiscal-company-auto {min-height:0;}
   #fiscalView .fiscal-company-result {padding:15px;}
 }
+
+
+/* Comparativo contábil: valores lado a lado, sem poluição visual. */
+#fiscalView .fiscal-results-card .fiscal-table {
+  min-width:920px;
+  width:100%;
+  table-layout:fixed;
+  border-collapse:collapse;
+}
+#fiscalView .fiscal-results-card .fiscal-table th,
+#fiscalView .fiscal-results-card .fiscal-table td {
+  padding:13px 12px;
+  width:auto;
+  vertical-align:middle;
+}
+#fiscalView .fiscal-results-card .fiscal-table th {
+  background:#f7f9fc;
+  color:#60748a;
+  font-size:11px;
+  font-weight:650;
+  text-transform:none;
+  letter-spacing:0;
+}
+#fiscalView .fiscal-results-card .fiscal-table th:nth-child(1),
+#fiscalView .fiscal-results-card .fiscal-table td:nth-child(1) {width:29%; text-align:left;}
+#fiscalView .fiscal-results-card .fiscal-table th:nth-child(2),
+#fiscalView .fiscal-results-card .fiscal-table td:nth-child(2) {width:16%; text-align:left;}
+#fiscalView .fiscal-results-card .fiscal-table th:nth-child(3),
+#fiscalView .fiscal-results-card .fiscal-table th:nth-child(4),
+#fiscalView .fiscal-results-card .fiscal-table th:nth-child(5),
+#fiscalView .fiscal-results-card .fiscal-table td:nth-child(3),
+#fiscalView .fiscal-results-card .fiscal-table td:nth-child(4),
+#fiscalView .fiscal-results-card .fiscal-table td:nth-child(5) {
+  width:15%;
+  text-align:right;
+}
+#fiscalView .fiscal-results-card .fiscal-table th:nth-child(6),
+#fiscalView .fiscal-results-card .fiscal-table td:nth-child(6) {width:10%; text-align:left;}
+#fiscalView .fiscal-results-card .fiscal-table td.fiscal-money {
+  white-space:nowrap;
+  font-size:12.5px;
+  color:#344a60;
+  font-weight:550;
+  font-variant-numeric:tabular-nums;
+}
+#fiscalView .fiscal-results-card .fiscal-table td.fiscal-money-accounting {
+  color:#233e5b;
+  font-weight:720;
+}
+#fiscalView .fiscal-results-card .fiscal-table td.fiscal-difference {
+  color:#344f6b;
+  font-weight:650;
+}
+#fiscalView .fiscal-results-card .fiscal-table td.fiscal-difference-zero {
+  color:#8a97a5;
+  font-weight:500;
+}
+#fiscalView .fiscal-results-card .fiscal-table tbody tr {
+  border-bottom:1px solid #edf1f5;
+}
+#fiscalView .fiscal-results-card .fiscal-table tbody tr:last-child {
+  border-bottom:0;
+}
+#fiscalView .fiscal-results-card .fiscal-table .fiscal-accum-tags {
+  max-width:150px;
+}
+#fiscalView .fiscal-results-card .fiscal-table-scroll {
+  overflow-x:auto;
+}
+@media(max-width:760px) {
+  #fiscalView .fiscal-results-card .fiscal-table {min-width:830px;}
+  #fiscalView .fiscal-results-card .fiscal-table th,
+  #fiscalView .fiscal-results-card .fiscal-table td {padding:11px 10px;}
+}
