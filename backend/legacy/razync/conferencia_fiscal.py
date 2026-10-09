@@ -309,8 +309,8 @@ def _empresa_no_cabecalho(valores: list, primeira_linha: bool = False) -> str:
         nome_rotulado = _rotulo(primeira_celula)
         if (
             len(nome_rotulado.split()) >= 3
-            and re.search(r"\\b(LTDA|LIMITADA|EIRELI|SLU|EPP|S A|SA)\\b", nome_rotulado)
-            and not re.match(r"^EMPRESA\\b", nome_rotulado)
+            and re.search(r"\b(LTDA|LIMITADA|EIRELI|SLU|EPP|S A|SA)\b", nome_rotulado)
+            and not re.match(r"^EMPRESA\b", nome_rotulado)
         ):
             return primeira_celula
     for indice, valor in enumerate(valores[:6]):
