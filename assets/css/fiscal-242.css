@@ -872,3 +872,59 @@
   #fiscalView .fiscal-detail-heading-actions {justify-content:flex-start;margin-top:12px;}
   #fiscalView .fiscal-account-description {font-size:11px;}
 }
+
+
+/* Identificação automática da empresa pelo cabeçalho dos arquivos do Domínio. */
+#fiscalView .fiscal-company-auto {
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:7px;
+  border:1px solid #dfe8f2;
+  border-radius:11px;
+  background:#f7fafd;
+  padding:15px 17px;
+  min-height:91px;
+  box-sizing:border-box;
+}
+#fiscalView .fiscal-company-auto strong {
+  color:#315474;
+  font-size:12px;
+  line-height:1.5;
+}
+#fiscalView .fiscal-company-auto p {
+  font-size:11px;
+  line-height:1.6;
+  color:#687e93;
+  margin:0;
+}
+#fiscalView .fiscal-company-result {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:5px;
+  background:#fff;
+  border:1px solid #dfe7f1;
+  border-radius:12px;
+  padding:17px 20px;
+}
+#fiscalView .fiscal-company-result span {
+  font-size:11px;
+  font-weight:650;
+  color:#72849a;
+}
+#fiscalView .fiscal-company-result strong {
+  color:#254561;
+  font-size:17px;
+  font-weight:750;
+  overflow-wrap:anywhere;
+}
+#fiscalView .fiscal-company-result small {
+  font-size:11px;
+  color:#70849a;
+  line-height:1.45;
+}
+@media(max-width:680px) {
+  #fiscalView .fiscal-company-auto {min-height:0;}
+  #fiscalView .fiscal-company-result {padding:15px;}
+}
