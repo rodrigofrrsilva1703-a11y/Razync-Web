@@ -79,3 +79,28 @@ def test_matching_groups_do_not_trigger_external_call(monkeypatch):
     source = report(); source["contas"][0]["situacao"] = "CONFERE"
     monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", lambda *_: pytest.fail("Must not call Google"))
     assert fiscal_ai.explain(source)["analises"] == []
+
+
+@pytest.mark.parametrize("code,reason,expected", [
+    (400, "API_KEY_INVALID", "recusou a chave"),
+    (403, "API_KEY_SERVICE_BLOCKED", "restrições"),
+    (403, "PERMISSION_DENIED", "negou acesso"),
+    (404, "NOT_FOUND", "modelo configurado"),
+    (429, "RESOURCE_EXHAUSTED", "cota"),
+    (400, "INVALID_ARGUMENT", "JSON estruturadas"),
+    (503, "UNAVAILABLE", "HTTP 503"),
+])
+def test_provider_errors_are_actionable_without_leaking_secrets(monkeypatch, code, reason, expected):
+    import io
+    monkeypatch.setenv("GEMINI_API_KEY", "test-secret")
+    monkeypatch.setattr(fiscal_ai, "last_request", 0)
+    def fail(*args, **kwargs):
+        body = json.dumps({"error": {"message": "test-secret private provider text", "details": [{"reason": reason}]}}).encode()
+        raise urllib.error.HTTPError("https://example.invalid", code, "failure", {}, io.BytesIO(body))
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", fail)
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(report())
+    assert expected in error.value.detail
+    assert "test-secret" not in error.value.detail
+    assert "private provider text" not in error.value.detail
+    assert error.value.status_code == (429 if code == 429 else 502)

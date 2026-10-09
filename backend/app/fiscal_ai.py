@@ -35,6 +35,30 @@ def sanitized(report):
     return groups, mapping
 
 
+def provider_error(exc):
+    """Translate provider failures without exposing provider text or credentials."""
+    try:
+        error = json.loads(exc.read(32768)).get("error", {})
+        reasons = {item.get("reason") for item in error.get("details", []) if isinstance(item, dict)}
+    except Exception:
+        reasons = set()
+    if reasons & {"API_KEY_INVALID", "API_KEY_EXPIRED"}:
+        message = "O Google recusou a chave do Gemini. Substitua GEMINI_API_KEY no Railway por uma chave válida do Google AI Studio."
+    elif reasons & {"API_KEY_SERVICE_BLOCKED", "API_KEY_HTTP_REFERRER_BLOCKED", "API_KEY_IP_ADDRESS_BLOCKED"}:
+        message = "As restrições da chave bloqueiam o servidor Railway. Revise as permissões da chave para a API Generative Language no Google Cloud."
+    elif exc.code == 403:
+        message = "O Google negou acesso ao Gemini (403). Verifique as permissões da chave, a API Generative Language e a disponibilidade para o projeto."
+    elif exc.code == 404:
+        message = "O modelo configurado não está disponível no Gemini (404). Revise GEMINI_MODEL no Railway."
+    elif exc.code == 429:
+        message = "A cota do Gemini foi atingida (429). Aguarde a renovação do limite do seu projeto no Google AI Studio."
+    elif exc.code == 400:
+        message = "O Google rejeitou a solicitação ao Gemini (400). Verifique a validade da chave e a compatibilidade do modelo com respostas JSON estruturadas."
+    else:
+        message = f"O Gemini apresentou uma falha no serviço (HTTP {exc.code}). Tente novamente mais tarde."
+    return HTTPException(429 if exc.code == 429 else 502, message)
+
+
 def explain(report):
     key = os.getenv("GEMINI_API_KEY", "").strip()
     if not key:
@@ -90,8 +114,7 @@ def explain(report):
         return {"analises":output, "aviso":"Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
                 "limite":"Até 60 grupos com divergências ou alertas por análise."}
     except urllib.error.HTTPError as exc:
-        raise HTTPException(429 if exc.code == 429 else 502,
-            "Limite do Gemini atingido. Tente mais tarde." if exc.code == 429 else "Gemini indisponível. Confira a chave e o modelo no Railway.") from None
+        raise provider_error(exc) from None
     except Exception:
         raise HTTPException(502, "Não foi possível obter uma análise válida do Gemini. A conferência permanece disponível.") from None
 
