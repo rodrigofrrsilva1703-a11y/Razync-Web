@@ -300,8 +300,19 @@ def _excel(conteudo: bytes, nome: str) -> pd.ExcelFile:
             shutil.rmtree(pasta, ignore_errors=True)
 
 
-def _empresa_no_cabecalho(valores: list) -> str:
-    """Extrai a razão social do campo Empresa: nos relatórios do Domínio."""
+def _empresa_no_cabecalho(valores: list, primeira_linha: bool = False) -> str:
+    """Identifica empresa tanto no Razão ('Empresa:') quanto no fiscal (nome em A1)."""
+    if primeira_linha and valores:
+        primeira_celula = _texto(valores[0]).strip()
+        # O Resumo por Acumulador do Domínio pode ter apenas a razão social
+        # na célula A1, acima de CNPJ, período e título do relatório.
+        nome_rotulado = _rotulo(primeira_celula)
+        if (
+            len(nome_rotulado.split()) >= 3
+            and re.search(r"\\b(LTDA|LIMITADA|EIRELI|SLU|EPP|S A|SA)\\b", nome_rotulado)
+            and not re.match(r"^EMPRESA\\b", nome_rotulado)
+        ):
+            return primeira_celula
     for indice, valor in enumerate(valores[:6]):
         original = _texto(valor).strip()
         if not re.match(r"^empresa\b\s*:?", original, flags=re.IGNORECASE):
@@ -329,8 +340,8 @@ def _chave_empresa(nome: str) -> str:
     return " ".join(partes)
 
 
-def _conferir_empresa_header(periodo: dict, valores: list) -> None:
-    achada = _empresa_no_cabecalho(valores)
+def _conferir_empresa_header(periodo: dict, valores: list, primeira_linha: bool = False) -> None:
+    achada = _empresa_no_cabecalho(valores, primeira_linha=primeira_linha)
     if not achada:
         return
     anterior = periodo.get("empresa_nome", "")
@@ -349,11 +360,11 @@ def ler_acumuladores(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
         tipo = ""
         col_codigo, col_descricao = 0, None
         col_valor, col_conta = None, None
-        for _, linha in bruto.iterrows():
+        for indice_linha, linha in bruto.iterrows():
             valores = linha.tolist()
             rotulos = [_rotulo(valor) for valor in valores]
             primeiro = rotulos[0] if rotulos else ""
-            _conferir_empresa_header(periodo, valores)
+            _conferir_empresa_header(periodo, valores, primeira_linha=indice_linha == 0)
             if primeiro == "PERIODO":
                 datas = [pd.to_datetime(v, errors="coerce") for v in valores]
                 datas = [d for d in datas if pd.notna(d)]
@@ -435,11 +446,11 @@ def ler_razao(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
             "DATA": 0, "LOTE": 1, "HISTÓRICO": 2, "CONTRAPARTIDA": 7,
             "DÉBITO": 8, "CRÉDITO": 9, "FILIAL": None,
         }
-        for _, linha in bruto.iterrows():
+        for indice_linha, linha in bruto.iterrows():
             valores = linha.tolist()
             rotulos = [_rotulo(valor) for valor in valores]
             primeiro = rotulos[0] if rotulos else ""
-            _conferir_empresa_header(periodo, valores)
+            _conferir_empresa_header(periodo, valores, primeira_linha=indice_linha == 0)
             if primeiro == "PERIODO":
                 achado = re.findall(r"\d{2}/\d{2}/\d{4}", " ".join(_texto(v) for v in valores))
                 if len(achado) >= 2:
