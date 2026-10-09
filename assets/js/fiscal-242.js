@@ -63,7 +63,7 @@
         : "IA";
       aiButton.disabled = !aiConfigured || !previewBody || Boolean(aiController);
       if (!aiController && !aiResult.children.length) aiMessage.textContent = aiConfigured
-        ? (previewBody ? providerName + " conectado. Clique em Analisar diferenças com IA." : providerName + " conectado. Faça a conferência para analisar as diferenças.")
+        ? (previewBody ? providerName + " configurado. Clique em Analisar diferenças com IA." : providerName + " configurado no servidor. A resposta real ainda não foi testada.")
         : "IA ainda não configurada. Defina OPENROUTER_API_KEY no Railway e clique em Atualizar conexão.";
     } catch (error) {
       if (statusController !== controller) return;
@@ -77,6 +77,68 @@
   refreshConnection.type = "button";
   refreshConnection.addEventListener("click", refreshAIStatus);
   aiButton.after(refreshConnection);
+  // Testa apenas uma frase fictícia, sem extratos ou acumuladores.
+  // A chave administrativa nunca é enviada à OpenRouter nem armazenada no navegador.
+  const openrouterTest = node("button", "secondary-action", "Testar OpenRouter");
+  openrouterTest.type = "button";
+  const testArea = node("div", "fiscal-ai-diagnostics");
+  testArea.hidden = true;
+  const modelSelect = document.createElement("select");
+  modelSelect.setAttribute("aria-label", "Modelo gratuito para teste");
+  for (const [value, label] of [
+    ["openrouter/free", "Roteador gratuito"],
+    ["google/gemma-4-26b-a4b-it:free", "Gemma 4 26B gratuito"],
+    ["nvidia/nemotron-3.5-lightning:free", "Nemotron 3.5 gratuito"],
+    ["google/gemma-4-31b-it:free", "Gemma 4 31B gratuito"]
+  ]) {
+    const option = document.createElement("option"); option.value = value; option.textContent = label;
+    modelSelect.appendChild(option);
+  }
+  const adminKey = document.createElement("input");
+  adminKey.type = "password";
+  adminKey.placeholder = "Chave administrativa";
+  adminKey.autocomplete = "off";
+  adminKey.setAttribute("aria-label", "Chave administrativa para teste seguro");
+  const runProbe = node("button", "secondary-action", "Executar teste");
+  runProbe.type = "button";
+  testArea.append(modelSelect, adminKey, runProbe);
+  refreshConnection.after(openrouterTest);
+  openrouterTest.after(testArea);
+  openrouterTest.addEventListener("click", () => {
+    testArea.hidden = !testArea.hidden;
+    if (!testArea.hidden) adminKey.focus();
+    else adminKey.value = "";
+  });
+  runProbe.addEventListener("click", async () => {
+    if (!adminKey.value.trim()) {
+      aiMessage.textContent = "Informe a chave administrativa do Razync para executar um teste protegido.";
+      return;
+    }
+    runProbe.disabled = true;
+    const secret = adminKey.value.trim();
+    adminKey.value = "";
+    aiMessage.textContent = "Testando OpenRouter com texto fictício; nenhum arquivo contábil será enviado…";
+    try {
+      const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/teste-openrouter", {
+        method: "POST",
+        headers: {"Content-Type": "application/json", "Authorization": "Bearer " + secret},
+        body: JSON.stringify({modelo: modelSelect.value}),
+        cache: "no-store"
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        aiMessage.textContent = (result.detail || "Não foi possível executar o teste seguro.");
+      } else {
+        aiMessage.textContent = result.ok
+          ? "OpenRouter respondeu ao teste: " + (result.modelo_real || result.modelo) + ". Agora teste a análise contábil."
+          : "Falha da OpenRouter (HTTP " + result.http_status + ", " + result.motivo + "): " + result.orientacao;
+      }
+    } catch {
+      aiMessage.textContent = "Não foi possível alcançar o serviço de diagnóstico.";
+    } finally {
+      runProbe.disabled = false;
+    }
+  });
   navigation.addEventListener("click", refreshAIStatus);
   window.addEventListener("focus", () => { if (pane.classList.contains("active")) refreshAIStatus(); });
   refreshAIStatus();

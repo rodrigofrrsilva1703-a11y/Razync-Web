@@ -1125,3 +1125,147 @@ def test_openrouter_nao_aceita_evidencia_inventada_apos_correcao(monkeypatch):
     with pytest.raises(ValueError, match="Invalid evidence reference"):
         fiscal_ai._openrouter_completion(payload, ["openrouter/free"], "test-key")
     assert len(requests) == 2
+
+
+def test_openrouter_recupera_apos_dois_502_sem_relaxar_privacidade(monkeypatch):
+    """Dois modelos indisponíveis não devem impedir o terceiro modelo gratuito."""
+    import io
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setenv("OPENROUTER_MODELS", "openrouter/free")
+    monkeypatch.setenv("OPENROUTER_ROUTER_FIRST", "0")
+    monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED", raising=False)
+    monkeypatch.setattr(fiscal_ai, "model_rotation_index", 0)
+    monkeypatch.setattr(fiscal_ai, "model_cooldowns", {})
+    attempts = []
+
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, n):
+            result = {"analises": [{
+                "grupo": "G1", "explicacao": "Conferir acumulador e conta.",
+                "verificar": "1. Comparar documentos.", "evidencias": []
+            }]}
+            return json.dumps({"model": "openrouter/free", "choices": [{
+                "finish_reason": "stop", "message": {"content": json.dumps(result)}
+            }]}).encode()
+
+    def mock(req, timeout):
+        body = json.loads(req.data)
+        attempts.append(body)
+        assert body["provider"]["data_collection"] == "deny"
+        assert body["provider"]["max_price"] == {"prompt": 0, "completion": 0}
+        assert timeout == 18
+        assert "9123.45" in body["messages"][1]["content"]
+        if len(attempts) < 3:
+            raise urllib.error.HTTPError(req.full_url, 502, "Bad Gateway", {}, io.BytesIO(
+                b'{"error":{"message":"upstream provider temporarily unavailable"}}'))
+        return Response()
+
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", mock)
+    result = fiscal_ai.explain(report())
+    assert len(attempts) == 3
+    assert len({body["model"] for body in attempts}) == 3
+    assert result["provedor"] == "openrouter"
+    assert result["analises"][0]["valores"]["fiscal"] == 9123.45
+
+
+def test_openrouter_502_privacidade_nao_habilita_coleta(monkeypatch, caplog):
+    """Sem endpoints que respeitem privacidade, falhar de forma segura."""
+    import io
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setenv("OPENROUTER_MODELS", "openrouter/free")
+    monkeypatch.setenv("OPENROUTER_ROUTER_FIRST", "0")
+    monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED", raising=False)
+    monkeypatch.setattr(fiscal_ai, "model_cooldowns", {})
+    attempts = []
+
+    def mock(req, timeout):
+        body = json.loads(req.data)
+        attempts.append(body)
+        assert body["provider"]["data_collection"] == "deny"
+        assert body["provider"]["max_price"] == {"prompt": 0, "completion": 0}
+        raise urllib.error.HTTPError(req.full_url, 502, "Bad Gateway", {}, io.BytesIO(
+            b'{"error":{"message":"No endpoints found matching your data policy (private-token-DO-NOT-LOG)"}}'))
+
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", mock)
+    with pytest.raises(HTTPException) as caught:
+        fiscal_ai.explain(report())
+    assert caught.value.status_code == 502
+    assert len(attempts) == 3
+    assert "private-token-DO-NOT-LOG" not in caplog.text
+    assert "politica_privacidade" in caplog.text
+
+
+def test_openrouter_diagnostico_so_administrador_sem_arquivos_reais(monkeypatch):
+    monkeypatch.setenv("RAZYNC_ACCESS_TOKEN", "admin-test-secret")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-private-key")
+    monkeypatch.setattr(fiscal_ai, "_openrouter_test_times", [])
+    seen = []
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_): return None
+        def read(self, _): return json.dumps({
+            "model":"google/gemma-4-26b-a4b-it:free",
+            "choices":[{"message":{"content":"OK"},"finish_reason":"stop"}]
+        }).encode()
+    def fake(req, timeout):
+        sent = json.loads(req.data)
+        seen.append(sent)
+        assert req.get_header("Authorization") == "Bearer openrouter-private-key"
+        assert timeout == 18
+        assert "9123.45" not in json.dumps(sent)
+        assert "CONFIDENTIAL" not in json.dumps(sent)
+        assert sent["provider"]["data_collection"] == "deny"
+        assert sent["provider"]["max_price"] == {"prompt":0,"completion":0}
+        assert sent["max_tokens"] == 24
+        return Response()
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", fake)
+    client = TestClient(app)
+    path = "/api/v1/conferencia-fiscal/ia/teste-openrouter"
+    assert client.post(path, json={}).status_code == 401
+    response = client.post(path, json={"modelo":"openrouter/free"},
+                           headers={"Authorization":"Bearer admin-test-secret"})
+    assert response.status_code == 200
+    assert response.json()["ok"] is True
+    assert response.json()["modelo_real"] == "google/gemma-4-26b-a4b-it:free"
+    assert len(seen) == 1
+
+
+def test_openrouter_diagnostico_retorna_causa_segura_de_privacidade(monkeypatch):
+    import io
+    monkeypatch.setenv("RAZYNC_ACCESS_TOKEN", "admin-test-secret")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-private-key")
+    monkeypatch.setattr(fiscal_ai, "_openrouter_test_times", [])
+    class Refuse:
+        def __init__(self, request):
+            self.request = request
+        def __call__(self, req, timeout):
+            return self.request(req, timeout)
+    def upstream(req, timeout):
+        raise urllib.error.HTTPError(
+            req.full_url, 404, "No endpoints", {},
+            io.BytesIO(b'{"error":{"message":"No endpoints found matching your data policy. CLIENT_SENSITIVE"}}')
+        )
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", upstream)
+    response = TestClient(app).post(
+        "/api/v1/conferencia-fiscal/ia/teste-openrouter",
+        headers={"Authorization":"Bearer admin-test-secret"},
+        json={"modelo":"openrouter/free"},
+    )
+    assert response.status_code == 200
+    assert response.json()["ok"] is False
+    assert response.json()["motivo"] == "sem_endpoint_privado"
+    assert "CLIENT_SENSITIVE" not in response.text
+
+
+def test_openrouter_diagnostico_limita_repeticoes(monkeypatch):
+    monkeypatch.setenv("RAZYNC_ACCESS_TOKEN", "admin-test-secret")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-private-key")
+    monkeypatch.setattr(fiscal_ai, "_openrouter_test_times", [fiscal_ai.time.monotonic()] * 6)
+    response = TestClient(app).post(
+        "/api/v1/conferencia-fiscal/ia/teste-openrouter",
+        headers={"Authorization":"Bearer admin-test-secret"},
+        json={"modelo":"openrouter/free"},
+    )
+    assert response.status_code == 429
