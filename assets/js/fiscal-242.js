@@ -101,7 +101,7 @@
       if (aiReport !== current) return;
       const safeName = company.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0,48) || "GERAL";
-      await downloadBlob(response, "RAZYNC_" + safeName + "_ANALISE_GEMINI.xlsx");
+      await downloadBlob(response, "RAZYNC_" + safeName + "_ANALISE_IA.xlsx");
       aiMessage.textContent = "Excel gerado com sucesso. O arquivo inclui análises, acumuladores e lançamentos citados.";
     } catch (error) {
       if (aiReport === current) aiMessage.textContent = error.message || "Não foi possível exportar a análise.";
@@ -204,10 +204,16 @@
       const result = await response.json();
       if (controller.signal.aborted || previewBody !== snapshot) return;
       aiReport = result;
+      // A troca de provedor é transparente: os mesmos pareceres são renderizados.
+      if (result.provedor === "gemini") {
+        aiProvider.textContent = result.gratuito === true ? "Gemini · gratuito" : "Gemini";
+      } else if (result.provedor === "openrouter") {
+        aiProvider.textContent = "OpenRouter · gratuito";
+      }
       aiExport.disabled = !(Array.isArray(result.analises) && result.analises.length);
       aiInlineStatus.textContent = result.analises?.length
         ? "Análise pronta. Selecione uma conta para consultar o parecer completo ou exporte o Excel."
-        : "Gemini concluiu a análise. Não foram identificadas contas a explicar.";
+        : "A IA concluiu a análise. Não foram identificadas contas a explicar.";
       const entries = Array.isArray(result.analises) ? result.analises : [];
       aiToolbar.hidden = entries.length === 0;
       aiTotal.textContent = entries.length ? "(" + entries.length + ")" : "";
@@ -364,7 +370,7 @@
     aiExport.disabled = true;
     aiInlineStatus.textContent = "Faça uma conferência para iniciar a análise.";
     aiButton.disabled = true; aiResult.replaceChildren(); clearAIAccounts(); aiResult.setAttribute("aria-busy", "false");
-    aiMessage.textContent = aiConfigured ? "Faça a conferência antes de analisar com IA." : "Gemini ainda não configurado no servidor.";
+    aiMessage.textContent = aiConfigured ? "Faça a conferência antes de analisar com IA." : "IA gratuita ainda não configurada no servidor.";
     if (pendingRequest) {
       pendingRequest.abort();
       pendingRequest = null;
