@@ -103,3 +103,39 @@ def test_codigos_xls_preservam_numero_sem_decimal():
     assert conferencia_fiscal._codigo_dominio(242.0) == "242"
     assert conferencia_fiscal._codigo_dominio(1408.0) == "1408"
     assert conferencia_fiscal._codigo_dominio(None) == ""
+
+
+def test_fechamento_so_por_valor_nao_e_conciliacao_comprovada():
+    acumuladores = pd.DataFrame([{
+        "CONTA": "361", "TIPO": "ENTRADAS", "ACUMULADOR": "500",
+        "DESCRIÇÃO": "Honorários", "VALOR_FISCAL": 200.0,
+    }])
+    razao = pd.DataFrame([{
+        "CONTA": "361", "DATA": pd.Timestamp("2026-08-15"), "LOTE": "1",
+        "HISTÓRICO": "Pago: serviço sem nota fiscal identificada",
+        "CONTRAPARTIDA": "508", "DÉBITO": 200.0, "CRÉDITO": 0.0,
+    }])
+    resumo, detalhes = conferir_fiscal_contabil(acumuladores, razao)
+    assert resumo.iloc[0]["SITUAÇÃO"] == "CONFERE COM ALERTAS"
+    assert resumo.iloc[0]["FECHAMENTOS SEM EVIDÊNCIA"] == 1
+    assert resumo.iloc[0]["TOTAL DA CONTA"] == 200.0
+    assert detalhes.iloc[0]["CLASSIFICAÇÃO"] == "FECHAMENTO POR VALOR - VALIDAR"
+
+
+def test_acumuladores_sem_conta_ficam_visiveis_para_revisao(monkeypatch):
+    import io
+    arquivo = io.BytesIO()
+    with pd.ExcelWriter(arquivo, engine="openpyxl") as gravador:
+        pd.DataFrame([
+            ["ENTRADAS", None, None, None],
+            ["Código", "Descrição", "Valor Contabil", "Conta"],
+            [1152, "Mercadorias", 100, 22643],
+            [1153, "Mercadorias sem vínculo", 250, None],
+        ]).to_excel(gravador, sheet_name="Fiscal", header=False, index=False)
+    acumuladores, periodo = conferencia_fiscal.ler_acumuladores(arquivo.getvalue(), "fiscal.xlsx")
+    assert len(acumuladores) == 1
+    assert acumuladores.iloc[0]["CONTA"] == "22643"
+    assert acumuladores.attrs["sem_conta"] == [{
+        "tipo": "ENTRADAS", "acumulador": "1153",
+        "descricao": "Mercadorias sem vínculo", "valor": 250.0,
+    }]
