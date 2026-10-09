@@ -123,7 +123,7 @@ test('painel moderno inclui cartões, indicadores e lançamentos sob demanda', (
     assert.ok(html.includes('id="' + id + '"'), 'Faltou ' + id);
   }
   assert.match(source, /fiscal-ledger-disclosure/);
-  assert.match(source, /fiscal-detail-metric-accounting/);
+  assert.match(css, /fiscal-detail-metric-accounting/);
   assert.match(source, /fiscal242ProgressMatches/);
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /fiscal-results-card \.fiscal-table tbody tr \{\s*display:grid/);
