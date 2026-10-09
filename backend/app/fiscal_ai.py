@@ -26,6 +26,7 @@ FREE_FISCAL_MODELS = [
     "openrouter/free",
 ]
 model_cooldowns = {}
+gemini_cooldown_until = 0.0
 
 
 
@@ -521,6 +522,30 @@ def explain(report):
                             "temperature":0.2, "maxOutputTokens":16384}}
     # Todos os provedores usam o mesmo prompt e os mesmos dados de entrada.
     # Um resultado só é aceito após validação integral das contas e evidências.
+    gemini_attempted = False
+    prefer_gemini = os.getenv("RAZYNC_AI_PRIMARY", "openrouter") == "gemini" and bool(gemini_key)
+    global gemini_cooldown_until
+    if prefer_gemini:
+        gemini_attempted = True
+        with lock:
+            available = time.monotonic() >= gemini_cooldown_until
+        if available:
+            try:
+                answer, used_model = _gemini_completion(payload, gemini_key, gemini_model, legacy=False)
+                analyses = _validar_resposta_ia(answer, report, mapping, references)
+                return {"analises":analyses,
+                    "aviso":"Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
+                    "limite":coverage, "provedor":"gemini", "modelo_usado":used_model,
+                    "gratuito":True, "fallback_usado":False}
+            except HTTPException as exc:
+                if not openrouter_key:
+                    raise
+                if exc.status_code in (429, 502, 503, 504):
+                    with lock:
+                        gemini_cooldown_until = time.monotonic() + 60
+            except (ValueError, TypeError, KeyError, IndexError):
+                if not openrouter_key:
+                    raise HTTPException(502, "Não foi possível validar a análise Gemini. A conferência permanece disponível.") from None
     or_failed = False
     if openrouter_key:
         try:
@@ -529,7 +554,7 @@ def explain(report):
             return {
                 "analises": analyses, "aviso": "Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
                 "limite": coverage, "provedor": "openrouter", "modelo_usado": used_model,
-                "gratuito": True, "fallback_usado": False,
+                "gratuito": True, "fallback_usado": gemini_attempted,
             }
         except HTTPException as exc:
             # 400 e 403 revelam erro de chave/configuração: não ocultar com troca.
@@ -545,7 +570,7 @@ def explain(report):
                 ) from None
             or_failed = True
 
-    if gemini_key:
+    if gemini_key and not gemini_attempted:
         try:
             answer, used_model = _gemini_completion(
                 payload, gemini_key, gemini_model, legacy=legacy_direct
@@ -582,7 +607,7 @@ def status():
     )
     return {
         "configurado": openrouter or gemini_free or legacy,
-        "provedor": "openrouter" if openrouter else "gemini" if (gemini_free or legacy) else None,
+        "provedor": "gemini" if gemini_free and os.getenv("RAZYNC_AI_PRIMARY", "openrouter") == "gemini" else "openrouter" if openrouter else "gemini" if (gemini_free or legacy) else None,
         "gratuito": not (legacy and not gemini_free and not openrouter),
         "fallback_gemini": bool(openrouter and gemini_free),
     }

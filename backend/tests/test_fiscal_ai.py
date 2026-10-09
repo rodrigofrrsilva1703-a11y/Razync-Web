@@ -11,6 +11,8 @@ from app.main import app
 def _openrouter_disabled_by_default(monkeypatch):
     """Os testes legados usam Gemini; OpenRouter é ativado explicitamente nos novos casos."""
     monkeypatch.setattr(fiscal_ai, "model_cooldowns", {})
+    monkeypatch.setattr(fiscal_ai, "gemini_cooldown_until", 0)
+    monkeypatch.delenv("RAZYNC_AI_PRIMARY", raising=False)
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED", raising=False)
     # Exercita integrações anteriores apenas em testes; produção usa OpenRouter.
@@ -823,3 +825,39 @@ def test_restricao_privacidade_404_nao_e_ocultada(monkeypatch):
         fiscal_ai.explain(report())
     assert "política de privacidade" in error.value.detail
     assert "test-or" not in error.value.detail
+
+
+def test_gemini_gratuito_principal_nao_chama_openrouter_se_funciona(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-or")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-google")
+    monkeypatch.setenv("GEMINI_FREE_TIER_CONFIRMED", "1")
+    monkeypatch.setenv("RAZYNC_AI_PRIMARY", "gemini")
+    monkeypatch.setattr(fiscal_ai, "_gemini_completion", lambda *a, **k: ({"analises":[{"grupo":"G1", "explicacao":"Revisar", "verificar":"Conferir", "evidencias":[]}]}, "gemini-3.1-flash-lite"))
+    monkeypatch.setattr(fiscal_ai, "_openrouter_completion", lambda *a: pytest.fail("Não deve consumir outra cota"))
+    result = fiscal_ai.explain(report())
+    assert result["provedor"] == "gemini"
+    assert result["gratuito"] is True
+    assert result["fallback_usado"] is False
+    assert fiscal_ai.status()["provedor"] == "gemini"
+
+
+def test_cota_gemini_alterna_openrouter_sem_repetir_google(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-or")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-google")
+    monkeypatch.setenv("GEMINI_FREE_TIER_CONFIRMED", "1")
+    monkeypatch.setenv("RAZYNC_AI_PRIMARY", "gemini")
+    calls = []
+    def google(payload, *a, **k):
+        calls.append(payload)
+        raise HTTPException(429, "Limite gratuito atingido")
+    def reserve(payload, *a):
+        assert payload == calls[0]
+        return {"analises":[{"grupo":"G1", "explicacao":"Revisar", "verificar":"Conferir", "evidencias":[]}]}, "google/gemma-4-26b-a4b-it:free"
+    monkeypatch.setattr(fiscal_ai, "_gemini_completion", google)
+    monkeypatch.setattr(fiscal_ai, "_openrouter_completion", reserve)
+    for _ in range(2):
+        result = fiscal_ai.explain(report())
+        assert result["provedor"] == "openrouter"
+        assert result["gratuito"] is True
+        assert result["fallback_usado"] is True
+    assert len(calls) == 1
