@@ -1,5 +1,6 @@
 """Revisão fiscal via OpenRouter (com fallback) ou Gemini legado."""
 import json
+import logging
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import os
 import re
@@ -13,6 +14,7 @@ from fastapi.responses import Response
 from fastapi.concurrency import run_in_threadpool
 from app.fiscal_242 import conferencia_fiscal_preview
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/conferencia-fiscal/ia")
 legacy_router = APIRouter(prefix="/api/v1/conferencia-fiscal/242/ia")
 lock = threading.Lock()
@@ -557,13 +559,19 @@ def explain(report):
                 "gratuito": True, "fallback_usado": gemini_attempted,
             }
         except HTTPException as exc:
-            # 400 e 403 revelam erro de chave/configuração: não ocultar com troca.
+            # Apenas informações operacionais seguras, sem mensagens upstream,
+            # chaves, prompt, históricos ou contas de clientes.
+            logger.warning("fiscal_ia_openrouter_failure status=%d fallback_available=%s",
+                           exc.status_code, bool(gemini_key))
+            # 403/422/503 indicam problema de permissão ou configuração.
             if exc.status_code in (403, 422, 503):
                 raise
             if not gemini_key:
                 raise
             or_failed = True
-        except (ValueError, TypeError, KeyError, IndexError):
+        except (ValueError, TypeError, KeyError, IndexError) as exc:
+            logger.warning("fiscal_ia_openrouter_invalid_response category=%s fallback_available=%s",
+                           type(exc).__name__, bool(gemini_key))
             if not gemini_key:
                 raise HTTPException(
                     502, "Não foi possível obter análise válida do OpenRouter. A conferência permanece disponível."
