@@ -411,7 +411,7 @@ def test_periodo_resumo_na_mesma_celula_ou_colunas_distintas():
         )
         assert response.status_code == 200, (linha, response.text)
         report = response.json()
-        assert report["periodo_fiscal"] == {"inicio": "01/08/2026", "fim": "31/08/2026"}
+        assert report["periodo_fiscal"] == {"inicio": "01/08/2026", "fim": "31/08/2026"}, linha
         assert report["contas"][0]["contabil"] == 100.0
         assert report["movimentos_fora_periodo"] == 2
 
