@@ -434,7 +434,7 @@ def test_openrouter_status_tem_prioridade_e_gemini_continua_reserva(monkeypatch)
     (401,"recusou a chave"),
     (402,"créditos do OpenRouter"),
     (429,"limites de requisições"),
-    (400,"formato de resposta"),
+    (400,"modelo gratuito compatível"),
 ])
 def test_openrouter_falhas_seguras_sem_expor_dados(monkeypatch,code,needle):
     import io
@@ -647,10 +647,10 @@ def test_openrouter_formato_estrito_400_tenta_json_compativel_sem_mudar_dados(mo
         def read(self, size):
             return json.dumps({"model":"nvidia/nemotron-3.5-lightning:free",
                 "choices":[{"finish_reason":"stop", "message":{"content":
-                    '```json\\n' + json.dumps({"analises":[{
+                    '```json' + chr(10) + json.dumps({"analises":[{
                         "grupo":"G1", "explicacao":"Conferir o acumulador fiscal.",
                         "verificar":"1. Comparar documento.", "evidencias":[]
-                    }]}) + '\\n```'
+                    }]}) + chr(10) + '```'
                 }}]}).encode()
 
     def mock(req, timeout):
