@@ -200,3 +200,98 @@ def test_universal_identifica_filial_quando_ha_apenas_uma():
     assert response.status_code == 200, response.text
     assert response.json()["filial_aplicada"] == "242"
     assert response.json()["contas"][0]["contabil"] == 1234.56
+
+
+
+def _relatorios_empresa(nome_fiscal, nome_razao, razao_csv=False):
+    fiscal = workbook({"Fiscal": [
+        ["Empresa:", "", nome_fiscal] if nome_fiscal else ["Relatório fiscal"],
+        ["ENTRADAS"], ["Codigo", "Descrição", "Valor Contabil", "Conta"],
+        [1152, "Mercadorias", 1234.56, 22643],
+    ]})
+    if razao_csv:
+        linhas = [
+            f"Empresa:;;{nome_razao}",
+            "Conta;Data;Lote;Histórico;Contrapartida;Débito;Crédito;Filial",
+            "22643;03/08/2026;10;COMPRA DE MERCADORIA CF NF;22644;1234,56;0;242",
+        ]
+        return fiscal, ("\n".join(linhas)).encode("cp1252"), "Razão.csv"
+    razao = workbook({"Razão": [
+        ["Empresa:", "", nome_razao] if nome_razao else ["Relatório contábil"],
+        ["Período:", "01/08/2026 - 31/08/2026"],
+        ["Conta:", 22643.0, "", "", "", "ESTOQUE"],
+        ["Data", "Lote", "Histórico", "Cta.C.Part.", "Filial", "Débito", "Crédito"],
+        [46237, 10, "COMPRA DE MERCADORIA CF NF", 22644.0, 242, 1234.56, 0],
+    ]})
+    return fiscal, razao, "Razão.xlsx"
+
+
+def test_empresa_reconhecida_automaticamente_em_ambos_os_relatorios():
+    fiscal, razao, nome_razao = _relatorios_empresa(
+        "COMERCIAL EXEMPLO LTDA", "Comercial Exemplo Ltda.",
+    )
+    response = TestClient(app).post("/api/v1/conferencia-fiscal/preview", files={
+        "acumuladores": ("fiscal.xlsx", fiscal), "razao": (nome_razao, razao),
+    })
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["empresa_nome"] == "COMERCIAL EXEMPLO LTDA"
+    assert data["empresa_fiscal"] == "COMERCIAL EXEMPLO LTDA"
+    assert data["empresa_razao"] == "Comercial Exemplo Ltda."
+    assert data["contas"][0]["fiscal"] == 1234.56
+    assert not any("Não foi possível identificar" in aviso for aviso in data["avisos"])
+    export = TestClient(app).post("/api/v1/conferencia-fiscal/exportar", files={
+        "acumuladores": ("fiscal.xlsx", fiscal), "razao": (nome_razao, razao),
+    })
+    assert export.status_code == 200, export.text
+    assert "COMERCIAL_EXEMPLO_LTDA" in export.headers["content-disposition"]
+
+
+def test_empresa_reconhecida_no_razao_csv_tabular_apos_conversao():
+    fiscal, razao, nome_razao = _relatorios_empresa(
+        "COMERCIAL EXEMPLO LTDA", "COMERCIAL EXEMPLO LTDA", razao_csv=True,
+    )
+    response = TestClient(app).post("/api/v1/conferencia-fiscal/preview", files={
+        "acumuladores": ("fiscal.xlsx", fiscal), "razao": (nome_razao, razao),
+    })
+    assert response.status_code == 200, response.text
+    assert response.json()["empresa_nome"] == "COMERCIAL EXEMPLO LTDA"
+    assert response.json()["contas"][0]["contabil"] == 1234.56
+
+
+def test_relatorios_de_empresas_diferentes_nao_sao_comparados():
+    fiscal, razao, nome_razao = _relatorios_empresa(
+        "COMERCIAL ALFA LTDA", "COMERCIAL BETA LTDA",
+    )
+    response = TestClient(app).post("/api/v1/conferencia-fiscal/preview", files={
+        "acumuladores": ("fiscal.xlsx", fiscal), "razao": (nome_razao, razao),
+    })
+    assert response.status_code == 422
+    assert "empresas diferentes" in response.json()["detail"]
+    assert "COMERCIAL ALFA" in response.json()["detail"]
+    assert "COMERCIAL BETA" in response.json()["detail"]
+
+
+def test_sem_nome_em_um_arquivo_exibe_origem_da_identificacao():
+    fiscal, razao, nome_razao = _relatorios_empresa(
+        "", "COMERCIAL EXEMPLO LTDA",
+    )
+    response = TestClient(app).post("/api/v1/conferencia-fiscal/preview", files={
+        "acumuladores": ("fiscal.xlsx", fiscal), "razao": (nome_razao, razao),
+    })
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["empresa_nome"] == "COMERCIAL EXEMPLO LTDA"
+    assert data["empresa_fiscal"] == ""
+    assert data["empresa_razao"] == "COMERCIAL EXEMPLO LTDA"
+    assert any("identificada pelo Razão" in aviso for aviso in data["avisos"])
+
+
+def test_codigo_ou_razao_social_em_celula_empresa_e_identificado():
+    from razync.conferencia_fiscal import _empresa_no_cabecalho
+    assert _empresa_no_cabecalho(
+        ["Empresa: 242 - COMERCIAL EXEMPLO LTDA", "", ""]
+    ) == "COMERCIAL EXEMPLO LTDA"
+    assert _empresa_no_cabecalho(
+        ["Empresa:", "242", "", "COMERCIAL EXEMPLO LTDA"]
+    ) == "COMERCIAL EXEMPLO LTDA"
