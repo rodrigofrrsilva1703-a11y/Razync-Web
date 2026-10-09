@@ -362,3 +362,36 @@ def test_groq_permissao_principal_nao_e_ocultada_pelo_gemini(monkeypatch):
         fiscal_ai.explain(example_report())
     assert error.value.status_code == 403
     assert "openai/gpt-oss-120b" in error.value.detail
+
+
+
+def test_indicadores_contam_sinais_sem_concluir_duplicidade_ou_alterar_dados():
+    import copy
+    row = {"data": "2026-08-07", "historico": "Compra NF 100", "contrapartida": "508", "debito": 80, "credito": 0, "classificacao": "FISCAL"}
+    rows = [dict(row), dict(row), dict(row, data="2026-08-08"),
+            dict(row, historico="Estorno compra", debito=-80),
+            dict(row, historico=""), dict(row, historico="", debito="inválido"),
+            dict(row, historico="Devolução", credito="NaN")]
+    original = copy.deepcopy(rows)
+    result = groq_fiscal._record_indicators(rows)
+    assert rows == original
+    assert result["registros_examinados_localmente"] == 7
+    assert result["historicos_vazios"] == 2
+    assert result["historicos_mencionando_estorno_cancelamento_devolucao"] == 2
+    assert result["registros_com_valor_negativo"] == 1
+    assert result["conjuntos_com_mesma_data_historico_contrapartida_e_valores"] == 1
+    assert result["classificacoes_do_leitor"] == {"FISCAL": 7}
+    assert "não comprovam" in result["ressalva"]
+
+
+def test_indicadores_examinam_registros_fora_da_amostra_sem_enviar_seus_historicos():
+    rows = [{"referencia": f"L{i}", "data": "2026-08-07", "historico": f"Compra {i}", "contrapartida": "508", "debito": 80, "credito": 0} for i in range(1, 13)]
+    rows[5]["historico"] = rows[6]["historico"] = "Estorno intermediário"
+    group = groq_fiscal._compact_group({"grupo": "G1", "lancamentos": rows, "cobertura": {"existentes": 100}})
+    assert group["amostra_enviada"] == 10
+    assert group["amostra_nao_exaustiva"] is True
+    assert group["indicadores_locais"]["registros_examinados_localmente"] == 12
+    assert group["indicadores_locais"]["historicos_mencionando_estorno_cancelamento_devolucao"] == 2
+    assert group["indicadores_locais"]["conjuntos_com_mesma_data_historico_contrapartida_e_valores"] == 1
+    assert {r["referencia"] for r in group["lancamentos"]}.isdisjoint({"L6", "L7"})
+    assert "Estorno intermediário" not in json.dumps(group)

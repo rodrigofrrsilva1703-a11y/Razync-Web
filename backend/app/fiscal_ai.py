@@ -738,7 +738,7 @@ def explain(report):
         "contents":[{"role":"user","parts":[{"text":json.dumps(context, ensure_ascii=False, separators=(",", ":"))}]}],
         "generationConfig":{"responseMimeType":"application/json", "responseSchema":schema,
                             "temperature":0.2, "maxOutputTokens":16384}}
-    # Todos os provedores usam o mesmo prompt e os mesmos dados de entrada.
+    # Gemini/OpenRouter usam o contexto abaixo; Groq compacta os registros e adapta o prompt.
     # Um resultado só é aceito após validação integral das contas e evidências.
     # Groq permanece desativada até confirmação explícita de plano gratuito,
     # Zero Data Retention e seleção como provedor principal.
@@ -752,7 +752,7 @@ def explain(report):
             return {
                 "analises": analyses,
                 "aviso": "Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
-                "limite": coverage + " Groq examinou uma amostra de até 10 lançamentos por grupo; históricos limitados a 180 caracteres. Não representa leitura integral dos lançamentos.", "provedor": "groq", "modelo_usado": used_model,
+                "limite": coverage + " Groq recebeu até 10 históricos por grupo, limitados a 180 caracteres, e indicadores calculados localmente nos registros disponíveis antes da seleção da amostra. Não representa leitura integral dos lançamentos pela IA.", "provedor": "groq", "modelo_usado": used_model,
                 "gratuito": True, "fallback_usado": False,
             }
         except HTTPException as exc:
