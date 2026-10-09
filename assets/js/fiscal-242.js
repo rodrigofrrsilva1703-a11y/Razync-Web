@@ -112,31 +112,29 @@
 
   function renderNarrative(textValue) {
     const wrap = node("div", "fiscal-ai-narrative");
-    const segments = String(textValue || "").trim().split(/\n\s*\n/).map(x => x.trim()).filter(Boolean);
-    const sectionTitles = ["O que foi encontrado", "Análise da diferença", "Possíveis causas", "Limitações e cuidados"];
-    if (segments.length < 3) {
-      wrap.appendChild(node("p", "fiscal-ai-paragraph", String(textValue || "")));
-      return wrap;
-    }
-    segments.forEach((paragraph, index) => {
-      const section = node("section", "fiscal-ai-narrative-section");
-      const heading = node("h6", "", sectionTitles[index] || "Observação adicional");
-      section.append(heading, node("p", "", paragraph));
-      wrap.appendChild(section);
-    });
+    // A apresentação é a mesma para todos os provedores. Não atribuir títulos
+    // a parágrafos apenas pela posição: a IA pode enviar outra estrutura.
+    const segments = String(textValue || "").trim().split(/\r?\n+/)
+      .map(x => x.trim()).filter(Boolean);
+    segments.forEach(paragraph => wrap.appendChild(node("p", "fiscal-ai-paragraph", paragraph)));
     return wrap;
   }
   function renderChecklist(textValue) {
     const wrap = node("div", "fiscal-ai-steps");
-    const steps = String(textValue || "").trim().split(/\n(?=\s*\d+[.)]\s+)/)
-      .map(x => x.trim()).filter(Boolean);
-    if (steps.length < 2 || !steps.every(x => /^\d+[.)]\s+/.test(x))) {
-      wrap.appendChild(node("p", "fiscal-ai-paragraph", String(textValue || "")));
-      return wrap;
-    }
+    const text = String(textValue || "").trim();
+    const marker = /^(?:\d+[.)]|[-*•])\s+/;
+    const steps = [];
+    if (marker.test(text)) {
+      text.split(/\r?\n/).forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        if (marker.test(trimmed)) steps.push(trimmed.replace(marker, ""));
+        else if (steps.length) steps[steps.length - 1] += "\n" + trimmed;
+      });
+    } else if (text) steps.push(text);
     const list = node("ol", "fiscal-ai-checklist");
     steps.forEach(step => {
-      const item = node("li", "", step.replace(/^\d+[.)]\s+/, ""));
+      const item = node("li", "", step);
       list.appendChild(item);
     });
     wrap.appendChild(list);

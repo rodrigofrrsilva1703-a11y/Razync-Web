@@ -1590,8 +1590,12 @@
 }
 #fiscalView .fiscal-ai-narrative {
   display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-columns:minmax(0,1fr);
   gap:12px;
+  border:1px solid #e5ebf2;
+  border-radius:10px;
+  padding:15px 16px;
+  background:#fff;
 }
 #fiscalView .fiscal-ai-narrative-section {
   border:1px solid #e5ebf2;
@@ -1641,6 +1645,8 @@
   color:#50677e;
   font-size:12px;
   line-height:1.7;
+  white-space:pre-line;
+  overflow-wrap:anywhere;
 }
 #fiscalView .fiscal-ai-checklist li::before {
   content:counter(fiscal-step);

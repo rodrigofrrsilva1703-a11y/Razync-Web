@@ -131,7 +131,7 @@ test('painel moderno inclui cartões, indicadores e lançamentos sob demanda', (
   assert.ok(html.includes('fiscal-summary-card'), 'Cards de resumo não encontrados');
 });
 
-test('Gemini apresenta parecer por etapas e checklist sem tratar texto como HTML', () => {
+test('provedores apresentam parecer e checklist uniformes sem tratar texto como HTML', () => {
   const start = source.indexOf('  function renderNarrative(textValue) {');
   const end = source.indexOf('  function normalizeAISearch(value) {', start);
   assert.ok(start >= 0 && end > start);
@@ -147,12 +147,18 @@ test('Gemini apresenta parecer por etapas e checklist sem tratar texto como HTML
     'Fatos da conta.\n\nHipótese baseada na divergência.\n\nVerificação necessária.\n\nLimites do relatório.'
   );
   assert.equal(explanation.children.length, 4);
-  assert.equal(explanation.children[0].children[0].textContent, 'O que foi encontrado');
-  assert.equal(explanation.children[3].children[0].textContent, 'Limitações e cuidados');
+  assert.equal(explanation.children[0].textContent, 'Fatos da conta.');
+  assert.equal(explanation.children[3].textContent, 'Limites do relatório.');
+  const singleBreak = context.renderNarrative('Fatos da conta.\nHipótese baseada na divergência.\nVerificação necessária.\nLimites do relatório.');
+  assert.equal(JSON.stringify(singleBreak), JSON.stringify(explanation));
+  assert.equal(context.renderNarrative('Parecer curto.').children[0].className, explanation.children[0].className);
   const checklist = context.renderChecklist('1. Confira NF.\n2. Valide o acumulador.\n3. Compare o Razão.');
   const steps = checklist.children[0].children;
   assert.equal(steps.length, 3);
   assert.equal(steps[0].textContent, 'Confira NF.');
+  assert.equal(JSON.stringify(context.renderChecklist('- Confira NF.\n- Valide o acumulador.\n- Compare o Razão.')), JSON.stringify(checklist));
+  assert.equal(context.renderChecklist('Conferir documentos.').children[0].children[0].textContent, 'Conferir documentos.');
+  assert.equal(context.renderChecklist('1. Conferir NF\ncom o fornecedor.\n2. Conferir Razão.').children[0].children[0].textContent, 'Conferir NF\ncom o fornecedor.');
   const malicious = context.renderNarrative('<script>alert(1)</script>');
   assert.equal(malicious.children[0].textContent, '<script>alert(1)</script>');
 });
