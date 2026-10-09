@@ -10,10 +10,11 @@ import time
 import urllib.error
 import urllib.request
 
-from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 from fastapi.concurrency import run_in_threadpool
 from app.fiscal_242 import conferencia_fiscal_preview
+from app.migration_routes import require_admin
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/conferencia-fiscal/ia")
@@ -841,6 +842,107 @@ def status():
         "gratuito": not (legacy and not gemini_free and not openrouter),
         "fallback_gemini": bool(openrouter and gemini_free),
     }
+
+
+# Teste autenticado e sem dados de clientes: verifica o provedor, não a
+# qualidade do parecer fiscal. Evita expor a chave e esgotar a cota gratuita.
+_openrouter_test_times = []
+
+
+def _openrouter_test(model):
+    key = os.getenv("OPENROUTER_API_KEY", "").strip()
+    if not key:
+        raise HTTPException(503, "Configure OPENROUTER_API_KEY no Railway.")
+    if model not in FREE_FISCAL_MODELS:
+        raise HTTPException(422, "O teste aceita apenas os modelos gratuitos cadastrados.")
+
+    with lock:
+        now = time.monotonic()
+        _openrouter_test_times[:] = [t for t in _openrouter_test_times if now - t < 3600]
+        if len(_openrouter_test_times) >= 6:
+            raise HTTPException(429, "Limite de testes alcançado (6 por hora).")
+        _openrouter_test_times.append(now)
+
+    body = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "Responda somente com a palavra OK."},
+            {"role": "user", "content": "Teste técnico de conectividade; responda OK."},
+        ],
+        "temperature": 0,
+        "max_tokens": 24,
+        "provider": {
+            "allow_fallbacks": True,
+            "data_collection": "deny",
+            "sort": "latency",
+            "max_price": {"prompt": 0, "completion": 0},
+        },
+    }
+    request = urllib.request.Request(
+        "https://openrouter.ai/api/v1/chat/completions",
+        data=json.dumps(body, separators=(",", ":")).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + key,
+            "HTTP-Referer": "https://rodrigofrrsilva1703-a11y.github.io/Razync-Web/",
+            "X-Title": "Razync Diagnostico",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=18) as response:
+            data = json.loads(response.read(20000))
+    except urllib.error.HTTPError as exc:
+        # Nunca transmitir ou registrar a mensagem bruta do provedor.
+        status = exc.code
+        try:
+            raw = json.loads(exc.read(8192))
+            message = str((raw.get("error") or {}).get("message") or "").lower()
+        except (TypeError, AttributeError, ValueError, UnicodeError):
+            message = ""
+        if status in (401, 403):
+            reason = "chave_ou_permissao"
+            hint = "Verifique a chave e as permissões na OpenRouter."
+        elif status == 402:
+            reason = "credito_indisponivel"
+            hint = "Confira o limite de crédito ou gasto da conta OpenRouter."
+        elif status == 429:
+            reason = "limite_gratuito"
+            hint = "A cota de testes da OpenRouter está limitada; consulte a página de atividades da conta."
+        elif any(s in message for s in ("data policy", "privacy", "data collection")):
+            reason = "sem_endpoint_privado"
+            hint = "Nenhum endpoint compatível atende à política de não coleta. Não remova essa proteção."
+        elif status in (502, 503, 504, 529):
+            reason = "provedor_indisponivel"
+            hint = "O modelo ou seu provedor não respondeu. Experimente outro modelo gratuito."
+        else:
+            reason = "solicitacao_recusada"
+            hint = "A OpenRouter recusou este pedido sintético. Verifique modelo e disponibilidade."
+        logger.warning("fiscal_openrouter_probe status=%d model=%s reason=%s", status, model, reason)
+        return {"ok": False, "http_status": status, "modelo": model,
+                "motivo": reason, "orientacao": hint}
+    except (TimeoutError, urllib.error.URLError):
+        logger.warning("fiscal_openrouter_probe status=timeout model=%s", model)
+        return {"ok": False, "http_status": 504, "modelo": model,
+                "motivo": "timeout", "orientacao": "O provedor demorou além do limite de 18 segundos."}
+
+    candidates = data.get("choices") if isinstance(data, dict) else None
+    response_message = candidates[0].get("message") if isinstance(candidates, list) and candidates else {}
+    content = response_message.get("content") if isinstance(response_message, dict) else None
+    ok = isinstance(content, str) and bool(content.strip())
+    return {"ok": ok, "http_status": 200, "modelo": model,
+            "modelo_real": str(data.get("model", ""))[:120],
+            "motivo": "respondeu" if ok else "resposta_vazia",
+            "orientacao": "Conexão confirmada com texto fictício." if ok
+            else "A API respondeu sem texto; teste outro modelo."}
+
+
+@router.post("/teste-openrouter", dependencies=[Depends(require_admin)])
+async def teste_openrouter(payload: dict = Body(default={})):
+    """Solicita somente um texto fictício e nunca acessa os arquivos contábeis."""
+    model = payload.get("modelo", "openrouter/free")
+    if not isinstance(model, str):
+        raise HTTPException(422, "Modelo inválido.")
+    return await run_in_threadpool(_openrouter_test, model)
 
 
 @router.post("")
