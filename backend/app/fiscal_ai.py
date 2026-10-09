@@ -508,13 +508,22 @@ def _validar_resposta_ia(result, report, mapping, references):
     """Converte e confere contas, valores e referências sem depender do provedor."""
     output, seen = [], set()
     for item in result["analises"]:
-        ident = item["grupo"]
+        if not isinstance(item, dict):
+            raise ValueError("Invalid analysis item")
+        original = item.get("grupo")
+        ident = original.strip().upper() if isinstance(original, str) else ""
         if ident not in mapping or ident in seen:
             raise ValueError("Unknown or repeated group")
         if not all(isinstance(item.get(k), str) and 0 < len(item[k]) <= 6000 for k in ("explicacao", "verificar")):
             raise ValueError("Invalid explanation")
         evidence = item.get("evidencias", [])
-        if not isinstance(evidence, list) or len(evidence) > 8 or any(
+        if isinstance(evidence, str):
+            evidence = [] if evidence.strip().lower() in ("", "nenhum", "nenhuma", "[]", "-") else [
+                ref.strip() for ref in evidence.split(",")]
+        if not isinstance(evidence, list):
+            raise ValueError("Invalid evidence reference")
+        evidence = [ref.strip().upper() if isinstance(ref, str) else ref for ref in evidence]
+        if len(evidence) > 8 or any(
             not isinstance(ref, str) or ref not in references
             or references[ref]["conta"] != mapping[ident]["conta"] for ref in evidence
         ):
