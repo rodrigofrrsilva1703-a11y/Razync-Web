@@ -75,12 +75,15 @@
       for (const item of result.analises || []) {
         const card = node("article", "fiscal-ai-card");
         const heading = node("div", "fiscal-ai-card-heading");
-        heading.append(node("h4", "", `Conta ${item.conta}`), node("span", "fiscal-ai-type", item.tipo));
+        heading.append(node("h4", "", `Conta contábil ${item.conta}`), node("span", "fiscal-ai-type", item.tipo));
+        const officialRow = (data?.contas || []).find(row => keyOf(row) === keyOf(item)) || item;
+        const accumulatorInfo = accumulatorBreakdown(officialRow);
         const analysis = node("div", "fiscal-ai-analysis");
         analysis.append(node("h5", "", "Análise dos lançamentos"), node("p", "", item.explicacao));
         const review = node("div", "fiscal-ai-review");
         review.append(node("h5", "", "O que conferir"), node("p", "", item.verificar));
         card.appendChild(heading);
+        card.appendChild(accumulatorInfo);
         if (item.valores) {
           const metrics = node("div", "fiscal-ai-values");
           [["Fiscal", "fiscal"], ["Total do Razão", "total_conta"],
@@ -117,6 +120,46 @@
       if (aiController === controller) { aiResult.setAttribute("aria-busy", "false"); aiController = null; aiButton.disabled = !aiConfigured || !previewBody; }
     }
   });
+  function accumulatorRows(row) {
+    const details = Array.isArray(row?.detalhes_fiscais) ? row.detalhes_fiscais : [];
+    if (details.length) return details.map(item => ({
+      codigo: String(item.codigo ?? "").trim(),
+      descricao: String(item.descricao ?? "").trim(),
+      valor: Number(item.valor || 0)
+    })).filter(item => item.codigo);
+    return String(row?.acumuladores || "").split(",").map(code => ({
+      codigo: code.trim(), descricao: "", valor: null
+    })).filter(item => item.codigo);
+  }
+  function accumulatorTags(row) {
+    const group = node("div", "fiscal-accum-tags");
+    for (const item of accumulatorRows(row)) {
+      const tag = node("span", "fiscal-accum-tag", item.codigo);
+      if (item.descricao) tag.title = item.descricao;
+      group.appendChild(tag);
+    }
+    if (!group.childElementCount) group.appendChild(node("span", "", "—"));
+    return group;
+  }
+  function accumulatorBreakdown(row) {
+    const items = accumulatorRows(row);
+    const area = node("section", "fiscal-accum-breakdown");
+    area.appendChild(node("h4", "", "Acumuladores fiscais vinculados à conta " + row.conta));
+    if (!items.length) {
+      area.appendChild(node("p", "fiscal-disclaimer", "Nenhum acumulador informado."));
+      return area;
+    }
+    const wrap = node("div", "fiscal-accum-list");
+    for (const item of items) {
+      const line = node("div", "fiscal-accum-line");
+      line.appendChild(node("strong", "fiscal-accum-code", item.codigo));
+      line.appendChild(node("span", "fiscal-accum-desc", item.descricao || "Descrição não informada"));
+      if (item.valor !== null) line.appendChild(node("span", "fiscal-money fiscal-accum-amount", money.format(item.valor)));
+      wrap.appendChild(line);
+    }
+    area.appendChild(wrap);
+    return area;
+  }
   const keyOf = row => String(row.conta) + ":" + String(row.tipo);
   const selectedFiles = () => {
     const acumuladores = byId("fiscal242Acumuladores").files[0];
@@ -197,10 +240,11 @@
     const heading = node("div", "fiscal-detail-heading");
     const summary = node("div");
     summary.appendChild(node("h3", "", "Conta " + row.conta + " · " + (row.descricao || "Sem descrição")));
-    summary.appendChild(node("p", "", "Acumulador(es): " + row.acumuladores + " · " + row.tipo));
+    summary.appendChild(node("p", "", "Tipo de movimento: " + row.tipo));
     heading.appendChild(summary);
     heading.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(row.situacao), statusLabels[row.situacao] || row.situacao));
     details.appendChild(heading);
+    details.appendChild(accumulatorBreakdown(row));
 
     const metrics = node("div", "fiscal-detail-metrics");
     [
@@ -289,6 +333,8 @@
       });
       account.appendChild(button);
       cell(tr, row.descricao || "—", "fiscal-description");
+      const accumulatorCell = cell(tr, "", "fiscal-accum-cell");
+      accumulatorCell.appendChild(accumulatorTags(row));
       cell(tr, row.tipo);
       cell(tr, money.format(row.fiscal), "fiscal-money");
       cell(tr, money.format(row.total_conta), "fiscal-money");
