@@ -927,7 +927,7 @@ def test_openrouter_em_lotes_aceita_partes_textuais_e_json_completo(monkeypatch)
         assert context["periodo_fiscal"]["ano"] == 2026
         if len(current) == 2:
             content = [{"type": "text", "text": json.dumps({"analises": [
-                {"grupo": x, "explicacao": "Descrição", "verificar": "1. Conferir", "evidencias": []}
+                {"grupo": " g1 " if x == "G1" else x, "explicacao": "Descrição", "verificar": "1. Conferir", "evidencias": []}
                 for x in current
             ]})}]
             reason = "length"  # JSON integral com metadado length não pode ser perdido.
@@ -940,7 +940,7 @@ def test_openrouter_em_lotes_aceita_partes_textuais_e_json_completo(monkeypatch)
     monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", mock)
     result, provider = fiscal_ai._openrouter_completion(payload, ["openrouter/free"], "secret")
     assert seen == [["G1", "G2"], ["G3"]]
-    assert [x["grupo"] for x in result["analises"]] == allowed
+    assert [x["grupo"].strip().upper() for x in result["analises"]] == allowed
     assert result["analises"][2]["evidencias"] == []
     assert provider == "example/free"
 
