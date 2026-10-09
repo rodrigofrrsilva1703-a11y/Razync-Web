@@ -512,7 +512,7 @@ async def analyze(
 
 
 def gerar_excel_analise(payload: dict) -> bytes:
-    """Exporta a análise já retornada, sem reprocessar os arquivos nem chamar Gemini."""
+    """Exporta a análise já retornada, sem repetir chamadas de IA."""
     import io
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Font, PatternFill
@@ -546,12 +546,12 @@ def gerar_excel_analise(payload: dict) -> bytes:
 
     book = Workbook()
     main = book.active
-    main.title = "Análises Gemini"
+    main.title = "Análises IA"
     codes = book.create_sheet("Acumuladores")
     evidences = book.create_sheet("Lançamentos citados")
     cor_titulo, cor_cabecalho, cor_texto = "203B59", "EAF0F7", "30485F"
     main.merge_cells("A1:L1")
-    main["A1"] = "RAZYNC | CONFERÊNCIA FISCAL × CONTÁBIL · ANÁLISE GEMINI"
+    main["A1"] = "RAZYNC | CONFERÊNCIA FISCAL × CONTÁBIL · ANÁLISE ASSISTIDA"
     main["A1"].font = Font(name="Aptos", size=14, bold=True, color="FFFFFF")
     main["A1"].fill = PatternFill("solid", fgColor=cor_titulo)
     main["A1"].alignment = Alignment(vertical="center")
@@ -565,7 +565,7 @@ def gerar_excel_analise(payload: dict) -> bytes:
 
     head = ["Conta", "Descrição", "Tipo", "Situação", "Acumuladores",
             "Fiscal", "Contábil considerado", "Total do Razão", "Diferença",
-            "Explicação do Gemini", "O que conferir", "Referências citadas"]
+            "Explicação da IA", "O que conferir", "Referências citadas"]
     main.append([""] * len(head))
     main.append(head)
     codes.append(["Conta", "Tipo", "Acumulador", "Descrição", "Valor fiscal"])
@@ -573,7 +573,7 @@ def gerar_excel_analise(payload: dict) -> bytes:
                       "Débito", "Crédito", "Tipo"])
     for item in analises:
         if not isinstance(item, dict):
-            raise ValueError("Formato inválido de análise do Gemini.")
+            raise ValueError("Formato inválido de análise da IA.")
         valores = item.get("valores") or {}
         if not isinstance(valores, dict):
             raise ValueError("Valores inválidos no resultado da análise.")
@@ -637,7 +637,7 @@ def gerar_excel_analise(payload: dict) -> bytes:
 
 @router.post("/exportar")
 async def exportar_analise(payload: dict = Body(...)):
-    """Gera planilha com o parecer já existente; não chama nem cobra Gemini novamente."""
+    """Gera planilha com o parecer pronto; não chama o provedor novamente."""
     try:
         workbook = await run_in_threadpool(gerar_excel_analise, payload)
     except ValueError as exc:
@@ -645,6 +645,6 @@ async def exportar_analise(payload: dict = Body(...)):
     return Response(
         workbook,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": 'attachment; filename="RAZYNC_ANALISE_GEMINI.xlsx"',
+        headers={"Content-Disposition": 'attachment; filename="RAZYNC_ANALISE_IA.xlsx"',
                  "Cache-Control": "no-store"},
     )
