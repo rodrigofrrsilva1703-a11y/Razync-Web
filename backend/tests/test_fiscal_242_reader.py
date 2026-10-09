@@ -295,3 +295,58 @@ def test_codigo_ou_razao_social_em_celula_empresa_e_identificado():
     assert _empresa_no_cabecalho(
         ["Empresa:", "242", "", "COMERCIAL EXEMPLO LTDA"]
     ) == "COMERCIAL EXEMPLO LTDA"
+
+
+
+def test_cabecalhos_reais_dominio_empresa_em_a1_e_razao_rotulado():
+    """Formato do Resumo: razão social em A1; formato do Razão: Empresa: em A1, nome em C1."""
+    nome = "COMERCIAL EXEMPLO IMPORTADORA LTDA EPP"
+    fiscal = workbook({"Resumo por Acumulador": [
+        [nome, None, None, None, "Página:", "1/1"],
+        ["CNPJ:", None, "00000000000000"],
+        ["Período:"],
+        [],
+        ["RESUMO POR ACUMULADOR"],
+        ["ENTRADAS"],
+        ["Código", "Descrição", "Vlr Contábil", "Conta"],
+        [1152, "Compras mercadorias", 1234.56, 22643],
+    ]})
+    razao = workbook({"Razão": [
+        ["Empresa:", None, nome, None, "Folha:", 1],
+        ["C.N.P.J.:"],
+        ["Período:", "01/08/2026 - 31/08/2026"],
+        ["RAZÃO"],
+        ["Conta:", 22643, "", "", "", "ESTOQUE"],
+        ["Data", "Lote", "Histórico", "Cta.C.Part.", "Filial", "Débito", "Crédito"],
+        [46237, 10, "COMPRA DE MERCADORIA CF NF", 22644, 242, 1234.56, 0],
+    ]})
+    response = TestClient(app).post(
+        "/api/v1/conferencia-fiscal/preview",
+        files={"acumuladores": ("resumo.xls.xlsx", fiscal), "razao": ("razao.xlsx", razao)},
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["empresa_nome"] == nome
+    assert data["empresa_fiscal"] == nome
+    assert data["empresa_razao"] == nome
+    assert data["contas"][0]["fiscal"] == 1234.56
+    assert data["contas"][0]["contabil"] == 1234.56
+
+
+def test_empresa_em_a1_diferente_do_razao_bloqueia_conferencia():
+    fiscal = workbook({"Fiscal": [
+        ["COMERCIAL ALFA LTDA EPP"],
+        ["ENTRADAS"], ["Código", "Descrição", "Vlr Contábil", "Conta"],
+        [1152, "Compras", 100, 22643],
+    ]})
+    razao = workbook({"Razão": [
+        ["Empresa:", None, "COMERCIAL BETA LTDA EPP"],
+        ["Conta:", 22643, "", "", "", "ESTOQUE"],
+        ["Data", "Lote", "Histórico", "Cta.C.Part.", "Filial", "Débito", "Crédito"],
+        [46237, 10, "COMPRA DE MERCADORIA CF NF", 22644, 242, 100, 0],
+    ]})
+    response = TestClient(app).post("/api/v1/conferencia-fiscal/preview", files={
+        "acumuladores": ("fiscal.xlsx", fiscal), "razao": ("razao.xlsx", razao),
+    })
+    assert response.status_code == 422
+    assert "empresas diferentes" in response.json()["detail"]
