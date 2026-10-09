@@ -35,6 +35,15 @@
   const aiResult = byId("fiscal242AIResult");
   const aiExport = byId("fiscal242AIExport");
   const aiInlineStatus = byId("fiscal242AIStatus");
+  const aiToolbar = byId("fiscal242AIToolbar");
+  const aiTotal = byId("fiscal242AITotal");
+  const aiSearch = byId("fiscal242AISearch");
+  const aiFilter = byId("fiscal242AIFilter");
+  const aiCount = byId("fiscal242AICount");
+  const aiEmpty = byId("fiscal242AIEmpty");
+  const aiExpand = byId("fiscal242AIExpand");
+  const aiCollapse = byId("fiscal242AICollapse");
+  let aiCards = [];
   let aiReport = null;
   let statusController = null;
   async function refreshAIStatus() {
@@ -128,12 +137,60 @@
     wrap.appendChild(list);
     return wrap;
   }
+  function normalizeAISearch(value) {
+    return String(value ?? "").normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  }
+  function filterAIEntries(entries, query, filterStatus) {
+    const searchText = normalizeAISearch(query);
+    return entries.filter(({item}) => {
+      const status = String(item.situacao || "");
+      const category = ["REVISAR", "AUSENTE NO CONTÁBIL"].includes(status) ? "revisar"
+        : status === "CONFERE COM ALERTAS" ? "alertas"
+        : status === "CONFERE" ? "bate" : "outras";
+      if (filterStatus !== "todas" && category !== filterStatus) return false;
+      if (!searchText) return true;
+      const evidencias = (item.evidencias || []).flatMap(e => [
+        e.referencia, e.data, e.conta, e.contrapartida, e.historico
+      ]);
+      return normalizeAISearch([
+        item.conta, item.descricao, item.tipo, status, item.explicacao,
+        item.verificar, ...evidencias
+      ].join(" ")).includes(searchText);
+    });
+  }
+  function updateAIFilters() {
+    const matching = new Set(filterAIEntries(aiCards, aiSearch.value, aiFilter.value));
+    for (const entry of aiCards) entry.card.hidden = !matching.has(entry);
+    aiCount.textContent = aiCards.length === matching.size
+      ? aiCards.length + " conta(s)"
+      : "Exibindo " + matching.size + " de " + aiCards.length;
+    aiEmpty.hidden = matching.size > 0 || !aiCards.length;
+  }
+  function clearAIAccounts() {
+    aiCards = [];
+    aiToolbar.hidden = true;
+    aiEmpty.hidden = true;
+    aiSearch.value = "";
+    aiFilter.value = "todas";
+    aiCount.textContent = "";
+    aiTotal.textContent = "";
+  }
+  aiSearch.addEventListener("input", updateAIFilters);
+  aiFilter.addEventListener("change", updateAIFilters);
+  aiExpand.addEventListener("click", () => {
+    for (const {card} of aiCards) if (!card.hidden) card.open = true;
+  });
+  aiCollapse.addEventListener("click", () => {
+    for (const {card} of aiCards) card.open = false;
+  });
+
   aiButton.addEventListener("click", async () => {
     if (!previewBody || !aiConfigured) return;
     aiReport = null;
     aiExport.disabled = true;
     aiController?.abort(); const controller = new AbortController(); aiController = controller;
-    const snapshot = previewBody; aiButton.disabled = true; aiResult.replaceChildren();
+    const snapshot = previewBody; aiButton.disabled = true; aiResult.replaceChildren(); clearAIAccounts();
     aiResult.setAttribute("aria-busy", "true");
     aiMessage.textContent = "Analisando lançamentos e diferenças com Gemini…";
     try {
@@ -144,25 +201,35 @@
       aiReport = result;
       aiExport.disabled = !(Array.isArray(result.analises) && result.analises.length);
       aiInlineStatus.textContent = result.analises?.length
-        ? "Análise pronta. Abra o painel para ler ou exportar para Excel."
+        ? "Análise pronta. Selecione uma conta para consultar o parecer completo ou exporte o Excel."
         : "Gemini concluiu a análise. Não foram identificadas contas a explicar.";
-      for (const item of result.analises || []) {
-        const card = node("article", "fiscal-ai-card");
-        const heading = node("div", "fiscal-ai-card-heading");
+      const entries = Array.isArray(result.analises) ? result.analises : [];
+      aiToolbar.hidden = entries.length === 0;
+      aiTotal.textContent = entries.length ? "(" + entries.length + ")" : "";
+      for (const item of entries) {
+        const card = node("details", "fiscal-ai-card fiscal-ai-account");
+        const heading = node("summary", "fiscal-ai-card-heading fiscal-ai-account-summary");
         const title = node("div", "fiscal-ai-card-title");
-        title.append(node("span", "fiscal-ai-card-eyebrow", "PARECER POR CONTA"), node("h4", "", `Conta ${item.conta}`));
+        title.appendChild(node("h4", "", `Conta ${item.conta}`));
         if (item.descricao) title.appendChild(node("p", "fiscal-ai-card-description", item.descricao));
         const metadata = node("div", "fiscal-ai-card-meta");
-        metadata.appendChild(node("span", "fiscal-ai-type", item.tipo));
+        if (item.tipo) metadata.appendChild(node("span", "fiscal-ai-type", item.tipo));
         if (item.situacao) metadata.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(item.situacao), statusLabels[item.situacao] || item.situacao));
-        heading.append(title, metadata);
+        const compact = node("div", "fiscal-ai-account-compact");
+        if (item.valores && item.valores.diferenca !== undefined && item.valores.diferenca !== null) {
+          const preview = node("span", "fiscal-ai-account-difference");
+          preview.append(node("small", "", "Diferença"), node("strong", "", money.format(Number(item.valores.diferenca) || 0)));
+          compact.appendChild(preview);
+        }
+        compact.appendChild(node("span", "fiscal-ai-account-chevron", "⌄"));
+        heading.append(title, metadata, compact);
+        const content = node("div", "fiscal-ai-account-content");
         const officialRow = (data?.contas || []).find(row => keyOf(row) === keyOf(item)) || item;
         const accumulatorInfo = accumulatorBreakdown(officialRow);
         const analysis = node("section", "fiscal-ai-analysis");
         analysis.append(node("h5", "", "Análise da conta"), renderNarrative(item.explicacao));
         const review = node("section", "fiscal-ai-review");
         review.append(node("h5", "", "Verificações recomendadas"), renderChecklist(item.verificar));
-        card.appendChild(heading);
         if (item.valores) {
           const metrics = node("div", "fiscal-ai-values");
           [["Fiscal", "fiscal"], ["Total do Razão", "total_conta"],
@@ -171,10 +238,10 @@
             metric.append(node("small", "", label), node("strong", "", money.format(Number(item.valores[key] || 0))));
             metrics.appendChild(metric);
           });
-          card.appendChild(metrics);
+          content.appendChild(metrics);
         }
-        card.appendChild(accumulatorInfo);
-        card.append(analysis, review);
+        content.appendChild(accumulatorInfo);
+        content.append(analysis, review);
         if (item.evidencias?.length) {
           const details = node("details", "fiscal-ai-evidence");
           details.append(node("summary", "", `Lançamentos citados (${item.evidencias.length})`));
@@ -189,10 +256,16 @@
             }
             record.append(title, node("p", "", row.historico), metrics); details.append(record);
           }
-          card.append(details);
+          content.append(details);
         }
+        card.append(heading, content);
+        aiCards.push({item, card});
         aiResult.append(card);
       }
+      // Pareceres longos começam recolhidos para não poluir a página.
+      // Um resultado isolado pode aparecer aberto para facilitar a leitura.
+      if (aiCards.length === 1) aiCards[0].card.open = true;
+      updateAIFilters();
       aiMessage.textContent = result.aviso + (result.limite ? " " + result.limite : "");
     } catch (error) {
       if (!controller.signal.aborted && previewBody === snapshot) {
@@ -284,7 +357,7 @@
     aiReport = null;
     aiExport.disabled = true;
     aiInlineStatus.textContent = "Faça uma conferência para iniciar a análise.";
-    aiButton.disabled = true; aiResult.replaceChildren(); aiResult.setAttribute("aria-busy", "false");
+    aiButton.disabled = true; aiResult.replaceChildren(); clearAIAccounts(); aiResult.setAttribute("aria-busy", "false");
     aiMessage.textContent = aiConfigured ? "Faça a conferência antes de analisar com IA." : "Gemini ainda não configurado no servidor.";
     if (pendingRequest) {
       pendingRequest.abort();
@@ -552,7 +625,7 @@
     event.preventDefault();
     let body;
     try { body = buildFormData(); } catch (error) { setMessage(error.message, "error"); return; }
-    aiController?.abort(); aiController = null; aiButton.disabled = true; aiResult.replaceChildren();
+    aiController?.abort(); aiController = null; aiButton.disabled = true; aiResult.replaceChildren(); clearAIAccounts();
     aiReport = null; aiExport.disabled = true;
     aiInlineStatus.textContent = "Preparando uma nova conferência.";
     if (pendingRequest) pendingRequest.abort();
