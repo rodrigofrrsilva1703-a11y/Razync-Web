@@ -332,8 +332,8 @@ def test_exportar_analise_gemini_em_excel_sem_nova_chamada(monkeypatch):
     )
     assert response.content[:2] == b"PK"
     workbook = load_workbook(io.BytesIO(response.content), data_only=False)
-    assert workbook.sheetnames == ["Análises Gemini", "Acumuladores", "Lançamentos citados"]
-    main = workbook["Análises Gemini"]
+    assert workbook.sheetnames == ["Análises IA", "Acumuladores", "Lançamentos citados"]
+    main = workbook["Análises IA"]
     assert main["A2"].value == "Empresa: EMPRESA EXEMPLO LTDA"
     assert main["A6"].value == "22643"
     assert main["F6"].value == 1234.56
@@ -586,3 +586,47 @@ def test_status_ativa_reserva_apenas_em_projeto_confirmado(monkeypatch):
     assert fiscal_ai.status()["fallback_gemini"] is True
     monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED")
     assert fiscal_ai.status()["fallback_gemini"] is False
+
+
+def test_fallback_recusa_resposta_fabricada_no_gemini(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
+    monkeypatch.setenv("GEMINI_API_KEY", "gemini-test")
+    monkeypatch.setenv("GEMINI_FREE_TIER_CONFIRMED", "1")
+    monkeypatch.setattr(fiscal_ai, "_openrouter_completion",
+        lambda *args: (_ for _ in ()).throw(HTTPException(429, "limite")))
+    monkeypatch.setattr(fiscal_ai, "_gemini_completion",
+        lambda *args, **kwargs: ({"analises":[{
+            "grupo":"G1", "explicacao":"Inconsistente", "verificar":"Confira",
+            "evidencias":["L999"]
+        }]}, "gemini-3.1-flash-lite"))
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(report())
+    assert error.value.status_code == 429
+
+
+def test_modelos_gemini_pagantes_nao_podem_ser_reserva(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
+    monkeypatch.setenv("GEMINI_API_KEY", "gemini-test")
+    monkeypatch.setenv("GEMINI_FREE_TIER_CONFIRMED", "1")
+    monkeypatch.setenv("GEMINI_FREE_MODEL", "gemini-3.1-pro")
+    monkeypatch.setattr(fiscal_ai, "_openrouter_completion",
+        lambda *args: pytest.fail("Não deve chamar antes de validar o modelo"))
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(report())
+    assert error.value.status_code == 503
+
+
+def test_duas_cotas_esgotadas_nao_alteram_relatorio(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
+    monkeypatch.setenv("GEMINI_API_KEY", "gemini-test")
+    monkeypatch.setenv("GEMINI_FREE_TIER_CONFIRMED", "1")
+    def limit(*args, **kwargs):
+        raise HTTPException(429, "Limite temporário")
+    monkeypatch.setattr(fiscal_ai, "_openrouter_completion", limit)
+    monkeypatch.setattr(fiscal_ai, "_gemini_completion", limit)
+    source = report()
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(source)
+    assert error.value.status_code == 429
+    assert "OpenRouter e Gemini" in error.value.detail
+    assert source["contas"][0]["fiscal"] == 9123.45
