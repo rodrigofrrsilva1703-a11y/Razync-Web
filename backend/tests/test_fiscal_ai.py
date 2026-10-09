@@ -810,3 +810,16 @@ def test_cooldown_expira_e_modelo_volta_ao_pool(monkeypatch):
     assert fiscal_ai.FREE_FISCAL_MODELS[0] not in fiscal_ai._openrouter_models()
     monkeypatch.setattr(fiscal_ai.time, "monotonic", lambda:102)
     assert fiscal_ai.FREE_FISCAL_MODELS[0] in fiscal_ai._openrouter_models()
+
+
+def test_restricao_privacidade_404_nao_e_ocultada(monkeypatch):
+    import io
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-or")
+    monkeypatch.setenv("OPENROUTER_MODELS", "openrouter/free")
+    def reject(req, timeout):
+        raise urllib.error.HTTPError(req.full_url,404,"No endpoints",{},io.BytesIO(json.dumps({"error":{"message":"No endpoints found matching your data policy. test-or private"}}).encode()))
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", reject)
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(report())
+    assert "política de privacidade" in error.value.detail
+    assert "test-or" not in error.value.detail

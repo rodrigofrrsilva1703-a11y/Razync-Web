@@ -308,7 +308,7 @@ def _openrouter_completion(payload, models, key):
             detail = "Os créditos do OpenRouter terminaram ou o limite de gasto foi atingido. Recarregue créditos ou revise o teto da chave."
         elif exc.code == 429:
             detail = "Todos os modelos disponíveis atingiram limites de requisições. Tente novamente mais tarde ou configure modelos com cota disponível."
-        elif exc.code == 400:
+        elif exc.code in (400, 404):
             try:
                 upstream = json.loads(exc.read(32768)).get("error", {})
                 message = str(upstream.get("message", "")).lower()
@@ -323,7 +323,7 @@ def _openrouter_completion(payload, models, key):
                 (("credit", "balance"), "saldo ou cota da conta"),
                 (("messages", "system"), "formato das mensagens"),
             ] if any(term in message for term in terms)), "solicitação recusada pelo provedor")
-            detail = "O OpenRouter rejeitou a análise gratuita (400): " + category + ". A conferência permanece disponível."
+            detail = f"O OpenRouter rejeitou a análise gratuita ({exc.code}): " + category + ". A conferência permanece disponível."
         else:
             detail = f"OpenRouter temporariamente indisponível (HTTP {exc.code}). A conferência contábil não foi alterada."
         raise HTTPException(429 if exc.code in (402, 429) else 403 if exc.code in (401, 403) else 400 if exc.code == 400 else 502, detail) from None
