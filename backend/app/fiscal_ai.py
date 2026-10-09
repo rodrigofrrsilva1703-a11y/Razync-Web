@@ -14,6 +14,7 @@ from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 from fastapi.concurrency import run_in_threadpool
 from app.fiscal_242 import conferencia_fiscal_preview
+from app.groq_fiscal import complete as _groq_completion, is_enabled as _groq_enabled, selected_model as _groq_model
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/conferencia-fiscal/ia")
@@ -648,13 +649,13 @@ def _validar_resposta_ia(result, report, mapping, references):
 def explain(report):
     openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
     gemini_key = _gemini_free_key()
+    groq_ready = _groq_enabled() and os.getenv("RAZYNC_AI_PRIMARY") == "groq"
     legacy = os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1"
     legacy_direct = not openrouter_key and not gemini_key and legacy
     if legacy_direct:
         gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
-    if not (openrouter_key or gemini_key):
-        raise HTTPException(503, "IA gratuita indisponível. Configure a chave do OpenRouter "
-            "ou confirme o nível gratuito do projeto Gemini no Railway.")
+    if not (openrouter_key or gemini_key or groq_ready):
+        raise HTTPException(503, "IA gratuita indisponível. Configure um provedor gratuito aprovado.")
     context, mapping, references, coverage = detailed_context(report)
     if not mapping:
         return {"analises": [], "aviso": "Nenhuma divergência ou alerta para explicar."}
@@ -739,8 +740,36 @@ def explain(report):
                             "temperature":0.2, "maxOutputTokens":16384}}
     # Todos os provedores usam o mesmo prompt e os mesmos dados de entrada.
     # Um resultado só é aceito após validação integral das contas e evidências.
+    # Groq permanece desativada até confirmação explícita de plano gratuito,
+    # Zero Data Retention e seleção como provedor principal.
+    groq_failed = False
+    if groq_ready:
+        try:
+            groq_model = _groq_model()
+            answer, used_model = _groq_completion(payload, os.getenv("GROQ_API_KEY", "").strip(), groq_model)
+            analyses = _validar_resposta_ia(answer, report, mapping, references)
+            logger.info("fiscal_ia_groq_success model=%s groups=%d", used_model, len(analyses))
+            return {
+                "analises": analyses,
+                "aviso": "Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
+                "limite": coverage, "provedor": "groq", "modelo_usado": used_model,
+                "gratuito": True, "fallback_usado": False,
+            }
+        except HTTPException as exc:
+            logger.warning("fiscal_ia_groq_failure status=%d backup_available=%s",
+                           exc.status_code, bool(gemini_key or openrouter_key))
+            if not (gemini_key or openrouter_key):
+                raise
+            groq_failed = True
+        except (ValueError, TypeError, KeyError, IndexError):
+            logger.warning("fiscal_ia_groq_invalid_response backup_available=%s",
+                           bool(gemini_key or openrouter_key))
+            if not (gemini_key or openrouter_key):
+                raise HTTPException(502, "A Groq retornou análise inválida. A conferência permanece disponível.") from None
+            groq_failed = True
+
     gemini_attempted = False
-    prefer_gemini = os.getenv("RAZYNC_AI_PRIMARY", "openrouter") == "gemini" and bool(gemini_key)
+    prefer_gemini = (os.getenv("RAZYNC_AI_PRIMARY", "openrouter") == "gemini" or groq_failed) and bool(gemini_key)
     global gemini_cooldown_until
     if prefer_gemini:
         gemini_attempted = True
@@ -753,7 +782,7 @@ def explain(report):
                 return {"analises":analyses,
                     "aviso":"Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
                     "limite":coverage, "provedor":"gemini", "modelo_usado":used_model,
-                    "gratuito":True, "fallback_usado":False}
+                    "gratuito":True, "fallback_usado":groq_failed}
             except HTTPException as exc:
                 if not openrouter_key:
                     raise
@@ -835,11 +864,16 @@ def status():
         os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1"
         and os.getenv("GEMINI_API_KEY", "").strip()
     )
+    groq_selected = _groq_enabled() and os.getenv("RAZYNC_AI_PRIMARY") == "groq"
     return {
-        "configurado": openrouter or gemini_free or legacy,
-        "provedor": "gemini" if gemini_free and os.getenv("RAZYNC_AI_PRIMARY", "openrouter") == "gemini" else "openrouter" if openrouter else "gemini" if (gemini_free or legacy) else None,
-        "gratuito": not (legacy and not gemini_free and not openrouter),
-        "fallback_gemini": bool(openrouter and gemini_free),
+        "configurado": openrouter or gemini_free or legacy or groq_selected,
+        "provedor": "groq" if groq_selected
+            else "gemini" if gemini_free and os.getenv("RAZYNC_AI_PRIMARY", "openrouter") == "gemini"
+            else "openrouter" if openrouter
+            else "gemini" if (gemini_free or legacy)
+            else None,
+        "gratuito": not (legacy and not gemini_free and not openrouter and not groq_selected),
+        "fallback_gemini": bool((openrouter or groq_selected) and gemini_free),
     }
 
 
@@ -851,8 +885,7 @@ async def analyze(
 ):
     if not status()["configurado"]:
         raise HTTPException(
-            503, "IA não configurada. Configure o OpenRouter ou habilite o Gemini "
-            "no nível gratuito confirmado do Railway."
+            503, "IA não configurada. Configure um provedor gratuito e suas permissões no Railway."
         )
     if empresa_codigo and not empresa_codigo.isdigit():
         raise HTTPException(422, "Código da empresa inválido.")
