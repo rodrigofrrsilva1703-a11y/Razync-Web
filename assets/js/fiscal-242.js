@@ -35,6 +35,7 @@
   const aiResult = byId("fiscal242AIResult");
   const aiExport = byId("fiscal242AIExport");
   const aiInlineStatus = byId("fiscal242AIStatus");
+  const aiProvider = byId("fiscal242AIProvider");
   const aiToolbar = byId("fiscal242AIToolbar");
   const aiTotal = byId("fiscal242AITotal");
   const aiSearch = byId("fiscal242AISearch");
@@ -56,10 +57,12 @@
       const result = await response.json();
       if (statusController !== controller) return;
       aiConfigured = result.configurado === true;
+      const providerName = result.provedor === "openrouter" ? "OpenRouter" : "Gemini";
+      aiProvider.textContent = aiConfigured ? providerName : "IA";
       aiButton.disabled = !aiConfigured || !previewBody || Boolean(aiController);
       if (!aiController && !aiResult.children.length) aiMessage.textContent = aiConfigured
-        ? (previewBody ? "Gemini conectado. Clique em Gerar análise." : "Gemini conectado. Faça a conferência para analisar as diferenças.")
-        : "Gemini ainda não configurado. Após adicionar a chave no Railway, clique em Atualizar conexão.";
+        ? (previewBody ? providerName + " conectado. Clique em Analisar diferenças com IA." : providerName + " conectado. Faça a conferência para analisar as diferenças.")
+        : "IA ainda não configurada. Defina OPENROUTER_API_KEY no Railway e clique em Atualizar conexão.";
     } catch (error) {
       if (statusController !== controller) return;
       if (!aiController) aiMessage.textContent = "Não foi possível verificar a conexão. Clique em Atualizar conexão para tentar novamente.";
@@ -192,7 +195,7 @@
     aiController?.abort(); const controller = new AbortController(); aiController = controller;
     const snapshot = previewBody; aiButton.disabled = true; aiResult.replaceChildren(); clearAIAccounts();
     aiResult.setAttribute("aria-busy", "true");
-    aiMessage.textContent = "Analisando lançamentos e diferenças com Gemini…";
+    aiMessage.textContent = "Analisando lançamentos e diferenças com IA…";
     try {
       const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia", {method:"POST",body:snapshot,signal:controller.signal});
       if (!response.ok) throw new Error(await responseError(response));
@@ -266,7 +269,8 @@
       // Um resultado isolado pode aparecer aberto para facilitar a leitura.
       if (aiCards.length === 1) aiCards[0].card.open = true;
       updateAIFilters();
-      aiMessage.textContent = result.aviso + (result.limite ? " " + result.limite : "");
+      aiMessage.textContent = result.aviso + (result.limite ? " " + result.limite : "") +
+        (result.modelo_usado ? " Modelo utilizado: " + result.modelo_usado + "." : "");
     } catch (error) {
       if (!controller.signal.aborted && previewBody === snapshot) {
         aiMessage.textContent = error.message || "Não foi possível gerar a análise.";
