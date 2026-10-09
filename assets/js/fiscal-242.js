@@ -63,6 +63,38 @@
   navigation.addEventListener("click", refreshAIStatus);
   window.addEventListener("focus", () => { if (pane.classList.contains("active")) refreshAIStatus(); });
   refreshAIStatus();
+  function renderNarrative(textValue) {
+    const wrap = node("div", "fiscal-ai-narrative");
+    const segments = String(textValue || "").trim().split(/\n\s*\n/).map(x => x.trim()).filter(Boolean);
+    const sectionTitles = ["O que foi encontrado", "Análise da diferença", "Possíveis causas", "Limitações e cuidados"];
+    if (segments.length < 3) {
+      wrap.appendChild(node("p", "fiscal-ai-paragraph", String(textValue || "")));
+      return wrap;
+    }
+    segments.forEach((paragraph, index) => {
+      const section = node("section", "fiscal-ai-narrative-section");
+      const heading = node("h6", "", sectionTitles[index] || "Observação adicional");
+      section.append(heading, node("p", "", paragraph));
+      wrap.appendChild(section);
+    });
+    return wrap;
+  }
+  function renderChecklist(textValue) {
+    const wrap = node("div", "fiscal-ai-steps");
+    const steps = String(textValue || "").trim().split(/\n(?=\s*\d+[.)]\s+)/)
+      .map(x => x.trim()).filter(Boolean);
+    if (steps.length < 2 || !steps.every(x => /^\d+[.)]\s+/.test(x))) {
+      wrap.appendChild(node("p", "fiscal-ai-paragraph", String(textValue || "")));
+      return wrap;
+    }
+    const list = node("ol", "fiscal-ai-checklist");
+    steps.forEach(step => {
+      const item = node("li", "", step.replace(/^\d+[.)]\s+/, ""));
+      list.appendChild(item);
+    });
+    wrap.appendChild(list);
+    return wrap;
+  }
   aiButton.addEventListener("click", async () => {
     if (!previewBody || !aiConfigured) return;
     aiController?.abort(); const controller = new AbortController(); aiController = controller;
@@ -77,15 +109,20 @@
       for (const item of result.analises || []) {
         const card = node("article", "fiscal-ai-card");
         const heading = node("div", "fiscal-ai-card-heading");
-        heading.append(node("h4", "", `Conta contábil ${item.conta}`), node("span", "fiscal-ai-type", item.tipo));
+        const title = node("div", "fiscal-ai-card-title");
+        title.append(node("span", "fiscal-ai-card-eyebrow", "PARECER POR CONTA"), node("h4", "", `Conta ${item.conta}`));
+        if (item.descricao) title.appendChild(node("p", "fiscal-ai-card-description", item.descricao));
+        const metadata = node("div", "fiscal-ai-card-meta");
+        metadata.appendChild(node("span", "fiscal-ai-type", item.tipo));
+        if (item.situacao) metadata.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(item.situacao), statusLabels[item.situacao] || item.situacao));
+        heading.append(title, metadata);
         const officialRow = (data?.contas || []).find(row => keyOf(row) === keyOf(item)) || item;
         const accumulatorInfo = accumulatorBreakdown(officialRow);
-        const analysis = node("div", "fiscal-ai-analysis");
-        analysis.append(node("h5", "", "O que os relatórios mostram e o que pode explicar a diferença"), node("p", "", item.explicacao));
-        const review = node("div", "fiscal-ai-review");
-        review.append(node("h5", "", "O que conferir, passo a passo"), node("p", "", item.verificar));
+        const analysis = node("section", "fiscal-ai-analysis");
+        analysis.append(node("h5", "", "Análise da conta"), renderNarrative(item.explicacao));
+        const review = node("section", "fiscal-ai-review");
+        review.append(node("h5", "", "Verificações recomendadas"), renderChecklist(item.verificar));
         card.appendChild(heading);
-        card.appendChild(accumulatorInfo);
         if (item.valores) {
           const metrics = node("div", "fiscal-ai-values");
           [["Fiscal", "fiscal"], ["Total do Razão", "total_conta"],
@@ -96,6 +133,7 @@
           });
           card.appendChild(metrics);
         }
+        card.appendChild(accumulatorInfo);
         card.append(analysis, review);
         if (item.evidencias?.length) {
           const details = node("details", "fiscal-ai-evidence");
@@ -241,84 +279,99 @@
     details.hidden = false;
     details.setAttribute("role", "region");
     details.setAttribute("aria-label", "Detalhes da conta " + row.conta);
+
     const heading = node("div", "fiscal-detail-heading");
-    const summary = node("div");
-    summary.appendChild(node("h3", "", "Conta " + row.conta + " · " + (row.descricao || "Sem descrição")));
-    summary.appendChild(node("p", "", "Tipo de movimento: " + row.tipo));
-    heading.appendChild(summary);
+    const summary = node("div", "fiscal-detail-title");
+    summary.appendChild(node("span", "fiscal-section-eyebrow", "DETALHAMENTO CONTÁBIL"));
+    summary.appendChild(node("h3", "", "Conta " + row.conta));
+    summary.appendChild(node("p", "", (row.descricao || "Sem descrição") + " · " + row.tipo));
     const headingActions = node("div", "fiscal-detail-heading-actions");
-    headingActions.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(row.situacao), statusLabels[row.situacao] || row.situacao));
-    const close = node("button", "fiscal-detail-close", "Fechar detalhes");
+    headingActions.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(row.situacao),
+      statusLabels[row.situacao] || row.situacao));
+    const close = node("button", "fiscal-detail-close", "Fechar painel");
     close.type = "button";
-    close.addEventListener("click", () => {
-      selectedKey = "";
-      renderTable();
-    });
+    close.addEventListener("click", () => { selectedKey = ""; renderTable(); });
     headingActions.appendChild(close);
-    heading.appendChild(headingActions);
+    heading.append(summary, headingActions);
     details.appendChild(heading);
-    details.appendChild(accumulatorBreakdown(row));
 
     const metrics = node("div", "fiscal-detail-metrics");
     [
-      ["Fiscal", money.format(row.fiscal)],
-      ["Total movimentado no Razão (lado analisado)", money.format(row.total_conta)],
-      ["Contábil considerado (preliminar)", money.format(row.contabil)],
-      ["Diferença", money.format(row.diferenca)]
-    ].forEach(pair => {
-      const card = node("div");
-      card.appendChild(node("small", "", pair[0]));
-      card.appendChild(node("strong", "", pair[1]));
+      ["Valor fiscal", row.fiscal, "fiscal"],
+      ["Contábil considerado", row.contabil, "accounting"],
+      ["Total do Razão", row.total_conta, "ledger"],
+      ["Diferença", row.diferenca, "difference"]
+    ].forEach(([label, amount, style]) => {
+      const card = node("div", "fiscal-detail-metric fiscal-detail-metric-" + style);
+      card.appendChild(node("small", "", label));
+      card.appendChild(node("strong", "", money.format(Number(amount || 0))));
+      if (style === "difference") {
+        card.appendChild(node("span", "fiscal-detail-metric-hint",
+          Math.abs(Number(amount || 0)) <= 0.01 ? "Sem diferença aritmética" : "Contábil considerado − fiscal"));
+      }
       metrics.appendChild(card);
     });
     details.appendChild(metrics);
-    details.appendChild(node("p", "fiscal-disclaimer", "Diferença = contábil considerado menos fiscal. O contábil considerado é uma classificação preliminar por históricos e coincidência de valores, não uma conciliação documental definitiva."));
-    if (row.extras) {
-      details.appendChild(node("p", "fiscal-detail-alert", row.extras + " lançamento(s) com indício de movimento não fiscal. Valide os históricos e as contrapartidas."));
-    }
-    if (row.sem_evidencia) {
-      details.appendChild(node("p", "fiscal-detail-alert", row.sem_evidencia + " lançamento(s) fecham apenas pelo valor, mas o histórico não comprova origem fiscal. Situação: com alertas."));
+
+    const explanation = node("p", "fiscal-disclaimer fiscal-detail-explanation",
+      "Valor contábil considerado: lançamentos classificados pelo sistema como compatíveis com o fiscal. " +
+      "O total do Razão pode incluir outros movimentos. O fechamento dos valores não comprova sozinho a origem fiscal.");
+    details.appendChild(explanation);
+    details.appendChild(accumulatorBreakdown(row));
+
+    if (row.extras || row.sem_evidencia) {
+      const notices = node("div", "fiscal-detail-notices");
+      if (row.extras) notices.appendChild(node("p", "", row.extras + " lançamento(s) com indício de movimento não fiscal. Confira o histórico e a contrapartida."));
+      if (row.sem_evidencia) notices.appendChild(node("p", "", row.sem_evidencia + " lançamento(s) fecham somente pelo valor, sem evidência fiscal suficiente no histórico."));
+      details.appendChild(notices);
     }
 
     const wantedCredit = row.tipo === "SAÍDAS";
     const movimentos = (data.lancamentos || []).filter(item =>
-      item.conta === row.conta &&
-      String(item.natureza).includes(wantedCredit ? "CRÉDITO" : "DÉBITO")
+      item.conta === row.conta && String(item.natureza).includes(wantedCredit ? "CRÉDITO" : "DÉBITO")
     );
-    details.appendChild(node("h4", "", "Lançamentos do Razão (" + movimentos.length + ")"));
+    const ledger = node("details", "fiscal-ledger-disclosure");
+    const trigger = node("summary", "fiscal-ledger-toggle");
+    const intro = node("span", "fiscal-ledger-toggle-copy");
+    intro.appendChild(node("strong", "", "Movimentos do Razão"));
+    intro.appendChild(node("small", "", movimentos.length + " lançamento(s) · " + (wantedCredit ? "créditos" : "débitos") + " examinados"));
+    trigger.appendChild(intro);
+    trigger.appendChild(node("span", "fiscal-ledger-toggle-icon", "⌄"));
+    ledger.appendChild(trigger);
     if (!movimentos.length) {
-      details.appendChild(node("p", "fiscal-empty", "Não há movimentos dessa natureza no Razão enviado."));
-      return;
+      ledger.appendChild(node("p", "fiscal-empty", "Não há movimentos dessa natureza no Razão enviado."));
+    } else {
+      const wrap = node("div", "fiscal-table-scroll");
+      const table = node("table", "fiscal-table fiscal-detail-table");
+      const head = node("thead");
+      const headerRow = node("tr");
+      ["Data", "Histórico", "Contrapartida", "Débito", "Crédito", "Classificação"].forEach(label => {
+        headerRow.appendChild(node("th", "", label));
+      });
+      head.appendChild(headerRow);
+      table.appendChild(head);
+      const body = node("tbody");
+      movimentos.slice(0, 200).forEach(mov => {
+        const tr = node("tr");
+        cell(tr, mov.data);
+        cell(tr, mov.historico);
+        cell(tr, mov.contrapartida);
+        cell(tr, money.format(mov.debito), "fiscal-money");
+        cell(tr, money.format(mov.credito), "fiscal-money");
+        const classification = mov.classificacao === "ALERTA - NÃO FISCAL" ? "Possível movimento não fiscal"
+          : mov.classificacao === "FECHAMENTO POR VALOR - VALIDAR" ? "Fecha por valor · validar" : "Fiscal provável";
+        cell(tr, classification);
+        body.appendChild(tr);
+      });
+      table.appendChild(body);
+      wrap.appendChild(table);
+      ledger.appendChild(wrap);
+      if (movimentos.length > 200) {
+        ledger.appendChild(node("p", "fiscal-empty",
+          "Exibindo 200 de " + movimentos.length + " lançamentos. Consulte o Razão original para verificar os demais."));
+      }
     }
-    const wrap = node("div", "fiscal-table-scroll");
-    const table = node("table", "fiscal-table fiscal-detail-table");
-    const head = node("thead");
-    const headerRow = node("tr");
-    ["Data", "Histórico", "Contrapartida", "Débito", "Crédito", "Classificação"].forEach(label => {
-      headerRow.appendChild(node("th", "", label));
-    });
-    head.appendChild(headerRow);
-    table.appendChild(head);
-    const body = node("tbody");
-    movimentos.slice(0, 200).forEach(mov => {
-      const tr = node("tr");
-      cell(tr, mov.data);
-      cell(tr, mov.historico);
-      cell(tr, mov.contrapartida);
-      cell(tr, money.format(mov.debito), "fiscal-money");
-      cell(tr, money.format(mov.credito), "fiscal-money");
-      const classificacao = mov.classificacao === "ALERTA - NÃO FISCAL" ? "Possível movimento não fiscal"
-        : mov.classificacao === "FECHAMENTO POR VALOR - VALIDAR" ? "Fecha por valor · validar" : "Fiscal provável";
-      cell(tr, classificacao);
-      body.appendChild(tr);
-    });
-    table.appendChild(body);
-    wrap.appendChild(table);
-    details.appendChild(wrap);
-    if (movimentos.length > 200) {
-      details.appendChild(node("p", "fiscal-empty", "Exibindo 200 de " + movimentos.length + " lançamentos; consulte os arquivos originais para a análise completa."));
-    }
-    details.appendChild(node("p", "fiscal-disclaimer", "Conferência preliminar: lançamentos classificados pelo histórico precisam de validação contábil."));
+    details.appendChild(ledger);
   }
 
   function statusClass(status) {
@@ -335,7 +388,7 @@
     byId("fiscal242Empty").hidden = rows.length > 0;
     if (!rows.some(row => keyOf(row) === selectedKey)) selectedKey = "";
     rows.forEach(row => {
-      const tr = node("tr");
+      const tr = node("tr", "fiscal-result-row fiscal-result-row-" + statusClass(row.situacao));
       const id = keyOf(row);
       if (id === selectedKey) tr.classList.add("selected");
       const account = cell(tr, "", "fiscal-account");
@@ -350,17 +403,23 @@
         renderTable();
         if (selectedKey) details.scrollIntoView?.({behavior:"smooth", block:"nearest"});
       });
+      button.appendChild(node("span", "fiscal-account-chevron", "›"));
       accountGroup.appendChild(button);
       accountGroup.appendChild(node("span", "fiscal-account-type", row.tipo || ""));
       account.appendChild(accountGroup);
       account.appendChild(node("div", "fiscal-account-description", row.descricao || "Descrição não informada"));
       const accumulatorCell = cell(tr, "", "fiscal-accum-cell");
+      accumulatorCell.dataset.label = "Acumuladores";
       accumulatorCell.appendChild(accumulatorTags(row));
-      cell(tr, money.format(row.fiscal), "fiscal-money fiscal-money-fiscal");
-      cell(tr, money.format(row.contabil), "fiscal-money fiscal-money-accounting");
+      const fiscalValue = cell(tr, money.format(row.fiscal), "fiscal-money fiscal-money-fiscal");
+      fiscalValue.dataset.label = "Fiscal";
+      const accountingValue = cell(tr, money.format(row.contabil), "fiscal-money fiscal-money-accounting");
+      accountingValue.dataset.label = "Contábil";
       const diferenca = cell(tr, money.format(row.diferenca), "fiscal-money fiscal-difference");
+      diferenca.dataset.label = "Diferença";
       if (Math.abs(Number(row.diferenca || 0)) <= 0.01) diferenca.classList.add("fiscal-difference-zero");
-      const td = cell(tr, "");
+      const td = cell(tr, "", "fiscal-situation-cell");
+      td.dataset.label = "Situação";
       td.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(row.situacao), statusLabels[row.situacao] || row.situacao));
       tableBody.appendChild(tr);
     });
@@ -381,6 +440,17 @@
     byId("fiscal242Matches").textContent = report.resumo.conferem;
     byId("fiscal242Alerts").textContent = report.resumo.com_alertas;
     byId("fiscal242Pending").textContent = report.resumo.revisar;
+    const totalContas = Math.max(1, Number(report.resumo.total || 0));
+    [
+      ["fiscal242ProgressMatches", report.resumo.conferem, "Batendo"],
+      ["fiscal242ProgressAlerts", report.resumo.com_alertas, "Com alertas"],
+      ["fiscal242ProgressPending", report.resumo.revisar, "Para revisar"]
+    ].forEach(([id, count, label]) => {
+      const bar = byId(id);
+      const percentage = Math.max(0, Math.min(100, 100 * Number(count || 0) / totalContas));
+      bar.style.width = percentage + "%";
+      bar.setAttribute("aria-label", label + ": " + Number(count || 0) + " conta(s)");
+    });
     const fiscal = report.periodo_fiscal || {};
     const parts = [];
     if (fiscal.inicio && fiscal.fim) parts.push("Fiscal: " + fiscal.inicio + " a " + fiscal.fim);
