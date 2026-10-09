@@ -413,6 +413,7 @@ def test_qwen_reserva_gratuita_apos_cota_dos_dois_gpt_oss(monkeypatch):
             raise urllib.error.HTTPError(req.full_url, 429, "quota", {"Retry-After":"60"}, io.BytesIO(b"{}"))
         assert body["model"] == "qwen/qwen3.8-27b"
         assert body["reasoning_effort"] == "none"
+        assert body["max_completion_tokens"] == 1800
         assert body["response_format"]["json_schema"]["strict"] is True
         return Response()
     monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen", send)

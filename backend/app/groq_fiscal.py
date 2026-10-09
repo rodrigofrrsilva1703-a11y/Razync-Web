@@ -295,7 +295,7 @@ def _complete(payload, key, model, *, _tried_models=None, _deadline=None):
             ],
             "temperature": 0.2,
             "reasoning_effort": "none" if model.startswith("qwen/") else "low",
-            "max_completion_tokens": 3000,
+            "max_completion_tokens": 1800 if model.startswith("qwen/") else 3000,
             "response_format": {
                 "type": "json_schema",
                 "json_schema": {"name": "razync_parecer_fiscal", "strict": True, "schema": batch_schema},
@@ -356,9 +356,11 @@ def _complete(payload, key, model, *, _tried_models=None, _deadline=None):
             categories = {
                 "model_permission_blocked_org": "modelo_bloqueado_organizacao",
                 "model_permission_blocked_project": "modelo_bloqueado_projeto",
+                "rate_limit_exceeded": "cota_provedor",
             }
             reason = ("bloqueio_http_cliente_1010" if cloudflare_1010
                       else "resposta_html_do_gateway" if html_error
+                      else "pedido_excede_cota_por_minuto" if status == 429 and b"request too large" in raw_error.lower()
                       else categories.get(code, "sem_codigo_conhecido"))
             logger.warning("fiscal_groq_error status=%d reason=%s model=%s batch=%d",
                            status, reason, model, start // 2 + 1)
