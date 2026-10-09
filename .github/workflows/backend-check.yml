@@ -6,6 +6,10 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/backend-check.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-check.yml"
   workflow_dispatch:
 
 jobs:
