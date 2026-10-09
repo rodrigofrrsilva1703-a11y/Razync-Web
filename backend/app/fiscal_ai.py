@@ -302,6 +302,15 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
             )
             candidate["reasoning"] = {"enabled": False}
             candidate["max_tokens"] = 6200
+        if _repair:
+            # O prompt resumido substitui a instrução original; por isso o
+            # pedido de correção precisa ser preservado DEPOIS dessa troca.
+            candidate["messages"][0]["content"] += (
+                "\\nCORREÇÃO NECESSÁRIA: um item anterior continha formato incorreto "
+                "ou referência inexistente. Responda todos os grupos, use apenas "
+                "referências L enviadas com cada grupo e, se não houver certeza, "
+                "não mencione L no texto e devolva evidencias []."
+            )
         return candidate
 
     free_router = all(m in FREE_FISCAL_MODELS for m in models)
