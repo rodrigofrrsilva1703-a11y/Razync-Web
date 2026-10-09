@@ -185,3 +185,48 @@ test('exportação Gemini usa relatório pronto, sem nova chamada ao modelo', ()
 });
 
 
+
+
+test('Gemini organiza pareceres completos em contas recolhíveis sem interface flutuante', () => {
+  const html = fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8');
+  const css = fs.readFileSync(path.join(__dirname,'../../assets/css/fiscal-242.css'),'utf8');
+  for(const id of ['fiscal242AIToolbar','fiscal242AISearch','fiscal242AIFilter',
+                   'fiscal242AICount','fiscal242AIExpand','fiscal242AICollapse','fiscal242AIEmpty']) {
+    assert.ok(html.includes('id="' + id + '"'), 'Controle não encontrado: ' + id);
+  }
+  assert.match(source,/node\("details", "fiscal-ai-card fiscal-ai-account"\)/);
+  assert.match(source,/node\("summary", "fiscal-ai-card-heading fiscal-ai-account-summary"\)/);
+  assert.match(source,/content\.appendChild\(accumulatorInfo\)/);
+  assert.match(source,/content\.append\(analysis, review\)/);
+  assert.match(source,/content\.append\(details\)/);
+  assert.match(source,/aiResult\.append\(card\)/);
+  assert.match(css,/\.fiscal-ai-account-summary\s*\{/);
+  assert.match(css,/\.fiscal-ai-account-content/);
+  assert.doesNotMatch(html,/id="fiscal242AIBubble"|id="fiscal242AIDrawer"/);
+});
+
+test('filtro do Gemini localiza explicação e evidência sem descartar análises', () => {
+  const start = source.indexOf('  function normalizeAISearch(value) {');
+  const end = source.indexOf('  aiSearch.addEventListener("input"', start);
+  assert.ok(start > -1 && end > start);
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext(source.slice(start,end).split('  function updateAIFilters() {')[0], context);
+  const cards = [
+    {item:{conta:'22643',descricao:'Mercadorias',tipo:'ENTRADAS',situacao:'REVISAR',
+      explicacao:'A diferença pode envolver compra CF NF 20',
+      verificar:'1. Validar NF',evidencias:[{historico:'Estorno em agosto',referencia:'ABC'}]}},
+    {item:{conta:'361',descricao:'Serviços prestados',tipo:'SAÍDAS',situacao:'CONFERE',
+      explicacao:'Operação confere',verificar:'1. Arquivar comprovação',evidencias:[]}},
+    {item:{conta:'470',descricao:'Fretes',tipo:'ENTRADAS',situacao:'CONFERE COM ALERTAS',
+      explicacao:'Verificar contrapartida',verificar:'1. Conferir frete',evidencias:[]}}
+  ];
+  assert.equal(context.filterAIEntries(cards,'','todas').length,3);
+  assert.equal(context.filterAIEntries(cards,'compra cf nf','todas').length,1);
+  assert.equal(context.filterAIEntries(cards,'estorno','todas').length,1);
+  assert.equal(context.filterAIEntries(cards,'servicos','bate').length,1);
+  assert.equal(context.filterAIEntries(cards,'','alertas').length,1);
+  assert.equal(context.filterAIEntries(cards,'','revisar').length,1);
+  assert.equal(context.filterAIEntries(cards,'sem correspondência','todas').length,0);
+  assert.equal(cards.length,3);
+});
