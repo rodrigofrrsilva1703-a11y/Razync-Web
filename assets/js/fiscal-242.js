@@ -80,7 +80,18 @@
         analysis.append(node("h5", "", "Análise dos lançamentos"), node("p", "", item.explicacao));
         const review = node("div", "fiscal-ai-review");
         review.append(node("h5", "", "O que conferir"), node("p", "", item.verificar));
-        card.append(heading, analysis, review);
+        card.appendChild(heading);
+        if (item.valores) {
+          const metrics = node("div", "fiscal-ai-values");
+          [["Fiscal", "fiscal"], ["Total do Razão", "total_conta"],
+           ["Contábil considerado", "contabil"], ["Diferença", "diferenca"]].forEach(([label, key]) => {
+            const metric = node("div", "fiscal-ai-value");
+            metric.append(node("small", "", label), node("strong", "", money.format(Number(item.valores[key] || 0))));
+            metrics.appendChild(metric);
+          });
+          card.appendChild(metrics);
+        }
+        card.append(analysis, review);
         if (item.evidencias?.length) {
           const details = node("details", "fiscal-ai-evidence");
           details.append(node("summary", "", `Lançamentos citados (${item.evidencias.length})`));
@@ -146,6 +157,8 @@
     }
     data = null;
     previewBody = null;
+    byId("fiscal242Unmapped").hidden = true;
+    byId("fiscal242UnmappedRows").replaceChildren();
     selectedKey = "";
     filter.value = "todas";
     results.hidden = true;
@@ -192,8 +205,8 @@
     const metrics = node("div", "fiscal-detail-metrics");
     [
       ["Fiscal", money.format(row.fiscal)],
-      ["Contábil compatível (prévio)", money.format(row.contabil)],
-      ["Total movimentado no lado analisado", money.format(row.total_conta)],
+      ["Total movimentado no Razão (lado analisado)", money.format(row.total_conta)],
+      ["Contábil considerado (preliminar)", money.format(row.contabil)],
       ["Diferença", money.format(row.diferenca)]
     ].forEach(pair => {
       const card = node("div");
@@ -203,7 +216,10 @@
     });
     details.appendChild(metrics);
     if (row.extras) {
-      details.appendChild(node("p", "fiscal-detail-alert", row.extras + " lançamento(s) sinalizado(s) como adicional(is). Valide os históricos e as contrapartidas."));
+      details.appendChild(node("p", "fiscal-detail-alert", row.extras + " lançamento(s) com indício de movimento não fiscal. Valide os históricos e as contrapartidas."));
+    }
+    if (row.sem_evidencia) {
+      details.appendChild(node("p", "fiscal-detail-alert", row.sem_evidencia + " lançamento(s) fecham apenas pelo valor, mas o histórico não comprova origem fiscal. Situação: com alertas."));
     }
 
     const wantedCredit = row.tipo === "SAÍDAS";
@@ -233,7 +249,9 @@
       cell(tr, mov.contrapartida);
       cell(tr, money.format(mov.debito), "fiscal-money");
       cell(tr, money.format(mov.credito), "fiscal-money");
-      cell(tr, mov.classificacao === "ALERTA - NÃO FISCAL" ? "Revisar" : "Fiscal provável");
+      const classificacao = mov.classificacao === "ALERTA - NÃO FISCAL" ? "Possível movimento não fiscal"
+        : mov.classificacao === "FECHAMENTO POR VALOR - VALIDAR" ? "Fecha por valor · validar" : "Fiscal provável";
+      cell(tr, classificacao);
       body.appendChild(tr);
     });
     table.appendChild(body);
@@ -273,6 +291,7 @@
       cell(tr, row.descricao || "—", "fiscal-description");
       cell(tr, row.tipo);
       cell(tr, money.format(row.fiscal), "fiscal-money");
+      cell(tr, money.format(row.total_conta), "fiscal-money");
       cell(tr, money.format(row.contabil), "fiscal-money");
       cell(tr, money.format(row.diferenca), "fiscal-money");
       const td = cell(tr, "");
@@ -296,6 +315,20 @@
     const warningBox = byId("fiscal242Warnings");
     warningBox.replaceChildren();
     (report.avisos || []).forEach(aviso => warningBox.appendChild(node("p", "", aviso)));
+    const semConta = report.sem_conta || [];
+    const pendentes = byId("fiscal242Unmapped");
+    const pendentesCorpo = byId("fiscal242UnmappedRows");
+    pendentes.hidden = !semConta.length;
+    byId("fiscal242UnmappedCount").textContent = semConta.length ? "(" + semConta.length + ")" : "";
+    pendentesCorpo.replaceChildren();
+    semConta.forEach(item => {
+      const tr = node("tr");
+      cell(tr, item.acumulador || "—");
+      cell(tr, item.descricao || "—");
+      cell(tr, item.tipo || "—");
+      cell(tr, money.format(item.valor || 0), "fiscal-money");
+      pendentesCorpo.appendChild(tr);
+    });
     results.hidden = false;
     selectedKey = "";
     filter.value = "todas";
