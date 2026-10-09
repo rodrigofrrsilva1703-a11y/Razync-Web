@@ -294,6 +294,40 @@ def _gemini_completion(payload, key, model, *, legacy=False):
     return json.loads(text), model
 
 
+def _validar_resposta_ia(result, report, mapping, references):
+    """Converte e confere contas, valores e referências sem depender do provedor."""
+    output, seen = [], set()
+    for item in result["analises"]:
+        ident = item["grupo"]
+        if ident not in mapping or ident in seen:
+            raise ValueError("Unknown or repeated group")
+        if not all(isinstance(item.get(k), str) and 0 < len(item[k]) <= 6000 for k in ("explicacao", "verificar")):
+            raise ValueError("Invalid explanation")
+        evidence = item.get("evidencias", [])
+        if not isinstance(evidence, list) or len(evidence) > 8 or any(
+            not isinstance(ref, str) or ref not in references
+            or references[ref]["conta"] != mapping[ident]["conta"] for ref in evidence
+        ):
+            raise ValueError("Invalid evidence reference")
+        seen.add(ident)
+        conta_atual = next(row for row in report["contas"]
+            if row["conta"] == mapping[ident]["conta"] and row["tipo"] == mapping[ident]["tipo"])
+        valores = {campo: conta_atual.get(campo, 0)
+            for campo in ("fiscal", "contabil", "total_conta", "diferenca")}
+        output.append({**mapping[ident],
+                       "descricao": conta_atual.get("descricao", ""),
+                       "acumuladores": conta_atual.get("acumuladores", ""),
+                       "detalhes_fiscais": conta_atual.get("detalhes_fiscais", []),
+                       "situacao": conta_atual.get("situacao", "REVISAR"),
+                       "valores": valores,
+                       "explicacao": padronizar_moeda(item["explicacao"]),
+                       "verificar": padronizar_moeda(item["verificar"]),
+                       "evidencias":[references[ref] for ref in dict.fromkeys(evidence)]})
+    if seen != set(mapping):
+        raise ValueError("Empty answer")
+    return output
+
+
 def explain(report):
     openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
     # Modo gratuito: o Gemini legado fica desligado por padrão para não
