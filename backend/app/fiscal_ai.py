@@ -752,7 +752,7 @@ def explain(report):
             return {
                 "analises": analyses,
                 "aviso": "Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
-                "limite": coverage, "provedor": "groq", "modelo_usado": used_model,
+                "limite": coverage + " Groq examinou uma amostra de até 10 lançamentos por grupo; históricos limitados a 180 caracteres. Não representa leitura integral dos lançamentos.", "provedor": "groq", "modelo_usado": used_model,
                 "gratuito": True, "fallback_usado": False,
             }
         except HTTPException as exc:

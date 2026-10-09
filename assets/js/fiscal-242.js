@@ -64,7 +64,7 @@
       aiButton.disabled = !aiConfigured || !previewBody || Boolean(aiController);
       if (!aiController && !aiResult.children.length) aiMessage.textContent = aiConfigured
         ? (previewBody ? providerName + " configurado. Clique em Analisar diferenças com IA." : providerName + " configurado no servidor. Faça a conferência para solicitar a análise.")
-        : "IA ainda não configurada. Defina OPENROUTER_API_KEY no Railway e clique em Atualizar conexão.";
+        : "IA ainda não configurada. Confira a chave e as configurações do provedor escolhido no Railway e clique em Atualizar conexão.";
     } catch (error) {
       if (statusController !== controller) return;
       if (!aiController) aiMessage.textContent = "Não foi possível verificar a conexão. Clique em Atualizar conexão para tentar novamente.";

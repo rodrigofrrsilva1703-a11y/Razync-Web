@@ -31,3 +31,14 @@ Usar **casos fictícios ou devidamente autorizados e minimizados**, comparar:
 6. Latência e número de chamadas por relatório.
 
 **Situação:** integração preparada e testável por mocks no CI. **Não há avaliação real da Groq sem uma chave autorizada e as confirmações do plano/ZDR**. Não afirmar que ela é melhor do que Gemini antes de validar com o mesmo conjunto de casos.
+
+
+## Diagnóstico em produção — 09/10/2026
+
+A conexão da versão 5af0910 foi validada com planilhas fictícias: HTTP 200, GPT-OSS 120B, 1,38 s. Os registros do servidor mostram falha 429 no quarto lote de uma análise maior. Isso confirma uma falha por quota, não uma chave globalmente inválida. Não foi possível reproduzir o arquivo específico do usuário sem seu erro/caso.
+
+Correção: quando um modelo responde 429, tenta o outro GPT-OSS permitido, enviando somente os grupos ainda pendentes e mantendo os anteriores. Não alterna indefinidamente nem tenta modelos pagos. Prazo de controle de 75 segundos para os lotes Groq, com timeout de rede de no máximo 35 s por chamada; o timeout de socket não garante duração absoluta da leitura. Após falha dos dois modelos, permanece o fallback já existente para Gemini/OpenRouter.
+
+O aviso de cobertura agora informa que a Groq recebe até dez lançamentos por grupo e históricos de até 180 caracteres. Essa integração continua sendo uma revisão de amostra, não leitura integral do arquivo. Documentos intermediários podem estar fora da amostra, e o truncamento de históricos pode omitir contexto relevante.
+
+Também tenta o segundo modelo em caso de finish_reason=length (JSON truncado). Um JSON válido em um único bloco Markdown completo é aceito; referências inexistentes, grupos faltantes e JSON quebrado continuam rejeitados. A Groq foi aceita pelo backend no caso fictício pequeno; a causa exata do arquivo do usuário não foi reproduzida.

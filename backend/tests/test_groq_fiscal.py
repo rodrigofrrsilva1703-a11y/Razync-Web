@@ -212,3 +212,42 @@ def test_groq_resposta_com_json_invalido_registra_apenas_categoria(monkeypatch, 
     assert "category=Groq returned invalid JSON" in caplog.text
     assert "PRIVATE-FISCAL-TEXT" not in caplog.text
     assert "PRIVATE-FISCAL-TEXT" not in str(err.value.detail)
+
+
+@pytest.mark.parametrize("failure", ["quota", "length"])
+def test_groq_reserva_preserva_grupos_concluidos(monkeypatch, failure):
+    enabled(monkeypatch)
+    context = {"grupos":[{"grupo":f"G{i}", "lancamentos":[], "resumo":{}, "cobertura":{}} for i in range(1,4)]}
+    payload = {"contents":[{"parts":[{"text":json.dumps(context)}]}]}
+    calls = []
+    class Response:
+        def __init__(self, body): self.body = body
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, n): return json.dumps(self.body).encode()
+    def send(req, timeout):
+        body = json.loads(req.data)
+        groups = json.loads(body["messages"][1]["content"])["grupos"]
+        calls.append((body["model"], [g["grupo"] for g in groups]))
+        if len(calls) == 2:
+            if failure == "quota":
+                raise urllib.error.HTTPError(req.full_url,429,"quota",{},io.BytesIO(b"{}"))
+            return Response({"choices":[{"finish_reason":"length", "message":{"content":"incomplete"}}]})
+        answer = {"analises":[{"grupo":g["grupo"], "explicacao":"Conferir", "verificar":"Revisar", "evidencias":[]} for g in groups]}
+        # Mesmo JSON válido quando o provedor usa envelope markdown.
+        return Response({"choices":[{"finish_reason":"stop", "message":{"content":"```json\n" + json.dumps(answer) + "\n```"}}]})
+    monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen", send)
+    answer, used = groq_fiscal.complete(payload, "test", "openai/gpt-oss-120b")
+    assert calls == [("openai/gpt-oss-120b", ["G1", "G2"]), ("openai/gpt-oss-120b", ["G3"]), ("openai/gpt-oss-20b", ["G3"])]
+    assert [x["grupo"] for x in answer["analises"]] == ["G1", "G2", "G3"]
+    assert used == "openai/gpt-oss-120b + openai/gpt-oss-20b"
+
+
+def test_groq_deadline_nao_inicia_chamada_fora_do_prazo(monkeypatch):
+    enabled(monkeypatch)
+    monkeypatch.setattr(groq_fiscal.time, "monotonic", lambda:100)
+    monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen", lambda *a, **k: pytest.fail("Não pode iniciar"))
+    payload={"contents":[{"parts":[{"text":json.dumps({"grupos":[{"grupo":"G1"}]})}]}]}
+    with pytest.raises(HTTPException) as error:
+        groq_fiscal.complete(payload, "test", "openai/gpt-oss-120b", _deadline=99)
+    assert error.value.status_code == 504

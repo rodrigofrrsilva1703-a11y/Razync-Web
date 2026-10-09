@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 from fastapi import HTTPException
@@ -73,12 +74,14 @@ def _compact_group(group):
     }
 
 
-def complete(payload, key, model):
+def complete(payload, key, model, *, _tried_models=None, _deadline=None):
     """Retorna análises por grupo; o validador comum confere todas as referências."""
     if not is_enabled():
         raise HTTPException(503, "Groq desabilitada: confirme plano gratuito, ZDR e chave antes de usá-la.")
     if model not in FREE_MODELS:
         raise HTTPException(503, "Modelo Groq não aprovado para testes gratuitos.")
+    tried_models = set(_tried_models or ()) | {model}
+    deadline = _deadline if _deadline is not None else time.monotonic() + 75
     context = json.loads(payload["contents"][0]["parts"][0]["text"])
     groups = context["grupos"]
     if not groups:
@@ -145,6 +148,9 @@ def complete(payload, key, model):
                 "json_schema": {"name": "razync_parecer_fiscal", "strict": True, "schema": schema},
             },
         }
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise HTTPException(504, "A análise Groq atingiu o limite de tempo. Tente um período menor.")
         request = urllib.request.Request(
             API_URL,
             data=json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8"),
@@ -152,12 +158,27 @@ def complete(payload, key, model):
                      "Accept": "application/json", "User-Agent": "Razync-Web/1.0"},
         )
         try:
-            with urllib.request.urlopen(request, timeout=35) as response:
+            with urllib.request.urlopen(request, timeout=min(35, remaining)) as response:
                 raw = json.loads(response.read(130000))
         except urllib.error.HTTPError as exc:
             # Inspecionar APENAS um código de erro reconhecido, jamais sua mensagem,
             # conteúdo fiscal, cabeçalhos ou resposta completa.
             status = exc.code
+            if status == 429:
+                alternate = next((candidate for candidate in FREE_MODELS if candidate not in tried_models), None)
+                if alternate:
+                    # Mantém os grupos já concluídos e envia apenas os restantes,
+                    # sem alterar os IDs e referências usados pelo validador.
+                    pending_context = dict(context, grupos=groups[start:])
+                    pending_payload = dict(payload)
+                    pending_payload["contents"] = [{"role":"user", "parts":[{
+                        "text":json.dumps(pending_context, ensure_ascii=False)}]}]
+                    logger.warning("fiscal_groq_free_model_switch completed_groups=%d model=%s reserve=%s",
+                                   len(output), model, alternate)
+                    exc.close()
+                    result, used = complete(pending_payload, key, alternate,
+                                            _tried_models=tried_models, _deadline=deadline)
+                    return {"analises":output + result["analises"]}, f"{model} + {used}" if output else used
             raw_error = exc.read(4096)
             try:
                 info = json.loads(raw_error)
@@ -213,12 +234,29 @@ def complete(payload, key, model):
         if finish != "stop":
             # Sempre logar apenas códigos fixos, nunca o conteúdo de um cliente.
             if finish == "length":
+                alternate = next((candidate for candidate in FREE_MODELS if candidate not in tried_models), None)
+                if alternate:
+                    pending_payload = dict(payload)
+                    pending_payload["contents"] = [{"role":"user", "parts":[{
+                        "text":json.dumps(dict(context, grupos=groups[start:]), ensure_ascii=False)}]}]
+                    logger.warning("fiscal_groq_truncated_model_switch completed_groups=%d model=%s reserve=%s",
+                                   len(output), model, alternate)
+                    result, used = complete(pending_payload, key, alternate,
+                                            _tried_models=tried_models, _deadline=deadline)
+                    return {"analises":output + result["analises"]}, f"{model} + {used}" if output else used
                 raise ValueError("Groq output limited by tokens")
             if finish == "content_filter":
                 raise ValueError("Groq output filtered")
             raise ValueError("Groq did not complete JSON output")
         if not isinstance(content, str) or not content.strip():
             raise ValueError("Groq returned empty content")
+        # Aceita apenas um envelope markdown completo; o JSON e todas as
+        # evidências continuam sujeitos à validação, sem reparo de conteúdo.
+        content = content.strip()
+        if content.startswith("```"):
+            lines = content.splitlines()
+            if len(lines) >= 3 and lines[0].strip().lower() in ("```", "```json") and lines[-1].strip() == "```":
+                content = "\n".join(lines[1:-1]).strip()
         try:
             answer = json.loads(content)
             items = answer["analises"]
