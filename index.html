@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="./assets/css/refined-theme.css?v=3">
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
-  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=acumuladores242-1">
+  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=fiscal-universal-1">
 </head>
 <body>
   <div class="app-shell">
@@ -30,6 +30,7 @@
       <button class="main-nav-btn active" data-view="companies">Empresas</button>
       <button class="main-nav-btn" data-view="converter">Conversor de Extratos</button>
       <button class="main-nav-btn" data-view="ledger">Conciliação com Razão</button>
+      <button class="main-nav-btn" data-view="fiscal">Conferência Fiscal × Contábil</button>
     </nav>
       <div class="sidebar-note"><span class="sidebar-dot"></span><div>Rotina organizada<small>Do documento à conferência.</small></div></div>
     </aside>
@@ -121,6 +122,88 @@
         <div id="ledgerResult" class="daily-reconciliation global-daily-result" hidden></div>
       </section>
 
+      <section id="fiscalView" class="global-view">
+        <div class="page-head">
+          <span class="company-code">FERRAMENTA UNIVERSAL</span>
+          <h1>Conferência Fiscal × Contábil</h1>
+          <p>Compare os relatórios do Domínio de qualquer empresa, sem configurar uma ferramenta por cliente.</p>
+        </div>
+          <div class="tool-card">
+            <div>
+              <span class="company-code">QUALQUER EMPRESA · DOMÍNIO</span>
+              <h3>Conferência Fiscal × Contábil</h3>
+              <p>Envie o Resumo por Acumulador e o Razão da mesma competência. As contas, acumuladores e divergências aparecem nesta página.</p>
+            </div>
+            <form id="fiscal242Form" class="modern-form">
+              <div class="form-card-header">
+                <div><strong>Relatórios do Domínio</strong><small>Os dois arquivos devem ser do mesmo período. Os resultados aparecem abaixo.</small></div>
+              </div>
+              <div class="fiscal-context-grid">
+                <div><label for="fiscalEmpresaCodigo">Código da empresa <span>(opcional)</span></label><input id="fiscalEmpresaCodigo" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Ex.: 242"><small>Identificação para o relatório, sem alterar o cálculo.</small></div>
+                <div><label for="fiscalFilialCodigo">Filial no Razão <span>(quando houver várias)</span></label><input id="fiscalFilialCodigo" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Ex.: 1, 242 ou 1408"><small>Use o código da coluna Filial no arquivo. Se houver só uma, o sistema identifica automaticamente.</small></div>
+              </div>
+              <div class="fiscal-upload-grid">
+                <div><label for="fiscal242Acumuladores">Resumo por Acumulador</label><input type="file" id="fiscal242Acumuladores" accept=".xls,.xlsx" required></div>
+                <div><label for="fiscal242Razao">Razão Domínio (.xls, .xlsx ou .csv)</label><input type="file" id="fiscal242Razao" accept=".csv,.xls,.xlsx" required><small>Envie o arquivo Razão.xls original; não é necessário convertê-lo.</small></div>
+              </div>
+              <button type="submit" id="fiscal242Submit">Conferir contas</button>
+              <p id="fiscal242Message" class="helper" role="status" aria-live="polite"></p>
+            </form>
+          </div>
+          <section id="fiscal242Results" class="fiscal-results" aria-live="polite" hidden>
+            <div class="fiscal-summary">
+              <div><strong id="fiscal242Total">—</strong><span>Contas analisadas</span></div>
+              <div><strong id="fiscal242Matches">—</strong><span>Batendo</span></div>
+              <div><strong id="fiscal242Alerts">—</strong><span>Com alertas</span></div>
+              <div><strong id="fiscal242Pending">—</strong><span>Revisar</span></div>
+            </div>
+            <p class="fiscal-period" id="fiscal242Period"></p>
+            <div id="fiscal242Warnings" class="fiscal-warnings"></div>
+            <div class="fiscal-results-card">
+              <div class="fiscal-results-heading">
+                <div><h3>Resultado por conta</h3><p>As divergências aparecem primeiro. Selecione uma conta para examinar os lançamentos.</p></div>
+                <label for="fiscal242Filter">Mostrar
+                  <select id="fiscal242Filter">
+                    <option value="todas">Todas</option>
+                    <option value="revisar">Divergências</option>
+                    <option value="alertas">Alertas</option>
+                    <option value="bate">Batendo</option>
+                  </select>
+                </label>
+              </div>
+              <div class="fiscal-table-scroll">
+                <table class="fiscal-table">
+                  <thead><tr><th>Conta contábil</th><th>Descrição fiscal</th><th>Acumuladores</th><th>Tipo</th><th>Fiscal</th><th>Total do Razão</th><th>Contábil considerado*</th><th>Diferença*</th><th>Situação</th></tr></thead>
+                  <tbody id="fiscal242Rows"></tbody>
+                </table>
+              </div>
+              <p class="fiscal-empty" id="fiscal242Empty" hidden>Nenhuma conta encontrada neste filtro.</p>
+              <p class="fiscal-disclaimer fiscal-table-note">*Contábil considerado = lançamentos classificados como fiscais ou fechamento somente por valor (com alerta). Diferença = contábil considerado menos fiscal.</p>
+            </div>
+            <div id="fiscal242Detail" class="fiscal-detail" hidden></div>
+            <details class="fiscal-unmapped" id="fiscal242Unmapped" hidden>
+              <summary>Acumuladores sem conta contábil <span id="fiscal242UnmappedCount"></span></summary>
+              <p>Estes acumuladores foram encontrados no relatório, mas não possuem uma conta definida para comparação. Confirme o vínculo antes de conciliar.</p>
+              <div class="fiscal-table-scroll"><table class="fiscal-table"><thead><tr><th>Acumulador</th><th>Descrição</th><th>Tipo</th><th>Valor fiscal</th></tr></thead><tbody id="fiscal242UnmappedRows"></tbody></table></div>
+            </details>
+            <section class="fiscal-ai">
+              <div class="fiscal-ai-heading">
+                <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
+                <div><span class="fiscal-ai-eyebrow">ASSISTENTE DE CONFERÊNCIA</span><h3>Uma visão mais clara das diferenças</h3><p>Entenda os valores, revise as hipóteses e confira os lançamentos citados.</p></div>
+                <span class="fiscal-ai-provider">Gemini</span>
+              </div>
+              <div class="fiscal-ai-actions"><button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button></div>
+              <p id="fiscal242AIMessage" role="status">Verificando disponibilidade do Gemini…</p>
+              <details class="fiscal-ai-privacy"><summary>Como seus dados são analisados</summary><p>O Gemini recebe os dados extraídos dos relatórios: históricos completos (que podem conter nomes e documentos), datas, contas, contrapartidas e valores. O fiscal é um resumo por acumulador. As sugestões exigem revisão humana e não alteram cálculos ou arquivos.</p></details>
+              <div id="fiscal242AIResult"></div>
+            </section>
+            <div class="fiscal-download-row">
+              <button type="button" class="secondary-action" id="fiscal242Download">Baixar relatório Excel (opcional)</button>
+            </div>
+          </section>
+        </section>
+
+
       <section id="companyPanel" class="company-panel" hidden>
         <button id="backButton" class="back-button" type="button">← Voltar às empresas</button>
         <div class="panel-head">
@@ -140,7 +223,6 @@
         </details>
         <nav class="tool-tabs" aria-label="Ferramentas">
           <button type="button" class="tool-tab active" data-tool="organizar">Organizar arquivos</button>
-          <button type="button" class="tool-tab" data-tool="fiscal" hidden>Fiscal × Contábil</button>
           <button type="button" class="tool-tab" data-tool="base">Base Inteligente</button>
           <button type="button" class="tool-tab" data-tool="extrato">Conferência com Extrato</button>
         </nav>
@@ -289,77 +371,6 @@
           <div id="reconcileResult" class="tool-result" hidden></div>
         </section>
 
-        <section class="tool-pane" data-pane="fiscal" hidden>
-          <div class="tool-card">
-            <div>
-              <span class="company-code">EMPRESA 242 · ELETRO FORTE</span>
-              <h3>Conferência Fiscal × Contábil</h3>
-              <p>Compare o Resumo por Acumulador do Domínio com o Razão e veja no site quais contas batem ou precisam de revisão.</p>
-            </div>
-            <form id="fiscal242Form" class="modern-form">
-              <div class="form-card-header">
-                <div><strong>Relatórios do Domínio</strong><small>Os dois arquivos devem ser do mesmo período. Os resultados aparecem abaixo.</small></div>
-              </div>
-              <div class="fiscal-upload-grid">
-                <div><label for="fiscal242Acumuladores">Resumo por Acumulador</label><input type="file" id="fiscal242Acumuladores" accept=".xls,.xlsx" required></div>
-                <div><label for="fiscal242Razao">Razão Domínio (.xls, .xlsx ou .csv)</label><input type="file" id="fiscal242Razao" accept=".csv,.xls,.xlsx" required><small>Envie o arquivo Razão.xls original; não é necessário convertê-lo.</small></div>
-              </div>
-              <button type="submit" id="fiscal242Submit">Conferir contas</button>
-              <p id="fiscal242Message" class="helper" role="status" aria-live="polite"></p>
-            </form>
-          </div>
-          <section id="fiscal242Results" class="fiscal-results" aria-live="polite" hidden>
-            <div class="fiscal-summary">
-              <div><strong id="fiscal242Total">—</strong><span>Contas analisadas</span></div>
-              <div><strong id="fiscal242Matches">—</strong><span>Batendo</span></div>
-              <div><strong id="fiscal242Alerts">—</strong><span>Com alertas</span></div>
-              <div><strong id="fiscal242Pending">—</strong><span>Revisar</span></div>
-            </div>
-            <p class="fiscal-period" id="fiscal242Period"></p>
-            <div id="fiscal242Warnings" class="fiscal-warnings"></div>
-            <div class="fiscal-results-card">
-              <div class="fiscal-results-heading">
-                <div><h3>Resultado por conta</h3><p>As divergências aparecem primeiro. Selecione uma conta para examinar os lançamentos.</p></div>
-                <label for="fiscal242Filter">Mostrar
-                  <select id="fiscal242Filter">
-                    <option value="todas">Todas</option>
-                    <option value="revisar">Divergências</option>
-                    <option value="alertas">Alertas</option>
-                    <option value="bate">Batendo</option>
-                  </select>
-                </label>
-              </div>
-              <div class="fiscal-table-scroll">
-                <table class="fiscal-table">
-                  <thead><tr><th>Conta contábil</th><th>Descrição fiscal</th><th>Acumuladores</th><th>Tipo</th><th>Fiscal</th><th>Total do Razão</th><th>Contábil considerado*</th><th>Diferença*</th><th>Situação</th></tr></thead>
-                  <tbody id="fiscal242Rows"></tbody>
-                </table>
-              </div>
-              <p class="fiscal-empty" id="fiscal242Empty" hidden>Nenhuma conta encontrada neste filtro.</p>
-              <p class="fiscal-disclaimer fiscal-table-note">*Contábil considerado = lançamentos classificados como fiscais ou fechamento somente por valor (com alerta). Diferença = contábil considerado menos fiscal.</p>
-            </div>
-            <div id="fiscal242Detail" class="fiscal-detail" hidden></div>
-            <details class="fiscal-unmapped" id="fiscal242Unmapped" hidden>
-              <summary>Acumuladores sem conta contábil <span id="fiscal242UnmappedCount"></span></summary>
-              <p>Estes acumuladores foram encontrados no relatório, mas não possuem uma conta definida para comparação. Confirme o vínculo antes de conciliar.</p>
-              <div class="fiscal-table-scroll"><table class="fiscal-table"><thead><tr><th>Acumulador</th><th>Descrição</th><th>Tipo</th><th>Valor fiscal</th></tr></thead><tbody id="fiscal242UnmappedRows"></tbody></table></div>
-            </details>
-            <section class="fiscal-ai">
-              <div class="fiscal-ai-heading">
-                <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
-                <div><span class="fiscal-ai-eyebrow">ASSISTENTE DE CONFERÊNCIA</span><h3>Uma visão mais clara das diferenças</h3><p>Entenda os valores, revise as hipóteses e confira os lançamentos citados.</p></div>
-                <span class="fiscal-ai-provider">Gemini</span>
-              </div>
-              <div class="fiscal-ai-actions"><button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button></div>
-              <p id="fiscal242AIMessage" role="status">Verificando disponibilidade do Gemini…</p>
-              <details class="fiscal-ai-privacy"><summary>Como seus dados são analisados</summary><p>O Gemini recebe os dados extraídos dos relatórios: históricos completos (que podem conter nomes e documentos), datas, contas, contrapartidas e valores. O fiscal é um resumo por acumulador. As sugestões exigem revisão humana e não alteram cálculos ou arquivos.</p></details>
-              <div id="fiscal242AIResult"></div>
-            </section>
-            <div class="fiscal-download-row">
-              <button type="button" class="secondary-action" id="fiscal242Download">Baixar relatório Excel (opcional)</button>
-            </div>
-          </section>
-        </section>
 
         <section class="tool-pane" data-pane="francesinhas">
           <div class="tool-card">
@@ -421,9 +432,9 @@
   <script src="./assets/js/date-fields.js?v=1"></script>
   <script src="./assets/js/workspace-ui.js?v=5"></script>
   <script src="./assets/js/company-guides.js?v=2"></script>
-  <script src="./assets/js/app.js?v=company-guides-all-3"></script>
-  <script src="./assets/js/migration.js?v=fiscal242-pilot-2"></script>
-  <script src="./assets/js/fiscal-242.js?v=acumuladores242-1"></script>
+  <script src="./assets/js/app.js?v=fiscal-universal-1"></script>
+  <script src="./assets/js/migration.js?v=fiscal-universal-1"></script>
+  <script src="./assets/js/fiscal-242.js?v=fiscal-universal-1"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>
