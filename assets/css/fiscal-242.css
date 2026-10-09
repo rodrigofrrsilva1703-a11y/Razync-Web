@@ -1796,3 +1796,196 @@
 #fiscalView #fiscal242AIExport:disabled {opacity:.52;}
 #fiscalView #fiscal242AIResult {display:grid;gap:14px;margin-top:16px;min-width:0;}
 #fiscalView #fiscal242AIResult:empty {display:none;}
+
+
+/* Pareceres Gemini: índice compacto e conteúdo preservado sob demanda (v1). */
+#fiscalView .fiscal-ai-toolbar[hidden],
+#fiscalView .fiscal-ai-account[hidden],
+#fiscalView .fiscal-ai-no-results[hidden] {display:none!important;}
+#fiscalView .fiscal-ai-toolbar {
+  margin-top:18px;
+  padding:17px 0 13px;
+  border-top:1px solid #e2e9f1;
+}
+#fiscalView .fiscal-ai-toolbar-heading {
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+#fiscalView .fiscal-ai-toolbar-label {
+  display:block;
+  margin:0 0 4px;
+  color:#8897a6;
+  font-size:9px;
+  letter-spacing:.10em;
+  font-weight:750;
+}
+#fiscalView .fiscal-ai-toolbar-heading h4 {
+  margin:0;
+  color:#29445e;
+  font-size:16px;
+  font-weight:730;
+  letter-spacing:-.25px;
+}
+#fiscalView .fiscal-ai-toolbar-total {color:#8295a9;font-size:12px;font-weight:500;}
+#fiscalView .fiscal-ai-toolbar-count {color:#76889b;font-size:11px;white-space:nowrap;}
+#fiscalView .fiscal-ai-toolbar-controls {
+  display:grid;
+  grid-template-columns:minmax(200px,1fr) minmax(145px,185px) auto;
+  align-items:center;
+  gap:9px;
+}
+#fiscalView .fiscal-ai-search-wrap,
+#fiscalView .fiscal-ai-filter-wrap {display:block;min-width:0;}
+#fiscalView .fiscal-ai-toolbar-controls input,
+#fiscalView .fiscal-ai-toolbar-controls select {
+  box-sizing:border-box;
+  width:100%;
+  height:38px;
+  border:1px solid #dce5ee;
+  border-radius:8px;
+  background:#fff;
+  padding:0 12px;
+  color:#354f68;
+  font:inherit;
+  font-size:12px;
+  outline-offset:2px;
+}
+#fiscalView .fiscal-ai-toolbar-controls input::placeholder {color:#94a2b0;}
+#fiscalView .fiscal-ai-toolbar-controls :is(input,select):focus-visible {outline:2px solid #9fb8d1;}
+#fiscalView .fiscal-ai-toggle-actions {display:flex;gap:5px;justify-content:flex-end;}
+#fiscalView .fiscal-ai-toggle-action {
+  height:34px;
+  border:0;
+  padding:0 8px;
+  border-radius:7px;
+  background:transparent;
+  color:#537293;
+  font-size:10.5px;
+  font-weight:650;
+  white-space:nowrap;
+  cursor:pointer;
+}
+#fiscalView .fiscal-ai-toggle-action:hover {background:#eaf0f7;}
+#fiscalView #fiscal242AIResult {
+  gap:7px;
+  margin-top:0;
+}
+#fiscalView .fiscal-ai-account {
+  margin:0;
+  padding:0;
+  overflow:hidden;
+  border:1px solid #e0e8f0;
+  border-radius:10px;
+  background:#fff;
+  box-shadow:none;
+}
+#fiscalView .fiscal-ai-account[open] {
+  border-color:#c5d5e5;
+  box-shadow:0 3px 12px rgba(36,57,78,.045);
+}
+#fiscalView .fiscal-ai-account-summary {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto auto;
+  align-items:center;
+  gap:12px;
+  min-height:70px;
+  padding:13px 16px;
+  border:0;
+  background:#fff;
+  list-style:none;
+  cursor:pointer;
+}
+#fiscalView .fiscal-ai-account-summary::-webkit-details-marker {display:none;}
+#fiscalView .fiscal-ai-account-summary:hover {background:#f8fafc;}
+#fiscalView .fiscal-ai-account[open] > .fiscal-ai-account-summary {
+  border-bottom:1px solid #edf1f5;
+  background:#f9fbfd;
+}
+#fiscalView .fiscal-ai-account .fiscal-ai-card-title h4 {
+  margin:0 0 3px;
+  font-size:14px;
+  font-weight:740;
+}
+#fiscalView .fiscal-ai-account .fiscal-ai-card-description {
+  color:#738598;
+  font-size:11px;
+  line-height:1.45;
+}
+#fiscalView .fiscal-ai-account .fiscal-ai-card-meta {
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:6px;
+}
+#fiscalView .fiscal-ai-account .fiscal-ai-type {padding:4px 7px;font-size:9px;}
+#fiscalView .fiscal-ai-account-compact {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:14px;
+  min-width:105px;
+}
+#fiscalView .fiscal-ai-account-difference {
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  text-align:right;
+}
+#fiscalView .fiscal-ai-account-difference small {color:#8293a4;font-size:9px;}
+#fiscalView .fiscal-ai-account-difference strong {
+  color:#294863;
+  font-size:12.5px;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+#fiscalView .fiscal-ai-account-chevron {
+  display:grid;
+  place-items:center;
+  width:24px;
+  height:24px;
+  flex:0 0 24px;
+  border-radius:6px;
+  background:#edf2f7;
+  color:#5d7892;
+  font-size:15px;
+  transition:transform .15s ease;
+}
+#fiscalView .fiscal-ai-account[open] .fiscal-ai-account-chevron {transform:rotate(180deg);}
+#fiscalView .fiscal-ai-account-content {padding:2px 18px 18px;}
+#fiscalView .fiscal-ai-account-content > .fiscal-ai-values,
+#fiscalView .fiscal-ai-account-content > .fiscal-accum-breakdown,
+#fiscalView .fiscal-ai-account-content > .fiscal-ai-analysis,
+#fiscalView .fiscal-ai-account-content > .fiscal-ai-review,
+#fiscalView .fiscal-ai-account-content > .fiscal-ai-evidence {margin-left:0;margin-right:0;}
+#fiscalView .fiscal-ai-account-content .fiscal-ai-values {margin-top:14px;}
+#fiscalView .fiscal-ai-account-content .fiscal-ai-analysis {padding-top:15px;}
+#fiscalView .fiscal-ai-no-results {
+  margin:12px 0 0;
+  padding:14px;
+  border:1px dashed #dce5ef;
+  border-radius:8px;
+  color:#75879a;
+  background:#fff;
+  font-size:12px;
+}
+@media(max-width:980px) {
+  #fiscalView .fiscal-ai-toolbar-controls {grid-template-columns:minmax(0,1fr) minmax(135px,175px);}
+  #fiscalView .fiscal-ai-toggle-actions {grid-column:1/-1;justify-content:flex-start;}
+}
+@media(max-width:650px) {
+  #fiscalView .fiscal-ai-toolbar-controls {grid-template-columns:1fr;}
+  #fiscalView .fiscal-ai-toggle-actions {grid-column:auto;justify-content:flex-start;}
+  #fiscalView .fiscal-ai-account-summary {grid-template-columns:minmax(0,1fr) auto;gap:7px 9px;padding:12px;min-height:65px;}
+  #fiscalView .fiscal-ai-account .fiscal-ai-card-title {grid-column:1/-1;}
+  #fiscalView .fiscal-ai-account .fiscal-ai-card-meta {grid-column:1;justify-content:flex-start;}
+  #fiscalView .fiscal-ai-account-compact {grid-column:2;min-width:0;gap:8px;}
+  #fiscalView .fiscal-ai-account-content {padding:2px 12px 14px;}
+  #fiscalView .fiscal-ai-toolbar-heading {align-items:center;}
+  #fiscalView .fiscal-ai-toolbar-count {white-space:normal;text-align:right;}
+}
+@media(prefers-reduced-motion:reduce) {
+  #fiscalView .fiscal-ai-account-chevron {transition:none;}
+}
