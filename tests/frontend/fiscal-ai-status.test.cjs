@@ -10,19 +10,20 @@ test('status Gemini reconhece chave adicionada após abrir o site, sem cache',as
   let configured = false;
   const context = {AbortController,Date,setTimeout:()=>1,clearTimeout:()=>{},
     API:()=>'/api',aiConfigured:false,previewBody:{},aiController:null,
-    aiButton:{disabled:true},aiMessage:{textContent:''},aiResult:{children:[]},
+    aiButton:{disabled:true},aiMessage:{textContent:''},aiResult:{children:[]},aiProvider:{textContent:''},
     fetch:async (url,options)=>{assert.equal(options.cache,'no-store');assert.match(url,/status\?t=/);return {ok:true,json:async()=>({configurado:configured})};}};
   vm.createContext(context);vm.runInContext(code,context);
   await context.refreshAIStatus(); assert.equal(context.aiButton.disabled,true);
   configured = true;
   await context.refreshAIStatus(); assert.equal(context.aiButton.disabled,false);
   assert.match(context.aiMessage.textContent,/Gemini conectado/);
+  assert.equal(context.aiProvider.textContent, 'Gemini');
 });
 
 test('falha de rede não é apresentada como chave ausente',async () => {
   const context = {AbortController,Date,setTimeout:()=>1,clearTimeout:()=>{},
     API:()=>'/api',aiConfigured:false,previewBody:null,aiController:null,
-    aiButton:{disabled:true},aiMessage:{textContent:''},aiResult:{children:[]},
+    aiButton:{disabled:true},aiMessage:{textContent:''},aiResult:{children:[]},aiProvider:{textContent:''},
     fetch:async()=>({ok:false})};
   vm.createContext(context);vm.runInContext(code,context);
   await context.refreshAIStatus();
@@ -229,4 +230,19 @@ test('filtro do Gemini localiza explicação e evidência sem descartar análise
   assert.equal(context.filterAIEntries(cards,'','revisar').length,1);
   assert.equal(context.filterAIEntries(cards,'sem correspondência','todas').length,0);
   assert.equal(cards.length,3);
+});
+
+
+test('status exibe OpenRouter no campo quando nova chave esta conectada',async () => {
+  const context = {AbortController,Date,setTimeout:()=>1,clearTimeout:()=>{},
+    API:()=>'/api',aiConfigured:false,previewBody:{},aiController:null,
+    aiButton:{disabled:true},aiMessage:{textContent:''},aiResult:{children:[]},
+    aiProvider:{textContent:''},
+    fetch:async()=>({ok:true,json:async()=>({configurado:true,provedor:'openrouter'})})};
+  vm.createContext(context);
+  vm.runInContext(code,context);
+  await context.refreshAIStatus();
+  assert.equal(context.aiButton.disabled,false);
+  assert.equal(context.aiProvider.textContent,'OpenRouter');
+  assert.match(context.aiMessage.textContent,/OpenRouter conectado/);
 });
