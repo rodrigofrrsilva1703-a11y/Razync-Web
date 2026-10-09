@@ -139,7 +139,7 @@ def complete(payload, key, model):
             ],
             "temperature": 0.2,
             "reasoning_effort": "low",
-            "max_completion_tokens": 1600,
+            "max_completion_tokens": 3000,
             "response_format": {
                 "type": "json_schema",
                 "json_schema": {"name": "razync_parecer_fiscal", "strict": True, "schema": schema},
@@ -209,8 +209,16 @@ def complete(payload, key, model):
         first = choices[0] if isinstance(choices, list) and choices else {}
         message = first.get("message") if isinstance(first, dict) else None
         content = message.get("content") if isinstance(message, dict) else None
-        if first.get("finish_reason") != "stop" or not isinstance(content, str):
+        finish = first.get("finish_reason")
+        if finish != "stop":
+            # Sempre logar apenas códigos fixos, nunca o conteúdo de um cliente.
+            if finish == "length":
+                raise ValueError("Groq output limited by tokens")
+            if finish == "content_filter":
+                raise ValueError("Groq output filtered")
             raise ValueError("Groq did not complete JSON output")
+        if not isinstance(content, str) or not content.strip():
+            raise ValueError("Groq returned empty content")
         try:
             answer = json.loads(content)
             items = answer["analises"]
