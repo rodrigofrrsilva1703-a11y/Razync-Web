@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="./assets/css/refined-theme.css?v=3">
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
-  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=fiscal-auto-company-1">
+  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=fiscal-values-company-2">
 </head>
 <body>
   <div class="app-shell">
@@ -180,13 +180,13 @@
               </div>
               <div class="fiscal-table-scroll">
                 <table class="fiscal-table">
-                  <thead><tr><th>Conta contábil / descrição</th><th>Acumuladores</th><th>Valor fiscal</th><th>Diferença</th><th>Situação</th></tr></thead>
+                  <thead><tr><th>Conta contábil / descrição</th><th>Acumuladores</th><th>Valor fiscal</th><th>Valor contábil*</th><th>Diferença</th><th>Situação</th></tr></thead>
                   <tbody id="fiscal242Rows"></tbody>
                 </table>
               </div>
               <p class="fiscal-empty" id="fiscal242Empty" hidden>Nenhuma conta encontrada. Tente outra busca ou situação.</p>
               <p class="fiscal-table-count" id="fiscal242Count" aria-live="polite"></p>
-              <p class="fiscal-disclaimer fiscal-table-note">Diferença = contábil considerado − valor fiscal. Confira o total do Razão e os critérios de classificação ao abrir uma conta.</p>
+              <p class="fiscal-disclaimer fiscal-table-note">* Valor contábil = lançamentos do Razão considerados compatíveis com o fiscal. Diferença = valor contábil − valor fiscal. O total de movimentos do Razão e os critérios de classificação aparecem ao abrir a conta.</p>
             </div>
             <div id="fiscal242Detail" class="fiscal-detail" hidden></div>
             <details class="fiscal-unmapped" id="fiscal242Unmapped" hidden>
@@ -442,7 +442,7 @@
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=fiscal-layout-2"></script>
   <script src="./assets/js/migration.js?v=fiscal-universal-1"></script>
-  <script src="./assets/js/fiscal-242.js?v=fiscal-auto-company-1"></script>
+  <script src="./assets/js/fiscal-242.js?v=fiscal-values-company-2"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>
