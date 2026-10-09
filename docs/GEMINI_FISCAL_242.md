@@ -4,9 +4,8 @@ No Railway, serviço `razync-api`, configure em Variables:
 
 - `GEMINI_API_KEY`: chave criada no Google AI Studio. Nunca salvar no GitHub ou no frontend.
 - `GEMINI_MODEL`: modelo compatível com generateContent e saída JSON; padrão `gemini-2.5-flash`. Confirme disponibilidade e cota no seu projeto Google.
-- `RAZYNC_ACCESS_TOKEN`: acesso administrativo já usado pelo Razync (também aceita a configuração existente CLASSIFICATION_ADMIN_PASSWORD).
 
-Após a publicação, abra a 242, faça a conferência e informe a chave administrativa em “Acesso administrativo”. Clique em “Analisar diferenças com IA”. Não informe a chave Gemini no site.
+Após a publicação, abra a 242, faça a conferência. Não é necessária senha administrativa. Clique em “Analisar diferenças com IA”. Não informe a chave Gemini no site.
 
 O servidor relê os mesmos arquivos da prévia. Somente categorias anônimas são enviadas ao Google: grupo temporário G1/G2, situação, débito/crédito, falta/excesso/zero e existência de adicionais. Não envia valores, datas, históricos, nomes, números de contas, documentos ou arquivos. O código da conta é associado novamente à resposta somente no servidor.
 

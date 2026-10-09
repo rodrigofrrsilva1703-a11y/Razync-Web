@@ -44,7 +44,7 @@
       aiConfigured = result.configurado === true;
       aiButton.disabled = !aiConfigured || !previewBody || Boolean(aiController);
       if (!aiController && !aiResult.children.length) aiMessage.textContent = aiConfigured
-        ? (previewBody ? "Gemini conectado. Informe o acesso administrativo e clique em Analisar diferenças com IA." : "Gemini conectado. Faça a conferência para analisar as diferenças.")
+        ? (previewBody ? "Gemini conectado. Clique em Analisar diferenças com IA." : "Gemini conectado. Faça a conferência para analisar as diferenças.")
         : "Gemini ainda não configurado. Após adicionar a chave no Railway, clique em Atualizar conexão.";
     } catch (error) {
       if (statusController !== controller) return;
@@ -63,13 +63,11 @@
   refreshAIStatus();
   aiButton.addEventListener("click", async () => {
     if (!previewBody || !aiConfigured || Number(selected?.codigo) !== 242) return;
-    let headers;
-    try { headers = adminHeaders(); } catch (error) { aiMessage.textContent = error.message; return; }
     aiController?.abort(); const controller = new AbortController(); aiController = controller;
     const snapshot = previewBody; aiButton.disabled = true; aiResult.replaceChildren();
     aiMessage.textContent = "Analisando diferenças com Gemini…";
     try {
-      const response = await fetch(API() + "/api/v1/conferencia-fiscal/242/ia", {method:"POST",body:snapshot,headers,signal:controller.signal});
+      const response = await fetch(API() + "/api/v1/conferencia-fiscal/242/ia", {method:"POST",body:snapshot,signal:controller.signal});
       if (!response.ok) throw new Error(await responseError(response));
       const result = await response.json();
       if (controller.signal.aborted || previewBody !== snapshot || Number(selected?.codigo) !== 242) return;

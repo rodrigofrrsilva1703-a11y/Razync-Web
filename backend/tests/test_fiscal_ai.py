@@ -56,14 +56,22 @@ def test_invalid_group_is_rejected(monkeypatch):
     assert error.value.status_code == 502
 
 
-def test_missing_key_and_admin_protection(monkeypatch):
+def test_missing_key_does_not_require_admin(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     client = TestClient(app)
     assert client.get("/api/v1/conferencia-fiscal/242/ia/status").json() == {"configurado":False}
-    monkeypatch.setenv("RAZYNC_ACCESS_TOKEN", "admin-test")
     files = {"acumuladores":("fiscal.xlsx",b"fake"),"razao":("razao.xlsx",b"fake")}
-    assert client.post("/api/v1/conferencia-fiscal/242/ia",files=files).status_code == 401
-    assert client.post("/api/v1/conferencia-fiscal/242/ia",files=files,headers={"Authorization":"Bearer admin-test"}).status_code == 503
+    assert client.post("/api/v1/conferencia-fiscal/242/ia",files=files).status_code == 503
+
+
+def test_analysis_endpoint_accepts_no_admin_password(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-secret")
+    monkeypatch.setattr(fiscal_ai, "conferencia_fiscal_preview", lambda *args: report())
+    monkeypatch.setattr(fiscal_ai, "explain", lambda report: {"analises":[],"aviso":"Teste"})
+    files = {"acumuladores":("fiscal.xlsx",b"fake"),"razao":("razao.xlsx",b"fake")}
+    response = TestClient(app).post("/api/v1/conferencia-fiscal/242/ia", files=files)
+    assert response.status_code == 200
+    assert response.json()["aviso"] == "Teste"
 
 
 def test_matching_groups_do_not_trigger_external_call(monkeypatch):

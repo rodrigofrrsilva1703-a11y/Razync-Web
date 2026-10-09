@@ -7,9 +7,8 @@ import time
 import urllib.error
 import urllib.request
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from app.migration_routes import require_admin
 from app.fiscal_242 import conferencia_fiscal_preview
 
 router = APIRouter(prefix="/api/v1/conferencia-fiscal/242/ia")
@@ -102,7 +101,7 @@ def status():
     return {"configurado":bool(os.getenv("GEMINI_API_KEY", "").strip())}
 
 
-@router.post("", dependencies=[Depends(require_admin)])
+@router.post("")
 async def analyze(acumuladores: UploadFile = File(...), razao: UploadFile = File(...)):
     if not os.getenv("GEMINI_API_KEY", "").strip():
         raise HTTPException(503, "Gemini ainda não configurado. Defina GEMINI_API_KEY no Railway.")
