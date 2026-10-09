@@ -709,12 +709,12 @@ def test_openrouter_doispedidos_400_continua_gratuito_erro_legivel(monkeypatch):
         data=json.loads(req.data)
         seen.append(data)
         raise urllib.error.HTTPError(req.full_url,400,"Unsupported",{},
-          io.BytesIO(b'{"error":{"message":"histórico de cliente sensível"}}'))
+          io.BytesIO(json.dumps({"error":{"message":"historico de cliente sensivel"}}).encode("utf-8")))
     monkeypatch.setattr(fiscal_ai.urllib.request,"urlopen",fail)
     with pytest.raises(HTTPException) as error:
         fiscal_ai.explain(report())
     assert len(seen)==2
     assert error.value.status_code==400
-    assert "histórico de cliente sensível" not in error.value.detail
+    assert "historico de cliente sensivel" not in error.value.detail
     assert "gratuito" in error.value.detail
     assert all(p["provider"]["max_price"]=={"prompt":0,"completion":0} for p in seen)
