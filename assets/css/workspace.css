@@ -2681,3 +2681,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media(prefers-reduced-motion:reduce) {
   .company-tool-help-button { transition:none; }
 }
+
+/* Navegação da conferência Fiscal × Contábil universal. */
+.main-nav-btn[data-view="fiscal"] { --nav-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='black' stroke-width='1.7' viewBox='0 0 24 24'%3E%3Cpath d='M4 5h16M4 10h16M4 15h8M15 15l2 2 4-5M4 20h8'/%3E%3C/svg%3E"); }
