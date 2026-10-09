@@ -1,4 +1,4 @@
-"""Detailed Gemini review of extracted fiscal records, explicitly requested by the user."""
+"""Revisão fiscal via OpenRouter (com fallback) ou Gemini legado."""
 import json
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import os
@@ -17,6 +17,7 @@ router = APIRouter(prefix="/api/v1/conferencia-fiscal/ia")
 legacy_router = APIRouter(prefix="/api/v1/conferencia-fiscal/242/ia")
 lock = threading.Lock()
 last_request = 0.0
+model_rotation_index = 0
 
 
 def formatar_brl(valor):
@@ -148,21 +149,120 @@ def provider_error(exc):
     return HTTPException(429 if exc.code == 429 else 502, message)
 
 
+def _openrouter_models():
+    """Modelos alternados a cada conferência; o OpenRouter faz fallback no mesmo pedido."""
+    configured = os.getenv(
+        "OPENROUTER_MODELS",
+        "openai/gpt-4.1-mini,google/gemini-2.5-flash,anthropic/claude-haiku-4.5",
+    )
+    models = list(dict.fromkeys(m.strip() for m in configured.split(",") if m.strip()))
+    if not 1 <= len(models) <= 8 or any(
+        not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_.:-]*/[a-zA-Z0-9_.:-]+", model)
+        for model in models
+    ):
+        raise HTTPException(503, "Revise OPENROUTER_MODELS no Railway: use IDs de modelos separados por vírgula.")
+    return models
+
+
+def _openrouter_completion(payload, models, key):
+    """Envia o mesmo contexto completo para qualquer modelo da cadeia de fallback."""
+    converted_schema = {
+        "type": "object",
+        "properties": {
+            "analises": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "grupo": {"type": "string", "enum": payload["generationConfig"]["responseSchema"]["properties"]["analises"]["items"]["properties"]["grupo"]["enum"]},
+                        "explicacao": {"type": "string"},
+                        "verificar": {"type": "string"},
+                        "evidencias": {"type": "array", "items": {"type": "string"}},
+                    },
+                    "required": ["grupo", "explicacao", "verificar", "evidencias"],
+                    "additionalProperties": False,
+                },
+            }
+        },
+        "required": ["analises"],
+        "additionalProperties": False,
+    }
+    request_payload = {
+        "models": models,
+        "messages": [
+            {"role": "system", "content": payload["systemInstruction"]["parts"][0]["text"]},
+            {"role": "user", "content": payload["contents"][0]["parts"][0]["text"]},
+        ],
+        "response_format": {"type": "json_schema", "json_schema": {
+            "name": "razync_fiscal_review", "strict": True, "schema": converted_schema,
+        }},
+        "provider": {"allow_fallbacks": True, "require_parameters": True, "data_collection": "deny"},
+        "temperature": 0.2,
+        "max_tokens": 16384,
+    }
+    request = urllib.request.Request(
+        "https://openrouter.ai/api/v1/chat/completions",
+        data=json.dumps(request_payload, ensure_ascii=False).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + key,
+            "HTTP-Referer": "https://rodrigofrrsilva1703-a11y.github.io/Razync-Web/",
+            "X-Title": "Razync Fiscal",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=90) as response:
+            response_json = json.loads(response.read(200000))
+    except urllib.error.HTTPError as exc:
+        # Não repassa mensagens do provedor: podem conter dados privados ou credenciais.
+        if exc.code in (401, 403):
+            detail = "O OpenRouter recusou a chave ou suas permissões. Confira OPENROUTER_API_KEY no Railway."
+        elif exc.code == 402:
+            detail = "Os créditos do OpenRouter terminaram ou o limite de gasto foi atingido. Recarregue créditos ou revise o teto da chave."
+        elif exc.code == 429:
+            detail = "Todos os modelos disponíveis atingiram limites de requisições. Tente novamente mais tarde ou configure modelos com cota disponível."
+        elif exc.code == 400:
+            detail = "O OpenRouter rejeitou os modelos ou o formato de resposta. Revise OPENROUTER_MODELS e a compatibilidade com JSON estruturado."
+        else:
+            detail = f"OpenRouter temporariamente indisponível (HTTP {exc.code}). A conferência contábil não foi alterada."
+        raise HTTPException(429 if exc.code == 429 else 502, detail) from None
+    except (urllib.error.URLError, TimeoutError):
+        raise HTTPException(502, "Não foi possível conectar ao OpenRouter. A conferência contábil permanece salva.") from None
+    choices = response_json.get("choices") or []
+    if not choices or choices[0].get("finish_reason") not in ("stop",):
+        raise ValueError("Resposta incompleta do OpenRouter")
+    message = choices[0].get("message") or {}
+    content = message.get("content")
+    if not isinstance(content, str) or not content.strip():
+        raise ValueError("Resposta vazia do OpenRouter")
+    return json.loads(content), str(response_json.get("model") or "")
+
+
 def explain(report):
-    key = os.getenv("GEMINI_API_KEY", "").strip()
+    openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
+    provider = "openrouter" if openrouter_key else "gemini"
+    key = openrouter_key or os.getenv("GEMINI_API_KEY", "").strip()
     if not key:
-        raise HTTPException(503, "Gemini ainda não configurado. Defina GEMINI_API_KEY no Railway.")
+        raise HTTPException(503, "IA não configurada. Defina OPENROUTER_API_KEY no Railway.")
     context, mapping, references, coverage = detailed_context(report)
     if not mapping:
         return {"analises": [], "aviso": "Nenhuma divergência ou alerta para explicar."}
     model = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite").strip()
-    if not re.fullmatch(r"gemini-[a-zA-Z0-9.-]+", model):
+    if provider == "gemini" and not re.fullmatch(r"gemini-[a-zA-Z0-9.-]+", model):
         raise HTTPException(503, "Revise GEMINI_MODEL no Railway.")
-    global last_request
+    models = _openrouter_models() if provider == "openrouter" else []
+    global last_request, model_rotation_index
     with lock:
-        if time.monotonic() - last_request < 15:
-            raise HTTPException(429, "Aguarde 15 segundos antes de analisar novamente.")
-        last_request = time.monotonic()
+        if provider == "gemini":
+            if time.monotonic() - last_request < 15:
+                raise HTTPException(429, "Aguarde 15 segundos antes de analisar novamente.")
+            last_request = time.monotonic()
+        else:
+            # Espalha solicitações entre modelos antes dos limites de cada um;
+            # não é possível conhecer/evitar antecipadamente o teto da conta.
+            start = model_rotation_index % len(models)
+            model_rotation_index += 1
+            models = models[start:] + models[:start]
     schema = {"type":"OBJECT", "properties":{"analises":{"type":"ARRAY", "items":{
         "type":"OBJECT", "properties":{
             "grupo":{"type":"STRING", "enum":list(mapping)},
@@ -220,27 +320,31 @@ def explain(report):
         "contents":[{"role":"user","parts":[{"text":json.dumps(context, ensure_ascii=False)}]}],
         "generationConfig":{"responseMimeType":"application/json", "responseSchema":schema,
                             "temperature":0.2, "maxOutputTokens":16384}}
-    request = urllib.request.Request(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-        data=json.dumps(payload).encode(), headers={"Content-Type":"application/json","x-goog-api-key":key})
     try:
-        try:
-            response = urllib.request.urlopen(request, timeout=45)
-        except urllib.error.HTTPError as exc:
-            if exc.code != 404 or model == "gemini-3.1-flash-lite":
-                raise
-            exc.close()
-            fallback = urllib.request.Request(
-                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
-                data=request.data, headers={"Content-Type":"application/json", "x-goog-api-key":key})
-            response = urllib.request.urlopen(fallback, timeout=45)
-        with response:
-            raw = json.loads(response.read(150000))
-        candidate = raw["candidates"][0]
-        if candidate.get("finishReason") != "STOP":
-            raise ValueError("Incomplete answer")
-        text = "".join(part.get("text", "") for part in candidate["content"]["parts"] if not part.get("thought"))
-        result = json.loads(text)
+        if provider == "openrouter":
+            result, used_model = _openrouter_completion(payload, models, key)
+        else:
+            request = urllib.request.Request(
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                data=json.dumps(payload).encode(), headers={"Content-Type":"application/json","x-goog-api-key":key})
+            try:
+                response = urllib.request.urlopen(request, timeout=45)
+            except urllib.error.HTTPError as exc:
+                if exc.code != 404 or model == "gemini-3.1-flash-lite":
+                    raise
+                exc.close()
+                fallback = urllib.request.Request(
+                    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+                    data=request.data, headers={"Content-Type":"application/json", "x-goog-api-key":key})
+                response = urllib.request.urlopen(fallback, timeout=45)
+            with response:
+                raw = json.loads(response.read(150000))
+            candidate = raw["candidates"][0]
+            if candidate.get("finishReason") != "STOP":
+                raise ValueError("Incomplete answer")
+            text = "".join(part.get("text", "") for part in candidate["content"]["parts"] if not part.get("thought"))
+            result = json.loads(text)
+            used_model = model
         output, seen = [], set()
         for item in result["analises"]:
             ident = item["grupo"]
@@ -271,17 +375,26 @@ def explain(report):
         if seen != set(mapping):
             raise ValueError("Empty answer")
         return {"analises":output, "aviso":"Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
-                "limite":coverage}
+                "limite":coverage, "provedor":provider, "modelo_usado":used_model}
+    except HTTPException:
+        raise
     except urllib.error.HTTPError as exc:
         raise provider_error(exc) from None
     except Exception:
-        raise HTTPException(502, "Não foi possível obter uma análise válida do Gemini. A conferência permanece disponível.") from None
+        service = "OpenRouter" if provider == "openrouter" else "Gemini"
+        raise HTTPException(502, f"Não foi possível obter uma análise válida do {service}. A conferência permanece disponível.") from None
 
 
 @router.get("/status")
 @legacy_router.get("/status")
 def status():
-    return {"configurado":bool(os.getenv("GEMINI_API_KEY", "").strip())}
+    # OpenRouter tem prioridade quando configurado; Gemini permanece como reserva
+    # até a chave nova ser definida, evitando indisponibilidade na migração.
+    if os.getenv("OPENROUTER_API_KEY", "").strip():
+        return {"configurado":True, "provedor":"openrouter"}
+    if os.getenv("GEMINI_API_KEY", "").strip():
+        return {"configurado":True, "provedor":"gemini"}
+    return {"configurado":False, "provedor":None}
 
 
 @router.post("")
@@ -290,8 +403,8 @@ async def analyze(
     acumuladores: UploadFile = File(...), razao: UploadFile = File(...),
     filial: str = Form(""), empresa_codigo: str = Form(""),
 ):
-    if not os.getenv("GEMINI_API_KEY", "").strip():
-        raise HTTPException(503, "Gemini ainda não configurado. Defina GEMINI_API_KEY no Railway.")
+    if not (os.getenv("OPENROUTER_API_KEY", "").strip() or os.getenv("GEMINI_API_KEY", "").strip()):
+        raise HTTPException(503, "IA não configurada. Defina OPENROUTER_API_KEY no Railway.")
     if empresa_codigo and not empresa_codigo.isdigit():
         raise HTTPException(422, "Código da empresa inválido.")
     if filial and not filial.isdigit():
