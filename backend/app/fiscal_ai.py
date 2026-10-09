@@ -420,12 +420,15 @@ def _openrouter_completion(payload, models, key):
                 answer = candidate
                 break
         if answer is None:
+            # Aceita também que um modelo envie os caracteres literais \\n.
+            if "GRUPO:" in result_text and "\\\\n" in result_text:
+                result_text = result_text.replace("\\\\n", chr(10))
             # Compatibilidade com modelos que não suportam modo JSON:
             # blocos textuais identificados por grupo, sem inferir valores.
             blocks = re.split(r"(?im)^\s*GRUPO\s*:\s*", result_text)
             parsed = []
             for block in blocks[1:]:
-                matched = re.match(r"\s*(G\d+)\s*\n", block)
+                matched = re.match(r"^[ \t]*(G\d+)[ \t]*\r?\n", block)
                 if not matched:
                     continue
                 ident = matched.group(1)
