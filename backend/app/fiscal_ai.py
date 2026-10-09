@@ -1,4 +1,5 @@
 """Revisão fiscal via OpenRouter (com fallback) ou Gemini legado."""
+import copy
 import json
 import logging
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -185,11 +186,29 @@ def _openrouter_models():
 
 
 def _openrouter_completion(payload, models, key):
-    """Prioriza o modo JSON textual no roteador grátis para evitar fila e segunda chamada.
+    """Adapta formatos gratuitos sem reduzir a validação fiscal-contábil."""
+    group_ids = payload["generationConfig"]["responseSchema"]["properties"]["analises"]["items"]["properties"]["grupo"]["enum"]
+    # A resposta do modelo gratuito estava terminando em finish_reason=length.
+    # Requisitar poucos grupos por vez evita um JSON enorme e truncado.
+    if os.getenv("OPENROUTER_ROUTER_FIRST") == "1" and len(group_ids) > 2:
+        source = json.loads(payload["contents"][0]["parts"][0]["text"])
+        all_analyses, used_models = [], []
+        for start in range(0, len(group_ids), 2):
+            ids = group_ids[start:start + 2]
+            chunk = copy.deepcopy(payload)
+            chunk["generationConfig"]["responseSchema"]["properties"]["analises"]["items"]["properties"]["grupo"]["enum"] = ids
+            partial = dict(source)
+            partial["grupos"] = [row for row in source["grupos"] if row["grupo"] in ids]
+            chunk["contents"][0]["parts"][0]["text"] = json.dumps(partial, ensure_ascii=False, separators=(",", ":"))
+            answer, used = _openrouter_completion(chunk, models, key)
+            items = answer.get("analises", [])
+            if len(items) != len(ids) or {item.get("grupo") for item in items if isinstance(item, dict)} != set(ids):
+                logger.warning("fiscal_openrouter_rejected category=incomplete_batch")
+                raise ValueError("Parecer incompleto em lote gratuito")
+            all_analyses.extend(items)
+            used_models.append(used)
+        return {"analises": all_analyses}, ", ".join(dict.fromkeys(used_models))
 
-    A validação integral das contas e referências ocorre após a resposta, para
-    ambos os provedores. O limite de preço zero nunca é removido.
-    """
     converted_schema = {
         "type": "object",
         "properties": {
@@ -257,6 +276,25 @@ def _openrouter_completion(payload, models, key):
             "Use somente referências de lançamento que existam nos dados. "
             "Não invente valores, grupos ou evidências."
         )
+        if os.getenv("OPENROUTER_ROUTER_FIRST") == "1":
+            # Prompt enxuto reduz tokens de raciocínio/saída em modelos gratuitos.
+            candidate["messages"][0]["content"] = (
+                "Você é especialista em conciliação fiscal x contábil. "
+                "Use só os dados fornecidos. Entradas/serviços = débito; saídas = crédito. "
+                "Diferença = contábil considerado - fiscal. Preserve sinais, códigos e valores_brl. "
+                "Diferencie fatos, hipóteses e limites; nunca invente documentos, valores ou lançamentos. "
+                "Mencione acumuladores e no máximo três referências L existentes, ou nenhuma se não houver prova. "
+                "Por grupo, explique claramente a diferença em 80 a 140 palavras e indique 2 a 4 passos de checagem. "
+                'Preferencialmente responda JSON: {"analises":[{"grupo":"G1","explicacao":"...",'
+                '"verificar":"1. ...","evidencias":["L1"]}]}. '
+                "Inclua EXATAMENTE estes grupos: " + ", ".join(allowed) + ". "
+                "Se o modelo não conseguir JSON, use para CADA grupo este formato textual: "
+                "GRUPO: G1\\nEXPLICACAO: texto\\nVERIFICAR: 1. passo\\nEVIDENCIAS: L1,L2 "
+                "(use EVIDENCIAS: nenhum se não houver registros confiáveis). "
+                "Não acrescente outros grupos, não faça ajustes nos cálculos."
+            )
+            candidate["reasoning"] = {"enabled": False}
+            candidate["max_tokens"] = 6200
         return candidate
 
     free_router = all(m in FREE_FISCAL_MODELS for m in models)
@@ -342,13 +380,21 @@ def _openrouter_completion(payload, models, key):
         raise ValueError("Resposta sem alternativas do OpenRouter")
     choice = choices[0]
     reason = choice.get("finish_reason")
-    if reason != "stop":
+    if reason not in ("stop", "length"):
         logger.warning("fiscal_openrouter_rejected category=finish_reason reason=%s",
-                       reason if reason in {"length", "content_filter", "tool_calls", "error"} else "other")
-        raise ValueError("Resposta incompleta do OpenRouter")
+                       reason if reason in {"content_filter", "tool_calls", "error"} else "other")
+        raise ValueError("Resposta não concluída do OpenRouter")
     message = choice.get("message") or {}
     content = message.get("content")
+    if isinstance(content, dict):
+        content = content.get("text")
+    if isinstance(content, list):
+        content = "\\n".join(str(part.get("text", "")) for part in content
+                           if isinstance(part, dict) and part.get("type") in ("text", "output_text"))
     if not isinstance(content, str) or not content.strip():
+        parsed = message.get("parsed")
+        content = json.dumps(parsed, ensure_ascii=False) if isinstance(parsed, dict) else ""
+    if not content.strip():
         logger.warning("fiscal_openrouter_rejected category=empty_content")
         raise ValueError("Resposta vazia do OpenRouter")
     result_text = content.strip()
@@ -374,11 +420,39 @@ def _openrouter_completion(payload, models, key):
                 answer = candidate
                 break
         if answer is None:
-            logger.warning("fiscal_openrouter_rejected category=invalid_json")
-            raise ValueError("JSON inválido do OpenRouter") from None
+            # Compatibilidade com modelos que não suportam modo JSON:
+            # blocos textuais identificados por grupo, sem inferir valores.
+            blocks = re.split(r"(?im)^\\s*GRUPO\\s*:\\s*", result_text)
+            parsed = []
+            for block in blocks[1:]:
+                matched = re.match(r"\\s*(G\\d+)\\s*\\n", block)
+                if not matched:
+                    continue
+                ident = matched.group(1)
+                text_body = block[matched.end():]
+                sections = re.search(
+                    r"(?is)\\bEXPLICACAO\\s*:\\s*(.*?)\\s*\\bVERIFICAR\\s*:\\s*(.*?)"
+                    r"\\s*\\bEVIDENCIAS\\s*:\\s*(.*)\\Z", text_body)
+                if not sections:
+                    continue
+                evidence_text = sections.group(3).strip()
+                refs = re.findall(r"\\bL\\d+\\b", evidence_text) if evidence_text.lower() not in ("nenhum", "nenhuma", "-", "") else []
+                parsed.append({"grupo": ident, "explicacao": sections.group(1).strip(),
+                    "verificar": sections.group(2).strip(), "evidencias": refs})
+            if parsed:
+                answer = {"analises": parsed}
+            else:
+                logger.warning("fiscal_openrouter_rejected category=invalid_json")
+                raise ValueError("JSON ou blocos de texto inválidos do OpenRouter") from None
     if not isinstance(answer, dict) or not isinstance(answer.get("analises"), list):
         logger.warning("fiscal_openrouter_rejected category=missing_analises")
         raise ValueError("O OpenRouter não retornou a estrutura esperada")
+    # 'length' não basta para descartar um JSON já completo. Mas não
+    # aceitamos qualquer grupo perdido: conferimos contra o lote solicitado.
+    items = answer["analises"]
+    if len(items) != len(group_ids) or {row.get("grupo") for row in items if isinstance(row, dict)} != set(group_ids):
+        logger.warning("fiscal_openrouter_rejected category=missing_groups")
+        raise ValueError("Resposta de OpenRouter com grupos ausentes")
     return answer, str(response_json.get("model") or "")
 
 
