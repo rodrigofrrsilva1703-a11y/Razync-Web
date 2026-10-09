@@ -11,6 +11,7 @@ from app.main import app
 def _openrouter_disabled_by_default(monkeypatch):
     """Os testes legados usam Gemini; OpenRouter é ativado explicitamente nos novos casos."""
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED", raising=False)
     # Exercita integrações anteriores apenas em testes; produção usa OpenRouter.
     monkeypatch.setenv("RAZYNC_AI_LEGACY_GEMINI", "1")
 
@@ -67,7 +68,7 @@ def test_invalid_group_is_rejected(monkeypatch):
 def test_missing_key_does_not_require_admin(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     client = TestClient(app)
-    assert client.get("/api/v1/conferencia-fiscal/242/ia/status").json() == {"configurado":False, "provedor":None, "gratuito":True}
+    assert client.get("/api/v1/conferencia-fiscal/242/ia/status").json() == {"configurado":False, "provedor":None, "gratuito":True, "fallback_gemini":False}
     files = {"acumuladores":("fiscal.xlsx",b"fake"),"razao":("razao.xlsx",b"fake")}
     assert client.post("/api/v1/conferencia-fiscal/242/ia",files=files).status_code == 503
 
@@ -421,11 +422,11 @@ def test_openrouter_status_tem_prioridade_e_gemini_continua_reserva(monkeypatch)
     client = TestClient(app)
     monkeypatch.setenv("GEMINI_API_KEY","gemini-legacy")
     assert client.get("/api/v1/conferencia-fiscal/ia/status").json() == {
-        "configurado": True, "provedor": "gemini", "gratuito": False
+        "configurado": True, "provedor": "gemini", "gratuito": False, "fallback_gemini":False
     }
     monkeypatch.setenv("OPENROUTER_API_KEY","or-key")
     assert client.get("/api/v1/conferencia-fiscal/ia/status").json() == {
-        "configurado": True, "provedor": "openrouter", "gratuito": True
+        "configurado": True, "provedor": "openrouter", "gratuito": True, "fallback_gemini":False
     }
 
 
@@ -526,7 +527,7 @@ def test_sem_chave_openrouter_nao_ativa_gemini_por_padrao(monkeypatch):
     monkeypatch.delenv("RAZYNC_AI_LEGACY_GEMINI", raising=False)
     monkeypatch.setenv("GEMINI_API_KEY", "gemini-key")
     response = TestClient(app).get("/api/v1/conferencia-fiscal/ia/status")
-    assert response.json() == {"configurado":False, "provedor":None, "gratuito":True}
+    assert response.json() == {"configurado":False, "provedor":None, "gratuito":True, "fallback_gemini":False}
     files={"acumuladores":("fiscal.xlsx",b"x"),"razao":("razao.xlsx",b"y")}
     response = TestClient(app).post("/api/v1/conferencia-fiscal/ia",files=files)
     assert response.status_code == 503
