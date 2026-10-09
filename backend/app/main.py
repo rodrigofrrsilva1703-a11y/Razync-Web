@@ -590,6 +590,12 @@ async def conferencia_fiscal_universal_exportar(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+# Registre a IA universal antes da rota legada com parâmetro {company_code},
+# que de outro modo capturaria o segmento "/ia" como um código inválido.
+from app.fiscal_ai import router as fiscal_ai_router
+app.include_router(fiscal_ai_router)
+
+
 @app.post("/api/v1/conferencia-fiscal/{company_code}/preview")
 async def conferencia_fiscal_preview_web(
     company_code: int,
@@ -804,6 +810,5 @@ def tasks_delete(task_id: str):
 from app.migration_routes import router as migration_router
 app.include_router(migration_router)
 
-from app.fiscal_ai import router as fiscal_ai_router, legacy_router as fiscal_ai_legacy_router
-app.include_router(fiscal_ai_router)
+from app.fiscal_ai import legacy_router as fiscal_ai_legacy_router
 app.include_router(fiscal_ai_legacy_router)
