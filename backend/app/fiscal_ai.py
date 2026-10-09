@@ -185,12 +185,14 @@ def _openrouter_models():
     return available or ["openrouter/free"]
 
 
-def _openrouter_completion(payload, models, key):
+def _openrouter_completion(payload, models, key, *, _repair=False):
     """Adapta formatos gratuitos sem reduzir a validação fiscal-contábil."""
     group_ids = payload["generationConfig"]["responseSchema"]["properties"]["analises"]["items"]["properties"]["grupo"]["enum"]
     # A resposta do modelo gratuito estava terminando em finish_reason=length.
     # Requisitar poucos grupos por vez evita um JSON enorme e truncado.
-    if os.getenv("OPENROUTER_ROUTER_FIRST") == "1" and len(group_ids) > 2:
+    # Todos os modelos gratuitos recebem lotes menores, não apenas o roteador.
+    # Mantemos os lançamentos de cada grupo dentro do seu próprio lote.
+    if len(group_ids) > 2:
         source = json.loads(payload["contents"][0]["parts"][0]["text"])
         all_analyses, used_models = [], []
         for start in range(0, len(group_ids), 2):
@@ -300,6 +302,15 @@ def _openrouter_completion(payload, models, key):
             )
             candidate["reasoning"] = {"enabled": False}
             candidate["max_tokens"] = 6200
+        if _repair:
+            # O prompt resumido substitui a instrução original; por isso o
+            # pedido de correção precisa ser preservado DEPOIS dessa troca.
+            candidate["messages"][0]["content"] += (
+                "\\nCORREÇÃO NECESSÁRIA: um item anterior continha formato incorreto "
+                "ou referência inexistente. Responda todos os grupos, use apenas "
+                "referências L enviadas com cada grupo e, se não houver certeza, "
+                "não mencione L no texto e devolva evidencias []."
+            )
         return candidate
 
     free_router = all(m in FREE_FISCAL_MODELS for m in models)
@@ -379,6 +390,31 @@ def _openrouter_completion(payload, models, key):
                 "Tente novamente ou reduza a quantidade de contas analisadas. "
                 "A conferência contábil permanece salva.") from None
         raise HTTPException(502, "Não foi possível conectar ao OpenRouter. A conferência contábil permanece salva.") from None
+    # A resposta de um modelo gratuito pode chegar íntegra, mas conter
+    # evidências que não existem no lote. Corrija UMA vez junto ao provedor;
+    # nunca invente, remapeie ou silenciosamente descarte lançamentos.
+    def repair_once(cause):
+        logger.warning(
+            "fiscal_openrouter_rejected category=%s model=%s repair=%s",
+            cause, request_payload["model"], not _repair,
+        )
+        if _repair:
+            raise ValueError({
+                "invalid_evidence": "Invalid evidence reference",
+                "missing_groups": "Resposta de OpenRouter com grupos ausentes",
+                "invalid_json": "JSON ou blocos de texto inválidos do OpenRouter",
+                "empty_content": "Resposta vazia do OpenRouter",
+            }.get(cause, "Resposta inválida do OpenRouter"))
+        corrected = copy.deepcopy(payload)
+        corrected["systemInstruction"]["parts"][0]["text"] += (
+            "\nCORREÇÃO NECESSÁRIA: a última resposta não atendeu ao contrato. "
+            "Forneça um item para cada grupo solicitado, em JSON válido. "
+            "Cite somente referências L presentes nos lançamentos do próprio grupo. "
+            "Na dúvida use evidencias [] e NÃO cite referências inexistentes no texto. "
+            "Não invente lançamentos, documentos ou valores; mantenha a explicação útil."
+        )
+        return _openrouter_completion(corrected, models, key, _repair=True)
+
     choices = response_json.get("choices") or []
     if not choices:
         logger.warning("fiscal_openrouter_rejected category=missing_choices")
@@ -400,8 +436,7 @@ def _openrouter_completion(payload, models, key):
         parsed = message.get("parsed")
         content = json.dumps(parsed, ensure_ascii=False) if isinstance(parsed, dict) else ""
     if not content.strip():
-        logger.warning("fiscal_openrouter_rejected category=empty_content")
-        raise ValueError("Resposta vazia do OpenRouter")
+        return repair_once("empty_content")
     result_text = content.strip()
     if result_text.startswith("```"):
         lines = result_text.splitlines()
@@ -450,17 +485,40 @@ def _openrouter_completion(payload, models, key):
             if parsed:
                 answer = {"analises": parsed}
             else:
-                logger.warning("fiscal_openrouter_rejected category=invalid_json")
-                raise ValueError("JSON ou blocos de texto inválidos do OpenRouter") from None
+                return repair_once("invalid_json")
     if not isinstance(answer, dict) or not isinstance(answer.get("analises"), list):
-        logger.warning("fiscal_openrouter_rejected category=missing_analises")
-        raise ValueError("O OpenRouter não retornou a estrutura esperada")
+        return repair_once("missing_groups")
     # 'length' não basta para descartar um JSON já completo. Mas não
     # aceitamos qualquer grupo perdido: conferimos contra o lote solicitado.
     items = answer["analises"]
     if len(items) != len(group_ids) or {row.get("grupo", "").strip().upper() for row in items if isinstance(row, dict) and isinstance(row.get("grupo"), str)} != set(group_ids):
-        logger.warning("fiscal_openrouter_rejected category=missing_groups")
-        raise ValueError("Resposta de OpenRouter com grupos ausentes")
+        return repair_once("missing_groups")
+    # Referências são locais e específicas por grupo. A revisão não pode usar
+    # um L de outra conta, nem alegar evidências inexistentes no texto.
+    context = json.loads(payload["contents"][0]["parts"][0]["text"])
+    permitted = {
+        group["grupo"]: {
+            str(row["referencia"]).upper()
+            for row in group.get("lancamentos", [])
+            if isinstance(row, dict) and isinstance(row.get("referencia"), str)
+        }
+        for group in context.get("grupos", [])
+        if isinstance(group, dict) and isinstance(group.get("grupo"), str)
+    }
+    for item in items:
+        group_id = item["grupo"].strip().upper()
+        evidence = item.get("evidencias", [])
+        if isinstance(evidence, str):
+            evidence = [] if evidence.strip().lower() in ("", "nenhum", "nenhuma", "[]", "-") else evidence.split(",")
+        if not isinstance(evidence, list):
+            return repair_once("invalid_evidence")
+        allowed = permitted.get(group_id, set())
+        declared = {x.strip().upper() for x in evidence if isinstance(x, str)}
+        quoted = set(re.findall(r"\bL\d+\b", (
+            str(item.get("explicacao", "")) + " " + str(item.get("verificar", ""))
+        ).upper()))
+        if len(evidence) > 8 or any(not isinstance(x, str) for x in evidence) or not declared.issubset(allowed) or not quoted.issubset(allowed):
+            return repair_once("invalid_evidence")
     return answer, str(response_json.get("model") or "")
 
 
@@ -675,6 +733,8 @@ def explain(report):
         try:
             answer, used_model = _openrouter_completion(payload, models, openrouter_key)
             analyses = _validar_resposta_ia(answer, report, mapping, references)
+            logger.info("fiscal_ia_openrouter_success model=%s groups=%d",
+                        str(used_model).replace("\\n", " ")[:120], len(analyses))
             return {
                 "analises": analyses, "aviso": "Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
                 "limite": coverage, "provedor": "openrouter", "modelo_usado": used_model,
@@ -683,8 +743,8 @@ def explain(report):
         except HTTPException as exc:
             # Apenas informações operacionais seguras, sem mensagens upstream,
             # chaves, prompt, históricos ou contas de clientes.
-            logger.warning("fiscal_ia_openrouter_failure status=%d fallback_available=%s",
-                           exc.status_code, bool(gemini_key))
+            logger.warning("fiscal_ia_openrouter_failure status=%d model=%s fallback_available=%s",
+                           exc.status_code, models[0] if models else "none", bool(gemini_key))
             # 403/422/503 indicam problema de permissão ou configuração.
             if exc.status_code in (403, 422, 503):
                 raise
@@ -697,8 +757,8 @@ def explain(report):
                 "Invalid explanation", "Invalid evidence reference", "Empty answer",
                 "Parecer incompleto em lote gratuito", "Resposta de OpenRouter com grupos ausentes"}
             category = str(exc) if isinstance(exc, ValueError) and str(exc) in allowed_causes else type(exc).__name__
-            logger.warning("fiscal_ia_openrouter_invalid_response category=%s fallback_available=%s",
-                           category, bool(gemini_key))
+            logger.warning("fiscal_ia_openrouter_invalid_response category=%s model=%s fallback_available=%s",
+                           category, models[0] if models else "none", bool(gemini_key))
             if not gemini_key:
                 raise HTTPException(
                     502, "Não foi possível obter análise válida do OpenRouter. A conferência permanece disponível."
