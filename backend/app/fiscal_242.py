@@ -90,7 +90,8 @@ def _csv_para_excel(conteudo: bytes, nome: str) -> tuple[bytes, str]:
             blocos.append(["Conta", conta, "", "", "", nomes_contas.get(conta, "")])
             blocos.append(["Data", "Lote", "Histórico", "Cta C/Part", "Débito", "Crédito", "Filial"])
             blocos.extend(movimentos)
-        linhas = blocos
+        # Mantém o cabeçalho "Empresa:" do CSV mesmo no modo tabular.
+        linhas = linhas[:cabecalho_indice] + blocos
 
     tamanho = max(len(linha) for linha in linhas)
     quadro = pd.DataFrame([linha + [""] * (tamanho - len(linha)) for linha in linhas])
@@ -208,8 +209,18 @@ def conferencia_fiscal_preview(
     if fiscal["inicio"] and razao["inicio"] and fiscal != razao:
         avisos.append("Os períodos informados nos dois relatórios não coincidem. Confira a competência.")
 
+    nome_empresa = resultado.get("empresa_nome", "")
+    if not nome_empresa:
+        avisos.append("Não foi possível identificar a razão social nos cabeçalhos. Confira se os dois arquivos são da mesma empresa.")
+    elif not resultado.get("empresa_fiscal") or not resultado.get("empresa_razao"):
+        origem = "Razão" if resultado.get("empresa_razao") else "Resumo por Acumulador"
+        avisos.append(f"Razão social identificada pelo {origem}; o outro relatório não contém o nome reconhecível para confirmar.")
+
     return {
         "empresa": codigo_empresa,
+        "empresa_nome": nome_empresa,
+        "empresa_fiscal": resultado.get("empresa_fiscal", ""),
+        "empresa_razao": resultado.get("empresa_razao", ""),
         "filial_aplicada": str(resultado.get("filial_aplicada", "")),
         "filiais_encontradas": resultado.get("filiais_encontradas", []),
         "periodo_fiscal": fiscal,
