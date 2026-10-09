@@ -563,10 +563,14 @@ async def conferencia_fiscal(
 ):
     try:
         from razync.conferencia_fiscal import processar_conferencia, gerar_relatorio_excel
+        from app.fiscal_242 import _csv_para_excel
+        razao_conteudo, razao_nome = _csv_para_excel(
+            await razao.read(), razao.filename or "razao.xlsx",
+        )
         resultado = await run_in_threadpool(processar_conferencia,
-            await acumuladores.read(), acumuladores.filename or "acumuladores",
-            await razao.read(), razao.filename or "razao",
-            filial or None,
+            await acumuladores.read(), acumuladores.filename or "acumuladores.xls",
+            razao_conteudo, razao_nome,
+            filial or (str(company_code) if company_code == 242 else None),
         )
         report = await run_in_threadpool(gerar_relatorio_excel, resultado)
         resumo = resultado.get("resumo", pd.DataFrame())
