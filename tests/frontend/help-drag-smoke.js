@@ -82,36 +82,26 @@
     button.click();
     if(guide.hidden || !guide.textContent.includes("conta Itaú 512"))throw Error("Guia da Base Inteligente da 1408 incorreto");
 
-    // Valida no navegador real a nova aba exclusiva da Eletro Forte 242.
-    const matriz = {
-      codigo:242, nome:"Eletro Forte Matriz", regime:"LUCRO REAL",
-      capabilities:{
-        status:"api_ready",
-        tools:["modelo_dominio","base_inteligente","conferencia_extrato"],
-        workflow:"advanced",
-        banks:{itau_508:"508",itau_509:"509",banco_brasil:"8"},
-        roles:[{name:"despesas",label:"Despesas",accept:".xls,.xlsx",optional:true}]
-      }
-    };
-    openCompany(matriz);
-    await pause(100);
-    const fiscalTab=document.querySelector('#companyPanel .tool-tab[data-tool="fiscal"]');
-    const fiscalPane=document.querySelector('#companyPanel .tool-pane[data-pane="fiscal"]');
-    if (!fiscalTab || fiscalTab.hidden || getComputedStyle(fiscalTab).display==="none") {
-      throw Error("A aba Fiscal × Contábil não apareceu na empresa 242.");
+    // Ferramenta geral: acessível pelo menu lateral independente da empresa.
+    const fiscalNav=document.querySelector('.main-nav-btn[data-view="fiscal"]');
+    const fiscalPane=document.querySelector('#fiscalView');
+    if(!fiscalNav || !fiscalPane)throw Error("Conferência universal ausente do menu lateral.");
+    fiscalNav.click();
+    await pause(120);
+    if(!fiscalPane.classList.contains("active") || getComputedStyle(fiscalPane).display==="none") {
+      throw Error("A conferência universal não abriu pelo menu lateral.");
     }
-    fiscalTab.click();
-    if (!fiscalPane || fiscalPane.hidden || getComputedStyle(fiscalPane).display==="none") {
-      throw Error("O painel da conferência fiscal não abriu na empresa 242.");
-    }
-    if (!document.querySelector("#fiscal242Form") || !document.querySelector("#fiscal242Results")) {
-      throw Error("Os controles de upload e resultados da 242 estão ausentes.");
+    if(!document.querySelector("#fiscal242Form") || !document.querySelector("#fiscal242Results") ||
+       !document.querySelector("#fiscalFilialCodigo") || !document.querySelector("#fiscalEmpresaCodigo")) {
+      throw Error("Campos e resultados da conferência universal incompletos.");
     }
     openCompany(filial);
     await pause(80);
-    if (!fiscalTab.hidden || getComputedStyle(fiscalTab).display!=="none") {
-      throw Error("A aba exclusiva da 242 apareceu na filial 1408.");
+    fiscalNav.click();
+    if(!fiscalPane.classList.contains("active")) {
+      throw Error("A conferência não ficou disponível após entrar em outra empresa.");
     }
+    document.querySelector('.main-nav-btn[data-view="companies"]').click();
 
     const withoutTools = {
       codigo:257,nome:"Empresa sem ferramenta",regime:"LUCRO PRESUMIDO",
