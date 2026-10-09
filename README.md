@@ -27,49 +27,59 @@ Cada ferramenta migrada deve ser comparada com o resultado da versão atual ante
 - `MIGRATION.md` — controle das etapas da migração.
 
 
-## Conferência Fiscal × Contábil — IA 100% gratuita no OpenRouter
+## Conferência Fiscal × Contábil — OpenRouter e Gemini gratuito
 
-O Razync usa **exclusivamente o OpenRouter gratuito por padrão**, sem executar
-nenhum modelo de IA pago. O Gemini direto permanece desativado, mesmo se a
-variável `GEMINI_API_KEY` antiga estiver presente no Railway. A única exceção
-de compatibilidade é o modo legado explícito
-`RAZYNC_AI_LEGACY_GEMINI=1`, reservado a testes de integração de versões
-anteriores — **não configure essa variável na produção**.
+O serviço Razync tenta a análise primeiro pelo **OpenRouter gratuito**.
+Se o OpenRouter não responder por limite (429/402), indisponibilidade
+ou resposta incompleta/inválida, tenta automaticamente a **Gemini API
+gratuita** — somente quando autorizada no Railway. O usuário não precisa
+trocar a IA manualmente; os pareceres continuam no mesmo painel e no
+mesmo formato de Excel.
 
-### Configuração no Railway
+### Variáveis do Railway (`razync-api`)
 
-- `OPENROUTER_API_KEY`: chave privada, armazenada nas variáveis de ambiente
-  do serviço `razync-api`, nunca no GitHub ou em arquivos JavaScript.
-- `OPENROUTER_MODELS` (opcional): lista separada por vírgulas de IDs
-  exclusivamente gratuitos, como `openrouter/free` e
-  `nvidia/nemotron-3-ultra-550b-a55b:free`. Padrão **`openrouter/free`**.
-  Modelos comuns (sem o sufixo `:free`) e `openrouter/auto` são rejeitados.
+- `OPENROUTER_API_KEY`: chave privada do OpenRouter no backend.
+- `OPENROUTER_MODELS` (opcional): padrão `openrouter/free`; aceita
+  somente `openrouter/free` ou IDs terminados em `:free`. Nunca chama
+  modelo pago. O preço máximo permitido é zero para entrada e saída.
+- `GEMINI_API_KEY`: chave do Google AI Studio já usada pela integração
+  anterior; manter exclusivamente no Railway.
+- `GEMINI_FREE_MODEL` (opcional): padrão `gemini-3.1-flash-lite`.
+  Só aceita `gemini-3.1-flash-lite` e `gemini-2.5-flash-lite`.
+- `GEMINI_FREE_TIER_CONFIRMED=1`: habilita o Gemini como reserva,
+  **somente depois de verificar que o projeto da chave está sem
+  faturamento associado e permanece no nível gratuito da Gemini API**.
+  Sem esta variável, o fallback fica desligado por segurança.
 
-O roteador `openrouter/free` escolhe entre modelos gratuitos disponíveis e
-compatíveis com o formato exigido na análise. Se uma lista de vários modelos
-`:free` for configurada, o modelo prioritário também alterna a cada nova
-análise, com fallback. Todos os candidatos recebem o mesmo contexto fiscal,
-período, acumuladores, Razão e referências.
+**Não há como verificar programaticamente pelo token API se uma chamada
+Gemini será faturada:** o nível de cobrança depende do projeto Google e
+da conta vinculada. Não ative a confirmação em projeto pago. Não use
+`RAZYNC_AI_LEGACY_GEMINI=1` na produção, pois esse modo não tem a
+garantia de modelo restrito ao nível gratuito e existe só para migração
+de testes antigos.
 
-### Travamentos de custo
+### Continuidade e consistência
 
-1. Uma lista configurada com modelo pago causa erro **antes de enviar dados**.
-2. A chamada exige `provider.max_price.prompt=0` e
-   `provider.max_price.completion=0`, bloqueando endpoints cobrados.
-3. Se nenhum serviço grátis estiver disponível ou a cota se esgotar, o Razync
-   mostra um erro, **sem tentar uma IA paga**.
-4. Nenhum cálculo contábil é feito pela IA; os resultados e referências
-   continuam validados e a exportação Excel usa a análise já concluída.
+Os dois provedores recebem os **mesmos dados extraídos**, período,
+acumuladores, histórico, lançamentos, referências e instruções técnicas.
+O JSON retornado passa pelo mesmo validador: nunca aceita conta de
+outro relatório, valores inventados nem referências de lançamentos
+inexistentes. Uma resposta parcial/incompleta é descartada; a reserva
+refaz a solicitação inteira. As explicações podem variar na redação,
+mas têm a mesma estrutura, checklist, evidências, totalizadores oficiais
+e exportação Excel. O sistema indica o modelo utilizado discretamente.
 
-A política de privacidade mantém `data_collection: deny` e
-`require_parameters: true`. Isso reduz o conjunto de modelos elegíveis e
-pode fazer a solicitação falhar — intencionalmente — quando não há provedores
-gratuitos que respeitem essas condições. Dados contábeis são compartilhados
-com o prestador de IA escolhido: verifique autorização, confidencialidade e
-políticas de tratamento de dados antes de utilizar relatórios reais.
+Quando ambas as cotas estão esgotadas, a conferência contábil permanece
+intacta e o usuário vê um único aviso de indisponibilidade. Não são
+cobrados tokens pelo OpenRouter (`max_price=0`). Para o Google, a
+garantia de gratuidade depende do projeto confirmado conforme acima.
 
-**Grátis não é ilimitado:** a conta Free do OpenRouter tem limite anunciado
-de 50 requisições por dia, além de eventuais limites por modelo/provedor.
-A conferência segue limitada a 12 grupos e 1.500 registros por análise.
-É possível alterar a lista de modelos gratuitos; isso não remove os limites
-compartilhados da conta OpenRouter.
+**Privacidade:** o nível gratuito da Gemini API pode usar os dados
+enviados para aprimorar produtos Google. Os históricos contábeis podem
+conter nomes e outros dados de terceiros. Antes de habilitar, confirme
+a autorização organizacional e a adequação das políticas de privacidade.
+O OpenRouter mantém o filtro `data_collection: deny`.
+
+Continuam existindo limites de requisições e processamento: uma análise
+cobre até **12 grupos e 1.500 lançamentos**, e as cotas gratuitas de cada
+provedor não são ilimitadas.
