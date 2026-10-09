@@ -59,7 +59,7 @@
       aiButton.disabled = !aiConfigured || !previewBody || Boolean(aiController);
       if (typeof aiRunInside !== "undefined" && aiRunInside) aiRunInside.disabled = aiButton.disabled;
       if (!aiController && !aiResult.children.length) aiMessage.textContent = aiConfigured
-        ? (previewBody ? "Gemini conectado. Clique em Analisar diferenças com IA." : "Gemini conectado. Faça a conferência para analisar as diferenças.")
+        ? (previewBody ? "Gemini conectado. Clique em Gerar análise." : "Gemini conectado. Faça a conferência para analisar as diferenças.")
         : "Gemini ainda não configurado. Após adicionar a chave no Railway, clique em Atualizar conexão.";
     } catch (error) {
       if (statusController !== controller) return;
@@ -69,10 +69,10 @@
       if (statusController === controller) statusController = null;
     }
   }
-  const refreshConnection = node("button", "secondary-action", "Atualizar conexão");
+  const refreshConnection = node("button", "fiscal-ai-refresh", "Verificar conexão");
   refreshConnection.type = "button";
   refreshConnection.addEventListener("click", refreshAIStatus);
-  aiButton.after(refreshConnection);
+  aiOpen.after(refreshConnection);
   navigation.addEventListener("click", refreshAIStatus);
   window.addEventListener("focus", () => { if (pane.classList.contains("active")) refreshAIStatus(); });
   refreshAIStatus();
@@ -591,7 +591,7 @@
     results.hidden = false;
     aiOpen.disabled = false;
     aiCompany.textContent = report.empresa_nome || "Empresa não identificada";
-    aiInlineStatus.textContent = "Conferência pronta. Use o Gemini para analisar diferenças e alertas.";
+    aiInlineStatus.textContent = "Conferência pronta. Use a análise inteligente para revisar diferenças e alertas.";
     selectedKey = "";
     filter.value = "todas";
     search.value = "";
