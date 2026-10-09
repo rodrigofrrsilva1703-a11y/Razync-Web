@@ -361,3 +361,60 @@
   #companyPanel .fiscal-ai-value { padding:9px; }
   #companyPanel .fiscal-ai-value strong { font-size:12px; }
 }
+
+/* Vínculo auditável entre conta contábil e acumuladores do Domínio. */
+#companyPanel .fiscal-table { min-width:1090px; }
+#companyPanel .fiscal-accum-cell { min-width:100px; }
+#companyPanel .fiscal-accum-tags {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:5px;
+  max-width:210px;
+}
+#companyPanel .fiscal-accum-tag,
+#companyPanel .fiscal-accum-code {
+  display:inline-block;
+  padding:4px 8px;
+  border:1px solid #dce6f0;
+  background:#f4f8fc;
+  color:#315673;
+  border-radius:7px;
+  font-size:12px;
+  font-weight:700;
+  font-variant-numeric:tabular-nums;
+}
+#companyPanel .fiscal-accum-breakdown {
+  margin:14px 0;
+  padding:14px;
+  border:1px solid #e3ebf3;
+  border-radius:12px;
+  background:#fafdff;
+}
+#companyPanel .fiscal-accum-breakdown h4 {
+  margin:0 0 10px;
+  color:#284763;
+  font-size:13px;
+}
+#companyPanel .fiscal-accum-list {
+  display:grid;
+  gap:0;
+}
+#companyPanel .fiscal-accum-line {
+  display:grid;
+  grid-template-columns: minmax(66px,auto) minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:8px 0;
+  border-bottom:1px solid #ecf1f6;
+  font-size:12px;
+}
+#companyPanel .fiscal-accum-line:last-child { border-bottom:0; }
+#companyPanel .fiscal-accum-desc { color:#4d647b; overflow-wrap:anywhere; }
+#companyPanel .fiscal-accum-amount { color:#253d55; font-weight:650; }
+@media(max-width:480px) {
+  #companyPanel .fiscal-accum-line {
+    grid-template-columns: minmax(65px,auto) minmax(0,1fr);
+  }
+  #companyPanel .fiscal-accum-amount { grid-column:2; }
+}
