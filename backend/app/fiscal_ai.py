@@ -330,33 +330,69 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
         with urllib.request.urlopen(request, timeout=seconds) as response:
             return json.loads(response.read(200000))
 
-    try:
+    def safe_upstream_category(exc):
+        """Classifica falhas sem registrar corpo, nomes, extratos ou credenciais."""
         try:
-            response_json = send(request_payload)
-        except urllib.error.HTTPError as exc:
-            if exc.code == 400 and not free_router:
-                exc.close()
-                response_json = send(compatible_payload(request_payload), seconds=12)
-            elif exc.code in (400, 404, 429, 500, 502, 503, 504) and len(models) > 1:
-                exc.close()
+            raw = json.loads(exc.read(16384))
+            error = raw.get("error", {}) if isinstance(raw, dict) else {}
+            detail = str(error.get("message", "")).lower() if isinstance(error, dict) else ""
+        except (ValueError, UnicodeError, TypeError, AttributeError):
+            detail = ""
+        cases = [
+            (("data policy", "privacy", "data collection", "zero data"), "politica_privacidade"),
+            (("no endpoints", "no provider", "no available provider", "endpoint"), "sem_endpoint_compativel"),
+            (("rate limit", "too many requests", "quota"), "limite_provedor"),
+            (("context length", "context window", "too many tokens", "payload"), "contexto_excedido"),
+            (("model not found", "unknown model", "model unavailable"), "modelo_indisponivel"),
+            (("overloaded", "temporarily unavailable", "upstream"), "provedor_indisponivel"),
+            (("json", "response_format", "schema", "parameters"), "formato_incompativel"),
+        ]
+        return next((label for tokens, label in cases
+                     if any(token in detail for token in tokens)), "falha_nao_especificada")
+
+    upstream_category = "falha_nao_especificada"
+    # Modelos gratuitos podem devolver 502/503 mesmo com o backend saudável.
+    # Tente até três modelos diferentes antes de usar o Gemini de reserva.
+    # O mesmo contexto e as restrições gratuitas/privacidade são preservados.
+    candidates = models[:3]
+    try:
+        for attempt, model in enumerate(candidates):
+            request = dict(request_payload) if attempt == 0 else compatible_payload(request_payload)
+            request["model"] = model
+            try:
+                response_json = send(request)
+                if attempt:
+                    logger.info("fiscal_openrouter_recovered model=%s attempt=%d",
+                                model, attempt + 1)
+                break
+            except urllib.error.HTTPError as exc:
+                if exc.code == 400 and not free_router:
+                    # Mantém a segunda tentativa com JSON compatível sem mudar
+                    # de modelo nem relaxar limites e política dos dados.
+                    exc.close()
+                    response_json = send(compatible_payload(request), seconds=12)
+                    break
+                upstream_category = safe_upstream_category(exc)
+                logger.warning(
+                    "fiscal_openrouter_upstream status=%d model=%s category=%s attempt=%d",
+                    exc.code, model, upstream_category, attempt + 1,
+                )
+                transient = exc.code in (400, 404, 408, 429, 500, 502, 503, 504, 529)
+                if transient and attempt + 1 < len(candidates):
+                    exc.close()
+                    with lock:
+                        model_cooldowns[model] = time.monotonic() + 90
+                    continue
+                raise
+            except (TimeoutError, urllib.error.URLError) as exc:
+                timeout = isinstance(exc, TimeoutError) or isinstance(
+                    getattr(exc, "reason", None), TimeoutError)
+                if not timeout or attempt + 1 >= len(candidates):
+                    raise
+                logger.warning("fiscal_openrouter_upstream status=timeout model=%s attempt=%d",
+                               model, attempt + 1)
                 with lock:
-                    model_cooldowns[models[0]] = time.monotonic() + 90
-                retry = compatible_payload(request_payload)
-                retry["model"] = models[1]
-                response_json = send(retry)
-            else:
-                raise
-        except (TimeoutError, urllib.error.URLError) as exc:
-            if not isinstance(exc, TimeoutError) and not isinstance(getattr(exc, "reason", None), TimeoutError):
-                raise
-            with lock:
-                model_cooldowns[models[0]] = time.monotonic() + 90
-            alternatives = models[1:]
-            if not alternatives:
-                raise
-            retry = compatible_payload(request_payload)
-            retry["model"] = alternatives[0]
-            response_json = send(retry)
+                    model_cooldowns[model] = time.monotonic() + 90
     except urllib.error.HTTPError as exc:
         # Não repassa mensagens do provedor: podem conter dados privados ou credenciais.
         if exc.code in (401, 403):
@@ -366,20 +402,15 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
         elif exc.code == 429:
             detail = "Todos os modelos disponíveis atingiram limites de requisições. Tente novamente mais tarde ou configure modelos com cota disponível."
         elif exc.code in (400, 404):
-            try:
-                upstream = json.loads(exc.read(32768)).get("error", {})
-                message = str(upstream.get("message", "")).lower()
-            except Exception:
-                message = ""
-            category = next((label for terms, label in [
-                (("data policy", "privacy", "data collection"), "política de privacidade dos endpoints"),
-                (("reasoning",), "parâmetro de raciocínio"),
-                (("max_tokens", "max token", "token limit"), "limite de tokens"),
-                (("provider", "endpoint"), "seleção de endpoints"),
-                (("model",), "seleção de modelos"),
-                (("credit", "balance"), "saldo ou cota da conta"),
-                (("messages", "system"), "formato das mensagens"),
-            ] if any(term in message for term in terms)), "solicitação recusada pelo provedor")
+            causes = {
+                "politica_privacidade": "política de privacidade dos endpoints",
+                "sem_endpoint_compativel": "seleção de endpoints",
+                "limite_provedor": "limite de requisições",
+                "contexto_excedido": "limite de contexto",
+                "modelo_indisponivel": "seleção de modelos",
+                "formato_incompativel": "formato dos parâmetros",
+            }
+            category = causes.get(upstream_category, "solicitação recusada pelo provedor")
             detail = f"O OpenRouter rejeitou a análise gratuita ({exc.code}): " + category + ". A conferência permanece disponível."
         else:
             detail = f"OpenRouter temporariamente indisponível (HTTP {exc.code}). A conferência contábil não foi alterada."
