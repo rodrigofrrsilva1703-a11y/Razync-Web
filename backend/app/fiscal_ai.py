@@ -453,7 +453,7 @@ def _openrouter_completion(payload, models, key):
     # 'length' não basta para descartar um JSON já completo. Mas não
     # aceitamos qualquer grupo perdido: conferimos contra o lote solicitado.
     items = answer["analises"]
-    if len(items) != len(group_ids) or {row.get("grupo") for row in items if isinstance(row, dict)} != set(group_ids):
+    if len(items) != len(group_ids) or {row.get("grupo", "").strip().upper() for row in items if isinstance(row, dict) and isinstance(row.get("grupo"), str)} != set(group_ids):
         logger.warning("fiscal_openrouter_rejected category=missing_groups")
         raise ValueError("Resposta de OpenRouter com grupos ausentes")
     return answer, str(response_json.get("model") or "")
@@ -687,8 +687,13 @@ def explain(report):
                 raise
             or_failed = True
         except (ValueError, TypeError, KeyError, IndexError) as exc:
+            # Nunca registrar o conteúdo livre do modelo nem dados do cliente.
+            allowed_causes = {"Invalid analysis item", "Unknown or repeated group",
+                "Invalid explanation", "Invalid evidence reference", "Empty answer",
+                "Parecer incompleto em lote gratuito", "Resposta de OpenRouter com grupos ausentes"}
+            category = str(exc) if isinstance(exc, ValueError) and str(exc) in allowed_causes else type(exc).__name__
             logger.warning("fiscal_ia_openrouter_invalid_response category=%s fallback_available=%s",
-                           type(exc).__name__, bool(gemini_key))
+                           category, bool(gemini_key))
             if not gemini_key:
                 raise HTTPException(
                     502, "Não foi possível obter análise válida do OpenRouter. A conferência permanece disponível."
