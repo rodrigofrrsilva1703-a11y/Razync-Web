@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="./assets/css/refined-theme.css?v=3">
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
-  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=gemini-design-3">
+  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=conferencia242-brl-1">
 </head>
 <body>
   <div class="app-shell">
@@ -317,17 +317,6 @@
             </div>
             <p class="fiscal-period" id="fiscal242Period"></p>
             <div id="fiscal242Warnings" class="fiscal-warnings"></div>
-            <section class="fiscal-ai">
-              <div class="fiscal-ai-heading">
-                <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
-                <div><span class="fiscal-ai-eyebrow">ASSISTENTE DE CONFERÊNCIA</span><h3>Uma visão mais clara das diferenças</h3><p>Entenda os valores, revise as hipóteses e confira os lançamentos citados.</p></div>
-                <span class="fiscal-ai-provider">Gemini</span>
-              </div>
-              <div class="fiscal-ai-actions"><button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button></div>
-              <p id="fiscal242AIMessage" role="status">Verificando disponibilidade do Gemini…</p>
-              <details class="fiscal-ai-privacy"><summary>Como seus dados são analisados</summary><p>O Gemini recebe os dados extraídos dos relatórios: históricos completos (que podem conter nomes e documentos), datas, contas, contrapartidas e valores. O fiscal é um resumo por acumulador. As sugestões exigem revisão humana e não alteram cálculos ou arquivos.</p></details>
-              <div id="fiscal242AIResult"></div>
-            </section>
             <div class="fiscal-results-card">
               <div class="fiscal-results-heading">
                 <div><h3>Resultado por conta</h3><p>As divergências aparecem primeiro. Selecione uma conta para examinar os lançamentos.</p></div>
@@ -342,13 +331,30 @@
               </div>
               <div class="fiscal-table-scroll">
                 <table class="fiscal-table">
-                  <thead><tr><th>Conta</th><th>Descrição</th><th>Tipo</th><th>Fiscal</th><th>Contábil</th><th>Diferença</th><th>Situação</th></tr></thead>
+                  <thead><tr><th>Conta</th><th>Descrição</th><th>Tipo</th><th>Fiscal</th><th>Total do Razão</th><th>Contábil considerado*</th><th>Diferença*</th><th>Situação</th></tr></thead>
                   <tbody id="fiscal242Rows"></tbody>
                 </table>
               </div>
               <p class="fiscal-empty" id="fiscal242Empty" hidden>Nenhuma conta encontrada neste filtro.</p>
+              <p class="fiscal-disclaimer fiscal-table-note">*Contábil considerado = lançamentos classificados como fiscais ou fechamento somente por valor (com alerta). Diferença = contábil considerado menos fiscal.</p>
             </div>
             <div id="fiscal242Detail" class="fiscal-detail" hidden></div>
+            <details class="fiscal-unmapped" id="fiscal242Unmapped" hidden>
+              <summary>Acumuladores sem conta contábil <span id="fiscal242UnmappedCount"></span></summary>
+              <p>Estes acumuladores foram encontrados no relatório, mas não possuem uma conta definida para comparação. Confirme o vínculo antes de conciliar.</p>
+              <div class="fiscal-table-scroll"><table class="fiscal-table"><thead><tr><th>Acumulador</th><th>Descrição</th><th>Tipo</th><th>Valor fiscal</th></tr></thead><tbody id="fiscal242UnmappedRows"></tbody></table></div>
+            </details>
+            <section class="fiscal-ai">
+              <div class="fiscal-ai-heading">
+                <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
+                <div><span class="fiscal-ai-eyebrow">ASSISTENTE DE CONFERÊNCIA</span><h3>Uma visão mais clara das diferenças</h3><p>Entenda os valores, revise as hipóteses e confira os lançamentos citados.</p></div>
+                <span class="fiscal-ai-provider">Gemini</span>
+              </div>
+              <div class="fiscal-ai-actions"><button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button></div>
+              <p id="fiscal242AIMessage" role="status">Verificando disponibilidade do Gemini…</p>
+              <details class="fiscal-ai-privacy"><summary>Como seus dados são analisados</summary><p>O Gemini recebe os dados extraídos dos relatórios: históricos completos (que podem conter nomes e documentos), datas, contas, contrapartidas e valores. O fiscal é um resumo por acumulador. As sugestões exigem revisão humana e não alteram cálculos ou arquivos.</p></details>
+              <div id="fiscal242AIResult"></div>
+            </section>
             <div class="fiscal-download-row">
               <button type="button" class="secondary-action" id="fiscal242Download">Baixar relatório Excel (opcional)</button>
             </div>
@@ -417,7 +423,7 @@
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=company-guides-all-3"></script>
   <script src="./assets/js/migration.js?v=fiscal242-pilot-2"></script>
-  <script src="./assets/js/fiscal-242.js?v=gemini-design-5"></script>
+  <script src="./assets/js/fiscal-242.js?v=conferencia242-brl-1"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>
