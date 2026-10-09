@@ -214,3 +214,19 @@ test('exportação Gemini usa relatório pronto, sem nova chamada ao modelo', ()
   assert.match(part, /\.xlsx/);
   assert.doesNotMatch(part, /conferencia-fiscal\/ia"\s*,/);
 });
+
+
+test('IA fiscal usa bloco compacto e mantém o painel completo separado', () => {
+  const html = fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8');
+  const css = fs.readFileSync(path.join(__dirname,'../../assets/css/fiscal-242.css'),'utf8');
+  assert.ok(html.includes('class="fiscal-ai-shell"'));
+  assert.ok(html.includes('class="fiscal-ai-foot"'));
+  assert.ok(html.includes('Revisão assistida da conferência'));
+  assert.ok(html.includes('id="fiscal242AIDrawer"'));
+  assert.ok(html.includes('id="fiscal242AIExport"'));
+  assert.match(css,/Painel Fiscal • IA v5/);
+  assert.match(css,/\.fiscal-ai-shell\s*\{[\s\S]*grid-template-columns:minmax\(0,1fr\) auto/);
+  assert.match(css,/\.fiscal-ai-drawer\s*\{[\s\S]*width:min\(850px/);
+  assert.match(css,/\.fiscal-ai-narrative-section\s*\{[\s\S]*border-left:2px solid/);
+  assert.match(source,/fiscal-ai-refresh/);
+});
