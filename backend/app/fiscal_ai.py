@@ -202,7 +202,12 @@ def _openrouter_completion(payload, models, key):
             chunk["contents"][0]["parts"][0]["text"] = json.dumps(partial, ensure_ascii=False, separators=(",", ":"))
             answer, used = _openrouter_completion(chunk, models, key)
             items = answer.get("analises", [])
-            if len(items) != len(ids) or {item.get("grupo") for item in items if isinstance(item, dict)} != set(ids):
+            returned_ids = {
+                item["grupo"].strip().upper()
+                for item in items
+                if isinstance(item, dict) and isinstance(item.get("grupo"), str)
+            }
+            if len(items) != len(ids) or returned_ids != set(ids):
                 logger.warning("fiscal_openrouter_rejected category=incomplete_batch")
                 raise ValueError("Parecer incompleto em lote gratuito")
             all_analyses.extend(items)
