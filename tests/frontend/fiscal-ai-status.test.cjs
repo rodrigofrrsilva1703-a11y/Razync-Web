@@ -132,7 +132,7 @@ test('painel moderno inclui cartões, indicadores e lançamentos sob demanda', (
 
 test('Gemini apresenta parecer por etapas e checklist sem tratar texto como HTML', () => {
   const start = source.indexOf('  function renderNarrative(textValue) {');
-  const end = source.indexOf('  aiButton.addEventListener("click"', start);
+  const end = source.indexOf('  function normalizeAISearch(value) {', start);
   assert.ok(start >= 0 && end > start);
   const node = (tag, className, value) => ({
     tag, className, textContent: value === undefined ? '' : String(value),
