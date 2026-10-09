@@ -11,6 +11,8 @@ from app.main import app
 def _openrouter_disabled_by_default(monkeypatch):
     """Os testes legados usam Gemini; OpenRouter é ativado explicitamente nos novos casos."""
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    # Exercita integrações anteriores apenas em testes; produção usa OpenRouter.
+    monkeypatch.setenv("RAZYNC_AI_LEGACY_GEMINI", "1")
 
 
 def report():
@@ -65,7 +67,7 @@ def test_invalid_group_is_rejected(monkeypatch):
 def test_missing_key_does_not_require_admin(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     client = TestClient(app)
-    assert client.get("/api/v1/conferencia-fiscal/242/ia/status").json() == {"configurado":False, "provedor":None}
+    assert client.get("/api/v1/conferencia-fiscal/242/ia/status").json() == {"configurado":False, "provedor":None, "gratuito":True}
     files = {"acumuladores":("fiscal.xlsx",b"fake"),"razao":("razao.xlsx",b"fake")}
     assert client.post("/api/v1/conferencia-fiscal/242/ia",files=files).status_code == 503
 
@@ -362,7 +364,7 @@ def test_openrouter_usa_prompt_integral_fallback_e_contas_originais(monkeypatch)
     """A mesma conferência completa segue para o próximo modelo sem perder evidências."""
     monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-test-secret")
     monkeypatch.setenv("OPENROUTER_MODELS",
-                       "openai/gpt-4.1-mini,google/gemini-2.5-flash,anthropic/claude-haiku-4.5")
+                       "openrouter/free,nvidia/nemotron-3-ultra-550b-a55b:free,nvidia/nemotron-3.5-lightning:free")
     monkeypatch.setenv("GEMINI_API_KEY", "legacy-gemini-test")
     monkeypatch.setattr(fiscal_ai, "model_rotation_index", 0)
     context = report()
@@ -375,7 +377,7 @@ def test_openrouter_usa_prompt_integral_fallback_e_contas_originais(monkeypatch)
         def __enter__(self): return self
         def __exit__(self, *args): pass
         def read(self, n):
-            return json.dumps({"model": "google/gemini-2.5-flash", "choices":[{
+            return json.dumps({"model": "nvidia/nemotron-3-ultra-550b-a55b:free", "choices":[{
                 "finish_reason": "stop",
                 "message": {"content":json.dumps({"analises":[{
                     "grupo":"G1","explicacao":"Revisar L1 e acumulador.",
@@ -389,9 +391,9 @@ def test_openrouter_usa_prompt_integral_fallback_e_contas_originais(monkeypatch)
         body = json.loads(req.data)
         calls.append(body)
         assert body["models"] == [
-            "openai/gpt-4.1-mini", "google/gemini-2.5-flash", "anthropic/claude-haiku-4.5"
+            "openrouter/free", "nvidia/nemotron-3-ultra-550b-a55b:free", "nvidia/nemotron-3.5-lightning:free"
         ] if len(calls) == 1 else [
-            "google/gemini-2.5-flash", "anthropic/claude-haiku-4.5", "openai/gpt-4.1-mini"
+            "nvidia/nemotron-3-ultra-550b-a55b:free", "nvidia/nemotron-3.5-lightning:free", "openrouter/free"
         ]
         assert body["provider"]["require_parameters"] is True
         assert body["provider"]["data_collection"] == "deny"
@@ -408,7 +410,7 @@ def test_openrouter_usa_prompt_integral_fallback_e_contas_originais(monkeypatch)
     assert len(calls) == 2
     for result in results:
         assert result["provedor"] == "openrouter"
-        assert result["modelo_usado"] == "google/gemini-2.5-flash"
+        assert result["modelo_usado"] == "nvidia/nemotron-3-ultra-550b-a55b:free"
         assert result["analises"][0]["conta"] == "22643"
         assert result["analises"][0]["valores"]["fiscal"] == 9123.45
         assert result["analises"][0]["evidencias"][0]["historico"] == "Compra de mercadoria CF NF 100"
@@ -419,11 +421,11 @@ def test_openrouter_status_tem_prioridade_e_gemini_continua_reserva(monkeypatch)
     client = TestClient(app)
     monkeypatch.setenv("GEMINI_API_KEY","gemini-legacy")
     assert client.get("/api/v1/conferencia-fiscal/ia/status").json() == {
-        "configurado": True, "provedor": "gemini"
+        "configurado": True, "provedor": "gemini", "gratuito": False
     }
     monkeypatch.setenv("OPENROUTER_API_KEY","or-key")
     assert client.get("/api/v1/conferencia-fiscal/ia/status").json() == {
-        "configurado": True, "provedor": "openrouter"
+        "configurado": True, "provedor": "openrouter", "gratuito": True
     }
 
 
@@ -436,7 +438,7 @@ def test_openrouter_status_tem_prioridade_e_gemini_continua_reserva(monkeypatch)
 def test_openrouter_falhas_seguras_sem_expor_dados(monkeypatch,code,needle):
     import io
     monkeypatch.setenv("OPENROUTER_API_KEY","openrouter-test-secret")
-    monkeypatch.setenv("OPENROUTER_MODELS","openai/gpt-4.1-mini,google/gemini-2.5-flash")
+    monkeypatch.setenv("OPENROUTER_MODELS","openrouter/free,nvidia/nemotron-3-ultra-550b-a55b:free")
     def fail(req,timeout):
         raise urllib.error.HTTPError(
             req.full_url,code,"Error",{},
@@ -454,7 +456,7 @@ def test_openrouter_nao_aceita_evidencia_inventada(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY","or-key")
     monkeypatch.setattr(fiscal_ai,"_openrouter_completion",lambda *_: (
         {"analises":[{"grupo":"G1","explicacao":"Teste","verificar":"Conferir","evidencias":["L999"]}]},
-        "openai/gpt-4.1-mini",
+        "openrouter/free",
     ))
     with pytest.raises(HTTPException) as error:
         fiscal_ai.explain(report())
@@ -463,8 +465,75 @@ def test_openrouter_nao_aceita_evidencia_inventada(monkeypatch):
 
 def test_openrouter_rejeita_lista_de_modelos_invalida(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY","or-key")
-    monkeypatch.setenv("OPENROUTER_MODELS","../../modelo-invalido")
+    monkeypatch.setenv("OPENROUTER_MODELS","openai/gpt-4.1-mini")
     with pytest.raises(HTTPException) as error:
         fiscal_ai.explain(report())
     assert error.value.status_code == 503
     assert "OPENROUTER_MODELS" in error.value.detail
+
+
+def test_openrouter_modo_gratuito_por_padrao_e_precos_zerados(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "free-key")
+    monkeypatch.delenv("OPENROUTER_MODELS", raising=False)
+    assert fiscal_ai._openrouter_models() == ["openrouter/free"]
+    monkeypatch.setattr(fiscal_ai, "model_rotation_index", 0)
+    seen = {}
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, limit):
+            return json.dumps({"model": "openrouter/free",
+                "choices": [{"finish_reason": "stop", "message": {
+                    "content":json.dumps({"analises":[{
+                        "grupo":"G1","explicacao":"Revisar possível diferença.",
+                        "verificar":"1. Conferir histórico.","evidencias":[]
+                    }]})}}]}).encode()
+    def check(req, timeout):
+        assert req.full_url == "https://openrouter.ai/api/v1/chat/completions"
+        body = json.loads(req.data)
+        assert body["models"] == ["openrouter/free"]
+        assert body["provider"]["max_price"] == {"prompt":0,"completion":0}
+        assert body["provider"]["data_collection"] == "deny"
+        assert body["provider"]["require_parameters"] is True
+        seen["called"] = True
+        return Response()
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", check)
+    result = fiscal_ai.explain(report())
+    assert seen["called"]
+    assert result["gratuito"] is True
+    assert result["analises"][0]["valores"]["fiscal"] == 9123.45
+
+
+@pytest.mark.parametrize("model", [
+    "openai/gpt-4.1-mini",
+    "google/gemini-2.5-flash",
+    "anthropic/claude-haiku-4.5",
+    "openrouter/auto",
+    "openrouter/free,openai/gpt-4.1-mini",
+    "openrouter/free,",
+])
+def test_modo_gratuito_rejeita_modelos_pagos_ou_nao_explicitos(monkeypatch, model):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "free-key")
+    monkeypatch.setenv("OPENROUTER_MODELS", model)
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(report())
+    assert error.value.status_code == 503
+    assert "Modelos pagos estão bloqueados" in error.value.detail
+
+
+def test_sem_chave_openrouter_nao_ativa_gemini_por_padrao(monkeypatch):
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("RAZYNC_AI_LEGACY_GEMINI", raising=False)
+    monkeypatch.setenv("GEMINI_API_KEY", "gemini-key")
+    response = TestClient(app).get("/api/v1/conferencia-fiscal/ia/status")
+    assert response.json() == {"configurado":False, "provedor":None, "gratuito":True}
+    files={"acumuladores":("fiscal.xlsx",b"x"),"razao":("razao.xlsx",b"y")}
+    response = TestClient(app).post("/api/v1/conferencia-fiscal/ia",files=files)
+    assert response.status_code == 503
+
+
+def test_modo_gratuito_nunca_envia_modelo_pago(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "free-key")
+    monkeypatch.setenv("OPENROUTER_MODELS", "openrouter/free,nvidia/nemotron-3-ultra-550b-a55b:free")
+    models=fiscal_ai._openrouter_models()
+    assert all(m=="openrouter/free" or m.endswith(":free") for m in models)
