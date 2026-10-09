@@ -206,8 +206,19 @@ def conferencia_fiscal_preview(
         )
     fiscal = _periodo(resultado.get("periodo_fiscal", {}))
     razao = _periodo(resultado.get("periodo_razao", {}))
-    if fiscal["inicio"] and razao["inicio"] and fiscal != razao:
-        avisos.append("Os períodos informados nos dois relatórios não coincidem. Confira a competência.")
+    periodo_aplicado = bool(resultado.get("periodo_aplicado"))
+    ignorados = int(resultado.get("movimentos_fora_periodo", 0))
+    if periodo_aplicado:
+        avisos.append(
+            f"Conferência limitada automaticamente ao período do Resumo por Acumulador "
+            f"({fiscal['inicio']} a {fiscal['fim']}). "
+            f"{ignorados} lançamento(s) do Razão fora do período foram desconsiderados."
+        )
+    else:
+        avisos.append(
+            "Não foi possível identificar um intervalo completo no Resumo por Acumulador. "
+            "Confira o cabeçalho do relatório: sem período identificado, o Razão não foi filtrado por data."
+        )
 
     nome_empresa = resultado.get("empresa_nome", "")
     if not nome_empresa:
@@ -225,6 +236,8 @@ def conferencia_fiscal_preview(
         "filiais_encontradas": resultado.get("filiais_encontradas", []),
         "periodo_fiscal": fiscal,
         "periodo_razao": razao,
+        "periodo_aplicado": periodo_aplicado,
+        "movimentos_fora_periodo": ignorados,
         "resumo": resumo_contagens,
         "contas": linhas,
         "sem_conta": sem_conta,
