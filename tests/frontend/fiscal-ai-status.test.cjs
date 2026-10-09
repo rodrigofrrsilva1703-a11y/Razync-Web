@@ -155,3 +155,62 @@ test('Gemini apresenta parecer por etapas e checklist sem tratar texto como HTML
   const malicious = context.renderNarrative('<script>alert(1)</script>');
   assert.equal(malicious.children[0].textContent, '<script>alert(1)</script>');
 });
+
+
+test('painel Gemini flutua, recolhe em bolha e reabre sem perder análise', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(__dirname, '../../assets/css/fiscal-242.css'), 'utf8');
+  for (const id of ['fiscal242AIOpen','fiscal242AIDrawer','fiscal242AIMinimize',
+                    'fiscal242AIClose','fiscal242AIBubble','fiscal242AIBackdrop',
+                    'fiscal242AIExport','fiscal242AIRunInside']) {
+    assert.ok(html.includes('id="' + id + '"'), 'Elemento ausente: ' + id);
+  }
+  assert.match(html, /aria-modal="true"/);
+  assert.match(css, /fiscal-ai-drawer\s*\{[\s\S]*?position:fixed/);
+  const start = source.indexOf('  function showAIPanel() {');
+  const end = source.indexOf('  aiOpen.addEventListener("click"', start);
+  assert.ok(start >= 0 && end > start);
+  let focusRestored = 0, bubbleFocused = 0, minimizeFocused = 0;
+  const previous = {isConnected:true,closest:()=>null,focus:()=>focusRestored++};
+  const makeElement = () => ({hidden:true,attrs:{},setAttribute(k,v){this.attrs[k]=v;}});
+  const context = {
+    document:{activeElement:previous},
+    previewBody:{},
+    aiReturnFocus:null,
+    aiDrawer:makeElement(),
+    aiBackdrop:makeElement(),
+    aiBubble:{...makeElement(),focus:()=>bubbleFocused++},
+    aiOpen:{...makeElement(),disabled:false,focus:()=>{}},
+    aiMinimize:{focus:()=>minimizeFocused++}
+  };
+  vm.createContext(context);
+  vm.runInContext(source.slice(start,end),context);
+  context.showAIPanel();
+  assert.equal(context.aiDrawer.hidden,false);
+  assert.equal(context.aiBackdrop.hidden,false);
+  assert.equal(context.aiBubble.hidden,true);
+  assert.equal(context.aiOpen.attrs['aria-expanded'],'true');
+  assert.equal(minimizeFocused,1);
+  context.hideAIPanel(true);
+  assert.equal(context.aiDrawer.hidden,true);
+  assert.equal(context.aiBackdrop.hidden,true);
+  assert.equal(context.aiBubble.hidden,false);
+  assert.equal(bubbleFocused,1);
+  context.showAIPanel();
+  assert.equal(context.aiDrawer.hidden,false);
+  context.hideAIPanel(false);
+  assert.equal(context.aiBubble.hidden,true);
+  assert.ok(focusRestored>=1);
+});
+
+test('exportação Gemini usa relatório pronto, sem nova chamada ao modelo', () => {
+  const start = source.indexOf('  aiExport.addEventListener("click"');
+  const end = source.indexOf('  function renderNarrative',start);
+  assert.ok(start >= 0 && end > start);
+  const part = source.slice(start,end);
+  assert.match(part, /conferencia-fiscal\/ia\/exportar/);
+  assert.match(part, /JSON\.stringify/);
+  assert.match(part, /current\.analises/);
+  assert.match(part, /\.xlsx/);
+  assert.doesNotMatch(part, /conferencia-fiscal\/ia"\s*,/);
+});
