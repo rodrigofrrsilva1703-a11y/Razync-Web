@@ -249,6 +249,51 @@ def _openrouter_completion(payload, models, key):
     return json.loads(content), str(response_json.get("model") or "")
 
 
+
+def _gemini_free_key():
+    """Somente usa a API direta quando o projeto foi confirmado como free tier."""
+    if os.getenv("GEMINI_FREE_TIER_CONFIRMED", "") != "1":
+        return ""
+    return os.getenv("GEMINI_API_KEY", "").strip()
+
+
+def _gemini_completion(payload, key, model, *, legacy=False):
+    """Envia ao Gemini o mesmo contexto e schema usado no OpenRouter."""
+    if not legacy and model not in {"gemini-3.1-flash-lite", "gemini-2.5-flash-lite"}:
+        raise HTTPException(503, "GEMINI_FREE_MODEL deve ser um modelo Flash-Lite gratuito.")
+    request = urllib.request.Request(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json", "x-goog-api-key": key}
+    )
+    try:
+        try:
+            response = urllib.request.urlopen(request, timeout=45)
+        except urllib.error.HTTPError as exc:
+            if not legacy or exc.code != 404 or model == "gemini-3.1-flash-lite":
+                raise
+            exc.close()
+            model = "gemini-3.1-flash-lite"
+            response = urllib.request.urlopen(
+                urllib.request.Request(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                    data=request.data,
+                    headers={"Content-Type":"application/json", "x-goog-api-key": key},
+                ), timeout=45
+            )
+        with response:
+            raw = json.loads(response.read(150000))
+    except urllib.error.HTTPError as exc:
+        raise provider_error(exc) from None
+    except (urllib.error.URLError, TimeoutError):
+        raise HTTPException(502, "Gemini indisponível. A conferência contábil permanece salva.") from None
+    candidate = raw["candidates"][0]
+    if candidate.get("finishReason") != "STOP":
+        raise ValueError("Resposta Gemini incompleta")
+    text = "".join(part.get("text", "") for part in candidate["content"]["parts"] if not part.get("thought"))
+    return json.loads(text), model
+
+
 def explain(report):
     openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
     # Modo gratuito: o Gemini legado fica desligado por padrão para não
