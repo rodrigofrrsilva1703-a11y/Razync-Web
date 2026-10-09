@@ -66,7 +66,7 @@ def explain(report):
     groups, mapping = sanitized(report)
     if not groups:
         return {"analises": [], "aviso": "Nenhuma divergência ou alerta para explicar."}
-    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+    model = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite").strip()
     if not re.fullmatch(r"gemini-[a-zA-Z0-9.-]+", model):
         raise HTTPException(503, "Revise GEMINI_MODEL no Railway.")
     global last_request
@@ -93,7 +93,17 @@ def explain(report):
         f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
         data=json.dumps(payload).encode(), headers={"Content-Type":"application/json","x-goog-api-key":key})
     try:
-        with urllib.request.urlopen(request, timeout=45) as response:
+        try:
+            response = urllib.request.urlopen(request, timeout=45)
+        except urllib.error.HTTPError as exc:
+            if exc.code != 404 or model == "gemini-3.1-flash-lite":
+                raise
+            exc.close()
+            fallback = urllib.request.Request(
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+                data=request.data, headers={"Content-Type":"application/json", "x-goog-api-key":key})
+            response = urllib.request.urlopen(fallback, timeout=45)
+        with response:
             raw = json.loads(response.read(150000))
         candidate = raw["candidates"][0]
         if candidate.get("finishReason") != "STOP":
