@@ -42,3 +42,8 @@ Correção: quando um modelo responde 429, tenta o outro GPT-OSS permitido, envi
 O aviso de cobertura agora informa que a Groq recebe até dez lançamentos por grupo e históricos de até 180 caracteres. Essa integração continua sendo uma revisão de amostra, não leitura integral do arquivo. Documentos intermediários podem estar fora da amostra, e o truncamento de históricos pode omitir contexto relevante.
 
 Também tenta o segundo modelo em caso de finish_reason=length (JSON truncado). Um JSON válido em um único bloco Markdown completo é aceito; referências inexistentes, grupos faltantes e JSON quebrado continuam rejeitados. A Groq foi aceita pelo backend no caso fictício pequeno; a causa exata do arquivo do usuário não foi reproduzida.
+
+
+Na tentativa de 09/10/2026 às 21:56:59 UTC, após a publicação 6b522a8, o servidor registrou `Groq returned invented evidence`. A resposta Groq foi rejeitada e o provedor reserva concluiu a solicitação com HTTP 200. Esse diagnóstico vem da categoria de validação; o arquivo real e a resposta bruta não foram inspecionados.
+
+Correção posterior: cada lote restringe `grupo` e `evidencias` com enumerações dos IDs enviados, e fornece uma lista explícita de referências por grupo. Lotes sem lançamentos exigem evidências vazias. A validação de pertencimento à conta continua obrigatória, pois a enumeração do lote pode conter referências de duas contas. Testes cobrem referências inventadas, referências de outra conta, amostra parcial e isolamento entre lotes. O teste fictício em produção não substitui a validação do relatório real do usuário.

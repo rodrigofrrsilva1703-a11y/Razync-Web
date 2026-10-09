@@ -251,3 +251,64 @@ def test_groq_deadline_nao_inicia_chamada_fora_do_prazo(monkeypatch):
     with pytest.raises(HTTPException) as error:
         groq_fiscal.complete(payload, "test", "openai/gpt-oss-120b", _deadline=99)
     assert error.value.status_code == 504
+
+
+@pytest.mark.parametrize("wrong_reference", ["L999", "L2"])
+def test_groq_schema_restringe_referencias_e_rejeita_conta_errada(monkeypatch, wrong_reference):
+    enabled(monkeypatch)
+    context = {"grupos": [
+        {"grupo": "G1", "lancamentos": [{"referencia": "L1"}]},
+        {"grupo": "G2", "lancamentos": [{"referencia": "L2"}]},
+    ]}
+    payload = {"contents": [{"parts": [{"text": json.dumps(context)}]}]}
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, n):
+            answer = {"analises": [
+                {"grupo": "G1", "explicacao": "Conferir", "verificar": "Revisar", "evidencias": [wrong_reference]},
+                {"grupo": "G2", "explicacao": "Conferir", "verificar": "Revisar", "evidencias": ["L2"]},
+            ]}
+            return json.dumps({"choices": [{"finish_reason": "stop", "message": {"content": json.dumps(answer)}}]}).encode()
+    def send(req, timeout):
+        body = json.loads(req.data)
+        props = body["response_format"]["json_schema"]["schema"]["properties"]["analises"]["items"]["properties"]
+        assert props["grupo"]["enum"] == ["G1", "G2"]
+        assert props["evidencias"]["items"]["enum"] == ["L1", "L2"]
+        assert props["evidencias"]["maxItems"] == 3
+        compact = json.loads(body["messages"][1]["content"])
+        assert compact["referencias_permitidas_por_grupo"] == {"G1": ["L1"], "G2": ["L2"]}
+        return Response()
+    monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen", send)
+    with pytest.raises(ValueError, match="invented evidence"):
+        groq_fiscal.complete(payload, "test", "openai/gpt-oss-120b")
+
+
+def test_groq_schema_amostra_e_lote_sem_lancamentos(monkeypatch):
+    enabled(monkeypatch)
+    context = {"grupos": [
+        {"grupo": "G1", "lancamentos": [{"referencia": f"L{i}"} for i in range(1, 13)]},
+        {"grupo": "G2", "lancamentos": []},
+        {"grupo": "G3", "lancamentos": []},
+    ]}
+    payload = {"contents": [{"parts": [{"text": json.dumps(context)}]}]}
+    calls = []
+    class Response:
+        def __init__(self, groups): self.groups = groups
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, n):
+            answer = {"analises": [{"grupo": g["grupo"], "explicacao": "Conferir", "verificar": "Revisar", "evidencias": []} for g in self.groups]}
+            return json.dumps({"choices": [{"finish_reason": "stop", "message": {"content": json.dumps(answer)}}]}).encode()
+    def send(req, timeout):
+        body = json.loads(req.data)
+        props = body["response_format"]["json_schema"]["schema"]["properties"]["analises"]["items"]["properties"]
+        calls.append(props)
+        return Response(json.loads(body["messages"][1]["content"])["grupos"])
+    monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen", send)
+    result, _ = groq_fiscal.complete(payload, "test", "openai/gpt-oss-120b")
+    assert len(result["analises"]) == 3
+    assert set(calls[0]["evidencias"]["items"]["enum"]) == {f"L{i}" for i in [1,2,3,4,5,8,9,10,11,12]}
+    assert calls[1]["grupo"]["enum"] == ["G3"]
+    assert calls[1]["evidencias"]["maxItems"] == 0
+    assert "enum" not in calls[1]["evidencias"]["items"]
