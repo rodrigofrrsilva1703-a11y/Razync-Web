@@ -386,7 +386,7 @@ def test_openrouter_usa_prompt_integral_fallback_e_contas_originais(monkeypatch)
                 }]})}
             }]}).encode()
     def urlopen(req, timeout):
-        assert timeout == 90
+        assert timeout == 38
         assert req.full_url == "https://openrouter.ai/api/v1/chat/completions"
         assert req.get_header("Authorization") == "Bearer openrouter-test-secret"
         body = json.loads(req.data)
@@ -496,7 +496,8 @@ def test_openrouter_modo_gratuito_por_padrao_e_precos_zerados(monkeypatch):
         assert "models" not in body
         assert body["provider"]["max_price"] == {"prompt":0,"completion":0}
         assert body["provider"]["data_collection"] == "deny"
-        assert body["provider"]["require_parameters"] is True
+        assert "require_parameters" not in body["provider"]
+        assert "response_format" not in body
         seen["called"] = True
         return Response()
     monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", check)
@@ -637,7 +638,8 @@ def test_openrouter_formato_estrito_400_tenta_json_compativel_sem_mudar_dados(mo
     """Corrige o erro 400 comum de modelo grátis sem remover proteção zero custo."""
     import io
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-or")
-    monkeypatch.delenv("OPENROUTER_MODELS", raising=False)
+    monkeypatch.setenv("OPENROUTER_MODELS",
+        "nvidia/nemotron-3-ultra-550b-a55b:free,nvidia/nemotron-3.5-lightning:free")
     monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED", raising=False)
     requests = []
 
@@ -657,7 +659,7 @@ def test_openrouter_formato_estrito_400_tenta_json_compativel_sem_mudar_dados(mo
         body = json.loads(req.data)
         requests.append(body)
         assert req.get_header("Authorization") == "Bearer test-or"
-        assert timeout == 90
+        assert timeout == (38 if len(requests) == 1 else 24)
         if len(requests) == 1:
             raise urllib.error.HTTPError(
                 req.full_url, 400, "Invalid parameters", {},
@@ -669,7 +671,10 @@ def test_openrouter_formato_estrito_400_tenta_json_compativel_sem_mudar_dados(mo
     result=fiscal_ai.explain(report())
     assert len(requests) == 2
     first, second = requests
-    assert first["model"] == "openrouter/free" == second["model"]
+    assert first["models"] == second["models"] == [
+        "nvidia/nemotron-3-ultra-550b-a55b:free",
+        "nvidia/nemotron-3.5-lightning:free",
+    ]
     assert first["response_format"]["type"] == "json_schema"
     assert "response_format" not in second
     assert first["provider"]["require_parameters"] is True
@@ -703,6 +708,8 @@ def test_openrouter_auth_403_nao_ignora_erro_nem_faz_retry(monkeypatch):
 def test_openrouter_doispedidos_400_continua_gratuito_erro_legivel(monkeypatch):
     import io
     monkeypatch.setenv("OPENROUTER_API_KEY","test-or")
+    monkeypatch.setenv("OPENROUTER_MODELS",
+        "nvidia/nemotron-3-ultra-550b-a55b:free,nvidia/nemotron-3.5-lightning:free")
     monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED",raising=False)
     seen=[]
     def fail(req, timeout):
@@ -718,3 +725,49 @@ def test_openrouter_doispedidos_400_continua_gratuito_erro_legivel(monkeypatch):
     assert "historico de cliente sensivel" not in error.value.detail
     assert "gratuito" in error.value.detail
     assert all(p["provider"]["max_price"]=={"prompt":0,"completion":0} for p in seen)
+
+
+def test_roteador_free_tenta_json_simples_na_primeira_chamada(monkeypatch):
+    """Roteador gratuito só faz uma chamada e mantém as proteções contábeis."""
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-or")
+    monkeypatch.delenv("OPENROUTER_MODELS", raising=False)
+    seen = []
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, limit):
+            return json.dumps({"model":"provider/free",
+                "choices":[{"finish_reason":"stop","message":{
+                    "content":json.dumps({"analises":[{"grupo":"G1",
+                        "explicacao":"Verificar documentos e acumuladores.",
+                        "verificar":"1. Conferir as datas.", "evidencias":[]}]})
+                }}]}).encode()
+    def mock(req,timeout):
+        body=json.loads(req.data)
+        seen.append(body)
+        assert timeout == 38
+        assert body["model"] == "openrouter/free"
+        assert "response_format" not in body
+        assert "max_tokens" not in body
+        assert "require_parameters" not in body["provider"]
+        assert body["provider"]["max_price"] == {"prompt":0,"completion":0}
+        assert body["provider"]["data_collection"] == "deny"
+        return Response()
+    monkeypatch.setattr(fiscal_ai.urllib.request,"urlopen",mock)
+    result=fiscal_ai.explain(report())
+    assert len(seen) == 1
+    assert result["analises"][0]["conta"] == "22643"
+    assert result["analises"][0]["valores"]["fiscal"] == 9123.45
+
+
+def test_openrouter_timeout_encerra_sem_esperar_muitos_minutos(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY","test-or")
+    monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED",raising=False)
+    def slow(req,timeout):
+        assert timeout == 38
+        raise TimeoutError("provider unavailable")
+    monkeypatch.setattr(fiscal_ai.urllib.request,"urlopen",slow)
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(report())
+    assert error.value.status_code == 504
+    assert "38 segundos" in error.value.detail
