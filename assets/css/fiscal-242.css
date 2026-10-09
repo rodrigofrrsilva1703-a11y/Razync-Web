@@ -1989,3 +1989,14 @@
 @media(prefers-reduced-motion:reduce) {
   #fiscalView .fiscal-ai-account-chevron {transition:none;}
 }
+
+/* Espera da IA sempre controlável, sem modal ou botão flutuante. */
+#fiscalView .fiscal-ai-actions .fiscal-ai-cancel {
+  border:1px solid #d7e2ec;
+  color:#58728a;
+  background:#fff;
+}
+#fiscalView .fiscal-ai-actions .fiscal-ai-cancel:hover {
+  background:#f3f7fb;
+}
+#fiscalView .fiscal-ai-actions .fiscal-ai-cancel[hidden] {display:none!important;}
