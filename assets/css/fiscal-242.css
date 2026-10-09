@@ -421,3 +421,280 @@
 @media(max-width:720px) {
   #fiscalView .fiscal-context-grid {grid-template-columns:1fr;}
 }
+
+/* Página de conferência universal — layout único, sem coluna vazia. */
+#fiscalView {
+  width:100%;
+  max-width:1160px;
+  margin-inline:auto;
+  padding-bottom:38px;
+}
+#fiscalView .fiscal-page-head {
+  padding:25px 0 24px;
+}
+#fiscalView .fiscal-page-head h1 {
+  margin:7px 0 8px;
+  font-size:clamp(23px,2.8vw,30px);
+  letter-spacing:-.7px;
+  line-height:1.2;
+  color:#21364e;
+}
+#fiscalView .fiscal-page-head p {
+  max-width:740px;
+  font-size:13px;
+  line-height:1.65;
+  color:#64768d;
+}
+#fiscalView .fiscal-setup {
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  border:1px solid #dce5ef;
+  border-radius:17px;
+  overflow:hidden;
+  background:#fff;
+  box-shadow:0 3px 15px rgba(27,47,70,.035);
+}
+#fiscalView .fiscal-setup-heading {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:23px 28px 21px;
+  border-bottom:1px solid #e8edf4;
+}
+#fiscalView .fiscal-setup-heading h2 {
+  margin:0 0 5px;
+  color:#243c57;
+  font-size:18px;
+  letter-spacing:-.3px;
+}
+#fiscalView .fiscal-setup-heading p {
+  margin:0;
+  font-size:12px;
+  line-height:1.55;
+  color:#6c7d91;
+}
+#fiscalView .fiscal-setup-filetype {
+  flex-shrink:0;
+  padding:7px 10px;
+  color:#58728d;
+  background:#f3f7fb;
+  border:1px solid #e2eaf3;
+  border-radius:8px;
+  font-size:11px;
+  font-weight:650;
+}
+#fiscalView #fiscal242Form.fiscal-form {
+  display:block;
+  width:100%;
+  min-width:0;
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:#fff;
+  box-shadow:none;
+}
+#fiscalView .fiscal-step {
+  padding:22px 28px 24px;
+  border-bottom:1px solid #edf1f5;
+}
+#fiscalView .fiscal-step-heading {
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:18px;
+}
+#fiscalView .fiscal-step-index {
+  display:grid;
+  place-items:center;
+  flex-shrink:0;
+  width:30px;
+  height:30px;
+  background:#eef3fb;
+  color:#3f6090;
+  font-size:11px;
+  font-weight:750;
+  border-radius:9px;
+}
+#fiscalView .fiscal-step-heading h3 {
+  color:#2b435d;
+  font-size:14px;
+  line-height:1.45;
+  margin:1px 0 3px;
+  font-weight:700;
+}
+#fiscalView .fiscal-step-heading p {
+  margin:0;
+  color:#78889a;
+  font-size:12px;
+  line-height:1.5;
+}
+#fiscalView .fiscal-context-grid,
+#fiscalView .fiscal-upload-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:18px;
+  margin:0;
+}
+#fiscalView .fiscal-field,
+#fiscalView .fiscal-upload-item {
+  min-width:0;
+}
+#fiscalView .fiscal-field label,
+#fiscalView .fiscal-upload-label label {
+  color:#415774 !important;
+  font-size:12px !important;
+  font-weight:650;
+  margin:0 0 9px;
+  line-height:1.4;
+}
+#fiscalView .fiscal-field label span {
+  font-weight:450;
+  color:#8290a2;
+}
+#fiscalView .fiscal-field input {
+  width:100%;
+  box-sizing:border-box;
+  border:1px solid #dae4ef !important;
+  border-radius:9px !important;
+  min-height:44px;
+  background:#fbfcfe !important;
+  font-size:13px !important;
+  padding:11px 13px !important;
+}
+#fiscalView .fiscal-field small {
+  display:block;
+  margin-top:8px;
+  color:#8190a0;
+  line-height:1.5;
+  font-size:11px;
+}
+#fiscalView .fiscal-upload-item {
+  border:1px solid #dde6f1;
+  background:#fafcff;
+  border-radius:12px;
+  padding:16px;
+}
+#fiscalView .fiscal-upload-label {
+  display:flex;
+  align-items:center;
+  gap:11px;
+  margin-bottom:14px;
+}
+#fiscalView .fiscal-upload-symbol {
+  display:grid;
+  place-items:center;
+  flex:0 0 35px;
+  height:35px;
+  border-radius:9px;
+  background:#eaf1fb;
+  color:#5075a2;
+  font-size:19px;
+}
+#fiscalView .fiscal-upload-label label {
+  margin:0 0 4px;
+}
+#fiscalView .fiscal-upload-label small {
+  display:block;
+  color:#8190a4;
+  font-size:11px;
+}
+#fiscalView .fiscal-upload-item input[type=file] {
+  width:100%;
+  box-sizing:border-box;
+  min-height:48px;
+  padding:9px !important;
+  border:1px dashed #bfcee1 !important;
+  border-radius:9px !important;
+  background:#fff !important;
+  font-size:12px !important;
+  color:#596d83 !important;
+}
+#fiscalView .fiscal-upload-item input[type=file]::file-selector-button {
+  border:0;
+  padding:8px 11px;
+  font-size:11px;
+  font-weight:600;
+  margin-right:10px;
+  border-radius:6px;
+  color:#365982;
+  background:#eaf0f9;
+}
+#fiscalView .fiscal-file-selected {
+  display:block;
+  margin-top:9px;
+  color:#8593a4;
+  font-size:11px;
+  overflow-wrap:anywhere;
+}
+#fiscalView .fiscal-file-selected[data-ready=true] {
+  color:#365978;
+  font-weight:600;
+}
+#fiscalView .fiscal-form-actions {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  padding:19px 28px 22px;
+  background:#fbfcfe;
+}
+#fiscalView .fiscal-form-actions p {
+  max-width:490px;
+  margin:0;
+  color:#718197;
+  line-height:1.55;
+  font-size:12px;
+}
+#fiscalView #fiscal242Submit {
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:14px;
+  flex-shrink:0;
+  min-width:208px;
+  min-height:46px;
+  border-radius:9px;
+  padding:11px 20px;
+  font-size:12px;
+  font-weight:700;
+}
+#fiscalView #fiscal242Submit span { font-size:17px; line-height:1; }
+#fiscalView #fiscal242Message {
+  margin:0;
+  padding:0 28px;
+  color:#647992;
+  font-size:12px;
+  line-height:1.5;
+}
+#fiscalView #fiscal242Message:not(:empty) { padding-top:0; padding-bottom:18px; }
+#fiscalView .fiscal-results {
+  width:100%;
+  min-width:0;
+}
+@media(max-width:800px) {
+  #fiscalView .fiscal-setup-heading { padding:20px; }
+  #fiscalView .fiscal-step { padding:20px; }
+  #fiscalView .fiscal-form-actions { padding:20px; }
+  #fiscalView .fiscal-context-grid,
+  #fiscalView .fiscal-upload-grid { gap:12px; }
+}
+@media(max-width:680px) {
+  #fiscalView .fiscal-page-head { padding:19px 0 17px; }
+  #fiscalView .fiscal-page-head h1 { font-size:25px; }
+  #fiscalView .fiscal-setup-heading { align-items:flex-start; }
+  #fiscalView .fiscal-setup-filetype { display:none; }
+  #fiscalView .fiscal-context-grid,
+  #fiscalView .fiscal-upload-grid { grid-template-columns:1fr; gap:15px; }
+  #fiscalView .fiscal-form-actions { flex-direction:column; align-items:stretch; gap:15px; }
+  #fiscalView #fiscal242Submit { width:100%; }
+}
+@media(max-width:430px) {
+  #fiscalView .fiscal-setup-heading { padding:17px 16px; }
+  #fiscalView .fiscal-step { padding:17px 16px 19px; }
+  #fiscalView .fiscal-form-actions { padding:17px 16px; }
+  #fiscalView #fiscal242Message { padding-inline:16px; }
+  #fiscalView .fiscal-upload-item { padding:13px; }
+}
