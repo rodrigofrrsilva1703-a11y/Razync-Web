@@ -356,8 +356,10 @@
       account.appendChild(node("div", "fiscal-account-description", row.descricao || "Descrição não informada"));
       const accumulatorCell = cell(tr, "", "fiscal-accum-cell");
       accumulatorCell.appendChild(accumulatorTags(row));
-      cell(tr, money.format(row.fiscal), "fiscal-money");
-      cell(tr, money.format(row.diferenca), "fiscal-money fiscal-difference");
+      cell(tr, money.format(row.fiscal), "fiscal-money fiscal-money-fiscal");
+      cell(tr, money.format(row.contabil), "fiscal-money fiscal-money-accounting");
+      const diferenca = cell(tr, money.format(row.diferenca), "fiscal-money fiscal-difference");
+      if (Math.abs(Number(row.diferenca || 0)) <= 0.01) diferenca.classList.add("fiscal-difference-zero");
       const td = cell(tr, "");
       td.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(row.situacao), statusLabels[row.situacao] || row.situacao));
       tableBody.appendChild(tr);
