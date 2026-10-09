@@ -178,7 +178,8 @@ def test_groq_resposta_truncada_identificada_e_preserva_fallback(monkeypatch, ca
 
     def fake(req, timeout):
         body = json.loads(req.data)
-        assert body["max_completion_tokens"] == 3000
+        expected_budget = 1800 if body["model"].startswith("qwen/") else 3000
+        assert body["max_completion_tokens"] == expected_budget
         return Response()
 
     monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen", fake)
