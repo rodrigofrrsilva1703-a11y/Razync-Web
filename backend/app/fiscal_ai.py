@@ -337,18 +337,49 @@ def _openrouter_completion(payload, models, key):
                 "A conferência contábil permanece salva.") from None
         raise HTTPException(502, "Não foi possível conectar ao OpenRouter. A conferência contábil permanece salva.") from None
     choices = response_json.get("choices") or []
-    if not choices or choices[0].get("finish_reason") not in ("stop",):
+    if not choices:
+        logger.warning("fiscal_openrouter_rejected category=missing_choices")
+        raise ValueError("Resposta sem alternativas do OpenRouter")
+    choice = choices[0]
+    reason = choice.get("finish_reason")
+    if reason != "stop":
+        logger.warning("fiscal_openrouter_rejected category=finish_reason reason=%s",
+                       reason if reason in {"length", "content_filter", "tool_calls", "error"} else "other")
         raise ValueError("Resposta incompleta do OpenRouter")
-    message = choices[0].get("message") or {}
+    message = choice.get("message") or {}
     content = message.get("content")
     if not isinstance(content, str) or not content.strip():
+        logger.warning("fiscal_openrouter_rejected category=empty_content")
         raise ValueError("Resposta vazia do OpenRouter")
     result_text = content.strip()
     if result_text.startswith("```"):
         lines = result_text.splitlines()
         if len(lines) >= 3 and lines[-1].strip() == "```":
             result_text = chr(10).join(lines[1:-1]).strip()
-    return json.loads(result_text), str(response_json.get("model") or "")
+    try:
+        answer = json.loads(result_text)
+    except json.JSONDecodeError:
+        # Alguns modelos gratuitos antepõem texto ao objeto JSON. Extraímos
+        # somente um objeto íntegro; não fabricamos partes ausentes.
+        decoder = json.JSONDecoder()
+        answer = None
+        for index, ch in enumerate(result_text):
+            if ch != "{":
+                continue
+            try:
+                candidate, end = decoder.raw_decode(result_text[index:])
+            except json.JSONDecodeError:
+                continue
+            if isinstance(candidate, dict) and isinstance(candidate.get("analises"), list):
+                answer = candidate
+                break
+        if answer is None:
+            logger.warning("fiscal_openrouter_rejected category=invalid_json")
+            raise ValueError("JSON inválido do OpenRouter") from None
+    if not isinstance(answer, dict) or not isinstance(answer.get("analises"), list):
+        logger.warning("fiscal_openrouter_rejected category=missing_analises")
+        raise ValueError("O OpenRouter não retornou a estrutura esperada")
+    return answer, str(response_json.get("model") or "")
 
 
 
