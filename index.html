@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="./assets/css/refined-theme.css?v=3">
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
-  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=fiscal-results-ai-3">
+  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=fiscal-auto-company-1">
 </head>
 <body>
   <div class="app-shell">
@@ -110,18 +110,17 @@
             <div class="fiscal-step">
               <div class="fiscal-step-heading">
                 <span class="fiscal-step-index" aria-hidden="true">01</span>
-                <div><h3>Identificação e filial</h3><p>Preencha somente o que for necessário para esta conferência.</p></div>
+                <div><h3>Identificação da empresa</h3><p>O Razync identifica a razão social nos cabeçalhos dos arquivos.</p></div>
               </div>
               <div class="fiscal-context-grid">
-                <div class="fiscal-field">
-                  <label for="fiscalEmpresaCodigo">Código da empresa <span>(opcional)</span></label>
-                  <input id="fiscalEmpresaCodigo" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Ex.: 242">
-                  <small>Usado para identificar o relatório; não altera os valores.</small>
+                <div class="fiscal-company-auto">
+                  <strong>Razão social identificada automaticamente</strong>
+                  <p>Ao conferir, o sistema mostra o nome presente nos relatórios e verifica se ambos pertencem à mesma empresa.</p>
                 </div>
                 <div class="fiscal-field">
                   <label for="fiscalFilialCodigo">Filial do Razão <span>(se houver várias)</span></label>
                   <input id="fiscalFilialCodigo" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Ex.: 242 ou 1408">
-                  <small>Use o código presente na coluna Filial. Com apenas uma filial, o Razync a identifica.</small>
+                  <small>Se o Razão tiver só uma filial, ela será identificada automaticamente.</small>
                 </div>
               </div>
             </div>
@@ -151,6 +150,11 @@
           </form>
         </div>
           <section id="fiscal242Results" class="fiscal-results" aria-live="polite" hidden>
+            <div id="fiscal242Company" class="fiscal-company-result">
+              <span>Empresa identificada nos relatórios</span>
+              <strong id="fiscal242CompanyName">—</strong>
+              <small id="fiscal242CompanySource"></small>
+            </div>
             <div class="fiscal-summary">
               <div><strong id="fiscal242Total">—</strong><span>Contas analisadas</span></div>
               <div><strong id="fiscal242Matches">—</strong><span>Batendo</span></div>
@@ -438,7 +442,7 @@
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=fiscal-layout-2"></script>
   <script src="./assets/js/migration.js?v=fiscal-universal-1"></script>
-  <script src="./assets/js/fiscal-242.js?v=fiscal-results-ai-3"></script>
+  <script src="./assets/js/fiscal-242.js?v=fiscal-auto-company-1"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>
