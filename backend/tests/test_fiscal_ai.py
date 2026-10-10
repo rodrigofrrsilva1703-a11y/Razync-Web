@@ -1088,8 +1088,13 @@ def test_openrouter_corrige_referencia_inventada_uma_vez(monkeypatch):
             "finish_reason": "stop", "message": {"content": json.dumps(answer)},
         }]})
     monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", fake)
-    answer, _ = fiscal_ai._openrouter_completion(payload, ["openrouter/free"], "key")
+    models = fiscal_ai.FREE_FISCAL_MODELS[:2]
+    answer, _ = fiscal_ai._openrouter_completion(payload, models, "key")
     assert len(seen) == 2
+    assert [body["model"] for body in seen] == models
+    evidence_schema = seen[0]["response_format"]["json_schema"]["schema"]["properties"]["analises"]["items"]["properties"]["evidencias"]
+    assert evidence_schema["items"]["enum"] == ["L1"]
+    assert evidence_schema["maxItems"] == 8
     assert "CORREÇÃO NECESSÁRIA" in seen[1]["messages"][0]["content"]
     assert seen[0]["messages"][1] == seen[1]["messages"][1]
     checked = fiscal_ai._validar_resposta_ia(answer, source, mapping, references)

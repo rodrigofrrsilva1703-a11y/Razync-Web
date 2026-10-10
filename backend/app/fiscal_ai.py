@@ -238,6 +238,14 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
         "required": ["analises"],
         "additionalProperties": False,
     }
+    source_context = json.loads(payload["contents"][0]["parts"][0]["text"])
+    reference_lists = {group["grupo"]: [row["referencia"] for row in group.get("lancamentos", [])
+                       if isinstance(row.get("referencia"), str)] for group in source_context.get("grupos", [])}
+    allowed_references = sorted({ref for refs in reference_lists.values() for ref in refs})
+    evidence_schema = converted_schema["properties"]["analises"]["items"]["properties"]["evidencias"]
+    evidence_schema["maxItems"] = 8 if allowed_references else 0
+    if allowed_references:
+        evidence_schema["items"]["enum"] = allowed_references
     request_payload = {
         "messages": [
             {"role": "system", "content": payload["systemInstruction"]["parts"][0]["text"]},
@@ -264,6 +272,9 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
     # O roteador gratuito recomenda 'model' para uma escolha única.
     # A lista 'models' é usada somente quando houver vários candidatos.
     request_payload["model"] = models[0]
+    request_payload["messages"][0]["content"] += (
+        "\nReferências permitidas por grupo: " + json.dumps(reference_lists, ensure_ascii=False) +
+        ". Se a lista do grupo estiver vazia, devolva evidencias [] e não cite lançamentos L.")
 
     # openrouter/free pode rejeitar json_schema estrito (HTTP 400) ou ficar
     # aguardando um endpoint compatível. Peça JSON textual já na 1ª chamada;
@@ -457,7 +468,10 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
             "Na dúvida use evidencias [] e NÃO cite referências inexistentes no texto. "
             "Não invente lançamentos, documentos ou valores; mantenha a explicação útil."
         )
-        return _openrouter_completion(corrected, models, key, _repair=True)
+        # Uma resposta inválida de um modelo não deve prender toda a reserva
+        # nesse mesmo modelo. Há apenas uma nova geração de correção.
+        reserve = [models[1]] if len(models) > 1 else models
+        return _openrouter_completion(corrected, reserve, key, _repair=True)
 
     choices = response_json.get("choices") or []
     if not choices:
