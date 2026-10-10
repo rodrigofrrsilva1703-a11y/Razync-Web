@@ -195,6 +195,12 @@ def _nota_historico(texto):
     m = NOTE_RE.search(str(texto or ""))
     return _nota(m.group(1)) if m else ""
 
+def _nota_inferida_historico(texto):
+    # Alguns Razões reais trazem apenas "149249 - NOME", sem a sigla NF.
+    # Número inicial é indício, não confirmação de nota fiscal.
+    m = re.match(r"^\s*(\d{3,9})\s*(?:-|\s)", str(texto or ""))
+    return _nota(m.group(1)) if m else ""
+
 
 def _valida_relatorio(detalhe, preview, tipo):
     original = preview.get("empresa_nome", "")
@@ -268,9 +274,12 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
             amount = float(mov["credito"] if tipo == "SAÍDAS" else mov["debito"])
             if abs(amount) < .005:
                 continue
+            nota_explicita = _nota_historico(mov.get("historico", ""))
             ledger.append({
                 "id": f"R-{i+1}", "data": str(mov.get("data", "")),
-                "valor": round(amount, 2), "nota": _nota_historico(mov.get("historico", "")),
+                "valor": round(amount, 2),
+                "nota": nota_explicita or _nota_inferida_historico(mov.get("historico", "")),
+                "nota_explicita": bool(nota_explicita),
                 "historico": str(mov.get("historico", ""))[:180],
                 "contrapartida": mov.get("contrapartida", ""),
                 "classificacao": mov.get("classificacao", ""),
@@ -292,20 +301,25 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
                 elif note_equal or (amount_equal and dt == mt):
                     near_candidates[d["id"]].append((mov["id"], note_equal, amount_equal))
         matched = set()
+        ledger_by_id = {record["id"]: record for record in ledger}
         for d in docs:
             choices = strong_candidates[d["id"]]
             if len(choices) == 1 and len(ledger_to_docs[choices[0]]) == 1:
-                d["situacao"] = "CONCILIADO"
+                explicita = ledger_by_id[choices[0]]["nota_explicita"]
+                d["situacao"] = "CONCILIADO" if explicita else "PROVAVEL"
                 d["razao_id"] = choices[0]
-                d["criterio"] = "Conta, nota, valor e proximidade de data; correspondência única."
-                matched.add(choices[0])
+                d["criterio"] = ("Conta, nota explícita, valor e data; correspondência única."
+                                  if explicita else
+                                  "Número inicial do histórico pode ser NF; nota, valor e data sugerem correspondência, mas exigem confirmação.")
+                if explicita:
+                    matched.add(choices[0])
             elif choices:
                 d["situacao"] = "AMBIGUO"
                 d["razao_id"] = ""
                 d["criterio"] = "Há mais de uma correspondência possível para nota e valor."
             else:
                 near = near_candidates[d["id"]]
-                if len(near) == 1 and near[0][1] and not near[0][2]:
+                if len(near) == 1 and near[0][1] and not near[0][2] and ledger_by_id[near[0][0]]["nota_explicita"]:
                     d["situacao"] = "VALOR_DIFERENTE"
                     d["razao_id"] = near[0][0]
                     d["criterio"] = "Nota identificada na conta, mas valor contábil diferente."
