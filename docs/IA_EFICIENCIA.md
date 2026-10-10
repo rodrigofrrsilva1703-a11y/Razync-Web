@@ -48,6 +48,17 @@ compartilhado antes de ampliar concorrência.
 
 ## Validação
 
+OpenRouter pode ser diagnosticado isoladamente no endpoint multipart
+`/api/v1/conferencia-fiscal/ia`, com `provedor=openrouter`. Nesse modo,
+Gemini e Groq não assumem a resposta. O fluxo normal mantém suas reservas.
+Em 10/10/2026, uma conta fictícia com dez lançamentos produziu uma análise
+válida via `dots-studio/dots-3-note-preview:free`, com oito referências
+validadas. Dots passou a ser a primeira opção padrão do OpenRouter.
+O schema limita evidências às referências existentes; uma resposta inválida
+permite uma correção usando o próximo modelo. Os filtros de preço zero e
+`data_collection=deny` permanecem ativos. Esse teste confirma a integração,
+mas não mede a qualidade em arquivos reais nem garante disponibilidade futura.
+
 Testes sintéticos verificam encaminhamento por tamanho, preservação de todas
 as contas e referências, validação dos provedores, orçamento por minuto,
 renovação da janela e reutilização de resultados sem chamadas adicionais.
