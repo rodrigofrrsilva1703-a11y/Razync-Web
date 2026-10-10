@@ -238,3 +238,22 @@ def test_sessao_nao_ativa_gemini_legado_sem_confirmacao_gratuita(monkeypatch):
     with pytest.raises(HTTPException) as error:
         sessions.prepare(report(2))
     assert error.value.status_code == 503
+
+
+def test_reservas_ocupadas_pedem_espera_sem_reenviar_outros_lotes(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "synthetic")
+    manifest = sessions.prepare(report(2))
+    session = sessions._get(manifest["sessao"])
+    session["active_providers"].update({"gemini", "openrouter"})
+    calls = []
+    def fail(*args, only_provider, **kwargs):
+        calls.append(only_provider)
+        raise HTTPException(502, "Indisponível")
+    monkeypatch.setattr(fiscal_ai, "explain", fail)
+    with pytest.raises(HTTPException) as error:
+        sessions.process(manifest["sessao"], 0)
+    assert error.value.status_code == 429
+    assert error.value.headers["Retry-After"] == "15"
+    assert calls == ["groq"]
+    assert session["batches"][0]["result"] is None
+    assert session["batches"][0]["running"] is False

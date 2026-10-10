@@ -119,10 +119,12 @@ def process(token, batch_id):
     try:
         result = None
         failure = None
+        waiting = False
         for provider in [batch["provedor"], *batch["reservas"]]:
             extra_slot = provider != batch["provedor"]
             with _guard:
                 if extra_slot and provider in session["active_providers"]:
+                    waiting = True
                     continue
                 session["active_providers"].add(provider)
             try:
@@ -138,6 +140,8 @@ def process(token, batch_id):
                     with _guard:
                         session["active_providers"].discard(provider)
         if result is None:
+            if waiting:
+                raise HTTPException(429, "As IAs de reserva estão ocupadas. Aguarde a fila; os lotes concluídos foram preservados.", headers={"Retry-After": "15"})
             raise failure or HTTPException(429, "As IAs gratuitas estão ocupadas. Os lotes concluídos foram preservados.", headers={"Retry-After": "15"})
         result = dict(result, analises=[dict(item, provedor=result.get("provedor"),
                                           modelo_usado=result.get("modelo_usado")) for item in result["analises"]])
