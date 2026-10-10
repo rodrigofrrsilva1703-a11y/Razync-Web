@@ -519,6 +519,7 @@
     message.dataset.state = kind || "";
   }
   function clearState() {
+    resetInvestigation();
     discardPendingAI(); aiRetry.hidden = true;
     aiController?.abort(); aiController = null;
     aiCancelButton.hidden = true;
@@ -765,12 +766,202 @@
       pendentesCorpo.appendChild(tr);
     });
     results.hidden = false;
+    resetInvestigation();
+    investigation.hidden = !(report.contas || []).some(row => ["REVISAR", "AUSENTE NO CONTÁBIL", "CONFERE COM ALERTAS"].includes(row.situacao));
     aiInlineStatus.textContent = "Conferência pronta. Use a análise inteligente para revisar diferenças e alertas.";
     selectedKey = "";
     filter.value = "todas";
     search.value = "";
     renderTable();
   }
+
+  // A investigação documental é uma segunda etapa. Nenhuma requisição
+  // adicional ocorre até o usuário anexar Entradas e/ou Saídas.
+  const investigation = byId("fiscal242Investigacao");
+  const investigationForm = byId("fiscal242InvestigarForm");
+  const investigationButton = byId("fiscal242InvestigarBtn");
+  const investigationMessage = byId("fiscal242InvestigarMessage");
+  const investigationResults = byId("fiscal242InvestigarResultado");
+  let investigationController = null;
+  let investigationReport = null;
+
+  function resetInvestigation() {
+    investigationController?.abort();
+    investigationController = null;
+    investigationReport = null;
+    investigation.hidden = true;
+    investigationResults.hidden = true;
+    investigationResults.replaceChildren();
+    investigationMessage.textContent = "";
+    investigationButton.disabled = false;
+    byId("fiscal242Entradas").value = "";
+    byId("fiscal242Saidas").value = "";
+  }
+
+  function investigationStatus(status) {
+    return ({
+      CONCILIADO: "Correspondência identificada",
+      AMBIGUO: "Correspondência ambígua",
+      VALOR_DIFERENTE: "Valor divergente",
+      SEM_LANCAMENTO_IDENTIFICADO: "Sem lançamento identificado",
+      SEM_DOCUMENTO_IDENTIFICADO: "Sem documento identificado",
+      CORRESPONDENCIA_EM_ANALISE: "Correspondência em análise"
+    })[status] || status || "Revisar";
+  }
+
+  function investigationTable(headers, rows, renderRow) {
+    const wrap = node("div", "fiscal-table-scroll");
+    const table = node("table", "fiscal-table fiscal-investigation-table");
+    const thead = node("thead");
+    const head = node("tr");
+    headers.forEach(label => head.appendChild(node("th", "", label)));
+    thead.appendChild(head);
+    table.appendChild(thead);
+    const tbody = node("tbody");
+    rows.forEach(row => {
+      const tr = node("tr");
+      renderRow(tr, row);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    return wrap;
+  }
+
+  function renderInvestigation(report) {
+    investigationResults.replaceChildren();
+    const count = report.resumo || {};
+    const header = node("div", "fiscal-investigation-summary");
+    [
+      ["Contas investigadas", count.contas || 0],
+      ["Documentos conciliados", count.conciliados || 0],
+      ["Pendências para conferir", count.pendentes || 0],
+      ["Correspondências ambíguas", count.ambiguos || 0]
+    ].forEach(([label, value]) => {
+      const metric = node("div", "fiscal-investigation-metric");
+      metric.append(node("small", "", label), node("strong", "", value));
+      header.appendChild(metric);
+    });
+    investigationResults.appendChild(header);
+    const warningArea = node("div", "fiscal-warnings");
+    (report.avisos || []).forEach(message => warningArea.appendChild(node("p", "", message)));
+    investigationResults.appendChild(warningArea);
+    if (!report.contas?.length) {
+      investigationResults.appendChild(node("p", "fiscal-disclaimer",
+        "Não há contas divergentes ou com alertas nos tipos anexados. A conferência original permanece disponível."));
+    }
+    (report.contas || []).forEach(group => {
+      const section = node("section", "fiscal-investigation-account");
+      const title = node("h4", "", "Conta " + group.conta + " · " + group.tipo);
+      section.appendChild(title);
+      section.appendChild(node("p", "fiscal-disclaimer",
+        "Diferença da conferência inicial: " + money.format(group.diferenca || 0) +
+        ". A soma de documentos por acumulador é informativa; igualdade de totais não comprova integração individual."));
+      const breakdown = node("div", "fiscal-investigation-accumulators");
+      (group.acumuladores || []).forEach(acc => {
+        const line = node("div", "fiscal-investigation-accumulator");
+        const name = node("div");
+        name.append(node("strong", "", "Acumulador " + acc.codigo),
+          node("small", "", acc.descricao || "Sem descrição"));
+        const amounts = node("div", "fiscal-investigation-accumulator-amount");
+        amounts.append(
+          node("span", "", "Resumo: " + money.format(acc.valor_resumo)),
+          node("span", "", "Documentos: " + money.format(acc.valor_documentos)),
+          node("small", "", acc.quantidade_documentos + " linhas documentais · " +
+            acc.conciliados + " conciliadas · " + acc.pendentes + " pendentes · " +
+            acc.ambiguos + " ambíguas")
+        );
+        line.append(name, amounts);
+        breakdown.appendChild(line);
+      });
+      section.appendChild(breakdown);
+      const docs = (group.documentos || []).filter(item => item.situacao !== "CONCILIADO");
+      const docsDetails = node("details", "fiscal-ledger-disclosure");
+      docsDetails.appendChild(node("summary", "fiscal-ledger-toggle",
+        "Documentos para revisar (" + (group.documentos_total - (group.resumo?.conciliados || 0)) + ")"));
+      if (docs.length) {
+        docsDetails.appendChild(investigationTable(
+          ["Acumulador", "Nota", "Data", "CFOP", "Valor", "Situação / critério"],
+          docs.slice(0, 120), (tr, d) => {
+            cell(tr, d.acumulador); cell(tr, d.nota); cell(tr, d.data);
+            cell(tr, d.cfop); cell(tr, money.format(d.valor), "fiscal-money");
+            cell(tr, investigationStatus(d.situacao) + ". " + (d.criterio || ""));
+          }
+        ));
+        if (docs.length > 120 || (group.documentos_total || 0) > (group.documentos || []).length) {
+          docsDetails.appendChild(node("p", "fiscal-disclaimer",
+            "A visualização mostra apenas uma amostra das pendências; a contagem inclui todos os documentos processados."));
+        }
+      } else docsDetails.appendChild(node("p", "fiscal-disclaimer", "Nenhuma pendência documental identificada nesta amostra."));
+      section.appendChild(docsDetails);
+      const ledger = group.razao_pendente || [];
+      if (group.razao_pendente_total) {
+        const openLedger = node("details", "fiscal-ledger-disclosure");
+        openLedger.appendChild(node("summary", "fiscal-ledger-toggle",
+          "Movimentos do Razão ainda não conciliados (" + group.razao_pendente_total + ")"));
+        openLedger.appendChild(investigationTable(
+          ["Data", "Histórico", "Valor", "Situação"],
+          ledger.slice(0, 120), (tr, mov) => {
+            cell(tr, mov.data); cell(tr, mov.historico);
+            cell(tr, money.format(mov.valor), "fiscal-money");
+            cell(tr, investigationStatus(mov.situacao));
+          }
+        ));
+        section.appendChild(openLedger);
+      }
+      investigationResults.appendChild(section);
+    });
+    investigationResults.hidden = false;
+  }
+
+  investigationForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!previewBody || !data) {
+      investigationMessage.textContent = "Conclua a conferência inicial antes de investigar documentos.";
+      return;
+    }
+    const entradas = byId("fiscal242Entradas").files?.[0];
+    const saidas = byId("fiscal242Saidas").files?.[0];
+    if (!entradas && !saidas) {
+      investigationMessage.textContent = "Selecione Entradas, Saídas ou ambos.";
+      return;
+    }
+    const snapshot = data;
+    const body = new FormData();
+    const files = selectedFiles();
+    body.append("acumuladores", files.acumuladores);
+    body.append("razao", files.razao);
+    body.append("filial", String(data.filial_aplicada || byId("fiscalFilialCodigo").value || ""));
+    if (entradas) body.append("entradas", entradas);
+    if (saidas) body.append("saidas", saidas);
+    investigationController?.abort();
+    const controller = new AbortController();
+    investigationController = controller;
+    investigationButton.disabled = true;
+    investigationMessage.textContent = "Cruzando os documentos com o Razão, por conta e acumulador…";
+    try {
+      const response = await fetch(API() + "/api/v1/conferencia-fiscal/investigar", {
+        method: "POST", body, signal: controller.signal
+      });
+      if (!response.ok) throw new Error(await responseError(response));
+      const result = await response.json();
+      if (controller.signal.aborted || snapshot !== data) return;
+      investigationReport = result;
+      renderInvestigation(result);
+      investigationMessage.textContent = "Investigação concluída. Confira as pendências e as correspondências ambíguas abaixo.";
+    } catch (error) {
+      if (error.name !== "AbortError" && snapshot === data) {
+        investigationMessage.textContent = error.message || "Não foi possível investigar os relatórios.";
+      }
+    } finally {
+      if (investigationController === controller) {
+        investigationController = null;
+        investigationButton.disabled = false;
+      }
+    }
+  });
+
+
   filter.addEventListener("change", renderTable);
   search.addEventListener("input", renderTable);
   function showSelectedFile(inputId, labelId) {
