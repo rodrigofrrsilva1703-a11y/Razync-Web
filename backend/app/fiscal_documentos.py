@@ -202,6 +202,20 @@ def _nota_inferida_historico(texto):
     return _nota(m.group(1)) if m else ""
 
 
+def _cnpj_no_resumo(content, name):
+    """Confere identidade da filial quando CNPJ está disponível em ambos os arquivos."""
+    book = _excel(content, name)
+    for sheet in book.sheet_names[:3]:
+        header = pd.read_excel(book, sheet_name=sheet, header=None, nrows=12, dtype=object)
+        for _, row in header.iterrows():
+            values = row.tolist()
+            if any("CNPJ" in _rotulo(v) for v in values):
+                code = _cnpj(values)
+                if code:
+                    return code
+    return ""
+
+
 def _valida_relatorio(detalhe, preview, tipo):
     original = preview.get("empresa_nome", "")
     company = detalhe["empresa"]
@@ -235,6 +249,7 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
                if r["situacao"] in TARGET_STATUSES}
     reports = {}
     warnings = []
+    expected_cnpj = _cnpj_no_resumo(acumuladores_bytes, acumuladores_nome)
     for tipo, attachment in (("ENTRADAS", entradas), ("SAÍDAS", saidas)):
         if attachment is None:
             continue
@@ -248,6 +263,13 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
             warnings.append(f"O relatório de {tipo.lower()} não possui documentos identificáveis "
                             "nos acumuladores divergentes. Não é possível concluir ausência fiscal.")
         filial_aplicada = _valida_relatorio(detail, preview, tipo)
+        if expected_cnpj and detail["cnpj"] and expected_cnpj != detail["cnpj"]:
+            raise ValueError(
+                f"O CNPJ do Acompanhamento de {tipo.title()} não corresponde ao Resumo por Acumulador."
+            )
+        if not expected_cnpj or not detail["cnpj"]:
+            warnings.append(f"Não foi possível confirmar o CNPJ entre Resumo e {tipo.title()}; "
+                            "confira a filial e o documento de origem.")
         if not detail["filiais"]:
             warnings.append(f"O relatório de {tipo.lower()} não informa filial por documento; "
                             f"confirme se pertence à filial {filial_aplicada} antes de concluir ajustes.")
