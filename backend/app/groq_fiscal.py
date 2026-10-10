@@ -146,6 +146,8 @@ def _compact_group(group):
         "registros_do_grupo": group.get("cobertura", {}).get("existentes", len(rows)),
         "amostra_nao_exaustiva": len(reduced) < group.get("cobertura", {}).get("existentes", len(rows)),
         "lancamentos": reduced,
+        # Somente pendências documentais; documentos conciliados nunca entram aqui.
+        "pendencias_documentais": group.get("pendencias_documentais", [])[:30],
     }
 
 

@@ -20,6 +20,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Validate fiscal investigation JavaScript
+        run: node --check assets/js/fiscal-242.js
       - name: Compile API and migrated engine
         run: |
           python -m py_compile backend/app/*.py

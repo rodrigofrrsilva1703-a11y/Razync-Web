@@ -126,13 +126,16 @@ def detailed_context(report):
             references[ref] = record
             group["lancamentos"].append(record)
         group["cobertura"] = {"enviados": len(selected), "existentes": len(candidates)}
+        pendentes = report.get("documentos_pendentes")
+        if isinstance(pendentes, dict):
+            group["pendencias_documentais"] = pendentes.get(f'{account["conta"]}:{account["tipo"]}', [])[:30]
     context = {
         "periodo_fiscal": report.get("periodo_fiscal", {}),
         "periodo_razao": report.get("periodo_razao", {}),
         "avisos_do_leitor": report.get("avisos", []),
         "grupos": groups,
-        "fonte_fiscal": "Resumo por acumulador, sem documentos fiscais individuais",
-        "escopo_razao": "Lançamentos das contas vinculadas aos acumuladores, com filtro da filial aplicado",
+        "fonte_fiscal": report.get("fonte_fiscal", "Resumo por acumulador, sem documentos fiscais individuais"),
+        "escopo_razao": report.get("escopo_razao", "Lançamentos das contas vinculadas aos acumuladores, com filtro da filial aplicado"),
     }
     coverage = f"Analisados {len(groups)} de {sum(r['situacao'] != 'CONFERE' for r in report['contas'])} grupos com alertas/divergências; {len(references)} lançamentos distintos enviados. Sem corte por quantidade de grupos ou registros no contexto local."
     if len(json.dumps(context, ensure_ascii=False).encode()) > 2_000_000:
@@ -801,6 +804,14 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
         "contents":[{"role":"user","parts":[{"text":json.dumps(context, ensure_ascii=False, separators=(",", ":"))}]}],
         "generationConfig":{"responseMimeType":"application/json", "responseSchema":schema,
                             "temperature":0.2, "maxOutputTokens":16384}}
+    if report.get("documentos_pendentes") is not None:
+        payload["systemInstruction"]["parts"][0]["text"] += (
+            " ETAPA DOCUMENTAL: pendencias_documentais contém APENAS documentos "
+            "não conciliados ou ambíguos, com acumulador, nota, CFOP, data, valor "
+            "e situação. Lançamentos conciliados foram removidos do contexto. "
+            "Não conclua omissão, duplicidade nem erro contábil sem prova. "
+            "Oriente verificações por acumulador e conta e reconheça limites dos dados."
+        )
     # Gemini/OpenRouter usam o contexto abaixo; Groq compacta os registros e adapta o prompt.
     # Um resultado só é aceito após validação integral das contas e evidências.
     # Groq permanece desativada até confirmação explícita de plano gratuito,

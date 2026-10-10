@@ -2011,3 +2011,37 @@
   background:#f3f7fb;
 }
 #fiscalView .fiscal-ai-actions .fiscal-ai-cancel[hidden] {display:none!important;}
+
+
+/* Investigação documental: etapa progressiva após a conferência inicial. */
+.fiscal-investigation { margin: 24px 0; padding: 22px; background: var(--surface, #fff);
+  border: 1px solid var(--line, #dce2e9); border-radius: 16px; }
+.fiscal-investigation-heading h3 { margin: 5px 0 7px; font-size: 1.22rem; }
+.fiscal-investigation-heading p { margin: 0 0 20px; color: var(--muted, #596579); line-height: 1.55; }
+.fiscal-investigation-form .fiscal-upload-grid { margin: 0 0 13px; }
+.fiscal-investigation-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.fiscal-investigation-actions small { color: var(--muted, #64748b); flex: 1 1 240px; line-height: 1.5; }
+#fiscal242InvestigarMessage { margin: 12px 0 0; color: var(--muted, #526275); }
+#fiscal242InvestigarResultado { margin-top: 22px; }
+.fiscal-investigation-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; }
+.fiscal-investigation-metric { border: 1px solid var(--line,#dde4ec); border-radius: 10px;
+  padding: 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.fiscal-investigation-metric small { color: var(--muted,#64748b); }
+.fiscal-investigation-metric strong { font-size: 1.35rem; }
+.fiscal-investigation-account { margin: 16px 0; padding: 16px; border: 1px solid var(--line,#dde4ec);
+  border-radius: 12px; }
+.fiscal-investigation-account h4 { margin: 0 0 7px; font-size: 1rem; }
+.fiscal-investigation-accumulators { display: grid; gap: 7px; margin: 13px 0; }
+.fiscal-investigation-accumulator { display: flex; justify-content: space-between; gap: 15px; align-items: start;
+  border-bottom: 1px solid var(--line,#e7edf4); padding: 7px 0; }
+.fiscal-investigation-accumulator > div { display: flex; flex-direction: column; gap: 4px; }
+.fiscal-investigation-accumulator small { color: var(--muted,#64748b); }
+.fiscal-investigation-accumulator-amount { text-align: right; font-size: .87rem; }
+.fiscal-investigation-table { width: 100%; }
+.fiscal-investigation-table td { max-width: 440px; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .fiscal-investigation { padding: 15px; }
+  .fiscal-investigation-summary { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .fiscal-investigation-accumulator { flex-direction: column; }
+  .fiscal-investigation-accumulator-amount { text-align: left; }
+}

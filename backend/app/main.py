@@ -593,6 +593,67 @@ async def conferencia_fiscal_universal_exportar(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+
+
+@app.post("/api/v1/conferencia-fiscal/investigar/ia")
+async def conferencia_fiscal_investigacao_documental_ia(
+    acumuladores: UploadFile = File(...),
+    razao: UploadFile = File(...),
+    entradas: UploadFile | None = File(None),
+    saidas: UploadFile | None = File(None),
+    filial: str = Form(""),
+):
+    """IA gratuita apenas sobre pendências; não recebe documentos conciliados."""
+    if filial and not filial.isdigit():
+        raise HTTPException(422, "A filial deve conter apenas números.")
+    if entradas is None and saidas is None:
+        raise HTTPException(422, "Anexe Entradas, Saídas ou ambos para investigar.")
+    async def attachment(file):
+        return (await file.read(), file.filename or "acompanhamento.xls") if file else None
+    try:
+        from app.fiscal_documentos import preparar_relatorio_pendencias_para_ia
+        report = await run_in_threadpool(
+            preparar_relatorio_pendencias_para_ia,
+            await acumuladores.read(), acumuladores.filename or "resumo.xls",
+            await razao.read(), razao.filename or "razao.xls",
+            await attachment(entradas), await attachment(saidas), filial,
+        )
+        if not report["contas"]:
+            return {"analises": [], "aviso": "Sem pendências documentais para enviar à IA.",
+                    "provedor": "local", "gratuito": True, "fallback_usado": False}
+        from app.fiscal_ai import explain
+        return await run_in_threadpool(explain, report)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@app.post("/api/v1/conferencia-fiscal/investigar")
+async def conferencia_fiscal_investigacao_documental(
+    acumuladores: UploadFile = File(...),
+    razao: UploadFile = File(...),
+    entradas: UploadFile | None = File(None),
+    saidas: UploadFile | None = File(None),
+    filial: str = Form(""),
+):
+    """Etapa opcional; não modifica a conferência inicial ou seus arquivos."""
+    if filial and not filial.isdigit():
+        raise HTTPException(422, "A filial deve conter apenas números.")
+    if entradas is None and saidas is None:
+        raise HTTPException(422, "Anexe Entradas, Saídas ou ambos para investigar.")
+    async def attachment(file):
+        return (await file.read(), file.filename or "acompanhamento.xls") if file else None
+    try:
+        from app.fiscal_documentos import investigar_documentos
+        return await run_in_threadpool(
+            investigar_documentos,
+            await acumuladores.read(), acumuladores.filename or "resumo.xls",
+            await razao.read(), razao.filename or "razao.xls",
+            await attachment(entradas), await attachment(saidas), filial,
+        )
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
 # Registre a IA universal antes da rota legada com parâmetro {company_code},
 # que de outro modo capturaria o segmento "/ia" como um código inválido.
 from app.fiscal_ai import router as fiscal_ai_router

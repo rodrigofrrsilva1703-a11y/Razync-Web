@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="./assets/css/refined-theme.css?v=3">
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
-  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=ia-resultados-20261010">
+  <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=investigacao-documental-1">
 </head>
 <body>
   <div class="app-shell">
@@ -217,6 +217,38 @@
               <p class="fiscal-disclaimer fiscal-table-note">Contábil considerado: lançamentos do Razão classificados como compatíveis com o fiscal. Diferença = contábil considerado − fiscal. A composição e o total do Razão aparecem no detalhe da conta.</p>
             </div>
             <div id="fiscal242Detail" class="fiscal-detail" hidden></div>
+            <section id="fiscal242Investigacao" class="fiscal-investigation" hidden aria-labelledby="fiscalInvestigacaoTitle">
+              <div class="fiscal-investigation-heading">
+                <div>
+                  <span class="fiscal-section-eyebrow">ETAPA COMPLEMENTAR · OPCIONAL</span>
+                  <h3 id="fiscalInvestigacaoTitle">Investigar com Entradas e Saídas</h3>
+                  <p>Apenas contas com diferenças ou alertas. O sistema identifica os acumuladores da conta e compara seus documentos com o Razão da filial selecionada.</p>
+                </div>
+              </div>
+              <form id="fiscal242InvestigarForm" class="fiscal-investigation-form">
+                <div class="fiscal-upload-grid">
+                  <div class="fiscal-upload-item">
+                    <div class="fiscal-upload-label"><span class="fiscal-upload-symbol" aria-hidden="true">▤</span><div><label for="fiscal242Entradas">Acompanhamento de Entradas</label><small>Opcional · XLS ou XLSX</small></div></div>
+                    <input id="fiscal242Entradas" type="file" accept=".xls,.xlsx">
+                  </div>
+                  <div class="fiscal-upload-item">
+                    <div class="fiscal-upload-label"><span class="fiscal-upload-symbol" aria-hidden="true">▤</span><div><label for="fiscal242Saidas">Acompanhamento de Saídas</label><small>Opcional · XLS ou XLSX</small></div></div>
+                    <input id="fiscal242Saidas" type="file" accept=".xls,.xlsx">
+                  </div>
+                </div>
+                <div class="fiscal-investigation-actions">
+                  <button type="submit" id="fiscal242InvestigarBtn">Investigar documentos <span aria-hidden="true">→</span></button>
+                  <small>Envie apenas um dos relatórios ou ambos. Relatórios originais da primeira etapa serão reutilizados automaticamente.</small>
+                </div>
+                <p id="fiscal242InvestigarMessage" role="status" aria-live="polite"></p>
+              </form>
+              <div id="fiscal242InvestigarResultado" hidden></div>
+              <div id="fiscal242InvestigarIAArea" class="fiscal-investigation-ia" hidden>
+                <button type="button" class="secondary-action" id="fiscal242InvestigarIA">Explicar pendências com IA gratuita</button>
+                <p id="fiscal242InvestigarIAMessage" role="status" aria-live="polite"></p>
+                <div id="fiscal242InvestigarIAPareceres"></div>
+              </div>
+            </section>
             <details class="fiscal-unmapped" id="fiscal242Unmapped" hidden>
               <summary>Acumuladores sem conta contábil <span id="fiscal242UnmappedCount"></span></summary>
               <p>Estes acumuladores foram encontrados no relatório, mas não possuem uma conta definida para comparação. Confirme o vínculo antes de conciliar.</p>
@@ -503,7 +535,7 @@
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=fiscal-layout-2"></script>
   <script src="./assets/js/migration.js?v=fiscal-universal-1"></script>
-  <script src="./assets/js/fiscal-242.js?v=ia-resultados-20261010-2"></script>
+  <script src="./assets/js/fiscal-242.js?v=investigacao-documental-1"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>
