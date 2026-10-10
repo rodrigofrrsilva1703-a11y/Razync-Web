@@ -789,6 +789,9 @@
     investigationController?.abort();
     investigationController = null;
     investigationReport = null;
+    byId("fiscal242InvestigarIAArea").hidden = true;
+    byId("fiscal242InvestigarIAPareceres").replaceChildren();
+    byId("fiscal242InvestigarIAMessage").textContent = "";
     investigation.hidden = true;
     investigationResults.hidden = true;
     investigationResults.replaceChildren();
@@ -805,7 +808,8 @@
       VALOR_DIFERENTE: "Valor divergente",
       SEM_LANCAMENTO_IDENTIFICADO: "Sem lançamento identificado",
       SEM_DOCUMENTO_IDENTIFICADO: "Sem documento identificado",
-      CORRESPONDENCIA_EM_ANALISE: "Correspondência em análise"
+      CORRESPONDENCIA_EM_ANALISE: "Correspondência em análise",
+      DOCUMENTOS_NAO_IDENTIFICAVEIS: "Detalhamento não identificável"
     })[status] || status || "Revisar";
   }
 
@@ -948,6 +952,9 @@
       if (controller.signal.aborted || snapshot !== data) return;
       investigationReport = result;
       renderInvestigation(result);
+      byId("fiscal242InvestigarIAArea").hidden = (result.resumo?.pendentes || 0) + (result.resumo?.ambiguos || 0) === 0;
+      byId("fiscal242InvestigarIAPareceres").replaceChildren();
+      byId("fiscal242InvestigarIAMessage").textContent = "";
       investigationMessage.textContent = "Investigação concluída. Confira as pendências e as correspondências ambíguas abaixo.";
     } catch (error) {
       if (error.name !== "AbortError" && snapshot === data) {
@@ -961,6 +968,57 @@
     }
   });
 
+
+
+  const docAi = byId("fiscal242InvestigarIA");
+  const docAiMessage = byId("fiscal242InvestigarIAMessage");
+  const docAiResults = byId("fiscal242InvestigarIAPareceres");
+  docAi.addEventListener("click", async () => {
+    if (!data || !investigationReport || !aiConfigured) {
+      docAiMessage.textContent = "Verifique a disponibilidade da IA gratuita e conclua a investigação documental.";
+      return;
+    }
+    const snapshot = data;
+    const body = new FormData();
+    const files = selectedFiles();
+    body.append("acumuladores", files.acumuladores);
+    body.append("razao", files.razao);
+    body.append("filial", String(data.filial_aplicada || byId("fiscalFilialCodigo").value || ""));
+    const entradas = byId("fiscal242Entradas").files?.[0];
+    const saidas = byId("fiscal242Saidas").files?.[0];
+    if (entradas) body.append("entradas", entradas);
+    if (saidas) body.append("saidas", saidas);
+    docAi.disabled = true;
+    docAiMessage.textContent = "Enviando somente pendências e evidências necessárias para a IA gratuita…";
+    try {
+      const response = await fetch(API() + "/api/v1/conferencia-fiscal/investigar/ia", {method:"POST", body});
+      if (!response.ok) throw new Error(await responseError(response));
+      const report = await response.json();
+      if (data !== snapshot) return;
+      docAiResults.replaceChildren();
+      const provider = report.provedor === "groq" ? "GroqCloud" :
+        report.provedor === "gemini" ? "Gemini" :
+        report.provedor === "openrouter" ? "OpenRouter" : "IA";
+      (report.analises || []).forEach(item => {
+        const card = node("article", "fiscal-investigation-account");
+        card.appendChild(node("h4", "", "Conta " + item.conta + " · " + item.tipo));
+        card.appendChild(renderNarrative(item.explicacao));
+        card.appendChild(node("h5", "", "O que conferir"));
+        card.appendChild(renderChecklist(item.verificar));
+        docAiResults.appendChild(card);
+      });
+      docAiMessage.textContent = (report.aviso || "Análise concluída.") +
+        ((report.analises || []).length ? " Provedor: " + provider + "." : "") +
+        (report.fallback_usado ? " Foi utilizado um provedor gratuito de reserva." : "");
+    } catch (error) {
+      if (data === snapshot) {
+        docAiMessage.textContent = (error.message || "Não foi possível consultar a IA.") +
+          " As pendências documentais calculadas permanecem disponíveis. Você pode tentar novamente mais tarde.";
+      }
+    } finally {
+      docAi.disabled = false;
+    }
+  });
 
   filter.addEventListener("change", renderTable);
   search.addEventListener("input", renderTable);
