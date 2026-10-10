@@ -143,3 +143,49 @@ def test_nao_concilia_nota_sozinha_sem_valor_correspondente():
     assert res.status_code == 200, res.text
     row = next(item for item in res.json()["contas"][0]["documentos"] if item["nota"] == "101")
     assert row["situacao"] != "CONCILIADO"
+
+
+
+def test_ia_recebe_so_pendencias_sem_documentos_ja_conciliados(monkeypatch):
+    from app import fiscal_ai
+    captured = {}
+    def fake_explain(report):
+        captured.update(report)
+        context, _, _, _ = fiscal_ai.detailed_context(report)
+        for group in context["grupos"]:
+            assert all(d["nota"] not in {"100", "900"} for d in group.get("pendencias_documentais", []))
+            assert "pendencias_documentais" in group
+        return {"analises": [], "provedor": "gemini", "gratuito": True}
+    monkeypatch.setattr(fiscal_ai, "explain", fake_explain)
+    fiscal, ledger = initial()
+    res = TestClient(app).post("/api/v1/conferencia-fiscal/investigar/ia", files={
+        "acumuladores": ("Resumo.xlsx", fiscal),
+        "razao": ("Razao.xlsx", ledger),
+        "entradas": ("Entradas.xlsx", detail()),
+        "saidas": ("Saidas.xlsx", detail("SAÍDAS")),
+    }, data={"filial": "242"})
+    assert res.status_code == 200, res.text
+    assert res.json()["provedor"] == "gemini"
+    assert all("100" not in str(d.get("nota", "")) for items in captured["documentos_pendentes"].values() for d in items)
+    assert captured["lancamentos"]
+    assert not any("CF NF 100" in mov["historico"] or "CF NF 900" in mov["historico"]
+                   for mov in captured["lancamentos"])
+
+
+def test_falha_de_cota_da_ia_nao_apaga_resultado_deterministico(monkeypatch):
+    from app import fiscal_ai
+    from fastapi import HTTPException
+    monkeypatch.setattr(fiscal_ai, "explain", lambda report: (_ for _ in ()).throw(HTTPException(
+        429, "Cota gratuita indisponível.")))
+    f, r = initial()
+    files = {
+        "acumuladores": ("Resumo.xlsx", f),
+        "razao": ("Razao.xlsx", r),
+        "entradas": ("Entradas.xlsx", detail())
+    }
+    client = TestClient(app)
+    failed = client.post("/api/v1/conferencia-fiscal/investigar/ia", files=files, data={"filial":"242"})
+    assert failed.status_code == 429
+    success = client.post("/api/v1/conferencia-fiscal/investigar", files=files, data={"filial":"242"})
+    assert success.status_code == 200
+    assert success.json()["contas"][0]["documentos_total"] == 3
