@@ -189,3 +189,46 @@ def test_falha_de_cota_da_ia_nao_apaga_resultado_deterministico(monkeypatch):
     success = client.post("/api/v1/conferencia-fiscal/investigar", files=files, data={"filial":"242"})
     assert success.status_code == 200
     assert success.json()["contas"][0]["documentos_total"] == 3
+
+
+
+def test_layout_real_dominio_usa_ac_e_nao_codigo_da_linha():
+    from app.fiscal_documentos import ler_acompanhamento
+    sample = book([
+        ["COMERCIAL DEMONSTRACAO LTDA"],
+        ["Período:", "01/08/2026 até 31/08/2026"],
+        ["Código", "Data", "Nota", "Série", "Código", "Fornecedor",
+         "CFOP", "AC.", "Valor Contábil", "Tipo", "Base Cálculo"],
+        [2935403, "03/08/2026", 100, 1, 19573, "Fornecedor Teste",
+         1102, 1152, 1234.56, "ICMS", 1000.0],
+        ["", "", "", "", "", "", "", "", "", "IPI", 34.56],
+        ["Total Fornecedor", "", "", "", "", "", "", "", 1234.56, "ICMS"],
+    ])
+    result = ler_acompanhamento(sample, "entradas.xlsx", "ENTRADAS", {"1152"})
+    assert len(result["documentos"]) == 1
+    assert result["documentos"][0]["acumulador"] == "1152"
+    assert result["documentos"][0]["nota"] == "100"
+    assert result["documentos"][0]["valor"] == 1234.56
+
+
+def test_cnpj_incompativel_impede_cruzamento_de_filial():
+    fiscal, ledger = initial()
+    # Modelo com CNPJ no resumo, como na exportação real Domínio.
+    fiscal = book([
+        ["COMERCIAL DEMONSTRACAO LTDA"],
+        ["CNPJ:", "", "08299944000113"],
+        ["Período:", "01/08/2026 a 31/08/2026"],
+        ["ENTRADAS"],
+        ["Código", "Descrição", "Valor Contábil", "Conta"],
+        [1152, "Compras", 1800, 508],
+    ])
+    wrong = book([
+        ["COMERCIAL DEMONSTRACAO LTDA"],
+        ["CNPJ:", "", "08299944000202"],
+        ["Período:", "01/08/2026 a 31/08/2026"],
+        ["Código", "Nota", "Data", "CFOP", "Valor Contábil"],
+        [1152, 100, "03/08/2026", 1102, 1000],
+    ])
+    res = post(saida=False, fiscal=fiscal, razao=ledger, entrada_bytes=wrong)
+    assert res.status_code == 422
+    assert "CNPJ" in res.json()["detail"]
