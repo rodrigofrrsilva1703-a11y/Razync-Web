@@ -3,6 +3,7 @@ import copy
 import json
 import logging
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from typing import Literal
 import os
 import re
 import threading
@@ -25,11 +26,12 @@ last_request = 0.0
 model_rotation_index = 0
 # Catálogo público verificado em 09/10/2026: modelos leves, com roteador de reserva.
 FREE_FISCAL_MODELS = [
-    "google/gemma-4-26b-a4b-it:free",
-    "nvidia/nemotron-3.5-lightning:free",
-    "google/gemma-4-31b-it:free",
+    "apodex/apodex-1.1-mini:free",
+    "dots-studio/dots-3-note-preview:free",
+    "liquid/lfm-2.5-2.6b:free",
     "openrouter/free",
 ]
+STRUCTURED_FREE_MODELS = set(FREE_FISCAL_MODELS[:-1])
 model_cooldowns = {}
 gemini_cooldown_until = 0.0
 
@@ -163,7 +165,7 @@ def provider_error(exc):
 
 def _openrouter_models():
     """Modelos alternados a cada conferência; o OpenRouter faz fallback no mesmo pedido."""
-    configured = os.getenv("OPENROUTER_MODELS", "openrouter/free")
+    configured = os.getenv("OPENROUTER_MODELS", ",".join(FREE_FISCAL_MODELS))
     requested = [m.strip() for m in configured.split(",")]
     models = list(dict.fromkeys(requested))
     if not 1 <= len(models) <= 8 or any(not m for m in requested) or any(
@@ -312,7 +314,9 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
             )
         return candidate
 
-    free_router = all(m in FREE_FISCAL_MODELS for m in models)
+    structured_payload = copy.deepcopy(request_payload)
+    free_router = models[0] == "openrouter/free" or (
+        models[0] in FREE_FISCAL_MODELS and models[0] not in STRUCTURED_FREE_MODELS)
     if free_router:
         request_payload = compatible_payload(request_payload)
     def send(body, seconds=18):
@@ -363,7 +367,10 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
         candidates = ["openrouter/free"]
     try:
         for attempt, model in enumerate(candidates):
-            request = dict(request_payload) if attempt == 0 else compatible_payload(request_payload)
+            request = (copy.deepcopy(structured_payload) if model in STRUCTURED_FREE_MODELS
+                       else dict(request_payload) if attempt == 0 else compatible_payload(request_payload))
+            if model in STRUCTURED_FREE_MODELS:
+                request["reasoning"] = {"enabled": False}
             request["model"] = model
             try:
                 response_json = send(request)
@@ -662,13 +669,19 @@ def _validar_resposta_ia(result, report, mapping, references):
     return output
 
 
-def explain(report, preferred_provider=None):
+def explain(report, preferred_provider=None, *, only_openrouter=False):
     openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
     gemini_key = _gemini_free_key()
     provider_choice = preferred_provider or os.getenv("RAZYNC_AI_PRIMARY", "openrouter")
     groq_ready = _groq_enabled() and provider_choice == "groq"
     legacy = os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1"
     legacy_direct = not openrouter_key and not gemini_key and legacy
+    if only_openrouter:
+        if not openrouter_key:
+            raise HTTPException(503, "OpenRouter não configurado no servidor.")
+        gemini_key = ""
+        legacy_direct = False
+        groq_ready = False
     if legacy_direct:
         gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not (openrouter_key or gemini_key or groq_ready):
@@ -923,6 +936,7 @@ def status():
 async def analyze(
     acumuladores: UploadFile = File(...), razao: UploadFile = File(...),
     filial: str = Form(""), empresa_codigo: str = Form(""),
+    provedor: Literal["", "openrouter"] = Form(""),
 ):
     if not status()["configurado"]:
         raise HTTPException(
@@ -939,6 +953,8 @@ async def analyze(
             int(empresa_codigo) if empresa_codigo else None, filial or None)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
+    if provedor == "openrouter":
+        return await run_in_threadpool(explain, report, preferred_provider="openrouter", only_openrouter=True)
     return await run_in_threadpool(explain, report)
 
 

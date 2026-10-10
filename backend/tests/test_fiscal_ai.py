@@ -498,8 +498,8 @@ def test_openrouter_modo_gratuito_por_padrao_e_precos_zerados(monkeypatch):
         assert "models" not in body
         assert body["provider"]["max_price"] == {"prompt":0,"completion":0}
         assert body["provider"]["data_collection"] == "deny"
-        assert "require_parameters" not in body["provider"]
-        assert "response_format" not in body
+        assert body["provider"]["require_parameters"] is True
+        assert body["response_format"]["type"] == "json_schema"
         seen["called"] = True
         return Response()
     monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", check)
@@ -730,7 +730,8 @@ def test_openrouter_doispedidos_400_continua_gratuito_erro_legivel(monkeypatch):
 def test_roteador_free_tenta_json_simples_na_primeira_chamada(monkeypatch):
     """Roteador gratuito só faz uma chamada e mantém as proteções contábeis."""
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-or")
-    monkeypatch.delenv("OPENROUTER_MODELS", raising=False)
+    monkeypatch.setenv("OPENROUTER_MODELS", "openrouter/free")
+    monkeypatch.setenv("OPENROUTER_ROUTER_FIRST", "1")
     seen = []
     class Response:
         def __enter__(self): return self
@@ -1200,3 +1201,23 @@ def test_teste_openrouter_removido_mantem_analise_disponivel():
     client = TestClient(app)
     assert client.post('/api/v1/conferencia-fiscal/ia/teste-openrouter').status_code == 404
     assert client.get('/api/v1/conferencia-fiscal/ia/status').status_code == 200
+
+
+def test_verificacao_openrouter_nao_mascara_falha_com_gemini(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "synthetic")
+    monkeypatch.setenv("GEMINI_API_KEY", "synthetic")
+    monkeypatch.setenv("GEMINI_FREE_TIER_CONFIRMED", "1")
+    def unavailable(*args, **kwargs):
+        raise HTTPException(429, "Cota gratuita")
+    monkeypatch.setattr(fiscal_ai, "_openrouter_completion", unavailable)
+    monkeypatch.setattr(fiscal_ai, "_gemini_completion", lambda *a, **k: pytest.fail("Não pode mascarar diagnóstico"))
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(report(), preferred_provider="openrouter", only_openrouter=True)
+    assert error.value.status_code == 429
+
+
+def test_selecao_publica_nao_aceita_modelo_ou_provedor_pago(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "synthetic")
+    files={"acumuladores":("fiscal.xlsx",b"synthetic"), "razao":("razao.xlsx",b"synthetic")}
+    assert TestClient(app).post('/api/v1/conferencia-fiscal/ia', files=files,
+                                data={"provedor":"openai"}).status_code == 422
