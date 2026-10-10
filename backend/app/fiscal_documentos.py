@@ -127,7 +127,10 @@ def ler_acompanhamento(content: bytes, name: str, tipo: str, acumuladores: set[s
                     "data": locate("DATA", "EMISSAO", "DT EMISSAO"),
                     "cfop": locate("CFOP"),
                     "valor": locate("VALOR CONTABIL", "VALOR CONT", "VLR CONTABIL", "VL CONTABIL"),
-                    "acc": locate("ACUMULADOR", "CODIGO", "COD"),
+                    # Nos XLS reais do Domínio, "Código" inicial é ID da linha,
+                    # o segundo "Código" identifica o parceiro; "AC." é o acumulador.
+                    "acc": locate("AC", "ACUMULADOR") if locate("AC", "ACUMULADOR") is not None
+                           else locate("CODIGO", "COD"),
                     "serie": locate("SERIE"),
                     "parceiro": locate("FORNECEDOR" if tipo == "ENTRADAS" else "CLIENTE"),
                     "filial": locate("FILIAL"),
