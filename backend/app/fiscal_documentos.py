@@ -162,7 +162,10 @@ def ler_acompanhamento(content: bytes, name: str, tipo: str, acumuladores: set[s
                         partner = possible_partner[:100]
                 continue
             acc = _codigo_dominio(_celula(vals, columns["acc"], 2))
-            if acc not in acumuladores:
+            if acc and acc not in acumuladores:
+                # Documento pertence a outro acumulador, não a uma falha de leitura.
+                continue
+            if not acc:
                 acc = current_acc if current_acc in acumuladores else ""
             if not acc:
                 unidentified += 1
