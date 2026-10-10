@@ -173,6 +173,10 @@ test('provedores apresentam parecer e checklist uniformes sem tratar texto como 
   assert.equal(context.renderChecklist('1. Conferir NF\ncom o fornecedor.\n2. Conferir Razão.').children[0].children[0].textContent, 'Conferir NF\ncom o fornecedor.');
   const malicious = context.renderNarrative('<script>alert(1)</script>');
   assert.equal(malicious.children[0].textContent, '<script>alert(1)</script>');
+  const labelled = context.renderNarrative('Fatos: Valor demonstrado.\nHipóteses: Ainda requer confirmação.');
+  assert.equal(labelled.children[0].children[0].textContent, 'Fatos');
+  assert.equal(labelled.children[1].children[1].textContent, 'Ainda requer confirmação.');
+  assert.equal(context.renderChecklist('1. Confira R$ 1.234,56. 2. Compare o Razão.').children[0].children.length, 2);
 });
 
 
@@ -322,7 +326,9 @@ test('lotes executam Gemini e Groq juntos, sem duas chamadas simultâneas no mes
   assert.equal(result.gratuito,true);
   assert.match(result.limite,/2001 registros/);
   assert.equal(calls.filter(url=>url.endsWith('/sessoes')).length,1);
-  assert.deepEqual(progress.at(-1),[8,8,0]);
+  assert.deepEqual(progress.at(-1).slice(0,3),[8,8,0]);
+  assert.equal(progress.at(-1)[4].length,8);
+  assert.ok(progress.some(update => update[4]?.length > 0 && update[4].length < 8));
 });
 
 test('falha de um lote mantém os pareceres concluídos e informa análise parcial',async()=>{

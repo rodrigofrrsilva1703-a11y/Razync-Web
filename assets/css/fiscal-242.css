@@ -1997,6 +1997,11 @@
 }
 
 /* Espera da IA sempre controlável, sem modal ou botão flutuante. */
+#fiscalView .fiscal-ai-finding {padding:12px 14px;border:1px solid #e2e9f0;border-radius:10px;background:#f8fafc;margin:10px 0;}
+#fiscalView .fiscal-ai-finding h6 {margin:0 0 6px;font-size:12px;font-weight:700;color:#34536d;}
+#fiscalView .fiscal-ai-finding .fiscal-ai-paragraph {margin:0;line-height:1.75;overflow-wrap:anywhere;}
+#fiscalView .fiscal-ai-checklist li {padding:10px 12px;margin-bottom:8px;border-radius:8px;background:#f5f8fb;line-height:1.7;overflow-wrap:anywhere;}
+#fiscalView .fiscal-ai-analysis h5,#fiscalView .fiscal-ai-review h5 {font-size:13px;letter-spacing:0;color:#294863;}
 #fiscalView .fiscal-ai-actions .fiscal-ai-cancel {
   border:1px solid #d7e2ec;
   color:#58728a;

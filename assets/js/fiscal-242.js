@@ -114,14 +114,20 @@
     const wrap = node("div", "fiscal-ai-narrative");
     // A apresentação é a mesma para todos os provedores. Não atribuir títulos
     // a parágrafos apenas pela posição: a IA pode enviar outra estrutura.
-    const segments = String(textValue || "").trim().split(/\r?\n+/)
+    const segments = String(textValue || "").trim().replace(/\\n/g, "\n").split(/\r?\n+/)
       .map(x => x.trim()).filter(Boolean);
-    segments.forEach(paragraph => wrap.appendChild(node("p", "fiscal-ai-paragraph", paragraph)));
+    segments.forEach(paragraph => {
+      const labelled = paragraph.match(/^(?:\*\*)?(Fatos|Diferença|Hipóteses|Limitações)(?:\*\*)?\s*:\s*(?:\*\*)?\s*(.*)$/i);
+      if (!labelled) { wrap.appendChild(node("p", "fiscal-ai-paragraph", paragraph)); return; }
+      const section = node("section", "fiscal-ai-finding");
+      section.append(node("h6", "", labelled[1]), node("p", "fiscal-ai-paragraph", labelled[2]));
+      wrap.appendChild(section);
+    });
     return wrap;
   }
   function renderChecklist(textValue) {
     const wrap = node("div", "fiscal-ai-steps");
-    const text = String(textValue || "").trim();
+    const text = String(textValue || "").trim().replace(/\\n/g, "\n").replace(/([^\n])\s+(?=[2-9][.)]\s+[A-ZÀ-Ý])/g, "$1\n");
     const marker = /^(?:\d+[.)]|[-*•])\s+/;
     const steps = [];
     if (marker.test(text)) {
@@ -139,6 +145,76 @@
     });
     wrap.appendChild(list);
     return wrap;
+  }
+  function renderAIEntries(entries) {
+      for (const item of entries) {
+        if (aiCards.some(entry => keyOf(entry.item) === keyOf(item))) continue;
+        const card = node("details", "fiscal-ai-card fiscal-ai-account");
+        const heading = node("summary", "fiscal-ai-card-heading fiscal-ai-account-summary");
+        const title = node("div", "fiscal-ai-card-title");
+        title.appendChild(node("h4", "", `Conta ${item.conta}`));
+        if (item.descricao) title.appendChild(node("p", "fiscal-ai-card-description", item.descricao));
+        const metadata = node("div", "fiscal-ai-card-meta");
+        if (item.provedor) metadata.appendChild(node("span", "fiscal-ai-type", item.provedor === "groq" ? "Groq" : item.provedor === "gemini" ? "Gemini" : "OpenRouter"));
+        if (item.tipo) metadata.appendChild(node("span", "fiscal-ai-type", item.tipo));
+        if (item.situacao) metadata.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(item.situacao), statusLabels[item.situacao] || item.situacao));
+        const compact = node("div", "fiscal-ai-account-compact");
+        if (item.valores && item.valores.diferenca !== undefined && item.valores.diferenca !== null) {
+          const preview = node("span", "fiscal-ai-account-difference");
+          preview.append(node("small", "", "Diferença"), node("strong", "", money.format(Number(item.valores.diferenca) || 0)));
+          compact.appendChild(preview);
+        }
+        compact.appendChild(node("span", "fiscal-ai-account-chevron", "⌄"));
+        heading.append(title, metadata, compact);
+        const content = node("div", "fiscal-ai-account-content");
+        const officialRow = (data?.contas || []).find(row => keyOf(row) === keyOf(item)) || item;
+        const accumulatorInfo = accumulatorBreakdown(officialRow);
+        const analysis = node("section", "fiscal-ai-analysis");
+        analysis.append(node("h5", "", "Análise da conta"), renderNarrative(item.explicacao));
+        const review = node("section", "fiscal-ai-review");
+        review.append(node("h5", "", "Verificações recomendadas"), renderChecklist(item.verificar));
+        if (item.valores) {
+          const metrics = node("div", "fiscal-ai-values");
+          [["Fiscal", "fiscal"], ["Total do Razão", "total_conta"],
+           ["Contábil considerado", "contabil"], ["Diferença", "diferenca"]].forEach(([label, key]) => {
+            const metric = node("div", "fiscal-ai-value");
+            metric.append(node("small", "", label), node("strong", "", money.format(Number(item.valores[key] || 0))));
+            metrics.appendChild(metric);
+          });
+          content.appendChild(metrics);
+        }
+        content.appendChild(accumulatorInfo);
+        content.append(analysis, review);
+        if (item.evidencias?.length) {
+          const details = node("details", "fiscal-ai-evidence");
+          details.append(node("summary", "", `Lançamentos citados (${item.evidencias.length})`));
+          for (const row of item.evidencias) {
+            const value = n => Number(n || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+            const record = node("div", "fiscal-ai-record");
+            const title = node("div", "fiscal-ai-record-title");
+            title.append(node("strong", "", row.referencia), node("span", "", row.data));
+            const metrics = node("dl", "fiscal-ai-record-metrics");
+            for (const [label, content] of [["Conta", row.conta], ["Contrapartida", row.contrapartida], ["Débito", value(row.debito)], ["Crédito", value(row.credito)]]) {
+              const metric = node("div", ""); metric.append(node("dt", "", label), node("dd", "", content)); metrics.append(metric);
+            }
+            record.append(title, node("p", "", row.historico), metrics); details.append(record);
+          }
+          content.append(details);
+        }
+        card.append(heading, content);
+        aiCards.push({item, card});
+        aiResult.append(card);
+      }
+      // Pareceres longos começam recolhidos para não poluir a página.
+      // Um resultado isolado pode aparecer aberto para facilitar a leitura.
+      if (aiCards.length === 1) aiCards[0].card.open = true;
+      for (const item of entries) {
+        const existing = aiCards.find(entry => keyOf(entry.item) === keyOf(item));
+        if (existing) aiResult.append(existing.card);
+      }
+      updateAIFilters();
+    aiToolbar.hidden = aiCards.length === 0;
+    aiTotal.textContent = aiCards.length ? "(" + aiCards.length + ")" : "";
   }
   function normalizeAISearch(value) {
     return String(value ?? "").normalize("NFD")
@@ -253,7 +329,7 @@
             if (controller.signal.aborted) throw error;
             failures.push({lote:batch.id, grupos:batch.grupos, mensagem:error.message});
           }
-          onProgress(completed, session.grupos, failures.length);
+          onProgress(completed, session.grupos, failures.length, "", [...results.entries()].sort((a,b) => a[0] - b[0]).flatMap(entry => entry[1].analises));
         }
       }));
       if (controller.signal.aborted) throw new DOMException("Cancelado", "AbortError");
@@ -320,15 +396,16 @@
         (secs >= 25 ? "Modelos gratuitos podem ter fila; aguarde ou cancele." : "Validando contas e evidências.");
     }, 4000);
     try {
-      const result = await analyzeInBatches(snapshot, controller, (done, total, failed, waiting) => {
+      const result = await analyzeInBatches(snapshot, controller, (done, total, failed, waiting, ready) => {
         if (aiController !== controller || controller.signal.aborted) return;
+        if (ready?.length) renderAIEntries(ready);
         aiInlineStatus.textContent = done + " de " + total + " grupos concluídos" +
           (failed ? " · " + failed + " lotes pendentes" : "") + ". " +
           (waiting || "As IAs gratuitas dividem os lotes; resultados concluídos são reaproveitados.");
       });
       if (controller.signal.aborted || previewBody !== snapshot) return;
       aiReport = result;
-      aiResult.replaceChildren(); clearAIAccounts();
+      // Preserva os cartões já recebidos e as contas abertas durante a espera.
       // A troca de provedor é transparente: os mesmos pareceres são renderizados.
       if (result.provedor === "cooperacao") {
         aiProvider.textContent = (result.nomes_provedores || "Gemini + Groq") + " · gratuito";
@@ -347,67 +424,7 @@
       const entries = Array.isArray(result.analises) ? result.analises : [];
       aiToolbar.hidden = entries.length === 0;
       aiTotal.textContent = entries.length ? "(" + entries.length + ")" : "";
-      for (const item of entries) {
-        const card = node("details", "fiscal-ai-card fiscal-ai-account");
-        const heading = node("summary", "fiscal-ai-card-heading fiscal-ai-account-summary");
-        const title = node("div", "fiscal-ai-card-title");
-        title.appendChild(node("h4", "", `Conta ${item.conta}`));
-        if (item.descricao) title.appendChild(node("p", "fiscal-ai-card-description", item.descricao));
-        const metadata = node("div", "fiscal-ai-card-meta");
-        if (item.provedor) metadata.appendChild(node("span", "fiscal-ai-type", item.provedor === "groq" ? "Groq" : item.provedor === "gemini" ? "Gemini" : "OpenRouter"));
-        if (item.tipo) metadata.appendChild(node("span", "fiscal-ai-type", item.tipo));
-        if (item.situacao) metadata.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(item.situacao), statusLabels[item.situacao] || item.situacao));
-        const compact = node("div", "fiscal-ai-account-compact");
-        if (item.valores && item.valores.diferenca !== undefined && item.valores.diferenca !== null) {
-          const preview = node("span", "fiscal-ai-account-difference");
-          preview.append(node("small", "", "Diferença"), node("strong", "", money.format(Number(item.valores.diferenca) || 0)));
-          compact.appendChild(preview);
-        }
-        compact.appendChild(node("span", "fiscal-ai-account-chevron", "⌄"));
-        heading.append(title, metadata, compact);
-        const content = node("div", "fiscal-ai-account-content");
-        const officialRow = (data?.contas || []).find(row => keyOf(row) === keyOf(item)) || item;
-        const accumulatorInfo = accumulatorBreakdown(officialRow);
-        const analysis = node("section", "fiscal-ai-analysis");
-        analysis.append(node("h5", "", "Análise da conta"), renderNarrative(item.explicacao));
-        const review = node("section", "fiscal-ai-review");
-        review.append(node("h5", "", "Verificações recomendadas"), renderChecklist(item.verificar));
-        if (item.valores) {
-          const metrics = node("div", "fiscal-ai-values");
-          [["Fiscal", "fiscal"], ["Total do Razão", "total_conta"],
-           ["Contábil considerado", "contabil"], ["Diferença", "diferenca"]].forEach(([label, key]) => {
-            const metric = node("div", "fiscal-ai-value");
-            metric.append(node("small", "", label), node("strong", "", money.format(Number(item.valores[key] || 0))));
-            metrics.appendChild(metric);
-          });
-          content.appendChild(metrics);
-        }
-        content.appendChild(accumulatorInfo);
-        content.append(analysis, review);
-        if (item.evidencias?.length) {
-          const details = node("details", "fiscal-ai-evidence");
-          details.append(node("summary", "", `Lançamentos citados (${item.evidencias.length})`));
-          for (const row of item.evidencias) {
-            const value = n => Number(n || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
-            const record = node("div", "fiscal-ai-record");
-            const title = node("div", "fiscal-ai-record-title");
-            title.append(node("strong", "", row.referencia), node("span", "", row.data));
-            const metrics = node("dl", "fiscal-ai-record-metrics");
-            for (const [label, content] of [["Conta", row.conta], ["Contrapartida", row.contrapartida], ["Débito", value(row.debito)], ["Crédito", value(row.credito)]]) {
-              const metric = node("div", ""); metric.append(node("dt", "", label), node("dd", "", content)); metrics.append(metric);
-            }
-            record.append(title, node("p", "", row.historico), metrics); details.append(record);
-          }
-          content.append(details);
-        }
-        card.append(heading, content);
-        aiCards.push({item, card});
-        aiResult.append(card);
-      }
-      // Pareceres longos começam recolhidos para não poluir a página.
-      // Um resultado isolado pode aparecer aberto para facilitar a leitura.
-      if (aiCards.length === 1) aiCards[0].card.open = true;
-      updateAIFilters();
+      renderAIEntries(entries);
       aiMessage.textContent = (result.aviso || "Parecer recebido e validado pelo Razync.") +
         (result.limite ? " " + result.limite : "") +
         (result.modelo_usado ? " Modelo utilizado: " + result.modelo_usado + "." : "") +
