@@ -195,6 +195,32 @@ test('Gemini exibe análise diretamente na página sem painel flutuante', () => 
   assert.match(css,/#fiscalView #fiscal242AIResult/);
 });
 
+test('resultados graduais preservam conta aberta e não duplicam cartões', () => {
+  const start = source.indexOf('  function renderAIEntries(entries) {');
+  const end = source.indexOf('  function normalizeAISearch(value) {', start);
+  const node = (tag, className, value) => ({tag,className,textContent:value,children:[],
+    append(...children) { this.children.push(...children); },
+    appendChild(child) { this.children.push(child); }});
+  const cards = [];
+  const root = {children:[],append(card) {this.children=this.children.filter(x=>x!==card);this.children.push(card);}};
+  const context = {node,aiCards:cards,aiResult:root,aiToolbar:{hidden:true},aiTotal:{},
+    data:{contas:[]}, keyOf:row=>row.conta+':'+row.tipo,
+    money:{format:String},statusClass:()=>'',statusLabels:{},
+    accumulatorBreakdown:()=>node('section'),renderNarrative:()=>node('div'),renderChecklist:()=>node('ol'),
+    updateAIFilters:()=>{}};
+  vm.createContext(context);vm.runInContext(source.slice(start,end),context);
+  const first = {conta:'1',tipo:'ENTRADAS'}, second = {conta:'2',tipo:'ENTRADAS'};
+  context.renderAIEntries([second]);
+  const opened = cards[0].card; opened.open=true;
+  context.renderAIEntries([first,second]);
+  context.renderAIEntries([first,second]);
+  assert.equal(cards.length,2);
+  assert.equal(root.children.length,2);
+  assert.equal(root.children[1],opened);
+  assert.equal(opened.open,true);
+  assert.equal(context.aiTotal.textContent,'(2)');
+});
+
 test('exportação Gemini usa relatório pronto, sem nova chamada ao modelo', () => {
   const start = source.indexOf('  aiExport.addEventListener("click"');
   const end = source.indexOf('  function renderNarrative',start);
