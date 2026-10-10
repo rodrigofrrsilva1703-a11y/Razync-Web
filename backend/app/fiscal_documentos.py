@@ -361,3 +361,50 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
             "pendentes": sum(r["resumo"]["pendentes"] for r in result),
         },
     }
+
+
+
+def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome, razao_bytes,
+                                        razao_nome, entradas=None, saidas=None, filial=""):
+    """Monta somente pendências e lançamentos não conciliados para provedores gratuitos."""
+    investigation = investigar_documentos(
+        acumuladores_bytes, acumuladores_nome, razao_bytes, razao_nome, entradas, saidas, filial
+    )
+    preview = conferencia_fiscal_preview(
+        acumuladores_bytes, acumuladores_nome, razao_bytes, razao_nome,
+        filial_alvo=filial or None,
+    )
+    selected = {}
+    docs_to_ai = {}
+    ledger_to_ai = []
+    for item in investigation["contas"]:
+        account, tipo = item["conta"], item["tipo"]
+        pending_docs = [d for d in item["documentos"] if d["situacao"] != "CONCILIADO"]
+        other_ledger = item["razao_pendente"]
+        if not pending_docs and not other_ledger:
+            continue
+        selected[(account, tipo)] = True
+        key = account + ":" + tipo
+        docs_to_ai[key] = [
+            {"acumulador": d["acumulador"], "nota": d["nota"],
+             "serie": d["serie"], "data": d["data"], "cfop": d["cfop"],
+             "valor_brl": f"R$ {d['valor']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+             "situacao": d["situacao"], "criterio": d["criterio"]}
+            for d in pending_docs[:30]
+        ]
+        for mov in other_ledger[:30]:
+            ledger_to_ai.append({
+                "conta": account, "data": mov["data"],
+                "historico": mov["historico"], "contrapartida": mov["contrapartida"],
+                "debito": mov["valor"] if tipo != "SAÍDAS" else 0,
+                "credito": mov["valor"] if tipo == "SAÍDAS" else 0,
+                "natureza": "CRÉDITO" if tipo == "SAÍDAS" else "DÉBITO",
+                "classificacao": mov["situacao"],
+            })
+    preview["contas"] = [r for r in preview["contas"] if (r["conta"], r["tipo"]) in selected]
+    preview["lancamentos"] = ledger_to_ai
+    preview["documentos_pendentes"] = docs_to_ai
+    preview["fonte_fiscal"] = ("Acompanhamento de Entradas/Saídas: somente documentos "
+                               "com correspondência ambígua ou pendente, por acumulador.")
+    preview["escopo_razao"] = "Somente lançamentos contábeis não conciliados na investigação documental."
+    return preview
