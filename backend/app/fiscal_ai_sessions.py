@@ -1,5 +1,6 @@
 """Lotes de IA fiscal com contexto temporário, sem repetir upload ou leitura."""
 import secrets
+import os
 import threading
 import time
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
@@ -11,6 +12,25 @@ router = APIRouter(prefix="/api/v1/conferencia-fiscal/ia/sessoes")
 _sessions = {}
 _guard = threading.RLock()
 TTL_SECONDS = 1800
+_dispatch_cursor = {"curto": 0, "medio": 0}
+
+
+def free_providers():
+    providers = []
+    if fiscal_ai._groq_enabled():
+        providers.append("groq")
+    if fiscal_ai._gemini_free_key():
+        providers.append("gemini")
+    if os.getenv("OPENROUTER_API_KEY", "").strip():
+        providers.append("openrouter")
+    return providers
+
+
+def provider_order(providers, extensive):
+    # Groq usa amostragem: só atende contas que cabem integralmente nela.
+    if extensive:
+        return [p for p in ("gemini", "openrouter") if p in providers]
+    return [p for p in ("groq", "openrouter", "gemini") if p in providers]
 
 
 def _get(token):
@@ -23,13 +43,7 @@ def _get(token):
 
 
 def prepare(report):
-    providers = []
-    if fiscal_ai._groq_enabled():
-        providers.append("groq")
-    if fiscal_ai._gemini_free_key():
-        providers.append("gemini")
-    if not providers:
-        providers = [fiscal_ai.status()["provedor"]] if fiscal_ai.status()["configurado"] else []
+    providers = free_providers()
     if not providers:
         raise HTTPException(503, "Não há provedor de IA configurado.")
     eligible = [row for row in report["contas"] if row["situacao"] != "CONFERE"]
@@ -44,10 +58,24 @@ def prepare(report):
         # Não usar uma amostra curta para economizar em contas extensas.
         extensive = any(len(indexed.get(code, [])) > 10 or any(
             len(str(row.get("historico") or "")) > 180 for row in indexed.get(code, [])) for code in codes)
-        provider = "gemini" if extensive and "gemini" in providers else (
-            "groq" if "groq" in providers else providers[0])
+        large = any(len(indexed.get(code, [])) > 80 or any(
+            len(str(row.get("historico") or "")) > 500 for row in indexed.get(code, [])) for code in codes)
+        order = provider_order(providers, extensive)
+        if not order:
+            raise HTTPException(503, "Contas extensas precisam de Gemini gratuito ou OpenRouter para preservar os históricos completos.")
+        provider = order[0]
+        if "openrouter" in order and len(order) > 1 and not large:
+            category = "medio" if extensive else "curto"
+            # Conserva a pequena cota gratuita do OpenRouter: um em quatro
+            # lotes adequados, repartidos inclusive entre sessões diferentes.
+            with _guard:
+                turn = _dispatch_cursor[category]
+                _dispatch_cursor[category] += 1
+            if turn % 4 == 3:
+                provider = "openrouter"
         batches.append({"id": len(batches), "provedor": provider,
                        "criterio": "contexto_integral" if extensive else "contexto_curto",
+                       "reservas": [p for p in order if p != provider],
                        "grupos": len(accounts), "report": dict(report, contas=accounts, lancamentos=rows),
                        "result": None, "running": False})
     token = secrets.token_urlsafe(32)
@@ -65,7 +93,7 @@ def prepare(report):
     session["timer"] = timer
     timer.start()
     return {"sessao": token, "grupos": len(eligible), "registros": len(report.get("lancamentos", [])),
-            "cooperacao": len(providers) == 2,
+            "cooperacao": len(providers) > 1, "provedores": providers,
             "lotes": [{k: batch[k] for k in ("id", "provedor", "grupos", "criterio")} for batch in batches]}
 
 
@@ -89,7 +117,28 @@ def process(token, batch_id):
         batch["running"] = True
         session["active_providers"].add(batch["provedor"])
     try:
-        result = fiscal_ai.explain(batch["report"], preferred_provider=batch["provedor"])
+        result = None
+        failure = None
+        for provider in [batch["provedor"], *batch["reservas"]]:
+            extra_slot = provider != batch["provedor"]
+            with _guard:
+                if extra_slot and provider in session["active_providers"]:
+                    continue
+                session["active_providers"].add(provider)
+            try:
+                result = fiscal_ai.explain(batch["report"], preferred_provider=provider, only_provider=provider)
+                result = dict(result, fallback_usado=extra_slot)
+                break
+            except HTTPException as exc:
+                if exc.status_code not in (429, 502, 503, 504):
+                    raise
+                failure = exc
+            finally:
+                if extra_slot:
+                    with _guard:
+                        session["active_providers"].discard(provider)
+        if result is None:
+            raise failure or HTTPException(429, "As IAs gratuitas estão ocupadas. Os lotes concluídos foram preservados.", headers={"Retry-After": "15"})
         result = dict(result, analises=[dict(item, provedor=result.get("provedor"),
                                           modelo_usado=result.get("modelo_usado")) for item in result["analises"]])
         with _guard:

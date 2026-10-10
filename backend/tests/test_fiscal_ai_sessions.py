@@ -10,6 +10,8 @@ from app.main import app
 
 @pytest.fixture(autouse=True)
 def isolate(monkeypatch):
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.setattr(sessions, "_dispatch_cursor", {"curto": 0, "medio": 0})
     with sessions._guard:
         sessions._sessions.clear()
     monkeypatch.setattr(fiscal_ai, "_groq_enabled", lambda: True)
@@ -49,7 +51,7 @@ def test_provedores_processam_simultaneamente_sem_mudar_ambiente(monkeypatch):
     manifest = sessions.prepare(report(4))
     barrier = threading.Barrier(2)
     seen = []
-    def explain(batch, preferred_provider):
+    def explain(batch, preferred_provider, **kwargs):
         seen.append(preferred_provider)
         barrier.wait(timeout=3)
         return {"analises": [{"conta": row["conta"]} for row in batch["contas"]],
@@ -76,7 +78,7 @@ def test_lote_concluido_e_cacheado_sem_gastar_tokens_novamente(monkeypatch):
 
 def test_falha_nao_descarta_outro_lote_e_pode_ser_repetida(monkeypatch):
     manifest = sessions.prepare(report(4))
-    def explain(*a, preferred_provider):
+    def explain(*a, preferred_provider, **kwargs):
         if preferred_provider == "gemini":
             raise HTTPException(429, "Cota esgotada")
         return {"analises": [], "provedor":"groq"}
@@ -154,7 +156,7 @@ def test_api_le_arquivos_uma_vez_e_cacheia_resultado(monkeypatch):
     read_calls = []
     ai_calls = []
     monkeypatch.setattr(fiscal_ai, "conferencia_fiscal_preview", lambda *a: read_calls.append(1) or report(4))
-    monkeypatch.setattr(fiscal_ai, "explain", lambda batch, preferred_provider: ai_calls.append(preferred_provider) or {
+    monkeypatch.setattr(fiscal_ai, "explain", lambda batch, preferred_provider, **kwargs: ai_calls.append(preferred_provider) or {
         "analises": [{"conta": row["conta"]} for row in batch["contas"]], "provedor": preferred_provider, "gratuito": True})
     client = TestClient(app)
     response = client.post("/api/v1/conferencia-fiscal/ia/sessoes", files={"acumuladores": ("fiscal.xlsx", b"synthetic"), "razao": ("razao.xlsx", b"synthetic")})
@@ -185,3 +187,54 @@ def test_limpeza_cancela_temporizador_da_sessao(monkeypatch):
     assert timers[0].started is True
     sessions.discard(manifest["sessao"])
     assert timers[0].cancelled is True
+
+
+def test_openrouter_divide_carga_curta_inclusive_entre_sessoes(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "synthetic")
+    providers = []
+    for _ in range(4):
+        manifest = sessions.prepare(report(2))
+        providers.append(manifest["lotes"][0]["provedor"])
+        assert set(manifest["provedores"]) == {"groq", "gemini", "openrouter"}
+        sessions.discard(manifest["sessao"])
+    assert providers == ["groq", "groq", "groq", "openrouter"]
+
+
+def test_contas_extensas_nunca_usam_reserva_com_amostragem(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "synthetic")
+    source = report(2)
+    for row in source["lancamentos"]:
+        row["historico"] = "x" * 600
+    manifest = sessions.prepare(source)
+    batch = sessions._get(manifest["sessao"])["batches"][0]
+    assert batch["provedor"] == "gemini"
+    assert batch["reservas"] == ["openrouter"]
+    assert batch["report"]["lancamentos"][0]["historico"] == "x" * 600
+
+
+def test_reserva_valida_so_lote_pendente_e_cache_nao_reenvia(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "synthetic")
+    manifest = sessions.prepare(report(2))
+    seen = []
+    def explain(source, preferred_provider, *, only_provider):
+        assert preferred_provider == only_provider
+        seen.append(only_provider)
+        if only_provider == "groq":
+            raise HTTPException(429, "Cota", headers={"Retry-After":"30"})
+        return {"analises":[{"conta":row["conta"]} for row in source["contas"]],
+                "provedor":only_provider, "gratuito":True}
+    monkeypatch.setattr(fiscal_ai, "explain", explain)
+    first = sessions.process(manifest["sessao"], 0)
+    assert first["provedor"] == "openrouter" and first["fallback_usado"] is True
+    assert sessions.process(manifest["sessao"], 0) == first
+    assert seen == ["groq", "openrouter"]
+
+
+def test_sessao_nao_ativa_gemini_legado_sem_confirmacao_gratuita(monkeypatch):
+    monkeypatch.setattr(fiscal_ai, "_groq_enabled", lambda:False)
+    monkeypatch.setattr(fiscal_ai, "_gemini_free_key", lambda:"")
+    monkeypatch.setenv("RAZYNC_AI_LEGACY_GEMINI", "1")
+    monkeypatch.setenv("GEMINI_API_KEY", "synthetic")
+    with pytest.raises(HTTPException) as error:
+        sessions.prepare(report(2))
+    assert error.value.status_code == 503

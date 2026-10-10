@@ -71,7 +71,7 @@ def test_invalid_group_is_rejected(monkeypatch):
 def test_missing_key_does_not_require_admin(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     client = TestClient(app)
-    assert client.get("/api/v1/conferencia-fiscal/242/ia/status").json() == {"configurado":False, "provedor":None, "gratuito":True, "fallback_gemini":False, "cooperacao":False}
+    assert client.get("/api/v1/conferencia-fiscal/242/ia/status").json() == {"configurado":False, "provedor":None, "provedores":[], "gratuito":True, "fallback_gemini":False, "cooperacao":False}
     files = {"acumuladores":("fiscal.xlsx",b"fake"),"razao":("razao.xlsx",b"fake")}
     assert client.post("/api/v1/conferencia-fiscal/242/ia",files=files).status_code == 503
 
@@ -395,7 +395,7 @@ def test_openrouter_usa_prompt_integral_fallback_e_contas_originais(monkeypatch)
         calls.append(body)
         expected = [
             ["nvidia/nemotron-3-ultra-550b-a55b:free", "nvidia/nemotron-3.5-lightning:free", "openrouter/free"],
-            ["nvidia/nemotron-3.5-lightning:free", "nvidia/nemotron-3-ultra-550b-a55b:free", "openrouter/free"],
+            ["nvidia/nemotron-3-ultra-550b-a55b:free", "nvidia/nemotron-3.5-lightning:free", "openrouter/free"],
         ]
         assert body["model"] == expected[len(calls)-1][0]
         assert body["provider"]["require_parameters"] is True
@@ -424,11 +424,11 @@ def test_openrouter_status_tem_prioridade_e_gemini_continua_reserva(monkeypatch)
     client = TestClient(app)
     monkeypatch.setenv("GEMINI_API_KEY","gemini-legacy")
     assert client.get("/api/v1/conferencia-fiscal/ia/status").json() == {
-        "configurado": True, "provedor": "gemini", "gratuito": False, "fallback_gemini":False, "cooperacao":False
+        "configurado": True, "provedor": "gemini", "provedores":[], "gratuito": False, "fallback_gemini":False, "cooperacao":False
     }
     monkeypatch.setenv("OPENROUTER_API_KEY","or-key")
     assert client.get("/api/v1/conferencia-fiscal/ia/status").json() == {
-        "configurado": True, "provedor": "openrouter", "gratuito": True, "fallback_gemini":False, "cooperacao":False
+        "configurado": True, "provedor": "openrouter", "provedores":["openrouter"], "gratuito": True, "fallback_gemini":False, "cooperacao":False
     }
 
 
@@ -531,7 +531,7 @@ def test_sem_chave_openrouter_nao_ativa_gemini_por_padrao(monkeypatch):
     monkeypatch.delenv("RAZYNC_AI_LEGACY_GEMINI", raising=False)
     monkeypatch.setenv("GEMINI_API_KEY", "gemini-key")
     response = TestClient(app).get("/api/v1/conferencia-fiscal/ia/status")
-    assert response.json() == {"configurado":False, "provedor":None, "gratuito":True, "fallback_gemini":False, "cooperacao":False}
+    assert response.json() == {"configurado":False, "provedor":None, "provedores":[], "gratuito":True, "fallback_gemini":False, "cooperacao":False}
     files={"acumuladores":("fiscal.xlsx",b"x"),"razao":("razao.xlsx",b"y")}
     response = TestClient(app).post("/api/v1/conferencia-fiscal/ia",files=files)
     assert response.status_code == 503

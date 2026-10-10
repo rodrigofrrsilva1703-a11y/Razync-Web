@@ -31,6 +31,18 @@ test('falha de rede não é apresentada como chave ausente',async () => {
   assert.doesNotMatch(context.aiMessage.textContent,/não configurado/);
 });
 
+test('conexão apresenta os três provedores gratuitos configurados', async () => {
+  const context = {AbortController,Date,setTimeout:()=>1,clearTimeout:()=>{},
+    API:()=>'/api',aiConfigured:false,previewBody:{},aiController:null,
+    aiButton:{disabled:true},aiMessage:{textContent:''},aiResult:{children:[]},aiProvider:{textContent:''},
+    fetch:async()=>({ok:true,json:async()=>({configurado:true,gratuito:true,cooperacao:true,
+      provedores:['groq','gemini','openrouter'],provedor:'groq'})})};
+  vm.createContext(context); vm.runInContext(code,context);
+  await context.refreshAIStatus();
+  assert.equal(context.aiProvider.textContent,'Groq + Gemini + OpenRouter · gratuito');
+  assert.equal(context.aiButton.disabled,false);
+});
+
 
 test('tabela e detalhe preservam códigos, descrição e valor de cada acumulador', () => {
   const start = source.indexOf('  function accumulatorRows(row) {');

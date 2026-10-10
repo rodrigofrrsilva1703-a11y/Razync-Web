@@ -165,7 +165,7 @@ def provider_error(exc):
 
 
 def _openrouter_models():
-    """Modelos alternados a cada conferência; o OpenRouter faz fallback no mesmo pedido."""
+    """Prioridades gratuitas explícitas; falhas acionam modelos de reserva."""
     configured = os.getenv("OPENROUTER_MODELS", ",".join(FREE_FISCAL_MODELS))
     requested = [m.strip() for m in configured.split(",")]
     models = list(dict.fromkeys(requested))
@@ -188,6 +188,7 @@ def _openrouter_models():
 
 
 def _openrouter_completion(payload, models, key, *, _repair=False):
+    payload = _compact_transport(payload)
     """Adapta formatos gratuitos sem reduzir a validação fiscal-contábil."""
     group_ids = payload["generationConfig"]["responseSchema"]["properties"]["analises"]["items"]["properties"]["grupo"]["enum"]
     # A resposta do modelo gratuito estava terminando em finish_reason=length.
@@ -589,15 +590,22 @@ def _gemini_free_key():
     return os.getenv("GEMINI_API_KEY", "").strip()
 
 
-def _gemini_completion(payload, key, model, *, legacy=False):
+def _compact_transport(payload):
     payload = copy.deepcopy(payload)
     context = json.loads(payload["contents"][0]["parts"][0]["text"])
     for group in context.get("grupos", []):
         for record in group.get("lancamentos", []):
             # A conta está no resumo; os valores exatos permanecem em BRL.
-            for redundant in ("conta", "debito", "credito"):
-                record.pop(redundant, None)
+            record.pop("conta", None)
+            for redundant in ("debito", "credito"):
+                if redundant + "_brl" in record:
+                    record.pop(redundant, None)
     payload["contents"][0]["parts"][0]["text"] = json.dumps(context, ensure_ascii=False, separators=(",", ":"))
+    return payload
+
+
+def _gemini_completion(payload, key, model, *, legacy=False):
+    payload = _compact_transport(payload)
     with request_slot("gemini", model, payload) as usage:
         answer, used_model, raw = _gemini_send(payload, key, model, legacy=legacy)
         usage(raw)
@@ -684,13 +692,25 @@ def _validar_resposta_ia(result, report, mapping, references):
     return output
 
 
-def explain(report, preferred_provider=None, *, only_openrouter=False):
+def explain(report, preferred_provider=None, *, only_openrouter=False, only_provider=None):
     openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
     gemini_key = _gemini_free_key()
     provider_choice = preferred_provider or os.getenv("RAZYNC_AI_PRIMARY", "openrouter")
     groq_ready = _groq_enabled() and provider_choice == "groq"
     legacy = os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1"
     legacy_direct = not openrouter_key and not gemini_key and legacy
+    if only_provider not in (None, "gemini", "groq", "openrouter"):
+        raise HTTPException(422, "Provedor inválido.")
+    if only_provider:
+        # Sessões coordenam as reservas: cada chamada usa só um provedor
+        # aprovado como gratuito, sem voltar ao Gemini legado.
+        legacy_direct = False
+        provider_choice = only_provider
+        groq_ready = _groq_enabled() and only_provider == "groq"
+        if only_provider != "gemini":
+            gemini_key = ""
+        if only_provider != "openrouter":
+            openrouter_key = ""
     if only_openrouter:
         if not openrouter_key:
             raise HTTPException(503, "OpenRouter não configurado no servidor.")
@@ -719,13 +739,9 @@ def explain(report, preferred_provider=None, *, only_openrouter=False):
                 raise HTTPException(429, "Aguarde 15 segundos antes de analisar novamente.")
             last_request = time.monotonic()
         if models:
-            # O roteador aleatório fica na reserva; alternamos os modelos selecionados.
-            primary = [m for m in models if m != "openrouter/free"]
-            reserve = [m for m in models if m == "openrouter/free"]
-            if primary:
-                start = model_rotation_index % len(primary)
-                model_rotation_index += 1
-                models = primary[start:] + primary[:start] + reserve
+            # Prioridade estável evita consumir uma chamada em modelos menos
+            # confiáveis. Cooldowns e falhas ainda acionam as reservas.
+            models = [m for m in models if m != "openrouter/free"] + [m for m in models if m == "openrouter/free"]
     schema = {"type":"OBJECT", "properties":{"analises":{"type":"ARRAY", "items":{
         "type":"OBJECT", "properties":{
             "grupo":{"type":"STRING", "enum":list(mapping)},
@@ -933,16 +949,19 @@ def status():
         and os.getenv("GEMINI_API_KEY", "").strip()
     )
     groq_selected = _groq_enabled() and os.getenv("RAZYNC_AI_PRIMARY") == "groq"
+    providers = [p for p, ready in (("groq", _groq_enabled()), ("gemini", gemini_free),
+                                   ("openrouter", openrouter)) if ready]
     return {
-        "configurado": openrouter or gemini_free or legacy or groq_selected,
+        "configurado": bool(providers) or legacy,
+        "provedores": providers,
         "provedor": "groq" if groq_selected
             else "gemini" if gemini_free and os.getenv("RAZYNC_AI_PRIMARY", "openrouter") == "gemini"
             else "openrouter" if openrouter
             else "gemini" if (gemini_free or legacy)
-            else None,
-        "gratuito": not (legacy and not gemini_free and not openrouter and not groq_selected),
+            else "groq" if _groq_enabled() else None,
+        "gratuito": not (legacy and not providers),
         "fallback_gemini": bool((openrouter or groq_selected) and gemini_free),
-        "cooperacao": bool(_groq_enabled() and gemini_free),
+        "cooperacao": len(providers) > 1,
     }
 
 

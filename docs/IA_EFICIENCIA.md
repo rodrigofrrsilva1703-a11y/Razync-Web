@@ -48,6 +48,29 @@ compartilhado antes de ampliar concorrência.
 
 ## Validação
 
+### Distribuição coordenada entre três provedores
+
+As sessões admitem somente provedores confirmados como gratuitos. Groq atende
+lotes em que cada conta tem até dez históricos de até 180 caracteres. Contas
+acima desses critérios usam Gemini ou OpenRouter, preservando o contexto
+integral e sem reserva Groq por amostragem. Lotes com mais de 80 lançamentos
+por conta ou históricos acima de 500 caracteres priorizam Gemini.
+
+OpenRouter recebe um em quatro lotes curtos ou médios adequados quando existe
+outro provedor disponível. O contador é compartilhado entre sessões no processo;
+essa proporção conserva sua pequena cota e não representa disponibilidade
+garantida. Cada lote contém até duas contas para amortizar o prompt. Falha
+temporária ou resposta inválida tenta somente uma reserva disponível por vez;
+nenhuma segunda opinião automática é pedida sobre um resultado já aceito.
+Contas extensas nunca passam a uma reserva com amostragem. Se as reservas
+acabarem, somente os lotes pendentes ficam para repetição.
+
+A compactação sem perda de históricos também se aplica ao OpenRouter:
+conta repetida por linha e valores numéricos com equivalentes BRL são retirados
+do transporte; o contexto de validação permanece intacto. Não há promessa de
+redução percentual de tokens. Dividir a carga não reduz por si só o volume;
+reutilizar resultados e evitar análise duplicada reduzem chamadas desnecessárias.
+
 OpenRouter pode ser diagnosticado isoladamente no endpoint multipart
 `/api/v1/conferencia-fiscal/ia`, com `provedor=openrouter`. Nesse modo,
 Gemini e Groq não assumem a resposta. O fluxo normal mantém suas reservas.

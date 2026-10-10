@@ -57,9 +57,9 @@
       const result = await response.json();
       if (statusController !== controller) return;
       aiConfigured = result.configurado === true;
-      const providerName = result.cooperacao === true ? "Gemini + Groq" : result.provedor === "groq" ? "GroqCloud" : result.provedor === "openrouter" ? "OpenRouter" : "Gemini";
+      const providerName = result.provedores?.length > 1 ? result.provedores.map(p => p === "groq" ? "Groq" : p === "gemini" ? "Gemini" : "OpenRouter").join(" + ") : result.cooperacao === true ? "Gemini + Groq" : result.provedor === "groq" ? "GroqCloud" : result.provedor === "openrouter" ? "OpenRouter" : "Gemini";
       aiProvider.textContent = aiConfigured
-        ? (result.cooperacao === true ? "Gemini + Groq · gratuito" : result.gratuito === true && result.provedor === "openrouter" ? "OpenRouter · gratuito" : result.gratuito === true && result.provedor === "groq" ? "GroqCloud · gratuito" : providerName)
+        ? (result.cooperacao === true ? providerName + " · gratuito" : result.gratuito === true && result.provedor === "openrouter" ? "OpenRouter · gratuito" : result.gratuito === true && result.provedor === "groq" ? "GroqCloud · gratuito" : providerName)
         : "IA";
       aiButton.disabled = !aiConfigured || !previewBody || Boolean(aiController);
       if (!aiController && !aiResult.children.length) aiMessage.textContent = aiConfigured
@@ -324,7 +324,7 @@
         if (aiController !== controller || controller.signal.aborted) return;
         aiInlineStatus.textContent = done + " de " + total + " grupos concluídos" +
           (failed ? " · " + failed + " lotes pendentes" : "") + ". " +
-          (waiting || "Gemini e Groq processam lotes independentes conforme disponibilidade.");
+          (waiting || "As IAs gratuitas dividem os lotes; resultados concluídos são reaproveitados.");
       });
       if (controller.signal.aborted || previewBody !== snapshot) return;
       aiReport = result;
