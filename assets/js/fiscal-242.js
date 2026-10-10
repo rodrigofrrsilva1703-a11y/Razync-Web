@@ -114,7 +114,8 @@
     const wrap = node("div", "fiscal-ai-narrative");
     // A apresentação é a mesma para todos os provedores. Não atribuir títulos
     // a parágrafos apenas pela posição: a IA pode enviar outra estrutura.
-    const segments = String(textValue || "").trim().replace(/\\n/g, "\n").split(/\r?\n+/)
+    const segments = String(textValue || "").trim().replace(/\\n/g, "\n")
+      .replace(/\s+(?=(?:\*\*)?(?:Fatos|Diferença|Hipóteses|Limitações)(?:\*\*)?\s*:)/gi, "\n").split(/\r?\n+/)
       .map(x => x.trim()).filter(Boolean);
     segments.forEach(paragraph => {
       const labelled = paragraph.match(/^(?:\*\*)?(Fatos|Diferença|Hipóteses|Limitações)(?:\*\*)?\s*:\s*(?:\*\*)?\s*(.*)$/i);

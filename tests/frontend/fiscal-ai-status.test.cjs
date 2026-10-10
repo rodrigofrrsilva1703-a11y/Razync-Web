@@ -176,6 +176,7 @@ test('provedores apresentam parecer e checklist uniformes sem tratar texto como 
   const labelled = context.renderNarrative('Fatos: Valor demonstrado.\nHipóteses: Ainda requer confirmação.');
   assert.equal(labelled.children[0].children[0].textContent, 'Fatos');
   assert.equal(labelled.children[1].children[1].textContent, 'Ainda requer confirmação.');
+  assert.equal(context.renderNarrative('Fatos: Total informado. Diferença: Valor menor. Hipóteses: Conferir origem. Limitações: Sem notas.').children.length, 4);
   assert.equal(context.renderChecklist('1. Confira R$ 1.234,56. 2. Compare o Razão.').children[0].children.length, 2);
 });
 
