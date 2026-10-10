@@ -45,8 +45,6 @@ def create_app():
     from fastapi.responses import FileResponse
     from fastapi.staticfiles import StaticFiles
     from app.main import app
-    from local_bases import register
-    register(app, PRIVATE)
     @app.get('/', include_in_schema=False)
     def index():
         return FileResponse(ROOT / 'index.html', headers={'Cache-Control': 'no-store'})
