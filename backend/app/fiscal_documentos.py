@@ -312,18 +312,32 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
         strong_candidates = defaultdict(list)
         ledger_to_docs = defaultdict(list)
         near_candidates = defaultdict(list)
+        # Índices reduzem o cruzamento de todos-contra-todos para poucas
+        # candidatas por nota ou por valor/data, essencial com milhares de NFs.
+        by_note = defaultdict(list)
+        by_amount_day = defaultdict(list)
+        for mov in ledger:
+            mov_day = datetime.strptime(mov["data"], "%d/%m/%Y").date()
+            mov["_day"] = mov_day
+            mov["_cents"] = _centavos(mov["valor"])
+            if mov["nota"]:
+                by_note[mov["nota"]].append(mov)
+            by_amount_day[(mov["_cents"], mov_day)].append(mov)
         for d in docs:
             dt = datetime.strptime(d["data"], "%d/%m/%Y").date()
-            for mov in ledger:
-                mt = datetime.strptime(mov["data"], "%d/%m/%Y").date()
-                if abs((dt - mt).days) > 45:
+            cents = _centavos(d["valor"])
+            candidates = {mov["id"]: mov for mov in (
+                by_note.get(d["nota"], []) + by_amount_day.get((cents, dt), [])
+            )}.values()
+            for mov in candidates:
+                if abs((dt - mov["_day"]).days) > 45:
                     continue
                 note_equal = bool(mov["nota"] and mov["nota"] == d["nota"])
-                amount_equal = _centavos(d["valor"]) == _centavos(mov["valor"])
+                amount_equal = cents == mov["_cents"]
                 if note_equal and amount_equal:
                     strong_candidates[d["id"]].append(mov["id"])
                     ledger_to_docs[mov["id"]].append(d["id"])
-                elif note_equal or (amount_equal and dt == mt):
+                elif note_equal or (amount_equal and dt == mov["_day"]):
                     near_candidates[d["id"]].append((mov["id"], note_equal, amount_equal))
         matched = set()
         ledger_by_id = {record["id"]: record for record in ledger}
@@ -362,7 +376,7 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
         for mov in ledger:
             if mov["id"] in matched:
                 continue
-            mov = mov.copy()
+            mov = {key: val for key, val in mov.items() if not key.startswith("_")}
             mov["situacao"] = ("CORRESPONDENCIA_EM_ANALISE" if mov["id"] in possible_ids
                                else "DOCUMENTOS_NAO_IDENTIFICAVEIS" if not docs
                                else "SEM_DOCUMENTO_IDENTIFICADO")
