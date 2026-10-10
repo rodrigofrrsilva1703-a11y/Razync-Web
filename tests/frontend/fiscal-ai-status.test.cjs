@@ -376,3 +376,17 @@ test('retomar pendentes preserva resultados e não envia novamente arquivos ou l
   assert.equal(calls.filter(url=>url.endsWith('/0')).length,1);
   assert.equal(calls.filter(url=>url.endsWith('/1')).length,2);
 });
+
+test('reanalisar os mesmos arquivos reutiliza todos os pareceres sem novas chamadas',async()=>{
+  const calls=[]; const snapshot={};
+  const context=batchContext(async(url,options)=>{
+    calls.push(url);
+    if(url.endsWith('/sessoes'))return {ok:true,json:async()=>({sessao:'s',grupos:2,registros:2,lotes:[{id:0,provedor:'gemini',grupos:2}]})};
+    return {ok:true,json:async()=>({provedor:'gemini',gratuito:true,analises:[{conta:'1'},{conta:'2'}]})};
+  });
+  await context.analyzeInBatches(snapshot,new AbortController(),()=>{});
+  const before=calls.length;
+  const again=await context.analyzeInBatches(snapshot,new AbortController(),()=>{});
+  assert.equal(again.analises.length,2);
+  assert.equal(calls.length,before);
+});

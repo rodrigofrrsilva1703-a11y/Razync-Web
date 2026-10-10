@@ -41,7 +41,13 @@ def prepare(report):
         accounts = eligible[start:start + 2]
         codes = dict.fromkeys(row["conta"] for row in accounts)
         rows = [row for code in codes for row in indexed.get(code, [])]
-        batches.append({"id": len(batches), "provedor": providers[len(batches) % len(providers)],
+        # Não usar uma amostra curta para economizar em contas extensas.
+        extensive = any(len(indexed.get(code, [])) > 10 or any(
+            len(str(row.get("historico") or "")) > 180 for row in indexed.get(code, [])) for code in codes)
+        provider = "gemini" if extensive and "gemini" in providers else (
+            "groq" if "groq" in providers else providers[0])
+        batches.append({"id": len(batches), "provedor": provider,
+                       "criterio": "contexto_integral" if extensive else "contexto_curto",
                        "grupos": len(accounts), "report": dict(report, contas=accounts, lancamentos=rows),
                        "result": None, "running": False})
     token = secrets.token_urlsafe(32)
@@ -60,7 +66,7 @@ def prepare(report):
     timer.start()
     return {"sessao": token, "grupos": len(eligible), "registros": len(report.get("lancamentos", [])),
             "cooperacao": len(providers) == 2,
-            "lotes": [{k: batch[k] for k in ("id", "provedor", "grupos")} for batch in batches]}
+            "lotes": [{k: batch[k] for k in ("id", "provedor", "grupos", "criterio")} for batch in batches]}
 
 
 def discard(token):

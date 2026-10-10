@@ -16,6 +16,7 @@ import threading
 import urllib.error
 import urllib.request
 from fastapi import HTTPException
+from app.ai_budget import request_slot
 
 logger = logging.getLogger(__name__)
 FREE_MODELS = ("openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b")
@@ -311,8 +312,10 @@ def _complete(payload, key, model, *, _tried_models=None, _deadline=None):
                      "Accept": "application/json", "User-Agent": "Razync-Web/1.0"},
         )
         try:
-            with urllib.request.urlopen(request, timeout=min(35, remaining)) as response:
-                raw = json.loads(response.read(130000))
+            with request_slot("groq", model, body) as usage:
+                with urllib.request.urlopen(request, timeout=min(35, remaining)) as response:
+                    raw = json.loads(response.read(130000))
+                usage(raw)
         except urllib.error.HTTPError as exc:
             # Inspecionar APENAS um código de erro reconhecido, jamais sua mensagem,
             # conteúdo fiscal, cabeçalhos ou resposta completa.

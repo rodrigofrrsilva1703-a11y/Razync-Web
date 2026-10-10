@@ -239,7 +239,7 @@
               if (reply.status === 429 && attempt === 0) {
                 const rawWait = Number(reply.headers?.get?.("Retry-After") || 60);
                 const wait = Number.isFinite(rawWait) ? Math.max(15, Math.min(120, rawWait)) : 60;
-                onProgress(completed, session.grupos, failures.length, "Aguardando " + wait + " s para renovar a cota gratuita de " + (provider === "groq" ? "Groq" : "Gemini") + ".");
+                onProgress(completed, session.grupos, failures.length, "Aguardando " + wait + " s pela fila ou cota gratuita de " + (provider === "groq" ? "Groq" : provider === "openrouter" ? "OpenRouter" : "Gemini") + ".");
                 await waitForAIQuota(wait, controller.signal);
                 continue;
               }
@@ -277,7 +277,8 @@
       };
     } finally {
       controller.signal.removeEventListener("abort", cleanup);
-      if (controller.signal.aborted || results.size === session.lotes.length) cleanup();
+      // Mantém os pareceres até trocar arquivos/filtros ou expirar a sessão.
+      if (controller.signal.aborted) cleanup();
     }
   }
 
@@ -423,7 +424,7 @@
         aiController = null;
         aiCancelButton.hidden = true;
         aiButton.disabled = !aiConfigured || !previewBody;
-        aiRetry.hidden = !pendingAIState || controller.signal.aborted;
+        aiRetry.hidden = !pendingAIState || controller.signal.aborted || pendingAIState.results.size === pendingAIState.session.lotes.length;
       }
     }
   });

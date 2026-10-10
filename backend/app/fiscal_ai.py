@@ -14,6 +14,7 @@ from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 from fastapi.concurrency import run_in_threadpool
 from app.fiscal_242 import conferencia_fiscal_preview
+from app.ai_budget import request_slot
 from app.groq_fiscal import complete as _groq_completion, is_enabled as _groq_enabled, selected_model as _groq_model
 
 logger = logging.getLogger(__name__)
@@ -325,8 +326,11 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
                 "X-Title": "Razync Fiscal",
             },
         )
-        with urllib.request.urlopen(request, timeout=seconds) as response:
-            return json.loads(response.read(200000))
+        with request_slot("openrouter", "free", body) as usage:
+            with urllib.request.urlopen(request, timeout=seconds) as response:
+                raw = json.loads(response.read(200000))
+            usage(raw)
+            return raw
 
     def safe_upstream_category(exc):
         """Classifica falhas sem registrar corpo, nomes, extratos ou credenciais."""
@@ -564,6 +568,21 @@ def _gemini_free_key():
 
 
 def _gemini_completion(payload, key, model, *, legacy=False):
+    payload = copy.deepcopy(payload)
+    context = json.loads(payload["contents"][0]["parts"][0]["text"])
+    for group in context.get("grupos", []):
+        for record in group.get("lancamentos", []):
+            # A conta está no resumo; os valores exatos permanecem em BRL.
+            for redundant in ("conta", "debito", "credito"):
+                record.pop(redundant, None)
+    payload["contents"][0]["parts"][0]["text"] = json.dumps(context, ensure_ascii=False, separators=(",", ":"))
+    with request_slot("gemini", model, payload) as usage:
+        answer, used_model, raw = _gemini_send(payload, key, model, legacy=legacy)
+        usage(raw)
+        return answer, used_model
+
+
+def _gemini_send(payload, key, model, *, legacy=False):
     """Envia ao Gemini o mesmo contexto e schema usado no OpenRouter."""
     if not legacy and model not in {"gemini-3.1-flash-lite", "gemini-2.5-flash-lite"}:
         raise HTTPException(503, "GEMINI_FREE_MODEL deve ser um modelo Flash-Lite gratuito.")
@@ -597,7 +616,7 @@ def _gemini_completion(payload, key, model, *, legacy=False):
     if candidate.get("finishReason") != "STOP":
         raise ValueError("Resposta Gemini incompleta")
     text = "".join(part.get("text", "") for part in candidate["content"]["parts"] if not part.get("thought"))
-    return json.loads(text), model
+    return json.loads(text), model, raw
 
 
 def _validar_resposta_ia(result, report, mapping, references):
@@ -831,7 +850,7 @@ def explain(report, preferred_provider=None):
             logger.warning("fiscal_ia_openrouter_failure status=%d model=%s fallback_available=%s",
                            exc.status_code, models[0] if models else "none", bool(gemini_key))
             # 403/422/503 indicam problema de permissão ou configuração.
-            if exc.status_code in (403, 422, 503):
+            if exc.status_code in (403, 422, 503) and not gemini_key:
                 raise
             if not gemini_key:
                 raise

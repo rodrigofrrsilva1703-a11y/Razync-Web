@@ -23,8 +23,8 @@ def report(n=17):
     return {"contas": [{"conta": str(i), "tipo": "ENTRADAS", "situacao": "REVISAR",
              "fiscal": 10, "contabil": 8, "total_conta": 8, "diferenca": -2, "extras": 0}
              for i in range(n)],
-            "lancamentos": [{"conta": str(i % n), "historico": "Compra fictícia", "debito": 1, "credito": 0}
-                            for i in range(2001)]}
+            "lancamentos": [{"conta": str(i % n), "historico": "Compra fictícia" + ("x" * 181 if n == 4 and i % n >= 2 else ""), "debito": 1, "credito": 0}
+                            for i in range(2001 if n == 65 else n * 2)]}
 
 
 def test_lotes_preservam_mais_de_12_grupos_e_1500_registros():
@@ -34,7 +34,7 @@ def test_lotes_preservam_mais_de_12_grupos_e_1500_registros():
     assert manifest["grupos"] == 65
     assert manifest["registros"] == 2001
     assert manifest["cooperacao"] is True
-    assert {batch["provedor"] for batch in batches} == {"groq", "gemini"}
+    assert {batch["provedor"] for batch in batches} == {"gemini"}
     assert sum(len(batch["report"]["contas"]) for batch in batches) == 65
     refs = [row["_referencia_ia"] for batch in batches for row in batch["report"]["lancamentos"]]
     assert len(refs) == len(set(refs)) == 2001
