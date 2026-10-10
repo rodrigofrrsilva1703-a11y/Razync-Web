@@ -316,6 +316,19 @@ def _complete(payload, key, model, *, _tried_models=None, _deadline=None):
                 with urllib.request.urlopen(request, timeout=min(35, remaining)) as response:
                     raw = json.loads(response.read(130000))
                 usage(raw)
+        except HTTPException as exc:
+            if exc.status_code != 429:
+                raise
+            with _quota_lock:
+                _quota_cooldowns[model] = time.monotonic() + int((exc.headers or {}).get("Retry-After", "60"))
+            alternate = _available_model(tried_models)
+            if not alternate:
+                raise
+            pending_payload = dict(payload)
+            pending_payload["contents"] = [{"role":"user", "parts":[{
+                "text":json.dumps(dict(context, grupos=groups[start:]), ensure_ascii=False)}]}]
+            result, used = _complete_with_reserve(pending_payload, key, alternate, tried_models, deadline)
+            return {"analises":output + result["analises"]}, f"{model} + {used}" if output else used
         except urllib.error.HTTPError as exc:
             # Inspecionar APENAS um código de erro reconhecido, jamais sua mensagem,
             # conteúdo fiscal, cabeçalhos ou resposta completa.

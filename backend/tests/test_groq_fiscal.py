@@ -457,3 +457,26 @@ def test_todos_modelos_em_cooldown_nao_fazem_requisicoes(monkeypatch):
         groq_fiscal.complete({}, "synthetic", "openai/gpt-oss-120b")
     assert error.value.status_code == 429
     assert error.value.headers["Retry-After"] == "60"
+
+
+def test_fila_local_tenta_modelos_groq_restantes_antes_de_gemini(monkeypatch):
+    from contextlib import contextmanager
+    enabled(monkeypatch)
+    admissions = []
+    @contextmanager
+    def slot(provider, model, body):
+        admissions.append(model)
+        if model.startswith("openai/"):
+            raise HTTPException(429, "Fila", headers={"Retry-After":"15"})
+        yield lambda raw: None
+    monkeypatch.setattr(groq_fiscal, "request_slot", slot)
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def read(self, n):
+            return json.dumps({"choices":[{"finish_reason":"stop", "message":{"content":json.dumps({"analises":[{"grupo":"G1", "explicacao":"Conferir L1", "verificar":"Conferir documentos", "evidencias":["L1"]}]})}}]}).encode()
+    monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen", lambda *a, **k: Response())
+    result = fiscal_ai.explain(example_report())
+    assert admissions == list(groq_fiscal.FREE_MODELS)
+    assert result["provedor"] == "groq"
+    assert result["modelo_usado"] == "qwen/qwen3.8-27b"
