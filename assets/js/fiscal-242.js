@@ -952,7 +952,7 @@
       if (controller.signal.aborted || snapshot !== data) return;
       investigationReport = result;
       renderInvestigation(result);
-      byId("fiscal242InvestigarIAArea").hidden = (result.resumo?.pendentes || 0) + (result.resumo?.ambiguos || 0) === 0;
+      byId("fiscal242InvestigarIAArea").hidden = !(result.contas || []).some(row => row.razao_pendente_total || (row.documentos || []).some(doc => doc.situacao !== "CONCILIADO"));
       byId("fiscal242InvestigarIAPareceres").replaceChildren();
       byId("fiscal242InvestigarIAMessage").textContent = "";
       investigationMessage.textContent = "Investigação concluída. Confira as pendências e as correspondências ambíguas abaixo.";
