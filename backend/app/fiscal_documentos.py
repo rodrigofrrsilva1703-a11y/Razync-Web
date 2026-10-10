@@ -179,11 +179,10 @@ def ler_acompanhamento(content: bytes, name: str, tipo: str, acumuladores: set[s
             documents.append(document)
     if not found_header:
         raise ValueError(f"Não foi encontrado o cabeçalho de documentos no Acompanhamento de {tipo.title()}.")
-    if not documents:
-        raise ValueError(
-            f"O Acompanhamento de {tipo.title()} não trouxe documentos com acumulador identificável. "
-            "Confira se a exportação contém a coluna Código/Acumulador e Valor Contábil."
-        )
+    # Nenhum documento com acumulador vinculado não significa documento inexistente:
+    # pode ser formato de exportação diferente ou relatório sem o acumulador visado.
+    # A comparação permanece inconclusiva e os movimentos do Razão não são
+    # declarados sem documento por mera ausência de linhas reconhecidas.
     return {"documentos": documents, "periodo": period, "empresa": company,
             "cnpj": cnpj, "filiais": sorted(filiais), "ignoradas": ignored,
             "sem_acumulador": unidentified}
@@ -236,6 +235,9 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
             warnings.append(f"Não existem contas de {tipo.lower()} com divergência ou alerta nesta conferência.")
             continue
         detail = ler_acompanhamento(attachment[0], attachment[1], tipo, allowed)
+        if not detail["documentos"]:
+            warnings.append(f"O relatório de {tipo.lower()} não possui documentos identificáveis "
+                            "nos acumuladores divergentes. Não é possível concluir ausência fiscal.")
         filial_aplicada = _valida_relatorio(detail, preview, tipo)
         if not detail["filiais"]:
             warnings.append(f"O relatório de {tipo.lower()} não informa filial por documento; "
@@ -320,6 +322,7 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
                 continue
             mov = mov.copy()
             mov["situacao"] = ("CORRESPONDENCIA_EM_ANALISE" if mov["id"] in possible_ids
+                               else "DOCUMENTOS_NAO_IDENTIFICAVEIS" if not docs
                                else "SEM_DOCUMENTO_IDENTIFICADO")
             remaining.append(mov)
         by_acc = []
