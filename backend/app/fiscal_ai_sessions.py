@@ -49,7 +49,7 @@ def prepare(report):
     eligible = [row for row in report["contas"] if row["situacao"] != "CONFERE"]
     indexed = {}
     for i, row in enumerate(report.get("lancamentos", []), 1):
-        indexed.setdefault(row.get("conta"), []).append(dict(row, _referencia_ia=f"L{i}"))
+        indexed.setdefault(row.get("conta"), []).append(dict(row, _referencia_ia=row.get("_referencia_ia") or f"L{i}"))
     batches = []
     for start in range(0, len(eligible), 2):
         accounts = eligible[start:start + 2]
@@ -93,6 +93,7 @@ def prepare(report):
     session["timer"] = timer
     timer.start()
     return {"sessao": token, "grupos": len(eligible), "registros": len(report.get("lancamentos", [])),
+            "cobertura_documental": report.get("cobertura_documental", {}),
             "cooperacao": len(providers) > 1, "provedores": providers,
             "lotes": [{k: batch[k] for k in ("id", "provedor", "grupos", "criterio")} for batch in batches]}
 

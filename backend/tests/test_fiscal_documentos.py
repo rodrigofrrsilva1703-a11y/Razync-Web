@@ -149,7 +149,10 @@ def test_nao_concilia_nota_sozinha_sem_valor_correspondente():
 def test_ia_recebe_so_pendencias_sem_documentos_ja_conciliados(monkeypatch):
     from app import fiscal_ai
     captured = {}
-    def fake_explain(report):
+    from app import fiscal_ai_sessions
+    monkeypatch.setattr(fiscal_ai_sessions, "free_providers", lambda: ["gemini"])
+    def fake_explain(report, **kwargs):
+        assert kwargs["only_provider"] == "gemini"
         captured.update(report)
         context, _, _, _ = fiscal_ai.detailed_context(report)
         for group in context["grupos"]:
@@ -175,7 +178,9 @@ def test_ia_recebe_so_pendencias_sem_documentos_ja_conciliados(monkeypatch):
 def test_falha_de_cota_da_ia_nao_apaga_resultado_deterministico(monkeypatch):
     from app import fiscal_ai
     from fastapi import HTTPException
-    monkeypatch.setattr(fiscal_ai, "explain", lambda report: (_ for _ in ()).throw(HTTPException(
+    from app import fiscal_ai_sessions
+    monkeypatch.setattr(fiscal_ai_sessions, "free_providers", lambda: ["gemini"])
+    monkeypatch.setattr(fiscal_ai, "explain", lambda report, **kwargs: (_ for _ in ()).throw(HTTPException(
         429, "Cota gratuita indisponível.")))
     f, r = initial()
     files = {
@@ -232,3 +237,103 @@ def test_cnpj_incompativel_impede_cruzamento_de_filial():
     res = post(saida=False, fiscal=fiscal, razao=ledger, entrada_bytes=wrong)
     assert res.status_code == 422
     assert "CNPJ" in res.json()["detail"]
+
+
+def test_mesma_nota_e_valor_com_data_diferente_permanece_pendente():
+    f, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table[4][0] = "20/08/2026"
+    res = post(saida=False, fiscal=f, razao=book(table))
+    group = res.json()["contas"][0]
+    doc = next(d for d in group["documentos"] if d["nota"] == "100")
+    assert doc["situacao"] == "DATA_DIFERENTE"
+    assert "20/08/2026" in doc["criterio"]
+    assert any(m["id"] == doc["razao_id"] for m in group["razao_pendente"])
+
+
+def test_documento_transporte_explicito_sem_confundir_texto_comum():
+    from app.fiscal_documentos import _nota_historico
+    for text in ("FRETE CONTRATADO CF CTRC 263553 - TRANSPORTADORA",
+                 "FRETE CT-e nº 263553", "FRETE CTE 263553"):
+        assert _nota_historico(text) == "263553"
+    assert _nota_historico("PACOTE 263553") == ""
+    f, r = initial()
+    rows = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    rows[4][2] = "FRETE CONTRATADO CF CTRC 100 - TRANSPORTADORA"
+    result = post(saida=False, fiscal=f, razao=book(rows)).json()
+    assert next(d for d in result["contas"][0]["documentos"] if d["nota"] == "100")["situacao"] == "CONCILIADO"
+
+
+def bulk_files(matched=350, pending=40):
+    fiscal = book([
+        ["COMERCIAL DEMONSTRACAO LTDA"], ["Período:", "01/08/2026 a 31/08/2026"],
+        ["ENTRADAS"], ["Código", "Descrição", "Valor Contábil", "Conta"],
+        [1152, "Compras", (matched + pending) * 100, 508],
+    ])
+    ledger = book([
+        ["Empresa:", "", "COMERCIAL DEMONSTRACAO LTDA"],
+        ["Período:", "01/08/2026 - 31/08/2026"], ["Conta:", 508],
+        ["Data", "Lote", "Histórico", "Cta.C.Part.", "Filial", "Débito", "Crédito"],
+        *[["03/08/2026", i, f"COMPRA CF NF {i}", 800, 242, 100, 0]
+          for i in range(1, matched + 1)],
+    ])
+    docs = book([
+        ["COMERCIAL DEMONSTRACAO LTDA"], ["Período:", "01/08/2026 a 31/08/2026"],
+        ["Código", "Nota", "Data", "CFOP", "Valor Contábil"],
+        *[[1152, i, "03/08/2026", 1102, 100] for i in range(1, matched + pending + 1)],
+    ])
+    return fiscal, ledger, docs
+
+
+def test_pendencias_apos_300_conciliados_nao_somem_e_amostra_e_explicita(monkeypatch):
+    from app import fiscal_documentos as module, fiscal_ai
+    f, r, d = bulk_files()
+    args = (f, "Resumo.xlsx", r, "Razao.xlsx", (d, "Entradas.xlsx"))
+    result = module.investigar_documentos(*args, filial="242")
+    assert result["contas"][0]["documentos"][0]["nota"] == "351"
+    calls = []
+    original = module.conferencia_fiscal_preview
+    def preview(*args, **kwargs):
+        calls.append(1)
+        return original(*args, **kwargs)
+    monkeypatch.setattr(module, "conferencia_fiscal_preview", preview)
+    report = module.preparar_relatorio_pendencias_para_ia(*args, filial="242")
+    assert len(calls) == 1
+    assert len(report["documentos_pendentes"]["508:ENTRADAS"]) == 30
+    assert report["cobertura_documental"]["508:ENTRADAS"]["documentos_pendentes"] == 40
+    assert report["cobertura_documental"]["508:ENTRADAS"]["amostra"] is True
+    context, _, _, coverage = fiscal_ai.detailed_context(report)
+    assert context["grupos"][0]["cobertura_documental"]["documentos_enviados"] == 30
+    assert "amostra" in coverage
+    assert "Sem corte" not in coverage
+
+
+def test_sessao_documental_reutiliza_resultado_e_referencias(monkeypatch):
+    from app import fiscal_ai, fiscal_ai_sessions as sessions
+    monkeypatch.setattr(sessions, "free_providers", lambda: ["gemini"])
+    calls = []
+    def explain(report, **kwargs):
+        assert kwargs["only_provider"] == "gemini"
+        # A conferência ordena o Razão por conta: NF 101 mantém a referência
+        # global L3 mesmo após remover os registros já conciliados.
+        assert report["lancamentos"][0]["_referencia_ia"] == "L3"
+        assert report["documentos_pendentes"]["508:ENTRADAS"][0]["razao_id"] == "L3"
+        calls.append(1)
+        return {"analises": [{"conta": "508", "tipo": "ENTRADAS"}], "provedor": "gemini", "gratuito": True}
+    monkeypatch.setattr(fiscal_ai, "explain", explain)
+    f, r = initial()
+    client = TestClient(app)
+    res = client.post("/api/v1/conferencia-fiscal/investigar/ia/sessoes", files={
+        "acumuladores": ("Resumo.xlsx", f), "razao": ("Razao.xlsx", r),
+        "entradas": ("Entradas.xlsx", detail()),
+    }, data={"filial": "242"})
+    assert res.status_code == 200, res.text
+    manifest = res.json()
+    assert manifest["cobertura_documental"]["508:ENTRADAS"]["documentos_pendentes"] == 2
+    url = f"/api/v1/conferencia-fiscal/ia/sessoes/{manifest['sessao']}"
+    first = client.post(url + "/lotes/0")
+    assert first.status_code == 200, first.text
+    assert client.post(url + "/lotes/0").json() == first.json()
+    assert calls == [1]
+    assert client.delete(url).status_code == 200
+    assert client.post(url + "/lotes/0").status_code == 410

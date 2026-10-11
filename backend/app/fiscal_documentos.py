@@ -22,7 +22,7 @@ from razync.conferencia_fiscal import (
 TARGET_STATUSES = {"REVISAR", "AUSENTE NO CONTÁBIL", "CONFERE COM ALERTAS"}
 TAX_LABELS = {"ICMS", "IPI", "SUBTRI", "SUBSTITUICAO TRIBUTARIA", "ST", "ISS", "PIS", "COFINS"}
 NOTE_RE = re.compile(
-    r"(?<!\w)(?:N\.?\s?F\.?|NOTA(?:\s+FISCAL)?)(?:\s*(?:N[º°.]|NUMERO|NR))?\s*[:#º°.-]*\s*(\d{1,12})(?!\d)",
+    r"(?<!\w)(?:N\.?\s?F\.?|NOTA(?:\s+FISCAL)?|CTRC|CT\s*-?\s*E)(?:\s*(?:N[º°.]|NUMERO|NR))?\s*[:#º°.-]*\s*(\d{1,12})(?!\d)",
     re.IGNORECASE,
 )
 CNPJ_RE = re.compile(r"(?<!\d)(?:\d{2}[.]?\d{3}[.]?\d{3}[/]?\d{4}[-]?\d{2})(?!\d)")
@@ -242,12 +242,14 @@ def _valida_relatorio(detalhe, preview, tipo):
 
 
 def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
-                          razao_nome, entradas=None, saidas=None, filial=""):
+                          razao_nome, entradas=None, saidas=None, filial="", *,
+                          completo=False, preview=None):
     """Recalcula a conferência inicial no servidor e investiga só contas alertadas."""
     if entradas is None and saidas is None:
         raise ValueError("Selecione pelo menos um Acompanhamento de Entradas ou Saídas.")
-    preview = conferencia_fiscal_preview(acumuladores_bytes, acumuladores_nome,
-                                         razao_bytes, razao_nome, filial_alvo=filial or None)
+    if preview is None:
+        preview = conferencia_fiscal_preview(acumuladores_bytes, acumuladores_nome,
+                                             razao_bytes, razao_nome, filial_alvo=filial or None)
     targets = {(str(r["conta"]), r["tipo"]): r for r in preview["contas"]
                if r["situacao"] in TARGET_STATUSES}
     reports = {}
@@ -305,7 +307,7 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
                 "valor": round(amount, 2),
                 "nota": nota_explicita or _nota_inferida_historico(mov.get("historico", "")),
                 "nota_explicita": bool(nota_explicita),
-                "historico": str(mov.get("historico", ""))[:180],
+                "historico": str(mov.get("historico", "")),
                 "contrapartida": mov.get("contrapartida", ""),
                 "classificacao": mov.get("classificacao", ""),
             })
@@ -344,13 +346,18 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
         for d in docs:
             choices = strong_candidates[d["id"]]
             if len(choices) == 1 and len(ledger_to_docs[choices[0]]) == 1:
-                explicita = ledger_by_id[choices[0]]["nota_explicita"]
-                d["situacao"] = "CONCILIADO" if explicita else "PROVAVEL"
+                movimento = ledger_by_id[choices[0]]
+                explicita = movimento["nota_explicita"]
+                mesma_data = d["data"] == movimento["data"]
+                d["situacao"] = ("DATA_DIFERENTE" if not mesma_data else
+                                 "CONCILIADO" if explicita else "PROVAVEL")
                 d["razao_id"] = choices[0]
-                d["criterio"] = ("Conta, nota explícita, valor e data; correspondência única."
+                d["criterio"] = (f"Documento e valor coincidem, mas a data do Razão é {movimento['data']}; confirme o período de escrituração."
+                                  if not mesma_data else
+                                  "Conta, documento explícito, valor e data iguais; correspondência única."
                                   if explicita else
                                   "Número inicial do histórico pode ser NF; nota, valor e data sugerem correspondência, mas exigem confirmação.")
-                if explicita:
+                if explicita and mesma_data:
                     matched.add(choices[0])
             elif choices:
                 d["situacao"] = "AMBIGUO"
@@ -397,8 +404,10 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
         result.append({
             "conta": account, "tipo": tipo, "situacao_inicial": row["situacao"],
             "fiscal": row["fiscal"], "contabil": row["contabil"], "diferenca": row["diferenca"],
-            "acumuladores": by_acc, "documentos": docs[:300],
-            "documentos_total": len(docs), "razao_pendente": remaining[:300],
+            # A tela prioriza pendências. O contexto interno nunca passa por este corte.
+            "acumuladores": by_acc, "documentos": docs if completo else
+                sorted(docs, key=lambda d: d["situacao"] == "CONCILIADO")[:300],
+            "documentos_total": len(docs), "razao_pendente": remaining if completo else remaining[:300],
             "razao_pendente_total": len(remaining),
             "resumo": {"conciliados": counts["CONCILIADO"],
                        "ambiguos": counts["AMBIGUO"],
@@ -406,7 +415,7 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
                            item for item in remaining if item["situacao"] == "SEM_DOCUMENTO_IDENTIFICADO"
                        ])},
         })
-        if len(docs) > 300 or len(remaining) > 300:
+        if not completo and (len(docs) > 300 or len(remaining) > 300):
             warnings.append(f"Conta {account}: a tela mostra até 300 documentos e lançamentos pendentes; "
                             "as contagens consideram todos os registros.")
     return {
@@ -426,16 +435,18 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
 def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome, razao_bytes,
                                         razao_nome, entradas=None, saidas=None, filial=""):
     """Monta somente pendências e lançamentos não conciliados para provedores gratuitos."""
-    investigation = investigar_documentos(
-        acumuladores_bytes, acumuladores_nome, razao_bytes, razao_nome, entradas, saidas, filial
-    )
     preview = conferencia_fiscal_preview(
         acumuladores_bytes, acumuladores_nome, razao_bytes, razao_nome,
         filial_alvo=filial or None,
     )
+    investigation = investigar_documentos(
+        acumuladores_bytes, acumuladores_nome, razao_bytes, razao_nome, entradas, saidas, filial,
+        completo=True, preview=preview,
+    )
     selected = {}
     docs_to_ai = {}
     ledger_to_ai = []
+    coverage = {}
     for item in investigation["contas"]:
         account, tipo = item["conta"], item["tipo"]
         pending_docs = [d for d in item["documentos"] if d["situacao"] != "CONCILIADO"]
@@ -444,15 +455,32 @@ def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome,
             continue
         selected[(account, tipo)] = True
         key = account + ":" + tipo
+        # Prioriza diferenças concretas antes de indícios ambíguos. A amostra
+        # econômica é explícita e é escolhida entre TODAS as pendências locais.
+        priority = {"VALOR_DIFERENTE": 0, "DATA_DIFERENTE": 1,
+                    "SEM_LANCAMENTO_IDENTIFICADO": 2, "PROVAVEL": 3, "AMBIGUO": 4}
+        pending_docs.sort(key=lambda d: priority.get(d["situacao"], 5))
+        chosen_docs = pending_docs[:30]
+        related = {d["razao_id"] for d in chosen_docs if d.get("razao_id")}
+        other_ledger = sorted(other_ledger, key=lambda m: (m["id"] not in related,
+                              m["situacao"] != "SEM_DOCUMENTO_IDENTIFICADO"))
+        chosen_ledger = other_ledger[:30]
+        coverage[key] = {"documentos_enviados": len(chosen_docs),
+                         "documentos_pendentes": len(pending_docs),
+                         "lancamentos_enviados": len(chosen_ledger),
+                         "lancamentos_pendentes": len(other_ledger),
+                         "amostra": len(chosen_docs) < len(pending_docs) or len(chosen_ledger) < len(other_ledger)}
         docs_to_ai[key] = [
-            {"acumulador": d["acumulador"], "nota": d["nota"],
+            {"referencia": d["id"], "razao_id": d.get("razao_id", "").replace("R-", "L", 1),
+             "acumulador": d["acumulador"], "nota": d["nota"],
              "serie": d["serie"], "data": d["data"], "cfop": d["cfop"],
              "valor_brl": f"R$ {d['valor']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
              "situacao": d["situacao"], "criterio": d["criterio"]}
-            for d in pending_docs[:30]
+            for d in chosen_docs
         ]
-        for mov in other_ledger[:30]:
+        for mov in chosen_ledger:
             ledger_to_ai.append({
+                "_referencia_ia": mov["id"].replace("R-", "L", 1),
                 "conta": account, "data": mov["data"],
                 "historico": mov["historico"], "contrapartida": mov["contrapartida"],
                 "debito": mov["valor"] if tipo != "SAÍDAS" else 0,
@@ -463,6 +491,8 @@ def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome,
     preview["contas"] = [r for r in preview["contas"] if (r["conta"], r["tipo"]) in selected]
     preview["lancamentos"] = ledger_to_ai
     preview["documentos_pendentes"] = docs_to_ai
+    preview["cobertura_documental"] = coverage
+    preview["avisos"] = list(preview.get("avisos", [])) + investigation["avisos"]
     preview["fonte_fiscal"] = ("Acompanhamento de Entradas/Saídas: somente documentos "
                                "com correspondência ambígua ou pendente, por acumulador.")
     preview["escopo_razao"] = "Somente lançamentos contábeis não conciliados na investigação documental."

@@ -148,6 +148,7 @@ def _compact_group(group):
         "lancamentos": reduced,
         # Somente pendências documentais; documentos conciliados nunca entram aqui.
         "pendencias_documentais": group.get("pendencias_documentais", [])[:30],
+        "cobertura_documental": group.get("cobertura_documental", {}),
     }
 
 

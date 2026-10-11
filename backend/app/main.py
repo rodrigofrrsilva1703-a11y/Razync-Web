@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.concurrency import run_in_threadpool
@@ -596,7 +596,9 @@ async def conferencia_fiscal_universal_exportar(
 
 
 @app.post("/api/v1/conferencia-fiscal/investigar/ia")
+@app.post("/api/v1/conferencia-fiscal/investigar/ia/sessoes")
 async def conferencia_fiscal_investigacao_documental_ia(
+    request: Request,
     acumuladores: UploadFile = File(...),
     razao: UploadFile = File(...),
     entradas: UploadFile | None = File(None),
@@ -618,11 +620,27 @@ async def conferencia_fiscal_investigacao_documental_ia(
             await razao.read(), razao.filename or "razao.xls",
             await attachment(entradas), await attachment(saidas), filial,
         )
-        if not report["contas"]:
+        sessions = request.url.path.endswith("/sessoes")
+        if not report["contas"] and not sessions:
             return {"analises": [], "aviso": "Sem pendências documentais para enviar à IA.",
                     "provedor": "local", "gratuito": True, "fallback_usado": False}
-        from app.fiscal_ai import explain
-        return await run_in_threadpool(explain, report)
+        from app import fiscal_ai_sessions
+        manifest = await run_in_threadpool(fiscal_ai_sessions.prepare, report)
+        if sessions:
+            from fastapi.responses import JSONResponse
+            return JSONResponse(manifest, headers={"Cache-Control": "no-store"})
+        # Compatibilidade com telas antigas: também usa somente provedores
+        # gratuitos e o mesmo coordenador. A tela nova retoma lotes em separado.
+        try:
+            results = [await run_in_threadpool(fiscal_ai_sessions.process, manifest["sessao"], lot["id"])
+                       for lot in manifest["lotes"]]
+            providers = list(dict.fromkeys(r.get("provedor") for r in results))
+            return {"analises": [item for r in results for item in r["analises"]],
+                    "provedor": providers[0] if len(providers) == 1 else "cooperacao",
+                    "gratuito": all(r.get("gratuito") is True for r in results),
+                    "cobertura_documental": manifest["cobertura_documental"]}
+        finally:
+            fiscal_ai_sessions.discard(manifest["sessao"])
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 

@@ -128,7 +128,9 @@ def detailed_context(report):
         group["cobertura"] = {"enviados": len(selected), "existentes": len(candidates)}
         pendentes = report.get("documentos_pendentes")
         if isinstance(pendentes, dict):
-            group["pendencias_documentais"] = pendentes.get(f'{account["conta"]}:{account["tipo"]}', [])[:30]
+            key = f'{account["conta"]}:{account["tipo"]}'
+            group["pendencias_documentais"] = pendentes.get(key, [])
+            group["cobertura_documental"] = report.get("cobertura_documental", {}).get(key, {})
     context = {
         "periodo_fiscal": report.get("periodo_fiscal", {}),
         "periodo_razao": report.get("periodo_razao", {}),
@@ -138,6 +140,11 @@ def detailed_context(report):
         "escopo_razao": report.get("escopo_razao", "Lançamentos das contas vinculadas aos acumuladores, com filtro da filial aplicado"),
     }
     coverage = f"Analisados {len(groups)} de {sum(r['situacao'] != 'CONFERE' for r in report['contas'])} grupos com alertas/divergências; {len(references)} lançamentos distintos enviados. Sem corte por quantidade de grupos ou registros no contexto local."
+    if isinstance(report.get("documentos_pendentes"), dict):
+        coverage = (f"{len(groups)} grupos documentais; {len(references)} lançamentos enviados. "
+                    "Seleção de até 30 documentos e 30 movimentos pendentes por conta/tipo, "
+                    "priorizando diferenças de valor e data. A cobertura por grupo informa o total "
+                    "local e a amostra enviada. Não concluir ausência ou duplicidade sobre registros não enviados.")
     if len(json.dumps(context, ensure_ascii=False).encode()) > 2_000_000:
         raise HTTPException(422, "Os históricos excedem o limite da análise com IA. Envie relatórios de um período menor.")
     return context, mapping, references, coverage
@@ -810,6 +817,12 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
             "não conciliados ou ambíguos, com acumulador, nota, CFOP, data, valor "
             "e situação. Lançamentos conciliados foram removidos do contexto. "
             "Não conclua omissão, duplicidade nem erro contábil sem prova. "
+            "Nesta etapa há documentos individuais; use-os como evidência de indícios, "
+            "sem presumir que o relatório ou a amostra são completos. cobertura_documental "
+            "informa quantos documentos e movimentos foram enviados do total pendente local. "
+            "Quando amostra for verdadeira, informe explicitamente a cobertura e não "
+            "generalize a conclusão para os registros não enviados. Datas diferentes "
+            "exigem confirmação do período de escrituração. "
             "Oriente verificações por acumulador e conta e reconheça limites dos dados."
         )
     # Gemini/OpenRouter usam o contexto abaixo; Groq compacta os registros e adapta o prompt.
