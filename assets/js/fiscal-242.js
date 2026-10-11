@@ -280,13 +280,19 @@
     });
   }
 
-  async function analyzeInBatches(snapshot, controller, onProgress) {
-    if (pendingAIState && (pendingAIState.snapshot !== snapshot || pendingAIState.expires <= Date.now())) discardPendingAI();
-    if (!pendingAIState) {
-      const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/sessoes", {
+  async function analyzeInBatches(snapshot, controller, onProgress, options = {
+    get: () => pendingAIState, set: value => { pendingAIState = value; },
+    discard: discardPendingAI, endpoint: "/api/v1/conferencia-fiscal/ia/sessoes"
+  }) {
+    let cached = options.get();
+    if (cached && (cached.snapshot !== snapshot || cached.expires <= Date.now())) {
+      options.discard(); cached = null;
+    }
+    if (!cached) {
+      const response = await fetch(API() + options.endpoint, {
         method:"POST", body:snapshot, signal:controller.signal
       });
-      if (response.status === 404) {
+      if (response.status === 404 && !options.documental) {
         const legacy = await fetch(API() + "/api/v1/conferencia-fiscal/ia", {
           method:"POST", body:snapshot, signal:controller.signal
         });
@@ -296,13 +302,14 @@
       if (!response.ok) throw new Error(await responseError(response));
       const session = await response.json();
       const url = API() + "/api/v1/conferencia-fiscal/ia/sessoes/" + encodeURIComponent(session.sessao);
-      pendingAIState = {snapshot, session, url, results:new Map(), expires:Date.now() + 29 * 60 * 1000};
+      cached = {snapshot, session, url, results:new Map(), expires:Date.now() + 29 * 60 * 1000};
+      options.set(cached);
     }
-    const state = pendingAIState;
+    const state = cached;
     const {session, url, results} = state;
     const failures = [];
     let completed = [...results.values()].reduce((total, result) => total + result.analises.length, 0);
-    const cleanup = () => { if (pendingAIState === state) discardPendingAI(); };
+    const cleanup = () => { if (options.get() === state) options.discard(); };
     onProgress(completed, session.grupos, 0);
     controller.signal.addEventListener("abort", cleanup, {once:true});
     try {
@@ -346,6 +353,7 @@
         gratuito:ordered.every(result => result.gratuito === true),
         modelo_usado:[...new Set(ordered.map(result => result.modelo_usado).filter(Boolean))].join("; "),
         fallback_usado:ordered.some(result => result.fallback_usado),
+        cobertura_documental:session.cobertura_documental,
         aviso:pending ? "Análise parcial: " + completed + " de " + session.grupos + " grupos concluídos; " + pending + " pendentes. " + failures.map(item => item.mensagem).join(" ")
           : "Análise concluída para todos os " + session.grupos + " grupos com alertas/divergências. Sugestões para revisão humana; os cálculos foram preservados.",
         limite:session.registros + " registros disponíveis no processamento local, sem corte global de 1.500 registros ou 12 grupos. " +
@@ -784,11 +792,31 @@
   const investigationResults = byId("fiscal242InvestigarResultado");
   let investigationController = null;
   let investigationReport = null;
+  let investigationBody = null;
+  let docAIController = null;
+  let pendingDocAI = null;
+
+  function discardDocAI() {
+    const old = pendingDocAI;
+    pendingDocAI = null;
+    if (old) fetch(old.url, {method:"DELETE", keepalive:true}).catch(() => {});
+  }
+  function clearDocAI() {
+    docAIController?.abort();
+    docAIController = null;
+    discardDocAI();
+    byId("fiscal242InvestigarIA").disabled = false;
+    byId("fiscal242InvestigarIA").textContent = "Analisar pendências com IA";
+    byId("fiscal242InvestigarIAPareceres").replaceChildren();
+    byId("fiscal242InvestigarIAMessage").textContent = "";
+  }
 
   function resetInvestigation() {
     investigationController?.abort();
     investigationController = null;
     investigationReport = null;
+    investigationBody = null;
+    clearDocAI();
     byId("fiscal242InvestigarIAArea").hidden = true;
     byId("fiscal242InvestigarIAPareceres").replaceChildren();
     byId("fiscal242InvestigarIAMessage").textContent = "";
@@ -806,6 +834,8 @@
       CONCILIADO: "Correspondência identificada",
       AMBIGUO: "Correspondência ambígua",
       VALOR_DIFERENTE: "Valor divergente",
+      DATA_DIFERENTE: "Data divergente",
+      PROVAVEL: "Correspondência provável, confirme o documento",
       SEM_LANCAMENTO_IDENTIFICADO: "Sem lançamento identificado",
       SEM_DOCUMENTO_IDENTIFICADO: "Sem documento identificado",
       CORRESPONDENCIA_EM_ANALISE: "Correspondência em análise",
@@ -930,6 +960,10 @@
       investigationMessage.textContent = "Selecione Entradas, Saídas ou ambos.";
       return;
     }
+    clearDocAI();
+    investigationReport = null;
+    investigationBody = null;
+    byId("fiscal242InvestigarIAArea").hidden = true;
     const snapshot = data;
     const body = new FormData();
     const files = selectedFiles();
@@ -951,6 +985,7 @@
       const result = await response.json();
       if (controller.signal.aborted || snapshot !== data) return;
       investigationReport = result;
+      investigationBody = body;
       renderInvestigation(result);
       byId("fiscal242InvestigarIAArea").hidden = !(result.contas || []).some(row => row.razao_pendente_total || (row.documentos || []).some(doc => doc.situacao !== "CONCILIADO"));
       byId("fiscal242InvestigarIAPareceres").replaceChildren();
@@ -973,50 +1008,72 @@
   const docAi = byId("fiscal242InvestigarIA");
   const docAiMessage = byId("fiscal242InvestigarIAMessage");
   const docAiResults = byId("fiscal242InvestigarIAPareceres");
+  ["fiscal242Entradas", "fiscal242Saidas"].forEach(id => byId(id).addEventListener("change", () => {
+    investigationController?.abort();
+    investigationController = null;
+    investigationButton.disabled = false;
+    investigationReport = null;
+    investigationBody = null;
+    clearDocAI();
+    investigationResults.replaceChildren();
+    investigationResults.hidden = true;
+    byId("fiscal242InvestigarIAArea").hidden = true;
+    investigationMessage.textContent = "Arquivos alterados. Investigue novamente para atualizar as pendências.";
+  }));
+  function renderDocAI(entries) {
+    docAiResults.replaceChildren();
+    entries.forEach(item => {
+      const card = node("article", "fiscal-investigation-account");
+      card.appendChild(node("h4", "", "Conta " + item.conta + " · " + item.tipo));
+      card.appendChild(renderNarrative(item.explicacao));
+      card.appendChild(node("h5", "", "O que conferir"));
+      card.appendChild(renderChecklist(item.verificar));
+      docAiResults.appendChild(card);
+    });
+  }
   docAi.addEventListener("click", async () => {
-    if (!data || !investigationReport || !aiConfigured) {
+    if (!data || !investigationReport || !investigationBody || !aiConfigured) {
       docAiMessage.textContent = "Verifique a disponibilidade da IA gratuita e conclua a investigação documental.";
       return;
     }
     const snapshot = data;
-    const body = new FormData();
-    const files = selectedFiles();
-    body.append("acumuladores", files.acumuladores);
-    body.append("razao", files.razao);
-    body.append("filial", String(data.filial_aplicada || byId("fiscalFilialCodigo").value || ""));
-    const entradas = byId("fiscal242Entradas").files?.[0];
-    const saidas = byId("fiscal242Saidas").files?.[0];
-    if (entradas) body.append("entradas", entradas);
-    if (saidas) body.append("saidas", saidas);
+    const body = investigationBody;
+    const controller = new AbortController();
+    docAIController?.abort();
+    docAIController = controller;
     docAi.disabled = true;
     docAiMessage.textContent = "Enviando somente pendências e evidências necessárias para a IA gratuita…";
     try {
-      const response = await fetch(API() + "/api/v1/conferencia-fiscal/investigar/ia", {method:"POST", body});
-      if (!response.ok) throw new Error(await responseError(response));
-      const report = await response.json();
-      if (data !== snapshot) return;
-      docAiResults.replaceChildren();
+      const report = await analyzeInBatches(body, controller, (done, total, failed, waiting, ready) => {
+        if (data !== snapshot || investigationBody !== body || controller.signal.aborted) return;
+        docAiMessage.textContent = waiting || "Análise documental: " + done + " de " + total + " grupos concluídos." +
+          (failed ? " Há lotes pendentes que poderão ser retomados." : "");
+        if (ready) renderDocAI(ready);
+      }, {get: () => pendingDocAI, set: value => { pendingDocAI = value; }, discard: discardDocAI,
+          endpoint: "/api/v1/conferencia-fiscal/investigar/ia/sessoes", documental:true});
+      if (data !== snapshot || investigationBody !== body || controller.signal.aborted) return;
+      renderDocAI(report.analises || []);
       const provider = report.provedor === "groq" ? "GroqCloud" :
         report.provedor === "gemini" ? "Gemini" :
-        report.provedor === "openrouter" ? "OpenRouter" : "IA";
-      (report.analises || []).forEach(item => {
-        const card = node("article", "fiscal-investigation-account");
-        card.appendChild(node("h4", "", "Conta " + item.conta + " · " + item.tipo));
-        card.appendChild(renderNarrative(item.explicacao));
-        card.appendChild(node("h5", "", "O que conferir"));
-        card.appendChild(renderChecklist(item.verificar));
-        docAiResults.appendChild(card);
-      });
+        report.provedor === "openrouter" ? "OpenRouter" : report.nomes_provedores || "IA";
+      const coverage = Object.entries(report.cobertura_documental || {}).map(([key, c]) =>
+        "Conta " + key + ": " + c.documentos_enviados + "/" + c.documentos_pendentes +
+        " documentos e " + c.lancamentos_enviados + "/" + c.lancamentos_pendentes + " movimentos enviados" +
+        (c.amostra ? " (amostra para economizar a cota; revisão restante necessária)" : "") + ".").join(" ");
       docAiMessage.textContent = (report.aviso || "Análise concluída.") +
         ((report.analises || []).length ? " Provedor: " + provider + "." : "") +
-        (report.fallback_usado ? " Foi utilizado um provedor gratuito de reserva." : "");
+        (report.fallback_usado ? " Foi utilizado um provedor gratuito de reserva." : "") + " " + coverage;
+      docAi.textContent = report.grupos_pendentes ? "Retomar lotes pendentes" : "Ver análise já concluída";
     } catch (error) {
-      if (data === snapshot) {
+      if (error.name !== "AbortError" && data === snapshot && investigationBody === body) {
         docAiMessage.textContent = (error.message || "Não foi possível consultar a IA.") +
           " As pendências documentais calculadas permanecem disponíveis. Você pode tentar novamente mais tarde.";
       }
     } finally {
-      docAi.disabled = false;
+      if (docAIController === controller) {
+        docAIController = null;
+        docAi.disabled = false;
+      }
     }
   });
 

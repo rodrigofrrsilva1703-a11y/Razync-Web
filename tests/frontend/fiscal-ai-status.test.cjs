@@ -329,6 +329,53 @@ function batchContext(fetch) {
   return context;
 }
 
+test('sessão documental retoma só falhas, conserva cobertura e não interfere na análise inicial', async () => {
+  let cached = null, fail = true;
+  const calls = [];
+  const coverage = {'508:ENTRADAS': {documentos_enviados:30,documentos_pendentes:40,amostra:true}};
+  const manifest = {sessao:'doc',grupos:2,registros:35,cobertura_documental:coverage,
+    lotes:[{id:0,provedor:'groq',grupos:1},{id:1,provedor:'gemini',grupos:1}]};
+  const context = batchContext(async (url, options) => {
+    calls.push(url);
+    if (options.method === 'DELETE') return {ok:true};
+    if (url.endsWith('/investigar/ia/sessoes')) return {ok:true,json:async()=>manifest};
+    const id = Number(url.split('/').pop());
+    if (id === 1 && fail) return {ok:false,status:503,error:'Indisponível'};
+    return {ok:true,json:async()=>({provedor:manifest.lotes[id].provedor,gratuito:true,analises:[{conta:String(id)}]})};
+  });
+  const options = {get:()=>cached,set:value=>{cached=value;},discard:()=>{cached=null;},
+    endpoint:'/api/v1/conferencia-fiscal/investigar/ia/sessoes',documental:true};
+  const snapshot = {};
+  const first = await context.analyzeInBatches(snapshot,new AbortController(),()=>{},options);
+  assert.equal(first.grupos_pendentes,1);
+  fail = false;
+  const second = await context.analyzeInBatches(snapshot,new AbortController(),()=>{},options);
+  assert.equal(second.grupos_pendentes,0);
+  assert.equal(second.cobertura_documental,coverage);
+  await context.analyzeInBatches(snapshot,new AbortController(),()=>{},options);
+  assert.equal(calls.filter(url=>url.endsWith('/sessoes')).length,1);
+  assert.equal(calls.filter(url=>url.endsWith('/lotes/0')).length,1);
+  assert.equal(calls.filter(url=>url.endsWith('/lotes/1')).length,2);
+});
+
+test('sessão documental não usa fallback antigo e cancela o contexto incompleto', async () => {
+  const controller = new AbortController();
+  let cached = null;
+  const context = batchContext(async (url, options) => {
+    if (url.endsWith('/sessoes')) return {ok:true,json:async()=>({sessao:'doc',grupos:1,lotes:[{id:0,provedor:'gemini',grupos:1}]})};
+    controller.abort();
+    throw new DOMException('Cancelado','AbortError');
+  });
+  const options = {get:()=>cached,set:value=>{cached=value;},discard:()=>{cached=null;},
+    endpoint:'/api/v1/conferencia-fiscal/investigar/ia/sessoes',documental:true};
+  await assert.rejects(context.analyzeInBatches({},controller,()=>{},options), {name:'AbortError'});
+  assert.equal(cached,null);
+  const calls = [];
+  const unavailable = batchContext(async url => {calls.push(url);return {ok:false,status:404};});
+  await assert.rejects(unavailable.analyzeInBatches({},new AbortController(),()=>{},options));
+  assert.equal(calls.length,1);
+});
+
 test('lotes executam Gemini e Groq juntos, sem duas chamadas simultâneas no mesmo provedor', async()=>{
   const active = new Set(); const maxima = []; const progress = []; const calls=[];
   const manifest={sessao:'ficticia', grupos:8, registros:2001, lotes:[
