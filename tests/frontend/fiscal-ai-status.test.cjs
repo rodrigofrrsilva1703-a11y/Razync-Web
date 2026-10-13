@@ -246,8 +246,8 @@ test('Gemini organiza pareceres completos em contas recolhíveis sem interface f
   }
   assert.match(source,/node\("details", "fiscal-ai-card fiscal-ai-account"\)/);
   assert.match(source,/node\("summary", "fiscal-ai-card-heading fiscal-ai-account-summary"\)/);
-  assert.match(source,/content\.appendChild\(accumulatorInfo\)/);
-  assert.match(source,/content\.append\(analysis, review\)/);
+  assert.match(source,/composition\.append\(node\("summary", "", "Composição dos acumuladores"\), accumulatorInfo\)/);
+  assert.match(source,/reading\.append\(analysis, review\)/);
   assert.match(source,/content\.append\(details\)/);
   assert.match(source,/aiResult\.append\(card\)/);
   assert.match(css,/\.fiscal-ai-account-summary\s*\{/);

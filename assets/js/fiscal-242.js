@@ -297,8 +297,11 @@
           });
           content.appendChild(metrics);
         }
-        content.appendChild(accumulatorInfo);
-        content.append(analysis, review);
+        const composition = node("details", "fiscal-ai-composition");
+        composition.append(node("summary", "", "Composição dos acumuladores"), accumulatorInfo);
+        const reading = node("div", "fiscal-ai-reading");
+        reading.append(analysis, review);
+        content.append(composition, reading);
         if (item.auditoria) {
           const audit = node("section", "fiscal-ai-audit");
           const alerts = Array.isArray(item.auditoria.alertas) ? item.auditoria.alertas : [];
