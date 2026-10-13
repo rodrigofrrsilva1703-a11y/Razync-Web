@@ -102,7 +102,7 @@ def request_slot(provider, model, body):
                 window.popleft()
             # Pedidos isolados maiores dependem da cota real do upstream.
             if len(window) >= rpm or (window and tpm and sum(x[1] for x in window) + estimate > tpm):
-                wait = max(15, math.ceil(60 - (now - window[0][0])))
+                wait = max(15, math.ceil(60 - (now - window[0][0]))) if window else 60
                 raise HTTPException(429, "Fila da IA aguardando a cota por minuto.",
                                     headers={"Retry-After": str(wait)})
             ticket = [now, estimate]
@@ -113,7 +113,7 @@ def request_slot(provider, model, body):
         def usage(raw):
             metadata = raw.get("usageMetadata", {}) if provider == "gemini" else raw.get("usage", {})
             actual = (
-                metadata.get("totalTokenCount", metadata.get("promptTokenCount"))
+                metadata.get("totalTokenCount")
                 if provider == "gemini" else metadata.get("total_tokens")
             )
             with _guard:
