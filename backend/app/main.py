@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.concurrency import run_in_threadpool
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,6 +39,27 @@ origins = [
 ]
 extra = os.getenv("RAZYNC_FRONTEND_ORIGINS", "")
 origins.extend([x.strip() for x in extra.split(",") if x.strip()])
+
+
+@app.middleware("http")
+async def enforce_operating_hours(request: Request, call_next):
+    # Healthcheck continua acessível ao Railway. Apenas operações da API
+    # são bloqueadas durante o período diário de descanso.
+    if request.method != "OPTIONS" and request.url.path.startswith("/api/"):
+        from app.operating_hours import is_open, seconds_until_open
+        if not is_open():
+            return JSONResponse(
+                {"detail": "Razync indisponível das 00h às 07h (horário de Brasília).",
+                 "codigo": "FORA_DO_EXPEDIENTE",
+                 "abre_as": "07:00",
+                 "fuso": "America/Sao_Paulo"},
+                status_code=503,
+                headers={"Retry-After": str(seconds_until_open()),
+                         "Cache-Control": "no-store"},
+            )
+    return await call_next(request)
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
