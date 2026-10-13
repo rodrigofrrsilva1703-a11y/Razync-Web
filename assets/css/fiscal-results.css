@@ -1149,6 +1149,7 @@
 #fiscalView .fiscal-ai-loading[aria-busy="false"] .fiscal-ai-loading-orbit {width:34px;height:34px;flex-basis:34px;font-size:18px;}
 #fiscalView .fiscal-ai-loading[aria-busy="false"] :is(.fiscal-ai-loading-orbit::before,.fiscal-ai-loading-meter,.fiscal-ai-loading-stages,.fiscal-ai-loading-eyebrow,.fiscal-ai-loading-footer > span:last-child) {display:none;}
 #fiscalView .fiscal-ai-loading[aria-busy="false"] .fiscal-ai-loading-orbit span {animation:none;}
+#fiscalView .fiscal-ai-loading[aria-busy="false"] .fiscal-ai-loading-orbit::before {display:none;animation:none;}
 #fiscalView .fiscal-ai-loading[aria-busy="false"] .fiscal-ai-loading-footer {margin-top:8px;padding-left:50px;}
 #fiscalView .fiscal-ai-loading[data-phase="error"],#fiscalView .fiscal-ai-loading[data-phase="partial"] {border-color:#dccdb4;background:#fcfaf5;}
 @keyframes fiscalAIBreathe {50% {transform:scale(.86);}}
