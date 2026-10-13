@@ -44,6 +44,119 @@
   const aiEmpty = byId("fiscal242AIEmpty");
   const aiExpand = byId("fiscal242AIExpand");
   const aiCollapse = byId("fiscal242AICollapse");
+  const usageButton = byId("fiscal242UsageButton");
+  const usageDialog = byId("fiscal242UsageDialog");
+  const usageContent = byId("fiscal242UsageContent");
+  const usageMessage = byId("fiscal242UsageMessage");
+  const usageRefresh = byId("fiscal242UsageRefresh");
+  const usageNumber = new Intl.NumberFormat("pt-BR");
+  let usageController = null;
+
+  function usageTime(value) {
+    if (!value) return "—";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "—" :
+      date.toLocaleString("pt-BR", {day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"});
+  }
+  function renderUsage(data) {
+    usageContent.replaceChildren();
+    const top = node("p", "fiscal-usage-period",
+      "Data de referência (UTC): " + (data.data_utc || "—") +
+      " · Registro desde: " + usageTime(data.desde_utc));
+    usageContent.appendChild(top);
+    (data.provedores || []).forEach(provider => {
+      const card = node("section", "fiscal-usage-provider");
+      const head = node("div", "fiscal-usage-provider-head");
+      head.appendChild(node("strong", "", provider.nome || provider.id));
+      head.appendChild(node("span",
+        "fiscal-usage-config " + (provider.configurado ? "is-configured" : ""),
+        provider.configurado ? "Configurado" : "Não configurado"));
+      card.appendChild(head);
+      const metrics = node("div", "fiscal-usage-metrics");
+      [
+        ["Chamadas", provider.chamadas ?? 0],
+        ["Respostas da API", provider.respostas ?? 0],
+        ["Falhas", provider.falhas ?? 0],
+        ["Tokens informados", provider.tokens_informados ?? 0]
+      ].forEach(([label, count]) => {
+        const metric = node("div", "fiscal-usage-metric");
+        metric.appendChild(node("small", "", label));
+        metric.appendChild(node("strong", "", usageNumber.format(Number(count) || 0)));
+        metrics.appendChild(metric);
+      });
+      card.appendChild(metrics);
+      const limits = provider.controle_local || {};
+      card.appendChild(node("p", "fiscal-usage-limit",
+        "Cota diária e saldo real: não disponíveis nesta consulta. Controle cautelar do Razync: " +
+        (limits.requisicoes_minuto ?? "—") + " chamadas/min" +
+        (limits.tokens_minuto ? " e " + usageNumber.format(limits.tokens_minuto) + " tokens/min." : ".")
+      ));
+      if (provider.respostas_sem_tokens) card.appendChild(
+        node("p", "fiscal-usage-note",
+          provider.respostas_sem_tokens + " resposta(s) sem contagem de tokens enviada pelo provedor.")
+      );
+      const models = Array.isArray(provider.modelos) ? provider.modelos : [];
+      if (models.length) {
+        const details = node("details", "fiscal-usage-models");
+        details.appendChild(node("summary", "", "Detalhar uso por modelo (" + models.length + ")"));
+        models.forEach(model => {
+          const line = node("div", "fiscal-usage-model");
+          line.appendChild(node("strong", "", model.modelo || "Modelo não identificado"));
+          line.appendChild(node("span", "",
+            "Chamadas " + (model.chamadas || 0) + " · Respostas " + (model.respostas || 0) +
+            " · Falhas " + (model.falhas || 0)));
+          line.appendChild(node("small", "", "Última chamada: " + usageTime(model.ultima_chamada)));
+          details.appendChild(line);
+        });
+        card.appendChild(details);
+      }
+      usageContent.appendChild(card);
+    });
+    usageContent.appendChild(node("p", "fiscal-usage-disclaimer",
+      data.observacao || "Os saldos reais devem ser conferidos diretamente nos provedores."));
+  }
+  async function loadUsage() {
+    usageController?.abort();
+    const controller = new AbortController();
+    usageController = controller;
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    usageRefresh.disabled = true;
+    usageMessage.textContent = "Consultando consumo registrado pelo Razync…";
+    try {
+      const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/uso", {
+        cache:"no-store", signal:controller.signal
+      });
+      if (!response.ok) throw new Error("O relatório não pôde ser consultado agora.");
+      const report = await response.json();
+      if (usageController !== controller || !usageDialog.open) return;
+      renderUsage(report);
+      usageMessage.textContent = "Consumo local atualizado. Não representa saldo confirmado das cotas.";
+    } catch (error) {
+      if (usageController === controller && usageDialog.open) {
+        usageMessage.textContent = "Não foi possível consultar o relatório. Tente atualizar novamente.";
+      }
+    } finally {
+      clearTimeout(timeout);
+      if (usageController === controller) {
+        usageController = null;
+        usageRefresh.disabled = false;
+      }
+    }
+  }
+  usageButton.addEventListener("click", () => {
+    if (!usageDialog.open) {
+      usageDialog.showModal();
+      usageButton.setAttribute("aria-expanded", "true");
+      loadUsage();
+    }
+  });
+  usageDialog.addEventListener("close", () => {
+    usageController?.abort();
+    usageButton.setAttribute("aria-expanded", "false");
+    usageButton.focus();
+  });
+  usageRefresh.addEventListener("click", loadUsage);
+
   let aiCards = [];
   let aiReport = null;
   let statusController = null;
@@ -76,7 +189,7 @@
   const refreshConnection = node("button", "secondary-action", "Atualizar conexão");
   refreshConnection.type = "button";
   refreshConnection.addEventListener("click", refreshAIStatus);
-  aiButton.after(refreshConnection);
+  byId("fiscal242UsageActions").appendChild(refreshConnection);
   navigation.addEventListener("click", refreshAIStatus);
   window.addEventListener("focus", () => { if (pane.classList.contains("active")) refreshAIStatus(); });
   refreshAIStatus();
