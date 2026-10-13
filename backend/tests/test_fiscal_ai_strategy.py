@@ -1,0 +1,36 @@
+import copy
+import json
+from app.fiscal_ai_strategy import REVIEW_PROMPT, output_budget
+from app import fiscal_ai, groq_fiscal
+
+
+def test_short_plan_shared_by_all_free_providers():
+    assert len(REVIEW_PROMPT.split()) < 240
+    assert "no máximo 80 palavras" in REVIEW_PROMPT
+    assert "exatamente 2 passos" in REVIEW_PROMPT
+    assert "sem introdução nem repetição dos totais" in REVIEW_PROMPT
+    assert output_budget(2) == 1600
+    assert output_budget(100) == 4096
+    assert groq_fiscal.REVIEW_PROMPT == fiscal_ai.REVIEW_PROMPT == REVIEW_PROMPT
+
+
+def test_compaction_preserves_every_record_and_full_history():
+    history = "Compra de mercadoria NF 123 " + "Histórico completo. " * 100
+    context = {"grupos": [{"grupo": "G1", "resumo": {"conta": "1", "tipo": "ENTRADAS", "fiscal": 100,
+        "contabil": 80, "total_conta": 80, "diferenca": -20, "acumuladores": "12"},
+        "valores_brl": {"fiscal": "R$ 100,00", "contabil": "R$ 80,00", "total_conta": "R$ 80,00", "diferenca": "-R$ 20,00"},
+        "lancamentos": [{"referencia": f"L{i}", "conta": "1", "historico": history, "data": "2026-08-01",
+        "contrapartida": "9", "debito": 80, "credito": 0, "debito_brl": "R$ 80,00", "credito_brl": "R$ 0,00"} for i in range(1,31)]}]}
+    payload = {"contents": [{"parts": [{"text": json.dumps(context)}]}]}
+    original = copy.deepcopy(payload)
+    reduced = json.loads(fiscal_ai._compact_transport(payload)["contents"][0]["parts"][0]["text"])
+    group = reduced["grupos"][0]
+    assert len(group["lancamentos"]) == 30
+    assert all(row["historico"] == history for row in group["lancamentos"])
+    assert group["valores_brl"] == context["grupos"][0]["valores_brl"]
+    assert "fiscal" not in group["resumo"]
+    assert group["resumo"]["acumuladores"] == "12"
+    assert group["lancamentos"][0]["contrapartida"] == "9"
+    assert "debito" not in group["lancamentos"][0]
+    assert payload == original
+    assert len(json.dumps(reduced)) < len(json.dumps(context))

@@ -45,7 +45,7 @@ def gateway(monkeypatch, answer):
         assert "test-secret" not in req.full_url
         assert timeout == 45
         payload = req.data.decode()
-        assert "9123" in payload and "22643" in payload and "JOAO" not in payload
+        assert "9.123,45" in payload and "22643" in payload and "JOAO" not in payload
         return Response()
     monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", request)
 
@@ -273,12 +273,12 @@ def test_gemini_exige_analise_didatica_com_limites_e_verificacoes(monkeypatch):
     def confirmar_instrucoes(req, timeout):
         dados = json.loads(req.data)
         prompt = dados["systemInstruction"]["parts"][0]["text"]
-        assert "quatro parágrafos" in prompt
-        assert "Fatos:, Diferença:, Hipóteses: e Limitações:" in prompt
+        assert "dois parágrafos" in prompt
+        assert "Hipóteses:" in prompt and "Limitações:" in prompt
         assert "Revise ortografia" in prompt
-        assert "3 a 5 etapas objetivas e numeradas" in prompt
-        assert "códigos e descrições dos acumuladores" in prompt
-        assert "não invente citação" in prompt
+        assert "exatamente 2 passos numerados" in prompt
+        assert "acumulador" in prompt
+        assert "não invente valores" in prompt
         assert "Diferença" in prompt or "DIFERENÇA" in prompt
         assert "valores_brl" in prompt
         assert "explicacao" in str(dados["generationConfig"]["responseSchema"])
@@ -396,7 +396,7 @@ def test_openrouter_usa_prompt_integral_fallback_e_contas_originais(monkeypatch)
         assert body["response_format"]["type"] == "json_schema"
         assert body["response_format"]["json_schema"]["strict"] is True
         assert "valores_brl" in body["messages"][0]["content"]
-        assert "9123.45" in body["messages"][1]["content"]
+        assert "9.123,45" in body["messages"][1]["content"]
         assert "22643" in body["messages"][1]["content"]
         assert "Compra de mercadoria" in body["messages"][1]["content"]
         assert "openrouter-test-secret" not in str(body)
@@ -1091,7 +1091,7 @@ def test_openrouter_corrige_referencia_inventada_uma_vez(monkeypatch):
     assert [body["model"] for body in seen] == models
     evidence_schema = seen[0]["response_format"]["json_schema"]["schema"]["properties"]["analises"]["items"]["properties"]["evidencias"]
     assert evidence_schema["items"]["enum"] == ["L1"]
-    assert evidence_schema["maxItems"] == 8
+    assert evidence_schema["maxItems"] == 3
     assert "CORREÇÃO NECESSÁRIA" in seen[1]["messages"][0]["content"]
     assert seen[0]["messages"][1] == seen[1]["messages"][1]
     checked = fiscal_ai._validar_resposta_ia(answer, source, mapping, references)
@@ -1158,7 +1158,7 @@ def test_openrouter_recupera_apos_dois_502_sem_relaxar_privacidade(monkeypatch):
         assert body["provider"]["data_collection"] == "deny"
         assert body["provider"]["max_price"] == {"prompt": 0, "completion": 0}
         assert timeout == 18
-        assert "9123.45" in body["messages"][1]["content"]
+        assert "9.123,45" in body["messages"][1]["content"]
         if len(attempts) < 3:
             raise urllib.error.HTTPError(req.full_url, 502, "Bad Gateway", {}, io.BytesIO(
                 b'{"error":{"message":"upstream provider temporarily unavailable"}}'))

@@ -81,7 +81,7 @@ def audit_analysis(item):
     }
 
 
-ANALYSIS_VERSION = "grounded-v2"
+ANALYSIS_VERSION = "concise-v3"
 
 
 def narrative_sections(value):

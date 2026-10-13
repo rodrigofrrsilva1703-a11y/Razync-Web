@@ -54,3 +54,11 @@ As chaves ficam somente no backend. A chave administrativa digitada na interface
 - `/api/v1/connector/download`: instalador Windows com automação e extensão Chrome. O conector continua local em `127.0.0.1:17891`; Railway não acessa certificados instalados no Windows.
 
 Os testes verificam funções extraídas, contagens, valores, históricos, contas, remoções, abas e estilos do Excel. A homologação com documentos reais e eCAC continua pendente; veja `MIGRATION.md`. O teste Sicredi 626 com saldo divergente também falha no original e está marcado como falha conhecida estrita, sem mudar o processador.
+
+### Plano de resposta das IAs gratuitas
+
+As três APIs usam o contrato de `app/fiscal_ai_strategy.py`: totais, sentido da diferença e evidências são conferidos localmente; o modelo produz somente uma hipótese sustentada, a limitação principal e duas verificações específicas, com alvo de até 80 palavras por conta. O texto original é preservado; respostas não são truncadas localmente para aparentar economia.
+
+O contexto de Gemini/OpenRouter preserva lançamentos, datas, contrapartidas e históricos completos, eliminando apenas valores duplicados já presentes em `valores_brl`. Groq mantém a amostra declarada e os indicadores locais. A saída tem teto por quantidade de grupos, com margem para o raciocínio baixo da Groq. O teto não representa consumo real, nem garante que todos os modelos sigam o limite de palavras.
+
+A formatação e a auditoria são locais. Os resultados validados continuam sendo reaproveitados pelo cache, cuja versão muda com o plano de resposta. Provedores/modelos pagos permanecem bloqueados; cota indisponível usa somente reservas gratuitas ou informa espera. Não são contratadas novas cotas.

@@ -380,3 +380,6 @@
   #fiscalView .fiscal-ai-response-points li {font-size:12px;}
 }
 #fiscalView .fiscal-ai-account-content .fiscal-ai-analysis {padding:0;border:0;margin:0;}
+/* Plano curto: uma leitura sequencial em todas as larguras. */
+#fiscalView .fiscal-ai-reading {grid-template-columns:minmax(0,1fr);gap:20px;}
+#fiscalView .fiscal-ai-reading .fiscal-ai-review {padding:18px 0 0;border-left:0;border-top:1px solid #e6ecf1;}
