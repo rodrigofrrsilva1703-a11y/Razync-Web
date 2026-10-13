@@ -211,7 +211,9 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
     accumulatorBreakdown:()=>node('section'),renderNarrative:()=>node('div'),renderChecklist:()=>node('ol'),
     updateAIFilters:()=>{}};
   vm.createContext(context);vm.runInContext(source.slice(start,end),context);
-  const first = {conta:'1',tipo:'ENTRADAS'}, second = {conta:'2',tipo:'ENTRADAS'};
+  const first = {conta:'1',tipo:'ENTRADAS',parecer:{versao:'grounded-v1',
+    hipoteses:'Pode ser corte de período (L1).',informacoes_faltantes:['Conferir documento.'],
+    cobertura:{enviados:10,disponiveis:12,parcial:true,historicos_abreviados:true}}}, second = {conta:'2',tipo:'ENTRADAS'};
   context.renderAIEntries([second]);
   const opened = cards[0].card; opened.open=true;
   context.renderAIEntries([first,second]);
@@ -221,6 +223,12 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
   assert.equal(root.children[1],opened);
   assert.equal(opened.open,true);
   assert.equal(context.aiTotal.textContent,'(2)');
+  const texts = entry => [entry.textContent || '', ...entry.children.flatMap(texts)];
+  const rendered = texts(cards.find(entry=>entry.item.conta==='1').card).join(' ');
+  assert.match(rendered,/Fatos dos relatórios/);
+  assert.match(rendered,/Hipóteses da IA/);
+  assert.match(rendered,/10 de 12.*amostra parcial.*históricos abreviados/);
+  assert.match(rendered,/Interpretação completa da IA/);
 });
 
 test('exportação Gemini usa relatório pronto, sem nova chamada ao modelo', () => {

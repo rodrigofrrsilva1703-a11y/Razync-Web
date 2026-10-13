@@ -327,7 +327,19 @@
         const officialRow = (data?.contas || []).find(row => keyOf(row) === keyOf(item)) || item;
         const accumulatorInfo = accumulatorBreakdown(officialRow);
         const analysis = node("section", "fiscal-ai-analysis");
-        analysis.append(node("h5", "", "Análise da conta"), renderNarrative(item.explicacao));
+        if (item.parecer?.versao) {
+          analysis.append(node("h5", "", "Fatos dos relatórios"), node("p", "fiscal-ai-paragraph", "Os valores acima foram calculados pela ferramenta a partir dos arquivos enviados."));
+          analysis.append(node("h5", "", "Hipóteses da IA"), node("p", "fiscal-ai-paragraph", item.parecer.hipoteses));
+          analysis.appendChild(node("h5", "", "Informações para confirmar a causa"));
+          for (const text of item.parecer.informacoes_faltantes || []) analysis.appendChild(node("p", "fiscal-ai-paragraph", text));
+          const coverage = item.parecer.cobertura;
+          if (coverage) analysis.appendChild(node("small", "fiscal-ai-source", `Contexto da IA: ${coverage.enviados} de ${coverage.disponiveis} lançamentos disponíveis nesta conta${coverage.parcial ? " · amostra parcial" : ""}${coverage.historicos_abreviados ? " · históricos abreviados" : ""}.`));
+          const original = node("details", "fiscal-ai-composition");
+          original.append(node("summary", "", "Interpretação completa da IA"), renderNarrative(item.explicacao));
+          analysis.appendChild(original);
+        } else {
+          analysis.append(node("h5", "", "Interpretação da IA"), renderNarrative(item.explicacao));
+        }
         const review = node("section", "fiscal-ai-review");
         review.append(node("h5", "", "Verificações recomendadas"), renderChecklist(item.verificar));
         if (item.valores) {
@@ -349,8 +361,8 @@
           const audit = node("section", "fiscal-ai-audit");
           const alerts = Array.isArray(item.auditoria.alertas) ? item.auditoria.alertas : [];
           audit.appendChild(node("strong", "", alerts.length
-            ? "Auditoria automática · revisar evidências"
-            : "Auditoria automática · sem alertas estruturais"));
+            ? "Checagens locais · revisar evidências"
+            : "Checagens locais · sem alertas estruturais"));
           for (const alert of alerts) audit.appendChild(node("p", "", String(alert)));
           audit.appendChild(node("small", "",
             "A auditoria confere referências e valores conhecidos; a conclusão contábil exige revisão humana."));

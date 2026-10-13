@@ -11,6 +11,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 from app import fiscal_ai, ai_result_cache
+from app.fiscal_ai_audit import ANALYSIS_VERSION
 
 router = APIRouter(prefix="/api/v1/conferencia-fiscal/ia/sessoes")
 _sessions = {}
@@ -23,7 +24,7 @@ CACHE_SECONDS = 1800
 CACHE_MAX_ENTRIES = 64
 
 def _cache_digest(report):
-    payload = json.dumps(report, ensure_ascii=False, sort_keys=True, default=str)
+    payload = ANALYSIS_VERSION + ":" + json.dumps(report, ensure_ascii=False, sort_keys=True, default=str)
     return ai_result_cache.stable_digest(payload) or hmac.new(_cache_secret, payload.encode("utf-8"), hashlib.sha256).hexdigest()
 
 def _prune_cache():
@@ -173,6 +174,7 @@ def process(token, batch_id):
                 result = dict(result, fallback_usado=extra_slot)
                 break
             except HTTPException as exc:
+                result = None
                 if exc.status_code not in (429, 502, 503, 504):
                     raise
                 failure = exc

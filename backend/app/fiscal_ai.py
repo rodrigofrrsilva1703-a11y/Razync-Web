@@ -16,7 +16,7 @@ from fastapi.responses import Response
 from fastapi.concurrency import run_in_threadpool
 from app.fiscal_242 import conferencia_fiscal_preview
 from app.ai_budget import request_slot, daily_report
-from app.fiscal_ai_audit import audit_analysis
+from app.fiscal_ai_audit import audit_analysis, structured_analysis
 from app.groq_fiscal import complete as _groq_completion, is_enabled as _groq_enabled, selected_model as _groq_model
 
 logger = logging.getLogger(__name__)
@@ -687,7 +687,7 @@ def _gemini_send(payload, key, model, *, legacy=False):
     return json.loads(text), model, raw
 
 
-def _validar_resposta_ia(result, report, mapping, references):
+def _validar_resposta_ia(result, report, mapping, references, *, groq=False):
     """Converte e confere contas, valores e referências sem depender do provedor."""
     output, seen = [], set()
     for item in result["analises"]:
@@ -725,6 +725,11 @@ def _validar_resposta_ia(result, report, mapping, references):
                        "explicacao": padronizar_moeda(item["explicacao"]),
                        "verificar": padronizar_moeda(item["verificar"]),
                        "evidencias":[references[ref] for ref in dict.fromkeys(evidence)]})
+        rows = [row for row in report.get("lancamentos", []) if row.get("conta") == mapping[ident]["conta"]]
+        output[-1]["parecer"] = structured_analysis(output[-1], rows,
+            sent=min(10, len(rows)) if groq else len(rows),
+            shortened=groq and any(len(str(row.get("historico") or "")) > 180 for row in rows),
+            documentary=report.get("documentos_pendentes") is not None)
         output[-1]["auditoria"] = audit_analysis(output[-1])
     if seen != set(mapping):
         raise ValueError("Empty answer")
@@ -832,7 +837,7 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
             "a origem fiscal e a contrapartida, mesmo com diferença zero. "
             "Busque de 140 a 190 palavras no total por grupo, mantendo fatos, causas, limites e verificações, "
             "sem alongar a resposta quando não houver dados suficientes. "
-            "Separe nitidamente fatos demonstrados, hipóteses e orientações de conferência. "
+            "Separe nitidamente fatos demonstrados, hipóteses e orientações de conferência. Cada hipótese deve citar os lançamentos que motivam o indício ou declarar que não há evidência suficiente. Classificação automática não comprova a natureza fiscal nem a causa. "
             "Responda todos os grupos fornecidos, sem incluir outros."}]},
         "contents":[{"role":"user","parts":[{"text":json.dumps(context, ensure_ascii=False, separators=(",", ":"))}]}],
         "generationConfig":{"responseMimeType":"application/json", "responseSchema":schema,
@@ -860,7 +865,7 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
         try:
             groq_model = _groq_model()
             answer, used_model = _groq_completion(payload, os.getenv("GROQ_API_KEY", "").strip(), groq_model)
-            analyses = _validar_resposta_ia(answer, report, mapping, references)
+            analyses = _validar_resposta_ia(answer, report, mapping, references, groq=True)
             logger.info("fiscal_ia_groq_success model=%s groups=%d", used_model, len(analyses))
             return {
                 "analises": analyses,
@@ -1104,6 +1109,8 @@ def gerar_excel_analise(payload: dict) -> bytes:
     main.title = "Análises IA"
     codes = book.create_sheet("Acumuladores")
     evidences = book.create_sheet("Lançamentos citados")
+    grounded = book.create_sheet("Fatos e hipóteses")
+    grounded.append(["Conta", "Tipo", "Origem dos fatos", "Hipóteses da IA", "Informações faltantes", "Cobertura dos lançamentos"])
     cor_titulo, cor_cabecalho, cor_texto = "203B59", "EAF0F7", "30485F"
     main.merge_cells("A1:L1")
     main["A1"] = "RAZYNC | CONFERÊNCIA FISCAL × CONTÁBIL · ANÁLISE ASSISTIDA"
@@ -1146,6 +1153,16 @@ def gerar_excel_analise(payload: dict) -> bytes:
             texto(item.get("explicacao")), texto(item.get("verificar")),
             texto(", ".join(str(e.get("referencia", "")) for e in fatos if isinstance(e, dict)), 600)
         ])
+        parecer = item.get("parecer") or {}
+        if isinstance(parecer, dict) and parecer.get("versao"):
+            coverage = parecer.get("cobertura") or {}
+            missing = parecer.get("informacoes_faltantes") or []
+            if not isinstance(missing, list) or len(missing) > 20:
+                raise ValueError("Informações faltantes inválidas.")
+            grounded.append([conta, tipo, "Valores oficiais na aba Análises IA; calculados pela ferramenta.",
+                texto(parecer.get("hipoteses")), texto("\n".join(str(x) for x in missing)),
+                texto(f"{coverage.get('enviados', 0)} de {coverage.get('disponiveis', 0)} lançamentos; "
+                      f"históricos abreviados: {'sim' if coverage.get('historicos_abreviados') else 'não'}")])
         for code in codigos:
             if not isinstance(code, dict):
                 raise ValueError("Acumulador inválido.")
@@ -1185,6 +1202,7 @@ def gerar_excel_analise(payload: dict) -> bytes:
     formato(main, 5, {6, 7, 8, 9}, [15, 29, 14, 20, 22, 19, 22, 20, 19, 82, 68, 23])
     formato(codes, 1, {5}, [17, 17, 17, 55, 21])
     formato(evidences, 1, {6, 7}, [17, 18, 18, 95, 22, 22, 22, 16])
+    formato(grounded, 1, set(), [17, 17, 60, 82, 82, 48])
     out = io.BytesIO()
     book.save(out)
     return out.getvalue()

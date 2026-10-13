@@ -158,7 +158,7 @@ def test_ia_recebe_so_pendencias_sem_documentos_ja_conciliados(monkeypatch):
         for group in context["grupos"]:
             assert all(d["nota"] not in {"100", "900"} for d in group.get("pendencias_documentais", []))
             assert "pendencias_documentais" in group
-        return {"analises": [], "provedor": "gemini", "gratuito": True}
+        return {"analises": [{"conta": row["conta"]} for row in report["contas"] if row["situacao"] != "CONFERE"], "provedor": "gemini", "gratuito": True}
     monkeypatch.setattr(fiscal_ai, "explain", fake_explain)
     fiscal, ledger = initial()
     res = TestClient(app).post("/api/v1/conferencia-fiscal/investigar/ia", files={

@@ -29,7 +29,7 @@ def test_auditoria_indica_valor_nao_confirmado_e_falta_de_evidencia():
     result = audit_analysis(_analysis(explicacao="Diferença de R$ 999,99.", evidencias=[]))
     assert result["situacao"] == "revisao_necessaria"
     assert result["valores_sem_comprovacao"] == 1
-    assert len(result["alertas"]) == 2
+    assert len(result["alertas"]) == 3
 
 
 def test_auditoria_nao_altera_dados_original():

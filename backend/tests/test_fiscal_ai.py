@@ -328,7 +328,7 @@ def test_exportar_analise_gemini_em_excel_sem_nova_chamada(monkeypatch):
     )
     assert response.content[:2] == b"PK"
     workbook = load_workbook(io.BytesIO(response.content), data_only=False)
-    assert workbook.sheetnames == ["Análises IA", "Acumuladores", "Lançamentos citados"]
+    assert workbook.sheetnames == ["Análises IA", "Acumuladores", "Lançamentos citados", "Fatos e hipóteses"]
     main = workbook["Análises IA"]
     assert main["A2"].value == "Empresa: EMPRESA EXEMPLO LTDA"
     assert main["A6"].value == "22643"
@@ -523,6 +523,7 @@ def test_modo_gratuito_rejeita_modelos_pagos_ou_nao_explicitos(monkeypatch, mode
 
 
 def test_sem_chave_openrouter_nao_ativa_gemini_por_padrao(monkeypatch):
+    monkeypatch.delenv("GEMINI_FREE_TIER_CONFIRMED", raising=False)
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.delenv("RAZYNC_AI_LEGACY_GEMINI", raising=False)
     monkeypatch.setenv("GEMINI_API_KEY", "gemini-key")
