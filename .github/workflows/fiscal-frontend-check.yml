@@ -1,0 +1,29 @@
+name: Fiscal frontend check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "assets/css/fiscal-workspace.css"
+      - "assets/js/fiscal-242.js"
+      - "tests/frontend_fiscal_smoke.py"
+      - ".github/workflows/fiscal-frontend-check.yml"
+  pull_request:
+    paths:
+      - "index.html"
+      - "assets/css/fiscal-workspace.css"
+      - "assets/js/fiscal-242.js"
+      - "tests/frontend_fiscal_smoke.py"
+      - ".github/workflows/fiscal-frontend-check.yml"
+  workflow_dispatch:
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate browser JavaScript syntax
+        run: node --check assets/js/fiscal-242.js
+      - name: Verify fiscal layout and controls
+        run: python tests/frontend_fiscal_smoke.py
