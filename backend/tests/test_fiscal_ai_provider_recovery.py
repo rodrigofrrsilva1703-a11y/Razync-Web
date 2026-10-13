@@ -16,7 +16,7 @@ def report():
         "contas": [{
             "conta": "508", "tipo": "ENTRADAS", "descricao": "Compras",
             "fiscal": 1500, "contabil": 1200, "total_conta": 1200,
-            "diferenca": -300, "situacao": "REVISAR", "detalhes_fiscais": [
+            "diferenca": -300, "extras": 0, "situacao": "REVISAR", "detalhes_fiscais": [
                 {"codigo": "125", "descricao": "Compras", "valor": 1500}
             ],
         }],
