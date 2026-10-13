@@ -27,3 +27,5 @@ jobs:
         run: node --check assets/js/fiscal-242.js
       - name: Verify fiscal layout and controls
         run: python tests/frontend_fiscal_smoke.py
+      - name: Verify compatibility with existing frontend behavior
+        run: node --test tests/frontend/*.test.cjs
