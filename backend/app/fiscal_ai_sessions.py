@@ -10,7 +10,7 @@ import time
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
-from app import fiscal_ai
+from app import fiscal_ai, ai_result_cache
 
 router = APIRouter(prefix="/api/v1/conferencia-fiscal/ia/sessoes")
 _sessions = {}
@@ -24,7 +24,7 @@ CACHE_MAX_ENTRIES = 64
 
 def _cache_digest(report):
     payload = json.dumps(report, ensure_ascii=False, sort_keys=True, default=str)
-    return hmac.new(_cache_secret, payload.encode("utf-8"), hashlib.sha256).hexdigest()
+    return ai_result_cache.stable_digest(payload) or hmac.new(_cache_secret, payload.encode("utf-8"), hashlib.sha256).hexdigest()
 
 def _prune_cache():
     now = time.monotonic()
@@ -141,6 +141,13 @@ def process(token, batch_id):
         if cached is not None:
             batch["result"] = copy.deepcopy(cached["result"])
             return dict(batch["result"], cache_reutilizado=True)
+        persisted = ai_result_cache.read(batch["digest"])
+        if persisted is not None:
+            batch["result"] = persisted
+            _completed_cache[batch["digest"]] = {
+                "result": copy.deepcopy(persisted), "expires": time.monotonic() + CACHE_SECONDS,
+            }
+            return dict(batch["result"], cache_reutilizado=True)
         batch["running"] = True
         session["active_providers"].add(batch["provedor"])
     try:
@@ -187,6 +194,9 @@ def process(token, batch_id):
                 "expires": time.monotonic() + CACHE_SECONDS,
             }
             _prune_cache()
+            # Só persiste respostas já auditadas, com criptografia no volume existente.
+            if all("auditoria" in row for row in result["analises"]):
+                ai_result_cache.write(batch["digest"], result)
         return result
     finally:
         with _guard:
