@@ -1028,8 +1028,10 @@
 #fiscalView .fiscal-account-chevron {font-size:19px;color:#7994af;}
 #fiscalView .fiscal-account-description {max-width:none;overflow-wrap:anywhere;}
 #fiscalView .fiscal-difference-reading {font-size:13px;line-height:1.7;color:#244d75;padding:12px 15px;margin:15px 0;background:#edf4fb;border-left:3px solid #6e97be;border-radius:0 8px 8px 0;}
-#fiscalView .fiscal-ai-actions > #fiscal242AI {background:#285a92;border-color:#285a92;color:#fff;font-size:12px;padding:11px 17px;}
-#fiscalView .fiscal-ai-actions > #fiscal242AI:hover:not(:disabled) {background:#214b7b;}
+#fiscalView .fiscal-ai-actions > button,
+#fiscalView .fiscal-download-row > button {font-size:12px!important;min-height:40px;padding:10px 15px!important;}
+#fiscalView .fiscal-ai-actions > #fiscal242AI {background:#285a92!important;border-color:#285a92!important;color:#fff!important;}
+#fiscalView .fiscal-ai-actions > #fiscal242AI:hover:not(:disabled) {background:#214b7b!important;}
 #fiscalView .fiscal-ai-inline-status {font-size:13px;line-height:1.7;color:#385872;}
 #fiscalView .fiscal-ai-processing-notes {margin:8px 0 12px;}
 #fiscalView .fiscal-ai-processing-notes #fiscal242AIMessage {font-size:12px;line-height:1.75;padding:12px 14px;background:#f6f8fb;border-radius:8px;overflow-wrap:anywhere;}
