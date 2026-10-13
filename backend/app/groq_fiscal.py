@@ -384,9 +384,39 @@ def _complete(payload, key, model, *, _tried_models=None, _deadline=None):
                       else categories.get(code, "sem_codigo_conhecido"))
             logger.warning("fiscal_groq_error status=%d reason=%s model=%s batch=%d",
                            status, reason, model, start // 2 + 1)
-            if status == 401:
+            if status == 400:
+                # Alguns endpoints gratuitos rejeitam parâmetros da saída
+                # estruturada estrita. Tente UMA vez JSON mode na mesma API,
+                # sem retirar as validações de grupos e evidências abaixo.
+                compatible = copy.deepcopy(body)
+                compatible["response_format"] = {"type": "json_object"}
+                compatible["reasoning_format"] = "hidden"
+                compatible["messages"][0]["content"] += (
+                    " Responda somente um objeto JSON válido com a chave analises. "
+                    "Cada grupo solicitado deve constar uma vez, com explicacao, "
+                    "verificar e evidencias. Só cite IDs L fornecidos ao grupo."
+                )
+                compatible_request = urllib.request.Request(
+                    API_URL,
+                    data=json.dumps(compatible, ensure_ascii=False, separators=(",", ":")).encode("utf-8"),
+                    headers={"Authorization": "Bearer " + key,
+                             "Content-Type": "application/json", "Accept": "application/json",
+                             "User-Agent": "Razync-Web/1.0"},
+                )
+                logger.warning("fiscal_groq_strict_format_retry model=%s batch=%d", model, start // 2 + 1)
+                try:
+                    with request_slot("groq", model, compatible) as usage:
+                        with urllib.request.urlopen(compatible_request, timeout=min(35, max(1, deadline-time.monotonic()))) as response:
+                            raw = json.loads(response.read(130000))
+                        usage(raw)
+                except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError, TypeError):
+                    raise HTTPException(
+                        502, "A Groq rejeitou os formatos de geração gratuitos. "
+                             "A conferência foi preservada."
+                    ) from None
+            elif status == 401:
                 raise HTTPException(401, "Groq recusou a autenticação. Confira a chave API no Railway.") from None
-            if status == 403:
+            elif status == 403:
                 if cloudflare_1010 or html_error:
                     detail = ("A conexão do servidor Razync foi recusada pela camada de proteção "
                               "de tráfego da Groq (HTTP 403). Chave e permissões do modelo "
@@ -401,9 +431,10 @@ def _complete(payload, key, model, *, _tried_models=None, _deadline=None):
                     detail = ("Groq recusou o acesso (HTTP 403). Verifique as permissões "
                               "da organização e do projeto para o modelo GPT-OSS selecionado.")
                 raise HTTPException(403, detail) from None
-            if status == 429:
+            elif status == 429:
                 raise HTTPException(429, "Groq gratuita atingiu o limite de requisições ou tokens.") from None
-            raise HTTPException(502, "Groq indisponível ou formato incompatível. A conferência está preservada.") from None
+            elif status != 400:
+                raise HTTPException(502, "Groq indisponível ou formato incompatível. A conferência está preservada.") from None
         except (urllib.error.URLError, TimeoutError):
             raise HTTPException(504, "Groq não respondeu a tempo. A conferência está preservada.") from None
 
