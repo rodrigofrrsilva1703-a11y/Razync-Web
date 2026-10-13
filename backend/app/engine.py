@@ -3618,20 +3618,6 @@ def nome_banco_por_chave(chave):
     return _nome_banco_por_chave_legado(chave)
 
 def processar_extrato_conferencia_empresa(file_bytes, filename, banco_forcado=None):
-    # Adaptador isolado: preserva o AST do motor original de PDFs.
-    # Aplica-se somente ao PDF Santander escolhido/identificado.
-    if str(filename or "").lower().endswith(".pdf") and banco_forcado in (None, "santander"):
-        from app.santander_aplicativo import (
-            parece_extrato_santander_aplicativo,
-            processar_extrato_santander_aplicativo_pdf,
-        )
-        try:
-            first = (PdfReader(io.BytesIO(file_bytes), strict=False).pages[0].extract_text() or "")
-        except Exception:
-            first = ""
-        if parece_extrato_santander_aplicativo(first):
-            return processar_extrato_santander_aplicativo_pdf(file_bytes)
-
     if (
         request_state.get().get("empresa_organizador") == "crj_47"
         and banco_forcado in {None, "banco_brasil"}
