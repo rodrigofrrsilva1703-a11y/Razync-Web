@@ -227,13 +227,15 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
   const texts = entry => [entry.textContent || '', ...entry.children.flatMap(texts)];
   const rendered = texts(cards.find(entry=>entry.item.conta==='1').card).join(' ');
   assert.match(rendered,/Groq · openai\/gpt-oss-120b/);
-  assert.match(rendered,/Fatos dos relatórios/);
-  assert.match(rendered,/Hipóteses da IA/);
+  assert.match(rendered,/Possíveis explicações/);
+  assert.match(rendered,/Próximos passos/);
   assert.match(rendered,/10 de 12.*amostra parcial.*históricos abreviados/);
-  assert.match(rendered,/Interpretação completa da IA/);
+  assert.match(rendered,/Limites e texto completo da análise/);
   assert.equal(context.aiSourceLabel({provedor:'gemini',modelo_usado:'gemini-2.5-flash-lite'}),'Gemini · gemini-2.5-flash-lite');
   assert.equal(context.aiSourceLabel({provedor:'openrouter',modelo_usado:'openrouter/free'}),'OpenRouter · openrouter/free');
   assert.equal(context.aiSourceLabel({}),'IA não identificada');
+  const points = context.responsePoints('L1 tem R$ 1.234,56. Pode ser corte de período.\n- Conferir nota.');
+  assert.deepEqual(Array.from(points),['L1 tem R$ 1.234,56.','Pode ser corte de período.','Conferir nota.']);
   const fallback = context.renderAIFindings({parecer:{versao:'grounded-v2',hipoteses:'Revisar.',
     interpretacao:'Texto sem títulos <script>original</script>',informacoes_faltantes:[]}});
   assert.match(texts(fallback).join(' '),/Interpretação da IA/);
