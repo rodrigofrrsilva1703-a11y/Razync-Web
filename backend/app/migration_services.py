@@ -110,10 +110,23 @@ def statement(code, bank, content, filename):
         if code == 968 and bank == 'bradesco':
             from razync.bradesco_radani import processar_extrato_bradesco_radani
             return processar_extrato_bradesco_radani(content)[0]
+        # PDF Aplicativo Santander Empresas (Valor + Saldo): aceita em todas
+        # as empresas configuradas com Santander, sem alterar SIG/XLS.
+        if bank == 'santander' and filename.lower().endswith('.pdf'):
+            from app.santander_aplicativo import (
+                parece_extrato_santander_aplicativo,
+                processar_extrato_santander_aplicativo_pdf,
+            )
+            text_first = (engine.PdfReader(io.BytesIO(content), strict=False).pages[0].extract_text() or '')
+            if parece_extrato_santander_aplicativo(text_first):
+                return pd.DataFrame(processar_extrato_santander_aplicativo_pdf(content), columns=COLUNAS)
         if code == 285 and bank == 'santander':
             from razync.santander_statement import processar_extrato_santander_empresarial_texto
             text = '\n'.join(p.extract_text() or '' for p in engine.PdfReader(io.BytesIO(content)).pages)
-            return pd.DataFrame(processar_extrato_santander_empresarial_texto(text), columns=COLUNAS)
+            records = processar_extrato_santander_empresarial_texto(text)
+            if not records:
+                raise ValueError('Formato Santander não reconhecido. Envie o PDF original do extrato.')
+            return pd.DataFrame(records, columns=COLUNAS)
         if code == 1211 and bank == 'itau':
             from razync.gz_1211 import ler_extrato_itau_gz
             return ler_extrato_itau_gz(content)
