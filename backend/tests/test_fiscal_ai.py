@@ -117,23 +117,15 @@ def test_provider_errors_are_actionable_without_leaking_secrets(monkeypatch, cod
     assert error.value.status_code == (429 if code == 429 else 502)
 
 
-def test_unavailable_configured_model_retries_flash_lite(monkeypatch):
-    import io
-    answer = {"analises":[{"grupo":"G1","explicacao":"Revisar diferença.","verificar":"Verifique os lançamentos."}]}
-    gateway(monkeypatch, answer)
+def test_modelo_gemini_pago_bloqueado_antes_de_enviar(monkeypatch):
+    gateway(monkeypatch, {"analises": []})
     monkeypatch.setenv("GEMINI_FREE_MODEL", "gemini-2.5-flash")
-    original = fiscal_ai.urllib.request.urlopen
-    calls = []
-    def request(req, timeout):
-        calls.append(req.full_url)
-        if len(calls) == 1:
-            raise urllib.error.HTTPError(req.full_url, 404, "missing", {}, io.BytesIO(b"{}"))
-        return original(req, timeout)
-    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", request)
-    assert fiscal_ai.explain(report())["analises"][0]["conta"] == "22643"
-    assert len(calls) == 2
-    assert "gemini-3.1-flash-lite" in calls[1]
-
+    monkeypatch.setattr(fiscal_ai.urllib.request, "urlopen", lambda *a, **k:
+        pytest.fail("Nenhuma chamada para modelo pago deve ser enviada"))
+    with pytest.raises(HTTPException) as error:
+        fiscal_ai.explain(report())
+    assert error.value.status_code == 503
+    assert "GEMINI_FREE_MODEL" in error.value.detail
 
 def test_detailed_context_includes_authorized_records_and_totals():
     source = report()
