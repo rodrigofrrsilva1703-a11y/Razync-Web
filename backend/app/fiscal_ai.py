@@ -15,7 +15,7 @@ from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 from fastapi.concurrency import run_in_threadpool
 from app.fiscal_242 import conferencia_fiscal_preview
-from app.ai_budget import request_slot
+from app.ai_budget import request_slot, daily_report
 from app.groq_fiscal import complete as _groq_completion, is_enabled as _groq_enabled, selected_model as _groq_model
 
 logger = logging.getLogger(__name__)
@@ -1002,6 +1002,17 @@ def status():
         "fallback_gemini": bool((openrouter or groq_selected) and gemini_free),
         "cooperacao": len(providers) > 1,
     }
+
+
+@router.get("/uso")
+def usage_report(response: Response):
+    """Relatório de uso local, sem saldos inventados nem dados fiscais."""
+    response.headers["Cache-Control"] = "no-store"
+    report = daily_report()
+    configured = set(status()["provedores"])
+    for provider in report["provedores"]:
+        provider["configurado"] = provider["id"] in configured
+    return report
 
 
 @router.post("")
