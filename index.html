@@ -16,7 +16,8 @@
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
   <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=investigacao-documental-1">
-  <link rel="stylesheet" href="./assets/css/fiscal-results.css?v=fiscal-workspace-ai-loading-20261013-8">
+  <link rel="stylesheet" href="./assets/css/fiscal-results.css?v=fiscal-workspace-studio-20261013-9">
+  <link rel="stylesheet" href="./assets/css/fiscal-studio.css?v=studio-20261013-1">
 </head>
 <body>
   <div class="app-shell">
@@ -158,6 +159,7 @@
               <button type="button" class="fiscal-workflow-button" data-fiscal-target="fiscal242Investigacao" id="fiscal242InvestigacaoJump" hidden>Investigar</button>
               <button type="button" class="fiscal-workflow-button" data-fiscal-target="fiscal242AISection">Análise com IA</button>
             </nav>
+            <div class="fiscal-section-panel" data-fiscal-panel="comparison">
             <div id="fiscal242Company" class="fiscal-company-result">
               <span>Empresa identificada nos relatórios</span>
               <strong id="fiscal242CompanyName">—</strong>
@@ -231,7 +233,14 @@
               <p class="fiscal-table-count" id="fiscal242Count" aria-live="polite"></p>
               <details class="fiscal-reading-guide"><summary>Como interpretar os valores</summary><p class="fiscal-disclaimer fiscal-table-note">Contábil considerado: lançamentos do Razão classificados como compatíveis com o fiscal. Diferença = contábil considerado − fiscal. A composição e o total do Razão aparecem no detalhe da conta.</p></details>
             </div>
-            <div id="fiscal242Detail" class="fiscal-detail" hidden></div>
+            <div id="fiscal242DetailDock"><div id="fiscal242Detail" class="fiscal-detail" hidden></div></div>
+            <details class="fiscal-unmapped" id="fiscal242Unmapped" hidden>
+              <summary>Acumuladores sem conta contábil <span id="fiscal242UnmappedCount"></span></summary>
+              <p>Estes acumuladores foram encontrados no relatório, mas não possuem uma conta definida para comparação. Confirme o vínculo antes de conciliar.</p>
+              <div class="fiscal-table-scroll"><table class="fiscal-table"><thead><tr><th>Acumulador</th><th>Descrição</th><th>Tipo</th><th>Valor fiscal</th></tr></thead><tbody id="fiscal242UnmappedRows"></tbody></table></div>
+            </details>
+            </div>
+            <div class="fiscal-section-panel" data-fiscal-panel="documents" hidden>
             <section id="fiscal242Investigacao" class="fiscal-investigation" hidden aria-labelledby="fiscalInvestigacaoTitle">
               <div class="fiscal-investigation-heading">
                 <span class="fiscal-investigation-step" aria-hidden="true">02</span>
@@ -265,15 +274,12 @@
                 <div id="fiscal242InvestigarIAPareceres"></div>
               </div>
             </section>
-            <details class="fiscal-unmapped" id="fiscal242Unmapped" hidden>
-              <summary>Acumuladores sem conta contábil <span id="fiscal242UnmappedCount"></span></summary>
-              <p>Estes acumuladores foram encontrados no relatório, mas não possuem uma conta definida para comparação. Confirme o vínculo antes de conciliar.</p>
-              <div class="fiscal-table-scroll"><table class="fiscal-table"><thead><tr><th>Acumulador</th><th>Descrição</th><th>Tipo</th><th>Valor fiscal</th></tr></thead><tbody id="fiscal242UnmappedRows"></tbody></table></div>
-            </details>
+            </div>
+            <div class="fiscal-section-panel" data-fiscal-panel="ai" hidden>
             <section class="fiscal-ai">
               <div class="fiscal-ai-heading" id="fiscal242AISection">
                 <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
-                <div><span class="fiscal-ai-eyebrow">ASSISTENTE DE CONFERÊNCIA</span><h3>Análise das pendências</h3><p>Entenda as diferenças, consulte as evidências e veja o que conferir em cada conta.</p></div>
+                <div><span class="fiscal-ai-eyebrow">ASSISTENTE DE CONFERÊNCIA</span><h3>Análise das pendências</h3><p>Entenda as diferenças, consulte as evidências e veja o que conferir em cada conta.</p><p id="fiscal242AIContext" class="fiscal-ai-context"></p></div>
                 <div class="fiscal-ai-heading-tools">
                   <span class="fiscal-ai-provider" id="fiscal242AIProvider">IA</span>
                   <button type="button" class="fiscal-usage-trigger" id="fiscal242UsageButton" aria-haspopup="dialog" aria-controls="fiscal242UsageDialog" aria-expanded="false" title="Ver uso e limites das IAs gratuitas">
@@ -342,14 +348,15 @@
                     </select>
                   </label>
                   <div class="fiscal-ai-toggle-actions">
-                    <button type="button" class="fiscal-ai-toggle-action" id="fiscal242AIExpand">Expandir tudo</button>
-                    <button type="button" class="fiscal-ai-toggle-action" id="fiscal242AICollapse">Recolher tudo</button>
+                    <button type="button" class="fiscal-ai-toggle-action" id="fiscal242AIExpand">Ver todos os pareceres</button>
+                    <button type="button" class="fiscal-ai-toggle-action" id="fiscal242AICollapse">Leitura por conta</button>
                   </div>
                 </div>
               </div>
-              <div id="fiscal242AIResult"></div>
+              <div class="fiscal-ai-reader" id="fiscal242AIReader" hidden><aside class="fiscal-ai-account-nav" aria-label="Selecionar conta para ler o parecer"><div class="fiscal-ai-nav-heading">CONTAS PARA REVISAR</div><div id="fiscal242AIAccounts"></div></aside><div id="fiscal242AIResult"></div></div>
               <p class="fiscal-ai-no-results" id="fiscal242AIEmpty" hidden>Nenhum parecer corresponde à busca ou ao filtro. Os resultados continuam disponíveis ao limpar os filtros.</p>
             </section>
+            </div>
             <div class="fiscal-download-row">
               <button type="button" class="secondary-action" id="fiscal242Download">Baixar relatório Excel (opcional)</button>
             </div>
@@ -587,7 +594,7 @@
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=fiscal-layout-2"></script>
   <script src="./assets/js/migration.js?v=fiscal-modern-20261013-5"></script>
-  <script src="./assets/js/fiscal-242.js?v=fiscal-workspace-ai-loading-20261013-8"></script>
+  <script src="./assets/js/fiscal-242.js?v=fiscal-workspace-studio-20261013-9"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>

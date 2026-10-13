@@ -45,6 +45,10 @@
   const aiEmpty = byId("fiscal242AIEmpty");
   const aiExpand = byId("fiscal242AIExpand");
   const aiCollapse = byId("fiscal242AICollapse");
+  const aiReader = byId("fiscal242AIReader");
+  const aiAccounts = byId("fiscal242AIAccounts");
+  let activeAIKey = "";
+  let showAllAI = false;
   const usageButton = byId("fiscal242UsageButton");
   const usageDialog = byId("fiscal242UsageDialog");
   const usageContent = byId("fiscal242UsageContent");
@@ -413,10 +417,41 @@
       ? aiCards.length + " conta(s)"
       : "Exibindo " + matching.size + " de " + aiCards.length;
     aiEmpty.hidden = matching.size > 0 || !aiCards.length;
+    renderAIReader([...matching]);
+  }
+  function chooseAIKey(entries, activeKey) {
+    return entries.some(entry => keyOf(entry.item) === activeKey) ? activeKey : entries.length ? keyOf(entries[0].item) : "";
+  }
+  function renderAIReader(matching) {
+    activeAIKey = chooseAIKey(matching, activeAIKey);
+    aiReader.hidden = matching.length === 0;
+    aiReader.classList.toggle("is-all", showAllAI);
+    aiAccounts.replaceChildren();
+    matching.forEach(({item, card}) => {
+      const selected = keyOf(item) === activeAIKey;
+      card.classList.toggle("is-reading", selected);
+      if (selected || showAllAI) card.open = true;
+      const button = node("button", "fiscal-ai-nav-account" + (selected ? " is-selected" : ""));
+      button.type = "button";
+      button.setAttribute("aria-pressed", String(selected));
+      button.append(node("strong", "", "Conta " + item.conta), node("span", "fiscal-ai-nav-description", item.descricao || item.tipo || "Parecer da conta"));
+      const footer = node("span", "fiscal-ai-nav-meta");
+      footer.appendChild(node("small", "", statusLabels[item.situacao] || item.situacao || item.tipo));
+      if (item.valores?.diferenca !== undefined && item.valores?.diferenca !== null) footer.appendChild(node("b", "", money.format(Number(item.valores.diferenca) || 0)));
+      button.appendChild(footer);
+      button.addEventListener("click", () => {activeAIKey = keyOf(item); showAllAI = false; renderAIReader(matching);});
+      aiAccounts.appendChild(button);
+    });
+    aiExpand.setAttribute("aria-pressed", String(showAllAI));
+    aiCollapse.setAttribute("aria-pressed", String(!showAllAI));
   }
   function clearAIAccounts() {
     loadingPanel.hidden = true;
     aiCards = [];
+    activeAIKey = "";
+    showAllAI = false;
+    aiReader.hidden = true;
+    aiAccounts.replaceChildren();
     aiToolbar.hidden = true;
     aiEmpty.hidden = true;
     aiSearch.value = "";
@@ -427,10 +462,14 @@
   aiSearch.addEventListener("input", updateAIFilters);
   aiFilter.addEventListener("change", updateAIFilters);
   aiExpand.addEventListener("click", () => {
+    showAllAI = true;
     for (const {card} of aiCards) if (!card.hidden) card.open = true;
+    updateAIFilters();
   });
   aiCollapse.addEventListener("click", () => {
+    showAllAI = false;
     for (const {card} of aiCards) card.open = false;
+    updateAIFilters();
   });
 
   let pendingAIState = null;
@@ -872,6 +911,8 @@
   function focusFiscalSection(id) {
     const target = byId(id);
     if (!target || target.hidden || results.hidden) return;
+    const panel = target.closest("[data-fiscal-panel]");
+    if (panel) pane.querySelectorAll("[data-fiscal-panel]").forEach(item => {item.hidden = item !== panel;});
     workflowButtons.forEach(button => {
       const current = button.dataset.fiscalTarget === id;
       button.classList.toggle("is-current", current);
@@ -924,6 +965,8 @@
   }));
 
   function renderTable() {
+    const dock = byId("fiscal242DetailDock");
+    dock.appendChild(details);
     const rows = sortFiscalRows(filteredRows(), tableSort.key, tableSort.descending);
     tableBody.replaceChildren();
     const total = (data?.contas || []).length;
@@ -971,6 +1014,14 @@
       tableBody.appendChild(tr);
     });
     renderDetails(rows.find(row => keyOf(row) === selectedKey) || null);
+    if (selectedKey) {
+      const selectedRow = [...tableBody.children].find(row => row.classList.contains("selected"));
+      if (selectedRow) {
+        const expanded = node("tr", "fiscal-inline-row");
+        const host = node("td", "fiscal-inline-host"); host.colSpan = 6;
+        host.appendChild(details); expanded.appendChild(host); selectedRow.after(expanded);
+      }
+    }
   }
 
   function renderResponse(report) {
@@ -1003,6 +1054,8 @@
     if (fiscal.inicio && fiscal.fim) parts.push("Fiscal: " + fiscal.inicio + " a " + fiscal.fim);
     if (report.filial_aplicada) parts.push("Filial do Razão: " + report.filial_aplicada);
     byId("fiscal242Period").textContent = parts.join(" · ");
+    byId("fiscal242AIContext").textContent = (report.empresa_nome || "Conferência atual") +
+      (parts.length ? " · " + parts.join(" · ") : "");
     const warningBox = byId("fiscal242Warnings");
     warningBox.replaceChildren();
     (report.avisos || []).forEach(aviso => warningBox.appendChild(node("p", "", aviso)));

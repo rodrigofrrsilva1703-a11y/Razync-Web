@@ -49,3 +49,14 @@ test('ordenação compara códigos numericamente e diferenças pelo tamanho sem 
   assert.deepEqual(rows.map(x=>x.conta),['10','2','20']);
   assert.equal(rows[0].diferenca,-500);
 });
+
+test('leitor da IA preserva seleção em lotes novos e escolhe conta visível ao filtrar', () => {
+  const context = {keyOf:row=>row.conta+':'+row.tipo};
+  vm.createContext(context);
+  vm.runInContext(source.slice(source.indexOf('  function chooseAIKey('),source.indexOf('  function renderAIReader(')),context);
+  const cards = [{item:{conta:'366',tipo:'ENTRADAS'}},{item:{conta:'354',tipo:'ENTRADAS'}}];
+  assert.equal(context.chooseAIKey(cards,'354:ENTRADAS'),'354:ENTRADAS');
+  assert.equal(context.chooseAIKey(cards.slice(0,1),'354:ENTRADAS'),'366:ENTRADAS');
+  assert.equal(context.chooseAIKey([], '366:ENTRADAS'),'');
+  assert.equal(context.chooseAIKey(cards,''),'366:ENTRADAS');
+});
