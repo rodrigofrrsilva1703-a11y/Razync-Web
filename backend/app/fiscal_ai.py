@@ -488,8 +488,10 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
 
     choices = response_json.get("choices") or []
     if not choices:
-        logger.warning("fiscal_openrouter_rejected category=missing_choices")
-        raise ValueError("Resposta sem alternativas do OpenRouter")
+        # HTTP 200 pode vir com choices vazio em roteadores gratuitos.
+        # Reexecutar apenas uma vez no modelo de reserva, com mesmo contexto
+        # e validação integral de grupos/evidências.
+        return repair_once("empty_content")
     choice = choices[0]
     reason = choice.get("finish_reason")
     if reason not in ("stop", "length"):
@@ -889,17 +891,23 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
             try:
                 answer, used_model = _gemini_completion(payload, gemini_key, gemini_model, legacy=False)
                 analyses = _validar_resposta_ia(answer, report, mapping, references)
+                logger.info("fiscal_ia_gemini_success model=%s groups=%d fallback=%s",
+                            used_model, len(analyses), groq_failed)
                 return {"analises":analyses,
                     "aviso":"Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
                     "limite":coverage, "provedor":"gemini", "modelo_usado":used_model,
                     "gratuito":True, "fallback_usado":groq_failed}
             except HTTPException as exc:
+                logger.warning("fiscal_ia_gemini_failure status=%d fallback_available=%s",
+                               exc.status_code, bool(openrouter_key))
                 if not openrouter_key:
                     raise
                 if exc.status_code in (429, 502, 503, 504):
                     with lock:
                         gemini_cooldown_until = time.monotonic() + 60
-            except (ValueError, TypeError, KeyError, IndexError):
+            except (ValueError, TypeError, KeyError, IndexError) as exc:
+                logger.warning("fiscal_ia_gemini_invalid_response category=%s fallback_available=%s",
+                               type(exc).__name__, bool(openrouter_key))
                 if not openrouter_key:
                     raise HTTPException(502, "Não foi possível validar a análise Gemini. A conferência permanece disponível.") from None
     or_failed = False
@@ -945,15 +953,20 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
                 payload, gemini_key, gemini_model, legacy=legacy_direct
             )
             analyses = _validar_resposta_ia(answer, report, mapping, references)
+            logger.info("fiscal_ia_gemini_success model=%s groups=%d fallback=%s",
+                        used_model, len(analyses), or_failed)
             return {
                 "analises": analyses, "aviso": "Sugestões da IA para revisão humana. Nenhum cálculo ou arquivo foi alterado.",
                 "limite": coverage, "provedor": "gemini", "modelo_usado": used_model,
                 "gratuito": not legacy_direct, "fallback_usado": or_failed,
             }
-        except HTTPException:
+        except HTTPException as exc:
+            logger.warning("fiscal_ia_gemini_failure status=%d fallback_available=False", exc.status_code)
             if not or_failed:
                 raise
-        except (ValueError, TypeError, KeyError, IndexError):
+        except (ValueError, TypeError, KeyError, IndexError) as exc:
+            logger.warning("fiscal_ia_gemini_invalid_response category=%s fallback_available=False",
+                           type(exc).__name__)
             if not or_failed:
                 raise HTTPException(
                     502, "Não foi possível obter análise válida do Gemini. A conferência permanece disponível."
