@@ -7,7 +7,7 @@ Nenhum dado é enviado a outro serviço e nenhuma chamada de IA é executada.
 from decimal import Decimal, InvalidOperation
 import re
 
-_MONEY = re.compile(r"R\\$\\s*(-?\\s*\\d[\\d.,]*)", flags=re.IGNORECASE)
+_MONEY = re.compile(r"R\$\s*(-?\s*\d[\d.,]*)", flags=re.IGNORECASE)
 
 
 def _number(value):
