@@ -549,6 +549,7 @@
     search.value = "";
     resultsCount.textContent = "";
     results.hidden = true;
+    byId("fiscal242NextStep").hidden = true;
     details.hidden = true;
     details.replaceChildren();
     tableBody.replaceChildren();
@@ -715,6 +716,7 @@
   workflowButtons.forEach(button => {
     button.addEventListener("click", () => focusFiscalSection(button.dataset.fiscalTarget));
   });
+  byId("fiscal242NextStepButton").addEventListener("click", () => focusFiscalSection("fiscal242Investigacao"));
 
   function renderTable() {
     const rows = filteredRows();
@@ -813,6 +815,13 @@
     results.hidden = false;
     resetInvestigation();
     investigation.hidden = !(report.contas || []).some(row => ["REVISAR", "AUSENTE NO CONTÁBIL", "CONFERE COM ALERTAS"].includes(row.situacao));
+    const attentionCount = (report.contas || []).filter(row =>
+      ["REVISAR", "AUSENTE NO CONTÁBIL", "CONFERE COM ALERTAS"].includes(row.situacao)
+    ).length;
+    byId("fiscal242NextStep").hidden = !attentionCount;
+    byId("fiscal242NextStepTitle").textContent = attentionCount === 1
+      ? "1 conta precisa de atenção"
+      : attentionCount + " contas precisam de atenção";
     aiInlineStatus.textContent = "Conferência pronta. Use a análise inteligente para revisar diferenças e alertas.";
     selectedKey = "";
     filter.value = "todas";
