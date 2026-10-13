@@ -885,3 +885,61 @@
   #fiscalView .fiscal-usage-footer > span {max-width:none;}
   #fiscalView .fiscal-usage-actions {justify-content:flex-start;}
 }
+
+/* Razync · refinamento do fluxo fiscal (somente apresentação) */
+#fiscalView { --fw-shadow:0 3px 16px rgba(24,51,79,.035); }
+#fiscalView .fiscal-page-head {padding:12px 0 17px;}
+#fiscalView .fiscal-page-head h1 {font-size:clamp(23px,2.65vw,30px);margin:5px 0;}
+#fiscalView .fiscal-setup,
+#fiscalView .fiscal-results-card,
+#fiscalView .fiscal-investigation,
+#fiscalView .fiscal-ai {border-radius:12px;}
+#fiscalView .fiscal-setup-heading {padding:13px 18px;}
+#fiscalView .fiscal-setup-filetype {font-size:9px;}
+#fiscalView .fiscal-step {padding:12px 18px 14px;}
+#fiscalView .fiscal-step-heading {margin-bottom:9px;gap:8px;}
+#fiscalView .fiscal-step-index {width:24px;height:24px;border-radius:7px;}
+#fiscalView .fiscal-context-grid,
+#fiscalView .fiscal-upload-grid {gap:10px;}
+#fiscalView .fiscal-company-auto {min-height:60px;padding:9px 12px;border-style:solid;background:#fbfcfe;}
+#fiscalView .fiscal-field :is(input,select) {min-height:36px;}
+#fiscalView .fiscal-upload-item {padding:11px 12px;border-radius:9px;}
+#fiscalView .fiscal-upload-item input[type="file"] {margin-top:7px;}
+#fiscalView .fiscal-form-actions {padding:11px 18px;}
+#fiscalView :is(#fiscal242Submit,#fiscal242InvestigarBtn) {min-height:38px;padding:8px 15px;}
+#fiscalView .fiscal-overview-heading {scroll-margin-top:80px;}
+#fiscalView .fiscal-summary {gap:10px;}
+#fiscalView .fiscal-summary-card {box-shadow:none;border-radius:11px;}
+#fiscalView .fiscal-summary-card strong {letter-spacing:-.035em;}
+#fiscalView .fiscal-results-card {scroll-margin-top:85px;}
+#fiscalView .fiscal-results-controls {gap:7px;}
+#fiscalView .fiscal-results-controls input[type="search"] {min-width:0;}
+#fiscalView .fiscal-table {font-variant-numeric:tabular-nums;}
+#fiscalView .fiscal-table :is(th,td) {vertical-align:middle;}
+#fiscalView .fiscal-table tbody tr:hover {background:#f5f8fc;}
+#fiscalView .fiscal-investigation {scroll-margin-top:85px;}
+#fiscalView .fiscal-ai {scroll-margin-top:85px;}
+#fiscalView .fiscal-ai-heading-tools {gap:6px;}
+#fiscalView .fiscal-ai-heading-tools .fiscal-ai-provider {max-width:140px;}
+#fiscalView .fiscal-usage-trigger {min-height:27px;padding:4px 7px;}
+@media(max-width:680px) {
+  #fiscalView .fiscal-page-head {padding:8px 0 12px;}
+  #fiscalView .fiscal-setup-heading {padding:12px 13px;}
+  #fiscalView .fiscal-step {padding:12px 13px;}
+  #fiscalView .fiscal-setup-filetype {display:none;}
+  #fiscalView .fiscal-step-heading p {line-height:1.4;}
+  #fiscalView .fiscal-context-grid,
+  #fiscalView .fiscal-upload-grid {grid-template-columns:minmax(0,1fr);}
+  #fiscalView .fiscal-form-actions {padding:12px 13px;gap:10px;}
+  #fiscalView .fiscal-form-actions button {width:100%;}
+  #fiscalView .fiscal-summary {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+  #fiscalView .fiscal-summary-card {min-width:0;}
+  #fiscalView .fiscal-results-controls {width:100%;}
+  #fiscalView .fiscal-results-controls :is(input,select) {max-width:100%;}
+  #fiscalView .fiscal-table-scroll {overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  #fiscalView .fiscal-ai-heading-tools {margin:7px 0 0;width:100%;justify-content:flex-end;}
+}
+@media(prefers-reduced-motion:reduce) {
+  #fiscalView .fiscal-upload-item,
+  #fiscalView :is(#fiscal242Submit,#fiscal242InvestigarBtn) {transition:none;}
+}
