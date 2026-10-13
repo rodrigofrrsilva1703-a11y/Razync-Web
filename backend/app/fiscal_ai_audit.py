@@ -36,6 +36,14 @@ def _number(value):
         return None
 
 
+def contradicts_existing_entries(item):
+    text = str(item.get("explicacao") or "")
+    cited = set(re.findall(r"\bL\d+\b", text.upper()))
+    declared = {str(row.get("referencia", "")).upper() for row in item.get("evidencias", []) if isinstance(row, dict)}
+    return bool(cited & declared and re.search(
+        r"não (?:foi|foram) (?:devidamente )?(?:lançad[oa]s?|registrad[oa]s?|contabilizad[oa]s?)", text, re.I))
+
+
 def audit_analysis(item):
     """Gera revisão independente; nunca altera os valores contábeis."""
     if not isinstance(item, dict):
@@ -72,6 +80,8 @@ def audit_analysis(item):
         alerts.append("O texto cita referências sem evidência vinculada: " + ", ".join(sorted(unlinked)) + ".")
     unsupported = re.search(r"não (?:foi|foram) (?:lançad[oa]s?|registrad[oa]s?)|confirmar (?:a )?(?:omissão|duplicidade)",
                             str(item.get("explicacao") or ""), re.I)
+    if contradicts_existing_entries(item):
+        alerts.append("Os lançamentos citados já constam no Razão. A sugestão de ausência de contabilização não foi confirmada; confira os documentos fiscais.")
     if unsupported:
         alerts.append("A resposta sugere omissão ou duplicidade como conclusão. A diferença de totais não comprova essa causa; confira os documentos.")
     return {
@@ -124,8 +134,11 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
         missing.append("O resumo por acumulador não contém documentos fiscais individuais para comprovar omissão ou duplicidade.")
     if sections.get("limitacoes"):
         missing.append("Limitação indicada pela IA: " + sections["limitacoes"])
+    hypothesis = sections.get("hipoteses")
+    if contradicts_existing_entries(item):
+        hypothesis = "Os lançamentos citados já constam no Razão. A diferença entre os totais não identifica a causa; compare os documentos fiscais com a escrituração para confirmá-la."
     return {"versao": ANALYSIS_VERSION, "fatos": facts,
-            "hipoteses": sections.get("hipoteses") or "A resposta não identifica hipóteses separadamente. Confira a interpretação da IA abaixo.",
+            "hipoteses": hypothesis or "A resposta não identifica hipóteses separadamente. Confira a interpretação da IA abaixo.",
             "interpretacao": text if not sections.get("hipoteses") else "",
             "informacoes_faltantes": missing,
             "cobertura": {"disponiveis": total, "enviados": sent,

@@ -127,6 +127,22 @@ def discard(token):
         session["timer"].cancel()
 
 
+def _refresh_cached_review(result, report):
+    """Atualiza somente as checagens/apresentação locais, sem nova chamada de IA."""
+    refreshed = copy.deepcopy(result)
+    for item in refreshed.get("analises", []):
+        if not isinstance(item, dict) or not isinstance(item.get("valores"), dict) or not item.get("explicacao"):
+            continue
+        rows = [row for row in report.get("lancamentos", []) if row.get("conta") == item.get("conta")]
+        groq = item.get("provedor", result.get("provedor")) == "groq"
+        item["parecer"] = fiscal_ai.structured_analysis(item, rows,
+            sent=min(10, len(rows)) if groq else len(rows),
+            shortened=groq and any(len(str(row.get("historico") or "")) > 180 for row in rows),
+            documentary=report.get("documentos_pendentes") is not None)
+        item["auditoria"] = fiscal_ai.audit_analysis(item)
+    return refreshed
+
+
 def process(token, batch_id):
     session = _get(token)
     with _guard:
@@ -140,11 +156,11 @@ def process(token, batch_id):
         _prune_cache()
         cached = _completed_cache.get(batch["digest"])
         if cached is not None:
-            batch["result"] = copy.deepcopy(cached["result"])
+            batch["result"] = _refresh_cached_review(cached["result"], batch["report"])
             return dict(batch["result"], cache_reutilizado=True)
         persisted = ai_result_cache.read(batch["digest"])
         if persisted is not None:
-            batch["result"] = persisted
+            batch["result"] = _refresh_cached_review(persisted, batch["report"])
             _completed_cache[batch["digest"]] = {
                 "result": copy.deepcopy(persisted), "expires": time.monotonic() + CACHE_SECONDS,
             }

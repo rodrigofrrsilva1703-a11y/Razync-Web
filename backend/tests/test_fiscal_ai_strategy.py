@@ -36,3 +36,21 @@ def test_compaction_preserves_every_record_and_full_history():
     assert "debito" not in group["lancamentos"][0]
     assert payload == original
     assert len(json.dumps(reduced)) < len(json.dumps(context))
+
+
+def test_local_cache_review_blocks_contradiction_without_new_ai_request(monkeypatch):
+    from app import fiscal_ai_sessions
+    monkeypatch.setattr(fiscal_ai, 'explain', lambda *a, **k: (_ for _ in ()).throw(AssertionError('No AI call expected')))
+    item = {'conta':'1','provedor':'openrouter','modelo_usado':'openrouter/free',
+        'valores':{'fiscal':100,'contabil':80,'diferenca':-20},
+        'explicacao':'Hipóteses: L1 não foi devidamente contabilizado no Razão. Limitação: Conferir documento.',
+        'verificar':'1. Compare NF.\n2. Confira o período.',
+        'evidencias':[{'referencia':'L1','conta':'1','debito':80,'credito':0}]}
+    cached = {'analises':[item], 'provedor':'openrouter'}
+    original = copy.deepcopy(cached)
+    updated = fiscal_ai_sessions._refresh_cached_review(cached, {'lancamentos':[{'conta':'1'}]})['analises'][0]
+    assert 'já constam no Razão' in updated['parecer']['hipoteses']
+    assert any('já constam no Razão' in x for x in updated['auditoria']['alertas'])
+    assert updated['explicacao'] == item['explicacao']
+    assert updated['provedor'] == 'openrouter'
+    assert cached == original
