@@ -1,14 +1,14 @@
-"""Janela diária de funcionamento do Razync no horário de São Paulo.
+"""Expediente Razync: segunda a sábado, 07h-00h, horário de São Paulo.
 
-A regra de expediente limita novas requisições da API, mas não substitui
-a suspensão automática de recursos do Railway Serverless.
+Bloqueia novas requisições da API fora do expediente. A economia real depende
+do servidor Railway Serverless suspender após ficar sem atividade.
 """
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
 OPEN_HOUR = 7
-CLOSE_HOUR = 0
+SUNDAY = 6
 
 
 def current_time(now=None):
@@ -20,7 +20,8 @@ def current_time(now=None):
 
 
 def is_open(now=None):
-    return current_time(now).hour >= OPEN_HOUR
+    clock = current_time(now)
+    return clock.weekday() != SUNDAY and clock.hour >= OPEN_HOUR
 
 
 def seconds_until_open(now=None):
@@ -28,4 +29,6 @@ def seconds_until_open(now=None):
     if is_open(clock):
         return 0
     opening = clock.replace(hour=OPEN_HOUR, minute=0, second=0, microsecond=0)
+    if clock.weekday() == SUNDAY:
+        opening += timedelta(days=1)
     return max(1, int((opening - clock).total_seconds() + 0.999))
