@@ -5,10 +5,12 @@ from app import fiscal_ai, groq_fiscal
 
 
 def test_short_plan_shared_by_all_free_providers():
-    assert len(REVIEW_PROMPT.split()) < 240
+    assert len(REVIEW_PROMPT.split()) < 300
     assert "no máximo 80 palavras" in REVIEW_PROMPT
     assert "exatamente 2 passos" in REVIEW_PROMPT
     assert "sem introdução nem repetição dos totais" in REVIEW_PROMPT
+    assert "a causa está indeterminada" in REVIEW_PROMPT
+    assert "não no Razão" in REVIEW_PROMPT
     assert output_budget(2) == 1600
     assert output_budget(100) == 4096
     assert groq_fiscal.REVIEW_PROMPT == fiscal_ai.REVIEW_PROMPT == REVIEW_PROMPT

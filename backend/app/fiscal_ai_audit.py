@@ -70,6 +70,10 @@ def audit_analysis(item):
     unlinked = quoted - declared
     if unlinked:
         alerts.append("O texto cita referências sem evidência vinculada: " + ", ".join(sorted(unlinked)) + ".")
+    unsupported = re.search(r"não (?:foi|foram) (?:lançad[oa]s?|registrad[oa]s?)|confirmar (?:a )?(?:omissão|duplicidade)",
+                            str(item.get("explicacao") or ""), re.I)
+    if unsupported:
+        alerts.append("A resposta sugere omissão ou duplicidade como conclusão. A diferença de totais não comprova essa causa; confira os documentos.")
     return {
         "referencias_sem_evidencia": sorted(unlinked),
         "situacao": "revisao_necessaria" if alerts else "conferencia_assistida",
@@ -81,7 +85,7 @@ def audit_analysis(item):
     }
 
 
-ANALYSIS_VERSION = "concise-v3"
+ANALYSIS_VERSION = "concise-v4"
 
 
 def narrative_sections(value):
@@ -90,7 +94,7 @@ def narrative_sections(value):
     labels = (r"Fatos(?: observados| dos relatórios| demonstrados)?|"
               r"Diferen[cç]a(?: encontrada)?|Hip[oó]teses?(?: da IA)?|"
               r"Poss[ií]veis causas|Causas prov[aá]veis|"
-              r"Limita[cç][oõ]es(?: dos dados)?|Informa[cç][oõ]es faltantes")
+              r"Limita[cç](?:[aã]o|[oõ]es)(?: dos dados)?|Informa[cç][oõ]es faltantes")
     pattern = re.compile(r"(?:^|(?<=\s))(?:#{1,6}\s*|[-•]\s*|\d+[.)]\s*)?"
                          r"[*_]{0,2}(" + labels + r")[*_]{0,2}"
                          r"(?:\s*:[*_]{0,2}\s*|[ \t]*\n|[ \t]*$)", re.I)

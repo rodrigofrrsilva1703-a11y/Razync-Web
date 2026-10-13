@@ -65,3 +65,14 @@ def test_provider_identity_survives_common_validation(provider, model):
     assert result["provedor"] == provider
     assert result["modelo_usado"] == model
     assert result["parecer"]["hipoteses"] == "Conferir período."
+
+
+def test_singular_limitation_stays_separate_from_hypothesis():
+    result = structured_analysis({"explicacao": "Hipótese: Pode ser período. Limitação: Faltam documentos individuais."}, [])
+    assert result["hipoteses"] == "Pode ser período."
+    assert result["informacoes_faltantes"][-1] == "Limitação indicada pela IA: Faltam documentos individuais."
+
+
+def test_assertive_missing_posting_claim_triggers_local_review():
+    result = audit_analysis({"explicacao": "Hipóteses: os valores não foram lançados. Limitação: confirmar a omissão.", "evidencias": []})
+    assert any("não comprova essa causa" in text for text in result["alertas"])
