@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
   <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=investigacao-documental-1">
-  <link rel="stylesheet" href="./assets/css/fiscal-workspace.css?v=refined-v5">
+  <link rel="stylesheet" href="./assets/css/fiscal-workspace.css?v=20261013-2">
 </head>
 <body>
   <div class="app-shell">
@@ -103,7 +103,7 @@
           <div class="fiscal-setup-heading">
             <div>
               <h2 id="fiscalSetupTitle">Preparar conferência</h2>
-              <p>Anexe os dois relatórios. A empresa e a filial são identificadas automaticamente quando possível.</p>
+              <p>Envie o resumo e o razão. O filtro de filial é opcional quando houver apenas uma.</p>
             </div>
             <span class="fiscal-setup-filetype">Arquivos Domínio</span>
           </div>
@@ -111,7 +111,7 @@
             <div class="fiscal-step">
               <div class="fiscal-step-heading">
                 <span class="fiscal-step-index" aria-hidden="true">01</span>
-                <div><h3>Empresa e filial</h3><p>Identificação automática; informe a filial apenas se necessário.</p></div>
+                <div><h3>Empresa e filial</h3><p>Verificação automática de empresa e seleção de filial.</p></div>
               </div>
               <div class="fiscal-context-grid">
                 <div class="fiscal-company-auto">
@@ -128,7 +128,7 @@
             <div class="fiscal-step">
               <div class="fiscal-step-heading">
                 <span class="fiscal-step-index" aria-hidden="true">02</span>
-                <div><h3>Arquivos da conferência</h3><p>Resumo fiscal e Razão contábil do mesmo período.</p></div>
+                <div><h3>Arquivos da conferência</h3><p>Dois relatórios do mesmo período.</p></div>
               </div>
               <div class="fiscal-upload-grid">
                 <div class="fiscal-upload-item">
@@ -167,7 +167,7 @@
               <div>
                 <span class="fiscal-section-eyebrow">VISÃO GERAL</span>
                 <h2>Resultado da conferência</h2>
-                <p>Priorize as divergências e abra apenas as contas que precisam de análise.</p>
+                <p>Comece pelas divergências; abra cada conta para conferir os movimentos.</p>
               </div>
               <p class="fiscal-period" id="fiscal242Period"></p>
             </div>
@@ -208,7 +208,7 @@
             </div>
             <div class="fiscal-results-card" id="fiscal242ResultsCard">
               <div class="fiscal-results-heading">
-                <div><span class="fiscal-section-eyebrow">COMPARATIVO</span><h3>Contas e acumuladores</h3><p>Clique na conta para examinar os valores e lançamentos.</p></div>
+                <div><span class="fiscal-section-eyebrow">COMPARATIVO</span><h3>Contas e acumuladores</h3><p>Selecione uma conta para ver acumuladores, valores e lançamentos.</p></div>
                 <div class="fiscal-results-controls">
                   <label for="fiscal242Search" class="visually-hidden">Buscar por conta ou acumulador</label>
                   <input id="fiscal242Search" type="search" placeholder="Buscar conta ou acumulador" autocomplete="off" aria-label="Buscar conta, descrição ou acumulador">
@@ -238,7 +238,7 @@
                 <div>
                   <span class="fiscal-section-eyebrow">INVESTIGAÇÃO OPCIONAL</span>
                   <h3 id="fiscalInvestigacaoTitle">Investigar com Entradas e Saídas</h3>
-                  <p>Anexe Entradas e/ou Saídas para aprofundar apenas as contas pendentes.</p>
+                  <p>Anexe Entradas, Saídas ou ambos. O Razync cruza apenas os documentos dos acumuladores ligados a contas divergentes ou com alertas.</p>
                 </div>
               </div>
               <form id="fiscal242InvestigarForm" class="fiscal-investigation-form">
@@ -273,11 +273,11 @@
             <section class="fiscal-ai">
               <div class="fiscal-ai-heading" id="fiscal242AISection">
                 <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
-                <div><span class="fiscal-ai-eyebrow">ETAPA OPCIONAL · IA GRATUITA</span><h3>Entenda as pendências</h3><p>Orientações para investigar pendências, sem alterar os cálculos.</p></div>
+                <div><span class="fiscal-ai-eyebrow">ETAPA OPCIONAL · IA GRATUITA</span><h3>Entenda as pendências</h3><p>Pareceres com hipóteses e orientações de conferência. Os cálculos permanecem no Razync.</p></div>
                 <div class="fiscal-ai-heading-tools">
                   <span class="fiscal-ai-provider" id="fiscal242AIProvider">IA</span>
-                  <button type="button" class="fiscal-usage-trigger" id="fiscal242UsageButton" aria-label="Abrir relatório de uso e limites da IA" aria-haspopup="dialog" aria-controls="fiscal242UsageDialog" aria-expanded="false" title="Abrir relatório de uso e limites da IA">
-                    <span aria-hidden="true">◷</span> Limites
+                  <button type="button" class="fiscal-usage-trigger" id="fiscal242UsageButton" aria-haspopup="dialog" aria-controls="fiscal242UsageDialog" aria-expanded="false" title="Ver uso e limites das IAs gratuitas">
+                    <span aria-hidden="true">◷</span> Limites da IA
                   </button>
                 </div>
 
