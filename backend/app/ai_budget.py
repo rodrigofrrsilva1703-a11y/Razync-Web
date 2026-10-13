@@ -3,6 +3,8 @@ from collections import deque
 from contextlib import contextmanager
 import json
 import math
+import os
+import sqlite3
 import threading
 import time
 from datetime import datetime, timezone
@@ -19,6 +21,38 @@ _LOCAL_LIMITS = {"gemini": (15, 250_000), "groq": (30, 8_000), "openrouter": (20
 # Teto cautelar por instância; não representa a cota oficial nem substitui
 # um controle distribuído se houver vários workers/instâncias.
 _OPENROUTER_DAILY_CAP = 40
+
+
+def _reserve_daily_free_openrouter(today, observed):
+    """Reserva chamada de forma atômica no volume existente do Railway.
+
+    Só armazena dia e quantidade, nunca documentos, tokens ou dados de empresas.
+    Em desenvolvimento sem volume, mantém o limite cautelar em memória.
+    """
+    base = os.getenv("RAILWAY_VOLUME_MOUNT_PATH", "")
+    if not base:
+        if observed >= _OPENROUTER_DAILY_CAP:
+            raise HTTPException(429, "Limite gratuito cautelar atingido nesta instância.",
+                                headers={"Retry-After": "3600"})
+        return
+    if not os.path.isdir(base):
+        raise HTTPException(503, "Controle persistente indisponível; requisição externa bloqueada.")
+    db = os.path.join(base, "razync_ai_free_quota.sqlite3")
+    try:
+        with sqlite3.connect(db, timeout=5, isolation_level=None) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("CREATE TABLE IF NOT EXISTS free_calls (dia TEXT PRIMARY KEY, quantidade INTEGER NOT NULL)")
+            row = conn.execute("SELECT quantidade FROM free_calls WHERE dia = ?", (today,)).fetchone()
+            used = row[0] if row else 0
+            if used >= _OPENROUTER_DAILY_CAP:
+                raise HTTPException(429, "Limite gratuito cautelar diário do OpenRouter atingido.",
+                                    headers={"Retry-After": "3600"})
+            conn.execute("INSERT INTO free_calls(dia, quantidade) VALUES(?, 1) "
+                         "ON CONFLICT(dia) DO UPDATE SET quantidade=quantidade+1", (today,))
+            conn.execute("DELETE FROM free_calls WHERE dia < ?", (today,))
+            conn.commit()
+    except sqlite3.Error:
+        raise HTTPException(503, "Controle de cotas indisponível; uso externo bloqueado.") from None
 
 
 def _counter(provider, model):
@@ -112,10 +146,7 @@ def request_slot(provider, model, body):
                 today = datetime.now(timezone.utc).date().isoformat()
                 used = sum(row["chamadas"] for (day, name, _), row in _daily.items()
                            if day == today and name == "openrouter")
-                if used >= _OPENROUTER_DAILY_CAP:
-                    raise HTTPException(
-                        429, "Limite cautelar diário do OpenRouter atingido nesta instância.",
-                        headers={"Retry-After": "3600"})
+                _reserve_daily_free_openrouter(today, used)
             ticket = [now, estimate]
             window.append(ticket)
             counter = _counter(provider, model)
