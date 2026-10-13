@@ -55,7 +55,7 @@ def test_santander_app_historico_apos_quebra_de_pagina():
 
 
 def test_santander_app_nao_omite_lancamento_quando_saldos_nao_batem():
-    text = texto_exemplo().replace("1.000,00 1.000,00", "999,99 1.000,00")
+    text = texto_exemplo().replace("100,00 1.100,00", "99,99 1.100,00")
     with pytest.raises(ValueError, match="sequência de saldos"):
         novo.processar_extrato_santander_aplicativo_texto(text)
 
