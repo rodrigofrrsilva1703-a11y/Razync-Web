@@ -1,5 +1,9 @@
 """Lotes de IA fiscal com contexto temporário, sem repetir upload ou leitura."""
 import secrets
+import hashlib
+import hmac
+import json
+import copy
 import os
 import threading
 import time
@@ -13,6 +17,23 @@ _sessions = {}
 _guard = threading.RLock()
 TTL_SECONDS = 1800
 _dispatch_cursor = {"curto": 0, "medio": 0}
+_cache_secret = secrets.token_bytes(32)
+_completed_cache = {}
+CACHE_SECONDS = 1800
+CACHE_MAX_ENTRIES = 64
+
+def _cache_digest(report):
+    payload = json.dumps(report, ensure_ascii=False, sort_keys=True, default=str)
+    return hmac.new(_cache_secret, payload.encode("utf-8"), hashlib.sha256).hexdigest()
+
+def _prune_cache():
+    now = time.monotonic()
+    for key in list(_completed_cache):
+        if _completed_cache[key]["expires"] <= now:
+            del _completed_cache[key]
+    while len(_completed_cache) > CACHE_MAX_ENTRIES:
+        del _completed_cache[next(iter(_completed_cache))]
+
 
 
 def free_providers():
@@ -77,7 +98,7 @@ def prepare(report):
                        "criterio": "contexto_integral" if extensive else "contexto_curto",
                        "reservas": [p for p in order if p != provider],
                        "grupos": len(accounts), "report": dict(report, contas=accounts, lancamentos=rows),
-                       "result": None, "running": False})
+                       "result": None, "running": False, "digest": _cache_digest(dict(report, contas=accounts, lancamentos=rows))})
     token = secrets.token_urlsafe(32)
     with _guard:
         now = time.monotonic()
@@ -115,6 +136,11 @@ def process(token, batch_id):
             return batch["result"]
         if batch["running"] or batch["provedor"] in session["active_providers"]:
             raise HTTPException(409, "Já há um lote em andamento neste provedor.")
+        _prune_cache()
+        cached = _completed_cache.get(batch["digest"])
+        if cached is not None:
+            batch["result"] = copy.deepcopy(cached["result"])
+            return dict(batch["result"], cache_reutilizado=True)
         batch["running"] = True
         session["active_providers"].add(batch["provedor"])
     try:
@@ -130,6 +156,13 @@ def process(token, batch_id):
                 session["active_providers"].add(provider)
             try:
                 result = fiscal_ai.explain(batch["report"], preferred_provider=provider, only_provider=provider)
+                expected = {str(row["conta"]) for row in batch["report"]["contas"]}
+                analyses = result.get("analises") if isinstance(result, dict) else None
+                if not isinstance(analyses, list) or len(analyses) != len(expected):
+                    raise HTTPException(502, "A IA não devolveu todas as contas do lote.")
+                actual = [str(item.get("conta", "")) for item in analyses if isinstance(item, dict)]
+                if len(actual) != len(expected) or set(actual) != expected:
+                    raise HTTPException(502, "A resposta da IA contém contas incorretas ou repetidas.")
                 result = dict(result, fallback_usado=extra_slot)
                 break
             except HTTPException as exc:
@@ -148,6 +181,12 @@ def process(token, batch_id):
                                           modelo_usado=result.get("modelo_usado")) for item in result["analises"]])
         with _guard:
             batch["result"] = result
+            _prune_cache()
+            _completed_cache[batch["digest"]] = {
+                "result": copy.deepcopy(result),
+                "expires": time.monotonic() + CACHE_SECONDS,
+            }
+            _prune_cache()
         return result
     finally:
         with _guard:
