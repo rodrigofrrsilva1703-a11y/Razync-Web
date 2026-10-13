@@ -14,11 +14,13 @@ def isolate(monkeypatch):
     monkeypatch.setattr(sessions, "_dispatch_cursor", {"curto": 0, "medio": 0})
     with sessions._guard:
         sessions._sessions.clear()
+        sessions._completed_cache.clear()
     monkeypatch.setattr(fiscal_ai, "_groq_enabled", lambda: True)
     monkeypatch.setattr(fiscal_ai, "_gemini_free_key", lambda: "synthetic")
     yield
     with sessions._guard:
         sessions._sessions.clear()
+        sessions._completed_cache.clear()
 
 
 def report(n=17):
@@ -70,7 +72,7 @@ def test_provedores_processam_simultaneamente_sem_mudar_ambiente(monkeypatch):
 def test_lote_concluido_e_cacheado_sem_gastar_tokens_novamente(monkeypatch):
     manifest = sessions.prepare(report(2))
     calls = []
-    monkeypatch.setattr(fiscal_ai, "explain", lambda *a, **k: calls.append(1) or {"analises": [], "provedor":"groq"})
+    monkeypatch.setattr(fiscal_ai, "explain", lambda source, **k: calls.append(1) or {"analises": [{"conta": r["conta"]} for r in source["contas"]], "provedor":"groq"})
     first = sessions.process(manifest["sessao"], 0)
     assert sessions.process(manifest["sessao"], 0) == first
     assert calls == [1]
@@ -78,10 +80,10 @@ def test_lote_concluido_e_cacheado_sem_gastar_tokens_novamente(monkeypatch):
 
 def test_falha_nao_descarta_outro_lote_e_pode_ser_repetida(monkeypatch):
     manifest = sessions.prepare(report(4))
-    def explain(*a, preferred_provider, **kwargs):
+    def explain(*_a, preferred_provider, **kwargs):
         if preferred_provider == "gemini":
             raise HTTPException(429, "Cota esgotada")
-        return {"analises": [], "provedor":"groq"}
+        return {"analises": [{"conta": r["conta"]} for r in _a[0]["contas"]], "provedor":"groq"}
     monkeypatch.setattr(fiscal_ai, "explain", explain)
     first = sessions.process(manifest["sessao"], 0)
     with pytest.raises(HTTPException) as error:
@@ -257,3 +259,28 @@ def test_reservas_ocupadas_pedem_espera_sem_reenviar_outros_lotes(monkeypatch):
     assert calls == ["groq"]
     assert session["batches"][0]["result"] is None
     assert session["batches"][0]["running"] is False
+
+
+def test_cache_entre_sessoes_reutiliza_sem_nova_chamada(monkeypatch):
+    calls = []
+    def explain(source, preferred_provider, **kwargs):
+        calls.append(preferred_provider)
+        return {"analises": [{"conta": r["conta"]} for r in source["contas"]],
+                "provedor": preferred_provider, "gratuito": True}
+    monkeypatch.setattr(fiscal_ai, "explain", explain)
+    first = sessions.prepare(report(2))
+    sessions.process(first["sessao"], 0)
+    sessions.discard(first["sessao"])
+    second = sessions.prepare(report(2))
+    cached = sessions.process(second["sessao"], 0)
+    assert cached["cache_reutilizado"] is True
+    assert len(calls) == 1
+
+
+def test_resposta_incompleta_rejeitada_sem_cache(monkeypatch):
+    manifest = sessions.prepare(report(2))
+    monkeypatch.setattr(fiscal_ai, "explain", lambda *a, **k: {"analises": []})
+    with pytest.raises(HTTPException):
+        sessions.process(manifest["sessao"], 0)
+    assert sessions._get(manifest["sessao"])["batches"][0]["result"] is None
+    assert sessions._completed_cache == {}
