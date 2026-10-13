@@ -345,6 +345,13 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
     if free_router:
         request_payload = compatible_payload(request_payload)
     def send(body, seconds=18):
+        chosen = str(body.get("model", "")).strip()
+        if chosen != "openrouter/free" and not re.fullmatch(
+            r"[a-zA-Z0-9][a-zA-Z0-9_.-]*/[a-zA-Z0-9_.-]+:free", chosen
+        ):
+            raise HTTPException(503, "Modo custo zero: modelo OpenRouter pago bloqueado.")
+        if any(body.get(key) for key in ("tools", "plugins", "web_search_options", "transforms")):
+            raise HTTPException(503, "Modo custo zero: ferramentas potencialmente pagas bloqueadas.")
         request = urllib.request.Request(
             "https://openrouter.ai/api/v1/chat/completions",
             data=json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8"),
@@ -614,6 +621,19 @@ def _compact_transport(payload):
             for redundant in ("debito", "credito"):
                 if redundant + "_brl" in record:
                     record.pop(redundant, None)
+    # Redação local de identificadores óbvios antes de transmitir texto.
+    # Mantém valores, datas e referências intactos para a análise contábil.
+    def redact(value):
+        if isinstance(value, dict):
+            return {k: redact(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [redact(v) for v in value]
+        if not isinstance(value, str):
+            return value
+        value = re.sub(r"\\b\\d{2}[.]?\\d{3}[.]?\\d{3}[/]?\\d{4}[-]?\\d{2}\\b", "[CNPJ]", value)
+        value = re.sub(r"\\b\\d{3}[.]?\\d{3}[.]?\\d{3}[-]?\\d{2}\\b", "[CPF]", value)
+        return re.sub(r"[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}", "[EMAIL]", value)
+    context = redact(context)
     payload["contents"][0]["parts"][0]["text"] = json.dumps(context, ensure_ascii=False, separators=(",", ":"))
     return payload
 
