@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
   <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=investigacao-documental-1">
-  <link rel="stylesheet" href="./assets/css/fiscal-workspace.css?v=20261013-1">
+  <link rel="stylesheet" href="./assets/css/fiscal-workspace.css?v=20261013-2">
 </head>
 <body>
   <div class="app-shell">
@@ -274,8 +274,34 @@
               <div class="fiscal-ai-heading" id="fiscal242AISection">
                 <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
                 <div><span class="fiscal-ai-eyebrow">ETAPA OPCIONAL · IA GRATUITA</span><h3>Entenda as pendências</h3><p>Pareceres com hipóteses e orientações de conferência. Os cálculos permanecem no Razync.</p></div>
-                <span class="fiscal-ai-provider" id="fiscal242AIProvider">IA</span>
+                <div class="fiscal-ai-heading-tools">
+                  <span class="fiscal-ai-provider" id="fiscal242AIProvider">IA</span>
+                  <button type="button" class="fiscal-usage-trigger" id="fiscal242UsageButton" aria-haspopup="dialog" aria-controls="fiscal242UsageDialog" aria-expanded="false" title="Ver uso e limites das IAs gratuitas">
+                    <span aria-hidden="true">◷</span> Limites da IA
+                  </button>
+                </div>
+
               </div>
+              <dialog id="fiscal242UsageDialog" class="fiscal-usage-dialog" aria-labelledby="fiscal242UsageTitle" aria-describedby="fiscal242UsageIntro">
+                <div class="fiscal-usage-header">
+                  <div>
+                    <span class="fiscal-section-eyebrow">MONITORAMENTO · MODELOS GRATUITOS</span>
+                    <h3 id="fiscal242UsageTitle">Uso e limites das IAs</h3>
+                    <p id="fiscal242UsageIntro">Consumo registrado pelo Razync, sem expor arquivos ou históricos contábeis.</p>
+                  </div>
+                  <form method="dialog">
+                    <button type="submit" class="fiscal-usage-close" aria-label="Fechar relatório">×</button>
+                  </form>
+                </div>
+                <p id="fiscal242UsageMessage" role="status" aria-live="polite">Carregando informações…</p>
+                <div id="fiscal242UsageContent"></div>
+                <div class="fiscal-usage-footer">
+                  <span>As cotas reais e o saldo disponível devem ser conferidos nos painéis de cada provedor.</span>
+                  <div class="fiscal-usage-actions" id="fiscal242UsageActions">
+                    <button type="button" id="fiscal242UsageRefresh" class="fiscal-usage-refresh">Atualizar relatório</button>
+                  </div>
+                </div>
+              </dialog>
               <div class="fiscal-ai-actions">
                 <button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button>
                 <button type="button" class="secondary-action" id="fiscal242AIExport" disabled>Exportar análise Excel (.xlsx)</button>
@@ -551,7 +577,7 @@
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=fiscal-layout-2"></script>
   <script src="./assets/js/migration.js?v=fiscal-universal-1"></script>
-  <script src="./assets/js/fiscal-242.js?v=fiscal-workspace-20261013-1"></script>
+  <script src="./assets/js/fiscal-242.js?v=fiscal-workspace-20261013-2"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>
