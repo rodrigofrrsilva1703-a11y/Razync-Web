@@ -1,13 +1,18 @@
 /* Janela diária: protege o acesso pelo navegador antes do carregamento do app. */
 (() => {
   "use strict";
-  function saoPauloHour() {
-    return Number(new Intl.DateTimeFormat("en-GB", {
+  function isClosed() {
+    const now = new Date();
+    const hour = Number(new Intl.DateTimeFormat("en-GB", {
       timeZone: "America/Sao_Paulo", hour: "2-digit", hourCycle: "h23",
-    }).format(new Date()));
+    }).format(now));
+    const weekday = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Sao_Paulo", weekday: "long",
+    }).format(now);
+    return weekday === "Sunday" || hour < 7;
   }
   function checkSchedule() {
-    if (saoPauloHour() < 7) {
+    if (isClosed()) {
       window.location.replace("./indisponivel.html");
     }
   }
