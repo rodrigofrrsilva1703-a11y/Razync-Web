@@ -6,6 +6,7 @@ Nenhum dado é enviado a outro serviço e nenhuma chamada de IA é executada.
 """
 from decimal import Decimal, InvalidOperation
 import re
+import unicodedata
 
 _MONEY = re.compile(r"R\$\s*(-?\s*\d(?:[\d.,]*\d)?)", flags=re.IGNORECASE)
 
@@ -80,14 +81,33 @@ def audit_analysis(item):
     }
 
 
-ANALYSIS_VERSION = "grounded-v1"
+ANALYSIS_VERSION = "grounded-v2"
+
+
+def narrative_sections(value):
+    """Aceita títulos em Markdown, numerados, com/sem acento e aliases comuns."""
+    text = str(value or "").replace("\\n", "\n").replace("\r\n", "\n").strip()
+    labels = (r"Fatos(?: observados| dos relatórios| demonstrados)?|"
+              r"Diferen[cç]a(?: encontrada)?|Hip[oó]teses?(?: da IA)?|"
+              r"Poss[ií]veis causas|Causas prov[aá]veis|"
+              r"Limita[cç][oõ]es(?: dos dados)?|Informa[cç][oõ]es faltantes")
+    pattern = re.compile(r"(?:^|(?<=\s))(?:#{1,6}\s*|[-•]\s*|\d+[.)]\s*)?"
+                         r"[*_]{0,2}(" + labels + r")[*_]{0,2}"
+                         r"(?:\s*:[*_]{0,2}\s*|[ \t]*\n|[ \t]*$)", re.I)
+    matches = list(pattern.finditer(text))
+    sections = {}
+    for i, match in enumerate(matches):
+        label = "".join(c for c in unicodedata.normalize("NFD", match.group(1).lower()) if not unicodedata.combining(c))
+        key = "hipoteses" if label.startswith(("hipot", "poss", "causas")) else "limitacoes" if label.startswith(("limit", "inform")) else "fatos" if label.startswith("fatos") else "diferenca"
+        content = text[match.end():matches[i + 1].start() if i + 1 < len(matches) else len(text)].strip()
+        if content:
+            sections[key] = "\n\n".join(filter(None, [sections.get(key), content]))
+    return text, sections
 
 
 def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=False):
     """Os fatos vêm do relatório; a narrativa do modelo permanece interpretação."""
-    text = str(item.get("explicacao") or "").replace("\\n", "\n")
-    parts = re.split(r"(?:\*\*)?(Fatos|Diferença|Hipóteses|Limitações)(?:\*\*)?\s*:", text, flags=re.I)
-    sections = {parts[i].lower(): parts[i + 1].strip() for i in range(1, len(parts) - 1, 2)}
+    text, sections = narrative_sections(item.get("explicacao"))
     total = len(rows)
     sent = total if sent is None else sent
     facts = []
@@ -98,10 +118,11 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
     missing = ["A causa do alerta ou da diferença exige conferir os documentos e a natureza dos lançamentos."]
     if not documentary:
         missing.append("O resumo por acumulador não contém documentos fiscais individuais para comprovar omissão ou duplicidade.")
-    if sections.get("limitações"):
-        missing.append("Limitação indicada pela IA: " + sections["limitações"])
+    if sections.get("limitacoes"):
+        missing.append("Limitação indicada pela IA: " + sections["limitacoes"])
     return {"versao": ANALYSIS_VERSION, "fatos": facts,
-            "hipoteses": sections.get("hipóteses") or "A IA não separou as hipóteses. Revise a interpretação completa antes de concluir.",
+            "hipoteses": sections.get("hipoteses") or "A resposta não identifica hipóteses separadamente. Confira a interpretação da IA abaixo.",
+            "interpretacao": text if not sections.get("hipoteses") else "",
             "informacoes_faltantes": missing,
             "cobertura": {"disponiveis": total, "enviados": sent,
                           "parcial": sent < total, "historicos_abreviados": shortened},

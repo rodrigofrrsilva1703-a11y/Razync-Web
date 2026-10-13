@@ -274,7 +274,11 @@
   }
   function renderChecklist(textValue) {
     const wrap = node("div", "fiscal-ai-steps");
-    const text = String(textValue || "").trim().replace(/\\n/g, "\n").replace(/([^\n])\s+(?=[2-9][.)]\s+[A-ZÀ-Ý])/g, "$1\n");
+    const text = String(textValue || "").trim().replace(/\\n/g, "\n")
+      .replace(/^(?:#{1,6}\s*)?[*_]{0,2}(?:O que conferir|Verificaç[õo]es(?: recomendadas)?|Próximos passos)[*_]{0,2}\s*:[*_]{0,2}\s*/i, "")
+      .replace(/(^|\n)\s*[*_]{1,2}(?=\d+[.)])/g, "$1")
+      .replace(/(\d+[.)])[*_]{1,2}\s*/g, "$1 ")
+      .replace(/([^\n])\s+(?=[2-9][.)]\s+[A-ZÀ-Ý])/g, "$1\n");
     const marker = /^(?:\d+[.)]|[-*•])\s+/;
     const steps = [];
     if (marker.test(text)) {
@@ -299,6 +303,29 @@
     return "Contábil considerado " + money.format(Math.abs(value)) +
       (value < 0 ? " abaixo do fiscal." : " acima do fiscal.");
   }
+  function aiSourceLabel(item) {
+    const names = {groq:"Groq",gemini:"Gemini",openrouter:"OpenRouter"};
+    const name = names[item.provedor] || "IA não identificada";
+    return name + (item.modelo_usado ? " · " + item.modelo_usado : "");
+  }
+  function renderAIFindings(item) {
+    const analysis = node("section", "fiscal-ai-analysis");
+    if (item.parecer?.versao) {
+      analysis.append(node("h5", "", "Fatos dos relatórios"), node("p", "fiscal-ai-paragraph", "Valores calculados pela ferramenta a partir dos arquivos enviados."));
+      analysis.append(node("h5", "", "Hipóteses da IA"), node("p", "fiscal-ai-paragraph", item.parecer.hipoteses || "Confira a interpretação da IA."));
+      if (item.parecer.interpretacao) analysis.append(node("h5", "", "Interpretação da IA"), renderNarrative(item.parecer.interpretacao));
+      analysis.appendChild(node("h5", "", "Informações para confirmar a causa"));
+      for (const text of item.parecer.informacoes_faltantes || []) analysis.appendChild(node("p", "fiscal-ai-paragraph", text));
+      const coverage = item.parecer.cobertura;
+      if (coverage) analysis.appendChild(node("small", "fiscal-ai-source", `Contexto da IA: ${coverage.enviados} de ${coverage.disponiveis} lançamentos disponíveis nesta conta${coverage.parcial ? " · amostra parcial" : ""}${coverage.historicos_abreviados ? " · históricos abreviados" : ""}.`));
+      const original = node("details", "fiscal-ai-composition");
+      original.append(node("summary", "", "Interpretação completa da IA"), renderNarrative(item.explicacao));
+      analysis.appendChild(original);
+    } else {
+      analysis.append(node("h5", "", "Interpretação da IA"), renderNarrative(item.explicacao));
+    }
+    return analysis;
+  }
   function renderAIEntries(entries) {
       for (const item of entries) {
         if (aiCards.some(entry => keyOf(entry.item) === keyOf(item))) continue;
@@ -310,6 +337,7 @@
         title.appendChild(node("h4", "", `Conta ${item.conta}`));
         if (item.descricao) title.appendChild(node("p", "fiscal-ai-card-description", item.descricao));
         const metadata = node("div", "fiscal-ai-card-meta");
+        metadata.appendChild(node("span", "fiscal-ai-provider", aiSourceLabel(item)));
         if (item.tipo) metadata.appendChild(node("span", "fiscal-ai-type", item.tipo));
         if (item.situacao) metadata.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(item.situacao), statusLabels[item.situacao] || item.situacao));
         const compact = node("div", "fiscal-ai-account-compact");
@@ -326,20 +354,7 @@
         }
         const officialRow = (data?.contas || []).find(row => keyOf(row) === keyOf(item)) || item;
         const accumulatorInfo = accumulatorBreakdown(officialRow);
-        const analysis = node("section", "fiscal-ai-analysis");
-        if (item.parecer?.versao) {
-          analysis.append(node("h5", "", "Fatos dos relatórios"), node("p", "fiscal-ai-paragraph", "Os valores acima foram calculados pela ferramenta a partir dos arquivos enviados."));
-          analysis.append(node("h5", "", "Hipóteses da IA"), node("p", "fiscal-ai-paragraph", item.parecer.hipoteses));
-          analysis.appendChild(node("h5", "", "Informações para confirmar a causa"));
-          for (const text of item.parecer.informacoes_faltantes || []) analysis.appendChild(node("p", "fiscal-ai-paragraph", text));
-          const coverage = item.parecer.cobertura;
-          if (coverage) analysis.appendChild(node("small", "fiscal-ai-source", `Contexto da IA: ${coverage.enviados} de ${coverage.disponiveis} lançamentos disponíveis nesta conta${coverage.parcial ? " · amostra parcial" : ""}${coverage.historicos_abreviados ? " · históricos abreviados" : ""}.`));
-          const original = node("details", "fiscal-ai-composition");
-          original.append(node("summary", "", "Interpretação completa da IA"), renderNarrative(item.explicacao));
-          analysis.appendChild(original);
-        } else {
-          analysis.append(node("h5", "", "Interpretação da IA"), renderNarrative(item.explicacao));
-        }
+        const analysis = renderAIFindings(item);
         const review = node("section", "fiscal-ai-review");
         review.append(node("h5", "", "Verificações recomendadas"), renderChecklist(item.verificar));
         if (item.valores) {
@@ -384,7 +399,7 @@
           }
           content.append(details);
         }
-        if (item.provedor) content.appendChild(node("p", "fiscal-ai-source", "Parecer elaborado por " + (item.provedor === "groq" ? "Groq" : item.provedor === "gemini" ? "Gemini" : "OpenRouter") + " · revise as evidências antes de ajustar lançamentos."));
+        content.appendChild(node("p", "fiscal-ai-source", "Parecer elaborado por " + aiSourceLabel(item) + " · revise as evidências antes de ajustar lançamentos."));
         card.append(heading, content);
         aiCards.push({item, card});
         aiResult.append(card);
@@ -516,7 +531,10 @@
           method:"POST", body:snapshot, signal:controller.signal
         });
         if (!legacy.ok) throw new Error(await responseError(legacy));
-        return legacy.json();
+        const result = await legacy.json();
+        result.analises = (result.analises || []).map(item => ({...item,
+          provedor:item.provedor || result.provedor, modelo_usado:item.modelo_usado || result.modelo_usado}));
+        return result;
       }
       if (!response.ok) throw new Error(await responseError(response));
       const session = await response.json();
@@ -548,6 +566,9 @@
               }
               if (!reply.ok) throw new Error(await responseError(reply));
               const result = await reply.json();
+              result.analises = result.analises.map(item => ({...item,
+                provedor:item.provedor || result.provedor,
+                modelo_usado:item.modelo_usado || result.modelo_usado}));
               results.set(batch.id, result);
               completed += result.analises.length;
               break;
@@ -1357,7 +1378,10 @@
     entries.forEach(item => {
       const card = node("article", "fiscal-investigation-account");
       card.appendChild(node("h4", "", "Conta " + item.conta + " · " + item.tipo));
-      card.appendChild(renderNarrative(item.explicacao));
+      card.appendChild(node("p", "fiscal-ai-provider", aiSourceLabel(item)));
+      if (item.valores) card.appendChild(node("p", "fiscal-difference-reading",
+        "Fiscal: " + money.format(Number(item.valores.fiscal || 0)) + " · Contábil considerado: " + money.format(Number(item.valores.contabil || 0)) + " · Diferença: " + money.format(Number(item.valores.diferenca || 0))));
+      card.appendChild(renderAIFindings(item));
       card.appendChild(node("h5", "", "O que conferir"));
       card.appendChild(renderChecklist(item.verificar));
       if (item.auditoria) {

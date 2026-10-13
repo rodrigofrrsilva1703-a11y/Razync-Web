@@ -687,7 +687,7 @@ def _gemini_send(payload, key, model, *, legacy=False):
     return json.loads(text), model, raw
 
 
-def _validar_resposta_ia(result, report, mapping, references, *, groq=False):
+def _validar_resposta_ia(result, report, mapping, references, *, groq=False, provider=None, model=None):
     """Converte e confere contas, valores e referências sem depender do provedor."""
     output, seen = [], set()
     for item in result["analises"]:
@@ -731,6 +731,7 @@ def _validar_resposta_ia(result, report, mapping, references, *, groq=False):
             shortened=groq and any(len(str(row.get("historico") or "")) > 180 for row in rows),
             documentary=report.get("documentos_pendentes") is not None)
         output[-1]["auditoria"] = audit_analysis(output[-1])
+        output[-1].update(provedor=provider, modelo_usado=model)
     if seen != set(mapping):
         raise ValueError("Empty answer")
     return output
@@ -865,7 +866,7 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
         try:
             groq_model = _groq_model()
             answer, used_model = _groq_completion(payload, os.getenv("GROQ_API_KEY", "").strip(), groq_model)
-            analyses = _validar_resposta_ia(answer, report, mapping, references, groq=True)
+            analyses = _validar_resposta_ia(answer, report, mapping, references, groq=True, provider="groq", model=used_model)
             logger.info("fiscal_ia_groq_success model=%s groups=%d", used_model, len(analyses))
             return {
                 "analises": analyses,
@@ -919,7 +920,7 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
         if available:
             try:
                 answer, used_model = _gemini_completion(payload, gemini_key, gemini_model, legacy=False)
-                analyses = _validar_resposta_ia(answer, report, mapping, references)
+                analyses = _validar_resposta_ia(answer, report, mapping, references, provider="gemini", model=used_model)
                 logger.info("fiscal_ia_gemini_success model=%s groups=%d fallback=%s",
                             used_model, len(analyses), groq_failed)
                 return {"analises":analyses,
@@ -943,7 +944,7 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
     if openrouter_key:
         try:
             answer, used_model = _openrouter_completion(payload, models, openrouter_key)
-            analyses = _validar_resposta_ia(answer, report, mapping, references)
+            analyses = _validar_resposta_ia(answer, report, mapping, references, provider="openrouter", model=used_model)
             logger.info("fiscal_ia_openrouter_success model=%s groups=%d",
                         str(used_model).replace("\\n", " ")[:120], len(analyses))
             return {
@@ -981,7 +982,7 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
             answer, used_model = _gemini_completion(
                 payload, gemini_key, gemini_model, legacy=legacy_direct
             )
-            analyses = _validar_resposta_ia(answer, report, mapping, references)
+            analyses = _validar_resposta_ia(answer, report, mapping, references, provider="gemini", model=used_model)
             logger.info("fiscal_ia_gemini_success model=%s groups=%d fallback=%s",
                         used_model, len(analyses), or_failed)
             return {
@@ -1110,7 +1111,7 @@ def gerar_excel_analise(payload: dict) -> bytes:
     codes = book.create_sheet("Acumuladores")
     evidences = book.create_sheet("Lançamentos citados")
     grounded = book.create_sheet("Fatos e hipóteses")
-    grounded.append(["Conta", "Tipo", "Origem dos fatos", "Hipóteses da IA", "Informações faltantes", "Cobertura dos lançamentos"])
+    grounded.append(["Conta", "Tipo", "Origem dos fatos", "Hipóteses da IA", "Informações faltantes", "Cobertura dos lançamentos", "IA e modelo"])
     cor_titulo, cor_cabecalho, cor_texto = "203B59", "EAF0F7", "30485F"
     main.merge_cells("A1:L1")
     main["A1"] = "RAZYNC | CONFERÊNCIA FISCAL × CONTÁBIL · ANÁLISE ASSISTIDA"
@@ -1162,7 +1163,8 @@ def gerar_excel_analise(payload: dict) -> bytes:
             grounded.append([conta, tipo, "Valores oficiais na aba Análises IA; calculados pela ferramenta.",
                 texto(parecer.get("hipoteses")), texto("\n".join(str(x) for x in missing)),
                 texto(f"{coverage.get('enviados', 0)} de {coverage.get('disponiveis', 0)} lançamentos; "
-                      f"históricos abreviados: {'sim' if coverage.get('historicos_abreviados') else 'não'}")])
+                      f"históricos abreviados: {'sim' if coverage.get('historicos_abreviados') else 'não'}"),
+                texto(" · ".join(str(x) for x in (item.get("provedor"), item.get("modelo_usado")) if x), 300)])
         for code in codigos:
             if not isinstance(code, dict):
                 raise ValueError("Acumulador inválido.")
@@ -1202,7 +1204,7 @@ def gerar_excel_analise(payload: dict) -> bytes:
     formato(main, 5, {6, 7, 8, 9}, [15, 29, 14, 20, 22, 19, 22, 20, 19, 82, 68, 23])
     formato(codes, 1, {5}, [17, 17, 17, 55, 21])
     formato(evidences, 1, {6, 7}, [17, 18, 18, 95, 22, 22, 22, 16])
-    formato(grounded, 1, set(), [17, 17, 60, 82, 82, 48])
+    formato(grounded, 1, set(), [17, 17, 60, 82, 82, 48, 42])
     out = io.BytesIO()
     book.save(out)
     return out.getvalue()

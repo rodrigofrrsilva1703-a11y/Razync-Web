@@ -178,6 +178,7 @@ test('provedores apresentam parecer e checklist uniformes sem tratar texto como 
   assert.equal(labelled.children[1].children[1].textContent, 'Ainda requer confirmação.');
   assert.equal(context.renderNarrative('Fatos: Total informado. Diferença: Valor menor. Hipóteses: Conferir origem. Limitações: Sem notas.').children.length, 4);
   assert.equal(context.renderChecklist('1. Confira R$ 1.234,56. 2. Compare o Razão.').children[0].children.length, 2);
+  assert.equal(context.renderChecklist('**Verificações recomendadas:**\n**1.** Conferir notas.\n**2.** Comparar período.').children[0].children.length, 2);
 });
 
 
@@ -197,7 +198,7 @@ test('Gemini exibe análise diretamente na página sem painel flutuante', () => 
 });
 
 test('resultados graduais preservam conta aberta e não duplicam cartões', () => {
-  const start = source.indexOf('  function renderAIEntries(entries) {');
+  const start = source.indexOf('  function aiSourceLabel(item) {');
   const end = source.indexOf('  function normalizeAISearch(value) {', start);
   const node = (tag, className, value) => ({tag,className,textContent:value,children:[],
     classList:{add(){},remove(){}},addEventListener(){},
@@ -211,7 +212,7 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
     accumulatorBreakdown:()=>node('section'),renderNarrative:()=>node('div'),renderChecklist:()=>node('ol'),
     updateAIFilters:()=>{}};
   vm.createContext(context);vm.runInContext(source.slice(start,end),context);
-  const first = {conta:'1',tipo:'ENTRADAS',parecer:{versao:'grounded-v1',
+  const first = {conta:'1',tipo:'ENTRADAS',provedor:'groq',modelo_usado:'openai/gpt-oss-120b',parecer:{versao:'grounded-v1',
     hipoteses:'Pode ser corte de período (L1).',informacoes_faltantes:['Conferir documento.'],
     cobertura:{enviados:10,disponiveis:12,parcial:true,historicos_abreviados:true}}}, second = {conta:'2',tipo:'ENTRADAS'};
   context.renderAIEntries([second]);
@@ -225,10 +226,17 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
   assert.equal(context.aiTotal.textContent,'(2)');
   const texts = entry => [entry.textContent || '', ...entry.children.flatMap(texts)];
   const rendered = texts(cards.find(entry=>entry.item.conta==='1').card).join(' ');
+  assert.match(rendered,/Groq · openai\/gpt-oss-120b/);
   assert.match(rendered,/Fatos dos relatórios/);
   assert.match(rendered,/Hipóteses da IA/);
   assert.match(rendered,/10 de 12.*amostra parcial.*históricos abreviados/);
   assert.match(rendered,/Interpretação completa da IA/);
+  assert.equal(context.aiSourceLabel({provedor:'gemini',modelo_usado:'gemini-2.5-flash-lite'}),'Gemini · gemini-2.5-flash-lite');
+  assert.equal(context.aiSourceLabel({provedor:'openrouter',modelo_usado:'openrouter/free'}),'OpenRouter · openrouter/free');
+  assert.equal(context.aiSourceLabel({}),'IA não identificada');
+  const fallback = context.renderAIFindings({parecer:{versao:'grounded-v2',hipoteses:'Revisar.',
+    interpretacao:'Texto sem títulos <script>original</script>',informacoes_faltantes:[]}});
+  assert.match(texts(fallback).join(' '),/Interpretação da IA/);
 });
 
 test('exportação Gemini usa relatório pronto, sem nova chamada ao modelo', () => {

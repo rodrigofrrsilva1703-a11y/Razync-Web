@@ -340,3 +340,7 @@
   #fiscalView .fiscal-ai-account-summary {padding:17px 16px;}
   #fiscalView .fiscal-ai-account-content {padding:0 16px 20px;}
 }
+
+#fiscalView .fiscal-ai-provider {font-size:11px;color:#446079;font-weight:600;overflow-wrap:anywhere;}
+#fiscalView .fiscal-ai-card-meta {flex-wrap:wrap;}
+#fiscalView .fiscal-ai-analysis > h5:not(:first-child) {margin-top:22px;}
