@@ -348,6 +348,18 @@ function batchContext(fetch) {
   return context;
 }
 
+test('lote com parecer novo e cache identifica corretamente as IAs por conta', async () => {
+  const context = batchContext(async url => {
+    if (url.endsWith('/sessoes')) return {ok:true,json:async()=>({sessao:'cache',grupos:2,registros:3,
+      lotes:[{id:0,provedor:'gemini',grupos:2}]})};
+    return {ok:true,json:async()=>({provedor:'cooperacao',gratuito:true,
+      analises:[{conta:'1',provedor:'groq'},{conta:'2',provedor:'gemini'}]})};
+  });
+  const result = await context.analyzeInBatches({},new AbortController(),()=>{});
+  assert.equal(result.nomes_provedores,'Groq + Gemini');
+  assert.equal(result.grupos_pendentes,0);
+});
+
 test('sessão documental retoma só falhas, conserva cobertura e não interfere na análise inicial', async () => {
   let cached = null, fail = true;
   const calls = [];

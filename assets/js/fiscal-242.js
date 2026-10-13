@@ -605,7 +605,8 @@
       if (controller.signal.aborted) throw new DOMException("Cancelado", "AbortError");
       if (!results.size && failures.length) throw new Error(failures[0].mensagem);
       const ordered = [...results.entries()].sort((a,b) => a[0] - b[0]).map(entry => entry[1]);
-      const actualProviders = [...new Set(ordered.map(result => result.provedor))];
+      const actualProviders = [...new Set(ordered.flatMap(result =>
+        result.analises.map(item => item.provedor || result.provedor)))];
       const pending = session.grupos - completed;
       return {
         analises:ordered.flatMap(result => result.analises),
@@ -1290,10 +1291,12 @@
         "Documentos para revisar (" + (group.documentos_total - (group.resumo?.conciliados || 0)) + ")"));
       if (docs.length) {
         docsDetails.appendChild(investigationTable(
-          ["Acumulador", "Nota", "Data", "CFOP", "Valor", "Situação / critério"],
+          ["Acumulador", "Nota", "Data", "CFOP", "Fiscal", "Razão candidato", "Diferença calculada", "Situação / critério"],
           docs.slice(0, 120), (tr, d) => {
             cell(tr, d.acumulador); cell(tr, d.nota); cell(tr, d.data);
             cell(tr, d.cfop); cell(tr, money.format(d.valor), "fiscal-money");
+            cell(tr, d.valor_razao_candidato == null ? "Não identificado" : money.format(d.valor_razao_candidato), "fiscal-money");
+            cell(tr, d.diferenca_candidato == null ? "—" : money.format(d.diferenca_candidato), "fiscal-money");
             cell(tr, investigationStatus(d.situacao) + ". " + (d.criterio || ""));
           }
         ));
@@ -1403,6 +1406,19 @@
       card.appendChild(node("p", "fiscal-ai-provider", aiSourceLabel(item)));
       if (item.valores) card.appendChild(node("p", "fiscal-difference-reading",
         "Fiscal: " + money.format(Number(item.valores.fiscal || 0)) + " · Contábil considerado: " + money.format(Number(item.valores.contabil || 0)) + " · Diferença: " + money.format(Number(item.valores.diferenca || 0))));
+      const comparisons = item.parecer?.comparacoes_documentais || [];
+      if (comparisons.length) {
+        const facts = node("details", "fiscal-ledger-disclosure");
+        facts.appendChild(node("summary", "fiscal-ledger-toggle", "Comparação por documento · cálculo do sistema"));
+        facts.appendChild(investigationTable(["Referência / nota", "Fiscal", "Razão candidato", "Diferença"], comparisons, (tr, doc) => {
+          cell(tr, doc.referencia + " · " + doc.nota);
+          cell(tr, doc.valor_brl);
+          cell(tr, doc.valor_razao_candidato_brl || "Não identificado");
+          cell(tr, doc.diferenca_candidato_brl || "—");
+        }));
+        facts.appendChild(node("p", "fiscal-disclaimer", "Diferença = valor do candidato no Razão menos fiscal. O candidato é um indício; confirme o vínculo antes de ajustar."));
+        card.appendChild(facts);
+      }
       card.appendChild(renderAIFindings(item));
       card.appendChild(node("h5", "", "Próximos passos"));
       card.appendChild(renderChecklist(item.verificar));
