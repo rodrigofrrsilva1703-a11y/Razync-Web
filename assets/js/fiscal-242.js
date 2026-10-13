@@ -549,6 +549,7 @@
     search.value = "";
     resultsCount.textContent = "";
     results.hidden = true;
+    byId("fiscal242NextStep").hidden = true;
     details.hidden = true;
     details.replaceChildren();
     tableBody.replaceChildren();
@@ -680,6 +681,43 @@
     return "review";
   }
 
+  // Ações rápidas dos indicadores e navegação na própria página.
+  // Apenas apresentação: o cálculo e o conjunto de contas não são alterados.
+  const quickFilters = [...pane.querySelectorAll("[data-fiscal-filter]")];
+  const workflowButtons = [...pane.querySelectorAll("[data-fiscal-target]")];
+  function focusFiscalSection(id) {
+    const target = byId(id);
+    if (!target || target.hidden || results.hidden) return;
+    workflowButtons.forEach(button => {
+      const current = button.dataset.fiscalTarget === id;
+      button.classList.toggle("is-current", current);
+      if (current) button.setAttribute("aria-current", "location");
+      else button.removeAttribute("aria-current");
+    });
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    target.scrollIntoView?.({behavior:motion, block:"start"});
+  }
+  function syncQuickFilters() {
+    quickFilters.forEach(button => {
+      button.setAttribute("aria-pressed", String(button.dataset.fiscalFilter === filter.value));
+    });
+  }
+  quickFilters.forEach(button => {
+    button.addEventListener("click", () => {
+      if (!data) return;
+      filter.value = button.dataset.fiscalFilter;
+      search.value = "";
+      selectedKey = "";
+      renderTable();
+      syncQuickFilters();
+      focusFiscalSection("fiscal242ResultsCard");
+    });
+  });
+  workflowButtons.forEach(button => {
+    button.addEventListener("click", () => focusFiscalSection(button.dataset.fiscalTarget));
+  });
+  byId("fiscal242NextStepButton").addEventListener("click", () => focusFiscalSection("fiscal242Investigacao"));
+
   function renderTable() {
     const rows = filteredRows();
     tableBody.replaceChildren();
@@ -692,6 +730,7 @@
       const id = keyOf(row);
       if (id === selectedKey) tr.classList.add("selected");
       const account = cell(tr, "", "fiscal-account");
+      account.dataset.label = "Conta";
       const accountGroup = node("div", "fiscal-account-group");
       const button = node("button", "fiscal-account-link", row.conta);
       button.type = "button";
@@ -776,10 +815,25 @@
     results.hidden = false;
     resetInvestigation();
     investigation.hidden = !(report.contas || []).some(row => ["REVISAR", "AUSENTE NO CONTÁBIL", "CONFERE COM ALERTAS"].includes(row.situacao));
+    const attentionCount = (report.contas || []).filter(row =>
+      ["REVISAR", "AUSENTE NO CONTÁBIL", "CONFERE COM ALERTAS"].includes(row.situacao)
+    ).length;
+    byId("fiscal242NextStep").hidden = !attentionCount;
+    byId("fiscal242NextStepTitle").textContent = attentionCount === 1
+      ? "1 conta precisa de atenção"
+      : attentionCount + " contas precisam de atenção";
     aiInlineStatus.textContent = "Conferência pronta. Use a análise inteligente para revisar diferenças e alertas.";
     selectedKey = "";
     filter.value = "todas";
     search.value = "";
+    byId("fiscal242InvestigacaoJump").hidden = investigation.hidden;
+    workflowButtons.forEach(button => {
+      const current = button.dataset.fiscalTarget === "fiscal242Overview";
+      button.classList.toggle("is-current", current);
+      if (current) button.setAttribute("aria-current", "location");
+      else button.removeAttribute("aria-current");
+    });
+    syncQuickFilters();
     renderTable();
   }
 
@@ -1077,7 +1131,7 @@
     }
   });
 
-  filter.addEventListener("change", renderTable);
+  filter.addEventListener("change", () => { renderTable(); syncQuickFilters(); });
   search.addEventListener("input", renderTable);
   function showSelectedFile(inputId, labelId) {
     const input = byId(inputId);

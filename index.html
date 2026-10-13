@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
   <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=investigacao-documental-1">
+  <link rel="stylesheet" href="./assets/css/fiscal-workspace.css?v=20261013-1">
 </head>
 <body>
   <div class="app-shell">
@@ -96,13 +97,13 @@
         <div class="page-head fiscal-page-head">
           <span class="company-code">CONFERÊNCIA DE DOCUMENTOS · DOMÍNIO</span>
           <h1>Conferência Fiscal × Contábil</h1>
-          <p>Envie o Resumo por Acumulador e o Razão da mesma competência. Compare contas, acumuladores e diferenças em um único lugar.</p>
+          <p>Compare os relatórios do Domínio e investigue somente as contas que precisam de atenção.</p>
         </div>
         <div class="fiscal-setup" aria-labelledby="fiscalSetupTitle">
           <div class="fiscal-setup-heading">
             <div>
               <h2 id="fiscalSetupTitle">Preparar conferência</h2>
-              <p>Dois relatórios e, se necessário, um filtro de filial. Sem configuração individual por empresa.</p>
+              <p>Envie o resumo e o razão. O filtro de filial é opcional quando houver apenas uma.</p>
             </div>
             <span class="fiscal-setup-filetype">Arquivos Domínio</span>
           </div>
@@ -110,12 +111,12 @@
             <div class="fiscal-step">
               <div class="fiscal-step-heading">
                 <span class="fiscal-step-index" aria-hidden="true">01</span>
-                <div><h3>Identificação da empresa</h3><p>O Razync identifica a razão social nos cabeçalhos dos arquivos.</p></div>
+                <div><h3>Empresa e filial</h3><p>Verificação automática de empresa e seleção de filial.</p></div>
               </div>
               <div class="fiscal-context-grid">
                 <div class="fiscal-company-auto">
                   <strong>Razão social identificada automaticamente</strong>
-                  <p>Ao conferir, o sistema mostra o nome presente nos relatórios e verifica se ambos pertencem à mesma empresa.</p>
+                  <p>O nome será validado automaticamente após a leitura.</p>
                 </div>
                 <div class="fiscal-field">
                   <label for="fiscalFilialCodigo">Filial do Razão <span>(se houver várias)</span></label>
@@ -127,7 +128,7 @@
             <div class="fiscal-step">
               <div class="fiscal-step-heading">
                 <span class="fiscal-step-index" aria-hidden="true">02</span>
-                <div><h3>Relatórios para comparação</h3><p>Selecione os dois arquivos exportados do Domínio, referentes ao mesmo período.</p></div>
+                <div><h3>Arquivos da conferência</h3><p>Dois relatórios do mesmo período.</p></div>
               </div>
               <div class="fiscal-upload-grid">
                 <div class="fiscal-upload-item">
@@ -143,23 +144,30 @@
               </div>
             </div>
             <div class="fiscal-form-actions">
-              <p>Os resultados aparecerão nesta página, com as contas e os acumuladores fiscais correspondentes.</p>
+              <p>Seus arquivos serão comparados sem alterar os lançamentos.</p>
               <button type="submit" id="fiscal242Submit">Conferir contas <span aria-hidden="true">→</span></button>
             </div>
             <p id="fiscal242Message" class="helper" role="status" aria-live="polite"></p>
           </form>
         </div>
           <section id="fiscal242Results" class="fiscal-results" aria-live="polite" hidden>
+            <nav class="fiscal-workflow-nav" aria-label="Navegar pelos resultados">
+              <span class="fiscal-workflow-label">RESULTADOS</span>
+              <button type="button" class="fiscal-workflow-button is-current" data-fiscal-target="fiscal242Overview">Resumo</button>
+              <button type="button" class="fiscal-workflow-button" data-fiscal-target="fiscal242ResultsCard">Contas</button>
+              <button type="button" class="fiscal-workflow-button" data-fiscal-target="fiscal242Investigacao" id="fiscal242InvestigacaoJump" hidden>Investigar</button>
+              <button type="button" class="fiscal-workflow-button" data-fiscal-target="fiscal242AISection">Análise com IA</button>
+            </nav>
             <div id="fiscal242Company" class="fiscal-company-result">
               <span>Empresa identificada nos relatórios</span>
               <strong id="fiscal242CompanyName">—</strong>
               <small id="fiscal242CompanySource"></small>
             </div>
-            <div class="fiscal-overview-heading">
+            <div class="fiscal-overview-heading" id="fiscal242Overview">
               <div>
                 <span class="fiscal-section-eyebrow">VISÃO GERAL</span>
                 <h2>Resultado da conferência</h2>
-                <p>Priorize as contas que precisam de revisão e explore os detalhes somente quando necessário.</p>
+                <p>Comece pelas divergências; abra cada conta para conferir os movimentos.</p>
               </div>
               <p class="fiscal-period" id="fiscal242Period"></p>
             </div>
@@ -167,22 +175,22 @@
               <div class="fiscal-summary-card fiscal-summary-total">
                 <span class="fiscal-summary-top"><span>Contas analisadas</span><span class="fiscal-summary-icon" aria-hidden="true">▦</span></span>
                 <strong id="fiscal242Total">—</strong>
-                <small>Contas com acumuladores vinculados</small>
+                <button type="button" class="fiscal-summary-action" data-fiscal-filter="todas">Ver todas as contas <span aria-hidden="true">↗</span></button>
               </div>
               <div class="fiscal-summary-card fiscal-summary-matches">
                 <span class="fiscal-summary-top"><span>Batendo</span><span class="fiscal-summary-icon" aria-hidden="true">✓</span></span>
                 <strong id="fiscal242Matches">—</strong>
-                <small>Sem divergência ou alerta detectado</small>
+                <button type="button" class="fiscal-summary-action" data-fiscal-filter="bate">Ver contas conferidas <span aria-hidden="true">↗</span></button>
               </div>
               <div class="fiscal-summary-card fiscal-summary-alerts">
                 <span class="fiscal-summary-top"><span>Com alertas</span><span class="fiscal-summary-icon" aria-hidden="true">!</span></span>
                 <strong id="fiscal242Alerts">—</strong>
-                <small>Precisam de validação documental</small>
+                <button type="button" class="fiscal-summary-action" data-fiscal-filter="alertas">Ver alertas <span aria-hidden="true">↗</span></button>
               </div>
               <div class="fiscal-summary-card fiscal-summary-pending">
                 <span class="fiscal-summary-top"><span>Para revisar</span><span class="fiscal-summary-icon" aria-hidden="true">↗</span></span>
                 <strong id="fiscal242Pending">—</strong>
-                <small>Diferenças ou contas não encontradas</small>
+                <button type="button" class="fiscal-summary-action" data-fiscal-filter="revisar">Ver divergências <span aria-hidden="true">↗</span></button>
               </div>
             </div>
             <div class="fiscal-progress" aria-label="Distribuição das contas por situação">
@@ -191,9 +199,16 @@
               <span id="fiscal242ProgressPending" class="fiscal-progress-pending" title="Para revisar"></span>
             </div>
             <div id="fiscal242Warnings" class="fiscal-warnings"></div>
-            <div class="fiscal-results-card">
+            <div id="fiscal242NextStep" class="fiscal-next-step" hidden>
+              <div>
+                <strong id="fiscal242NextStepTitle">Contas para investigar</strong>
+                <p>Para aprofundar a conferência, anexe os acompanhamentos dos acumuladores que apresentaram diferenças ou alertas.</p>
+              </div>
+              <button type="button" id="fiscal242NextStepButton">Investigar documentos <span aria-hidden="true">↗</span></button>
+            </div>
+            <div class="fiscal-results-card" id="fiscal242ResultsCard">
               <div class="fiscal-results-heading">
-                <div><span class="fiscal-section-eyebrow">COMPARATIVO</span><h3>Contas e acumuladores</h3><p>Compare os valores fiscal e contábil. Selecione uma conta para conferir sua composição.</p></div>
+                <div><span class="fiscal-section-eyebrow">COMPARATIVO</span><h3>Contas e acumuladores</h3><p>Selecione uma conta para ver acumuladores, valores e lançamentos.</p></div>
                 <div class="fiscal-results-controls">
                   <label for="fiscal242Search" class="visually-hidden">Buscar por conta ou acumulador</label>
                   <input id="fiscal242Search" type="search" placeholder="Buscar conta ou acumulador" autocomplete="off" aria-label="Buscar conta, descrição ou acumulador">
@@ -219,10 +234,11 @@
             <div id="fiscal242Detail" class="fiscal-detail" hidden></div>
             <section id="fiscal242Investigacao" class="fiscal-investigation" hidden aria-labelledby="fiscalInvestigacaoTitle">
               <div class="fiscal-investigation-heading">
+                <span class="fiscal-investigation-step" aria-hidden="true">02</span>
                 <div>
-                  <span class="fiscal-section-eyebrow">ETAPA COMPLEMENTAR · OPCIONAL</span>
+                  <span class="fiscal-section-eyebrow">INVESTIGAÇÃO OPCIONAL</span>
                   <h3 id="fiscalInvestigacaoTitle">Investigar com Entradas e Saídas</h3>
-                  <p>Apenas contas com diferenças ou alertas. O sistema identifica os acumuladores da conta e compara seus documentos com o Razão da filial selecionada.</p>
+                  <p>Anexe Entradas, Saídas ou ambos. O Razync cruza apenas os documentos dos acumuladores ligados a contas divergentes ou com alertas.</p>
                 </div>
               </div>
               <form id="fiscal242InvestigarForm" class="fiscal-investigation-form">
@@ -238,7 +254,7 @@
                 </div>
                 <div class="fiscal-investigation-actions">
                   <button type="submit" id="fiscal242InvestigarBtn">Investigar documentos <span aria-hidden="true">→</span></button>
-                  <small>Envie apenas um dos relatórios ou ambos. Relatórios originais da primeira etapa serão reutilizados automaticamente.</small>
+                  <small>Os arquivos da conferência inicial são reaproveitados.</small>
                 </div>
                 <p id="fiscal242InvestigarMessage" role="status" aria-live="polite"></p>
               </form>
@@ -254,14 +270,14 @@
               <p>Estes acumuladores foram encontrados no relatório, mas não possuem uma conta definida para comparação. Confirme o vínculo antes de conciliar.</p>
               <div class="fiscal-table-scroll"><table class="fiscal-table"><thead><tr><th>Acumulador</th><th>Descrição</th><th>Tipo</th><th>Valor fiscal</th></tr></thead><tbody id="fiscal242UnmappedRows"></tbody></table></div>
             </details>
-            <section class="fiscal-ai">
+            <section class="fiscal-ai" id="fiscal242AISection">
               <div class="fiscal-ai-heading">
                 <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
-                <div><span class="fiscal-ai-eyebrow">ANÁLISE ASSISTIDA</span><h3>Entenda as diferenças com IA</h3><p>Uma leitura guiada dos relatórios, com hipóteses, verificações práticas e referências aos lançamentos.</p></div>
+                <div><span class="fiscal-ai-eyebrow">ETAPA OPCIONAL · IA GRATUITA</span><h3>Entenda as pendências</h3><p>Pareceres com hipóteses e orientações de conferência. Os cálculos permanecem no Razync.</p></div>
                 <span class="fiscal-ai-provider" id="fiscal242AIProvider">IA</span>
               </div>
               <div class="fiscal-ai-actions">
-                <button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button>
+                <button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar contas pendentes</button>
                 <button type="button" class="secondary-action" id="fiscal242AIExport" disabled>Exportar análise Excel (.xlsx)</button>
               </div>
               <p id="fiscal242AIStatus" class="fiscal-ai-inline-status" role="status" aria-live="polite">Faça uma conferência para iniciar a análise.</p>
@@ -535,7 +551,7 @@
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=fiscal-layout-2"></script>
   <script src="./assets/js/migration.js?v=fiscal-universal-1"></script>
-  <script src="./assets/js/fiscal-242.js?v=investigacao-documental-2"></script>
+  <script src="./assets/js/fiscal-242.js?v=fiscal-workspace-20261013-1"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>
