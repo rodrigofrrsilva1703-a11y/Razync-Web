@@ -12,16 +12,48 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 from app import fiscal_ai, ai_result_cache
 from app.fiscal_ai_audit import ANALYSIS_VERSION
+from app.ai_budget import provider_wait_seconds
 
 router = APIRouter(prefix="/api/v1/conferencia-fiscal/ia/sessoes")
 _sessions = {}
 _guard = threading.RLock()
 TTL_SECONDS = 1800
+MAX_SESSIONS = 16  # Seis pessoas podem manter conferência e investigação abertas.
 _dispatch_cursor = {"curto": 0, "medio": 0}
 _cache_secret = secrets.token_bytes(32)
 _completed_cache = {}
 CACHE_SECONDS = 1800
 CACHE_MAX_ENTRIES = 64
+_inflight_groups = set()
+
+
+def _group_id(row):
+    return str(row["conta"]), row.get("tipo", "")
+
+
+def _scope_report(report, accounts):
+    # Isola a evidência relevante sem misturar identidade, filial ou período.
+    scoped = {key: report[key] for key in (
+        "empresa_codigo", "empresa_nome", "filial_aplicada", "periodo_fiscal",
+        "periodo_razao", "fonte_fiscal", "escopo_razao", "avisos") if key in report}
+    codes = {row["conta"] for row in accounts}
+    scoped.update(contas=accounts, lancamentos=[row for row in report.get("lancamentos", [])
+                                               if row.get("conta") in codes])
+    keys = {f'{row["conta"]}:{row["tipo"]}' for row in accounts}
+    for field in ("documentos_pendentes", "cobertura_documental"):
+        if field in report:
+            scoped[field] = {k: v for k, v in report[field].items() if k in keys}
+    return scoped
+
+
+def _merge_results(results, accounts):
+    items = {_group_id(item): item for result in results for item in result["analises"]}
+    providers = list(dict.fromkeys(result.get("provedor") for result in results))
+    return {**results[-1], "analises": [items[_group_id(row)] for row in accounts],
+            "provedor": providers[0] if len(providers) == 1 else "cooperacao",
+            "gratuito": all(result.get("gratuito") is True for result in results),
+            "fallback_usado": any(result.get("fallback_usado") for result in results),
+            "modelo_usado": "; ".join(dict.fromkeys(result.get("modelo_usado", "") for result in results))}
 
 def _cache_digest(report):
     payload = ANALYSIS_VERSION + ":" + json.dumps(report, ensure_ascii=False, sort_keys=True, default=str)
@@ -83,10 +115,11 @@ def prepare(report):
         large = any(len(indexed.get(code, [])) > 80 or any(
             len(str(row.get("historico") or "")) > 500 for row in indexed.get(code, [])) for code in codes)
         order = provider_order(providers, extensive)
+        order.sort(key=provider_wait_seconds)
         if not order:
             raise HTTPException(503, "Contas extensas precisam de Gemini gratuito ou OpenRouter para preservar os históricos completos.")
         provider = order[0]
-        if "openrouter" in order and len(order) > 1 and not large:
+        if "openrouter" in order and len(order) > 1 and not large and not provider_wait_seconds("openrouter"):
             category = "medio" if extensive else "curto"
             # Conserva a pequena cota gratuita do OpenRouter: um em quatro
             # lotes adequados, repartidos inclusive entre sessões diferentes.
@@ -105,7 +138,7 @@ def prepare(report):
         now = time.monotonic()
         for expired in [key for key, value in _sessions.items() if value["expires"] <= now]:
             discard(expired)
-        if len(_sessions) >= 8:
+        if len(_sessions) >= MAX_SESSIONS:
             raise HTTPException(503, "O servidor está com várias análises abertas. Aguarde alguns minutos.")
         session = {"expires": now + TTL_SECONDS, "batches": batches, "active_providers": set()}
         _sessions[token] = session
@@ -130,6 +163,8 @@ def discard(token):
 def _refresh_cached_review(result, report):
     """Atualiza somente as checagens/apresentação locais, sem nova chamada de IA."""
     refreshed = copy.deepcopy(result)
+    refreshed["limite"] = (f"Parecer reaproveitado para {len(report.get('contas', []))} grupo(s), "
+                           "com as mesmas evidências, filial e período. As checagens locais foram atualizadas sem nova chamada de IA.")
     for item in refreshed.get("analises", []):
         if not isinstance(item, dict) or not isinstance(item.get("valores"), dict) or not item.get("explicacao"):
             continue
@@ -139,6 +174,8 @@ def _refresh_cached_review(result, report):
             sent=min(10, len(rows)) if groq else len(rows),
             shortened=groq and any(len(str(row.get("historico") or "")) > 180 for row in rows),
             documentary=report.get("documentos_pendentes") is not None)
+        item["parecer"]["comparacoes_documentais"] = report.get("documentos_pendentes", {}).get(
+            f'{item["conta"]}:{item.get("tipo", "")}', [])
         item["auditoria"] = fiscal_ai.audit_analysis(item)
     return refreshed
 
@@ -165,13 +202,37 @@ def process(token, batch_id):
                 "result": copy.deepcopy(persisted), "expires": time.monotonic() + CACHE_SECONDS,
             }
             return dict(batch["result"], cache_reutilizado=True)
+        reused, pending, claims = [], [], []
+        for account in batch["report"]["contas"]:
+            scoped = _scope_report(batch["report"], [account])
+            digest = _cache_digest(scoped)
+            saved = _completed_cache.get(digest)
+            stored = saved["result"] if saved else ai_result_cache.read(digest)
+            if stored is not None:
+                reused.append(_refresh_cached_review(stored, scoped))
+            else:
+                pending.append(account)
+                claims.append(digest)
+        if not pending:
+            batch["result"] = dict(_merge_results(reused, batch["report"]["contas"]), cache_reutilizado=True)
+            return batch["result"]
+        if any(digest in _inflight_groups for digest in claims):
+            raise HTTPException(429, "Outra pessoa já está analisando estes dados. Aguarde para reaproveitar o parecer.",
+                                headers={"Retry-After": "15"})
+        _inflight_groups.update(claims)
+        work_report = _scope_report(batch["report"], pending)
         batch["running"] = True
         session["active_providers"].add(batch["provedor"])
     try:
         result = None
         failure = None
         waiting = False
-        for provider in [batch["provedor"], *batch["reservas"]]:
+        candidates = [batch["provedor"], *batch["reservas"]]
+        candidates.sort(key=provider_wait_seconds)
+        for provider in candidates:
+            if provider_wait_seconds(provider):
+                waiting = True
+                continue
             extra_slot = provider != batch["provedor"]
             with _guard:
                 if extra_slot and provider in session["active_providers"]:
@@ -179,12 +240,19 @@ def process(token, batch_id):
                     continue
                 session["active_providers"].add(provider)
             try:
-                result = fiscal_ai.explain(batch["report"], preferred_provider=provider, only_provider=provider)
-                expected = {str(row["conta"]) for row in batch["report"]["contas"]}
+                result = fiscal_ai.explain(work_report, preferred_provider=provider, only_provider=provider)
+                expected = {_group_id(row) for row in work_report["contas"]}
                 analyses = result.get("analises") if isinstance(result, dict) else None
                 if not isinstance(analyses, list) or len(analyses) != len(expected):
                     raise HTTPException(502, "A IA não devolveu todas as contas do lote.")
-                actual = [str(item.get("conta", "")) for item in analyses if isinstance(item, dict)]
+                # Respostas antigas sem tipo são aceitas somente quando a conta
+                # tem uma única natureza no lote. Não colapsar entradas e saídas.
+                for item in analyses:
+                    if isinstance(item, dict) and "tipo" not in item:
+                        types = [tipo for code, tipo in expected if code == str(item.get("conta", ""))]
+                        if len(types) == 1:
+                            item["tipo"] = types[0]
+                actual = [_group_id(item) for item in analyses if isinstance(item, dict) and "conta" in item]
                 if len(actual) != len(expected) or set(actual) != expected:
                     raise HTTPException(502, "A resposta da IA contém contas incorretas ou repetidas.")
                 result = dict(result, fallback_usado=extra_slot)
@@ -205,6 +273,16 @@ def process(token, batch_id):
         result = dict(result, analises=[dict(item, provedor=result.get("provedor"),
                                           modelo_usado=result.get("modelo_usado")) for item in result["analises"]])
         with _guard:
+            for item in result["analises"]:
+                account = next(row for row in pending if _group_id(row) == _group_id(item))
+                digest = _cache_digest(_scope_report(batch["report"], [account]))
+                single = dict(result, analises=[copy.deepcopy(item)])
+                _completed_cache[digest] = {"result": single, "expires": time.monotonic() + CACHE_SECONDS}
+                if "auditoria" in item:
+                    ai_result_cache.write(digest, single)
+            if reused:
+                result = dict(_merge_results([*reused, result], batch["report"]["contas"]),
+                              contas_reutilizadas=len(reused))
             batch["result"] = result
             _prune_cache()
             _completed_cache[batch["digest"]] = {
@@ -218,6 +296,7 @@ def process(token, batch_id):
         return result
     finally:
         with _guard:
+            _inflight_groups.difference_update(claims)
             batch["running"] = False
             session["active_providers"].discard(batch["provedor"])
 

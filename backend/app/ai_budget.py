@@ -23,6 +23,26 @@ _LOCAL_LIMITS = {"gemini": (15, 250_000), "groq": (30, 8_000), "openrouter": (20
 _OPENROUTER_DAILY_CAP = 40
 
 
+def provider_wait_seconds(provider):
+    """Pressão da fila local, sem afirmar o saldo oficial do provedor."""
+    with _guard:
+        now = time.monotonic()
+        rpm, tpm = _LOCAL_LIMITS[provider]
+        waits = []
+        for key, window in _windows.items():
+            if key[0] != provider:
+                continue
+            active = [ticket for ticket in window if now - ticket[0] < 60]
+            busy = _slots.get(key)
+            if busy is not None and busy.locked():
+                waits.append(15)
+            elif active and (len(active) >= rpm or tpm and sum(x[1] for x in active) >= tpm):
+                waits.append(max(15, math.ceil(60 - (now - active[0][0]))))
+            else:
+                waits.append(0)
+        return min(waits) if waits else 0
+
+
 def _reserve_daily_free_openrouter(today, observed):
     """Reserva chamada de forma atômica no volume existente do Railway.
 

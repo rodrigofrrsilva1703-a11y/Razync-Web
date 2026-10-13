@@ -284,3 +284,93 @@ def test_resposta_incompleta_rejeitada_sem_cache(monkeypatch):
         sessions.process(manifest["sessao"], 0)
     assert sessions._get(manifest["sessao"])["batches"][0]["result"] is None
     assert sessions._completed_cache == {}
+
+
+def test_mesma_conta_em_duas_naturezas_e_aceita(monkeypatch):
+    source = report(2)
+    source["contas"][1].update(conta="0", tipo="SAÍDAS")
+    def explain(batch, **kwargs):
+        return {"analises": [dict(conta=r["conta"],tipo=r["tipo"]) for r in batch["contas"]],
+                "provedor":"groq","gratuito":True}
+    monkeypatch.setattr(fiscal_ai,"explain",explain)
+    manifest = sessions.prepare(source)
+    result = sessions.process(manifest["sessao"],0)
+    assert {(i["conta"],i["tipo"]) for i in result["analises"]} == {("0","ENTRADAS"),("0","SAÍDAS")}
+
+
+def test_alterar_uma_conta_reusa_outra_mesmo_em_outro_lote(monkeypatch):
+    calls = []
+    def explain(batch, **kwargs):
+        calls.append([r["conta"] for r in batch["contas"]])
+        return {"analises": [dict(conta=r["conta"],tipo=r["tipo"]) for r in batch["contas"]],
+                "provedor":"groq","gratuito":True}
+    monkeypatch.setattr(fiscal_ai,"explain",explain)
+    initial = sessions.prepare(report(4))
+    for i in (0,1):
+        sessions.process(initial["sessao"],i)
+    sessions.discard(initial["sessao"])
+    changed = report(4)
+    changed["contas"][0]["fiscal"] = 99
+    changed["contas"] = list(reversed(changed["contas"]))
+    repeated = sessions.prepare(changed)
+    results = [sessions.process(repeated["sessao"],i) for i in (0,1)]
+    assert calls == [["0","1"],["2","3"],["0"]]
+    assert sum(len(result["analises"]) for result in results) == 4
+
+
+def test_nao_reutiliza_parecer_de_outra_empresa(monkeypatch):
+    calls = []
+    def explain(batch, **kwargs):
+        calls.append(1)
+        return {"analises": [dict(conta=r["conta"],tipo=r["tipo"]) for r in batch["contas"]],
+                "provedor":"groq","gratuito":True}
+    monkeypatch.setattr(fiscal_ai,"explain",explain)
+    for name in ("EMPRESA A","EMPRESA B"):
+        source = dict(report(2),empresa_nome=name)
+        manifest = sessions.prepare(source)
+        sessions.process(manifest["sessao"],0)
+        sessions.discard(manifest["sessao"])
+    assert len(calls) == 2
+
+
+def test_duas_pessoas_com_mesma_conta_nao_duplicam_chamada(monkeypatch):
+    first = sessions.prepare(report(2))
+    second = sessions.prepare(report(2))
+    entered, release = threading.Event(), threading.Event()
+    calls = []
+    def explain(batch, **kwargs):
+        calls.append(1)
+        entered.set()
+        assert release.wait(5)
+        return {"analises": [dict(conta=r["conta"],tipo=r["tipo"]) for r in batch["contas"]],
+                "provedor":"groq","gratuito":True}
+    monkeypatch.setattr(fiscal_ai,"explain",explain)
+    with concurrent.futures.ThreadPoolExecutor(1) as executor:
+        future = executor.submit(sessions.process,first["sessao"],0)
+        assert entered.wait(3)
+        try:
+            with pytest.raises(HTTPException) as exc:
+                sessions.process(second["sessao"],0)
+            assert exc.value.status_code == 429
+        finally:
+            release.set()
+        future.result(timeout=5)
+    assert sessions.process(second["sessao"],0)["cache_reutilizado"]
+    assert calls == [1]
+
+
+def test_provedor_com_fila_cheia_e_reserva_nao_primeira_opcao(monkeypatch):
+    monkeypatch.setattr(sessions,"provider_wait_seconds",lambda p: 30 if p == "groq" else 0)
+    manifest = sessions.prepare(report(2))
+    assert manifest["lotes"][0]["provedor"] == "gemini"
+
+
+def test_seis_pessoas_podem_manter_as_duas_etapas_abertas():
+    tokens = []
+    try:
+        for _ in range(12):
+            tokens.append(sessions.prepare(report(2))["sessao"])
+        assert len(sessions._sessions) == 12
+    finally:
+        for token in tokens:
+            sessions.discard(token)

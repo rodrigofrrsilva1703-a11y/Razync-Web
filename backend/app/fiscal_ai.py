@@ -702,6 +702,12 @@ def _validar_resposta_ia(result, report, mapping, references, *, groq=False, pro
         seen.add(ident)
         conta_atual = next(row for row in report["contas"]
             if row["conta"] == mapping[ident]["conta"] and row["tipo"] == mapping[ident]["tipo"])
+        docs = report.get("documentos_pendentes", {}).get(
+            f'{mapping[ident]["conta"]}:{mapping[ident]["tipo"]}', [])
+        documented = {str(d.get("referencia", "")).upper(): d for d in docs}
+        cited_docs = set(re.findall(r"\b[ES]-\d+\b", (item["explicacao"] + " " + item["verificar"]).upper()))
+        if cited_docs - documented.keys():
+            raise ValueError("Invalid evidence reference")
         valores = {campo: conta_atual.get(campo, 0)
             for campo in ("fiscal", "contabil", "total_conta", "diferenca")}
         output.append({**mapping[ident],
@@ -712,12 +718,14 @@ def _validar_resposta_ia(result, report, mapping, references, *, groq=False, pro
                        "valores": valores,
                        "explicacao": padronizar_moeda(item["explicacao"]),
                        "verificar": padronizar_moeda(item["verificar"]),
-                       "evidencias":[references[ref] for ref in dict.fromkeys(evidence)]})
+                       "evidencias":[references[ref] for ref in dict.fromkeys(evidence)],
+                       "documentos_evidencias": [documented[ref] for ref in sorted(cited_docs)]})
         rows = [row for row in report.get("lancamentos", []) if row.get("conta") == mapping[ident]["conta"]]
         output[-1]["parecer"] = structured_analysis(output[-1], rows,
             sent=min(10, len(rows)) if groq else len(rows),
             shortened=groq and any(len(str(row.get("historico") or "")) > 180 for row in rows),
             documentary=report.get("documentos_pendentes") is not None)
+        output[-1]["parecer"]["comparacoes_documentais"] = docs
         output[-1]["auditoria"] = audit_analysis(output[-1])
         output[-1].update(provedor=provider, modelo_usado=model)
     if seen != set(mapping):

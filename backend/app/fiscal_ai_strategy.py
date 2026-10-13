@@ -13,6 +13,8 @@ REVIEW_PROMPT = (
     "Acumuladores existem no resumo fiscal, não no Razão: procure a conta e a referência no Razão. "
     "Não afirme omissão, duplicidade ou erro sem prova; não generalize amostras. "
     "Pendencias_documentais contém somente não conciliados; ausência no contexto não prova omissão. "
+    "Use as diferenças documentais já calculadas; um lançamento candidato não confirma vínculo. "
+    "Referências E-/S- devem existir nas pendências do próprio grupo; não invente códigos. "
     "Em verificar, dê exatamente 2 passos numerados, um por linha: qual documento/referência/acumulador conferir "
     "e o que comparar. Priorize a pendência concreta desta conta, evitando conselhos genéricos. "
     "Quando necessário, copie valores_brl exatamente, sem arredondar. "

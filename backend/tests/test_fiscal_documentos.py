@@ -337,3 +337,38 @@ def test_sessao_documental_reutiliza_resultado_e_referencias(monkeypatch):
     assert calls == [1]
     assert client.delete(url).status_code == 200
     assert client.post(url + "/lotes/0").status_code == 410
+
+
+def test_diferenca_documental_e_calculada_localmente_e_nao_confirma_vinculo():
+    from app.fiscal_documentos import preparar_relatorio_pendencias_para_ia
+    f, r = initial()
+    result = preparar_relatorio_pendencias_para_ia(f,"Resumo.xlsx",r,"Razao.xlsx",(detail(),"Entradas.xlsx"),filial="242")
+    d = result["documentos_pendentes"]["508:ENTRADAS"][0]
+    assert d["nota"] == "101"
+    assert d["valor_brl"] == "R$ 200,00"
+    assert d["valor_razao_candidato_brl"] == "R$ 250,00"
+    assert d["diferenca_candidato_brl"] == "R$ 50,00"
+    assert d["vinculo_confirmado"] is False
+    group = post(saida=False).json()["contas"][0]
+    doc = next(d for d in group["documentos"] if d["nota"] == "101")
+    assert doc["diferenca_candidato"] == 50
+
+
+def test_referencia_documental_inventada_ou_de_outra_conta_e_rejeitada():
+    import pytest
+    from app import fiscal_ai, fiscal_documentos
+    f, r = initial()
+    report = fiscal_documentos.preparar_relatorio_pendencias_para_ia(f,"Resumo.xlsx",r,"Razao.xlsx",
+        (detail(),"Entradas.xlsx"),(detail("SAÍDAS"),"Saidas.xlsx"),filial="242")
+    _, mapping, refs, _ = fiscal_ai.detailed_context(report)
+    ident = next(k for k,v in mapping.items() if v["conta"] == "508")
+    def answer(ref):
+        return {"analises":[{"grupo":k,"explicacao": f"Hipóteses: conferir {ref}." if k == ident else "Conferir documento.",
+                             "verificar":"1. Conferir origem.","evidencias":[]} for k in mapping]}
+    for invalid in ("E-999999","S-2"):
+        with pytest.raises(ValueError,match="Invalid evidence reference"):
+            fiscal_ai._validar_resposta_ia(answer(invalid),report,mapping,refs)
+    validated = fiscal_ai._validar_resposta_ia(answer("E-2"),report,mapping,refs)
+    item = next(i for i in validated if i["conta"] == "508")
+    assert item["documentos_evidencias"][0]["referencia"] == "E-2"
+    assert item["parecer"]["comparacoes_documentais"][0]["diferenca_candidato_brl"] == "R$ 50,00"

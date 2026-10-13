@@ -29,6 +29,27 @@ Trocar arquivos ou recalcular a investigação invalida a sessão da tela. Conte
 temporários são descartados ao cancelar ou expirar. A disponibilidade depende da
 cota gratuita dos provedores; falhas da IA preservam a conferência local.
 
+## Economia e validação dos pareceres
+
+O servidor calcula as diferenças documentais em centavos antes da IA. O valor
+do Razão mostrado nessa comparação é de um candidato, não um vínculo fiscal
+confirmado. Referências E-/S- citadas pela IA precisam existir no próprio grupo.
+As evidências e a auditoria numérica incluem os documentos apresentados.
+
+Pareceres são reaproveitados também por conta e natureza (entradas/saídas), com
+empresa, filial, período, documentos e lançamentos no identificador do cache.
+Uma mudança em outra conta não invalida automaticamente os grupos inalterados.
+As referências dos registros fazem parte da chave para evitar reaproveitar
+citações após mudar a numeração. O cache mantém os limites existentes: 30 minutos
+em memória e até 24 horas no volume criptografado quando configurado.
+
+Pessoas analisando os mesmos dados compartilham o resultado: uma chamada em
+andamento bloqueia temporariamente outra chamada idêntica. O serviço admite até
+16 sessões temporárias, para seis pessoas manterem ambas as etapas abertas.
+A fila considera a pressão local por modelo e pode priorizar um provedor livre,
+preservando as restrições de contexto e de custo zero. Cotas oficiais permanecem
+sob controle dos provedores; não há promessa de 90 análises diárias.
+
 Validação: testes de datas, transporte, pendências depois de 300 correspondências,
 amostragem explícita, referências globais, sessão/cache, cancelamento e retomada.
 Os arquivos reais usados na conferência local não fazem parte do repositório.

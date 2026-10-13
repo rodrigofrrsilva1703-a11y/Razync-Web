@@ -61,6 +61,11 @@ def audit_analysis(item):
             parsed = _number(row.get(field))
             if parsed is not None:
                 amounts.add(parsed)
+    for doc in (item.get("parecer") or {}).get("comparacoes_documentais", []):
+        for field in ("valor_brl", "valor_razao_candidato_brl", "diferenca_candidato_brl"):
+            parsed = _number(doc.get(field))
+            if parsed is not None:
+                amounts.add(parsed)
     cited = set()
     for text in (item.get("explicacao") or "", item.get("verificar") or ""):
         for raw in _MONEY.findall(str(text)):
@@ -95,7 +100,7 @@ def audit_analysis(item):
     }
 
 
-ANALYSIS_VERSION = "concise-v4"
+ANALYSIS_VERSION = "economic-v5"
 
 
 def narrative_sections(value):

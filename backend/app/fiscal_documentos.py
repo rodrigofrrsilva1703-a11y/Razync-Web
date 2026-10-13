@@ -377,6 +377,12 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
                     d["situacao"] = "SEM_LANCAMENTO_IDENTIFICADO"
                     d["razao_id"] = ""
                     d["criterio"] = "Nenhum lançamento identificado pelos critérios disponíveis."
+        for document in docs:
+            candidate = ledger_by_id.get(document.get("razao_id"))
+            if candidate and document["situacao"] != "CONCILIADO":
+                document["valor_razao_candidato"] = candidate["valor"]
+                document["data_razao_candidato"] = candidate["data"]
+                document["diferenca_candidato"] = (_centavos(candidate["valor"]) - _centavos(document["valor"])) / 100
         possible_ids = {ref for choices in strong_candidates.values() for ref in choices}
         possible_ids |= {ref for choices in near_candidates.values() for ref, *_ in choices}
         remaining = []
@@ -465,6 +471,18 @@ def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome,
         other_ledger = sorted(other_ledger, key=lambda m: (m["id"] not in related,
                               m["situacao"] != "SEM_DOCUMENTO_IDENTIFICADO"))
         chosen_ledger = other_ledger[:30]
+        ledger_by_id = {mov["id"]: mov for mov in other_ledger}
+        def comparison(document):
+            candidate = ledger_by_id.get(document.get("razao_id"))
+            if not candidate:
+                return {"vinculo_confirmado": False}
+            def brl(value):
+                return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            # Cálculo em centavos. O candidato é indício, não integração comprovada.
+            difference = (_centavos(candidate["valor"]) - _centavos(document["valor"])) / 100
+            return {"valor_razao_candidato_brl": brl(candidate["valor"]),
+                    "diferenca_candidato_brl": brl(difference),
+                    "data_razao_candidato": candidate["data"], "vinculo_confirmado": False}
         coverage[key] = {"documentos_enviados": len(chosen_docs),
                          "documentos_pendentes": len(pending_docs),
                          "lancamentos_enviados": len(chosen_ledger),
@@ -475,7 +493,7 @@ def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome,
              "acumulador": d["acumulador"], "nota": d["nota"],
              "serie": d["serie"], "data": d["data"], "cfop": d["cfop"],
              "valor_brl": f"R$ {d['valor']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-             "situacao": d["situacao"], "criterio": d["criterio"]}
+             "situacao": d["situacao"], "criterio": d["criterio"], **comparison(d)}
             for d in chosen_docs
         ]
         for mov in chosen_ledger:
