@@ -16,6 +16,9 @@ _slots = {}
 _started_at = datetime.now(timezone.utc).isoformat()
 _daily = {}
 _LOCAL_LIMITS = {"gemini": (15, 250_000), "groq": (30, 8_000), "openrouter": (20, None)}
+# Teto cautelar por instância; não representa a cota oficial nem substitui
+# um controle distribuído se houver vários workers/instâncias.
+_OPENROUTER_DAILY_CAP = 40
 
 
 def _counter(provider, model):
@@ -105,6 +108,14 @@ def request_slot(provider, model, body):
                 wait = max(15, math.ceil(60 - (now - window[0][0]))) if window else 60
                 raise HTTPException(429, "Fila da IA aguardando a cota por minuto.",
                                     headers={"Retry-After": str(wait)})
+            if provider == "openrouter":
+                today = datetime.now(timezone.utc).date().isoformat()
+                used = sum(row["chamadas"] for (day, name, _), row in _daily.items()
+                           if day == today and name == "openrouter")
+                if used >= _OPENROUTER_DAILY_CAP:
+                    raise HTTPException(
+                        429, "Limite cautelar diário do OpenRouter atingido nesta instância.",
+                        headers={"Retry-After": "3600"})
             ticket = [now, estimate]
             window.append(ticket)
             counter = _counter(provider, model)
