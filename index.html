@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
   <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=investigacao-documental-1">
-  <link rel="stylesheet" href="./assets/css/fiscal-workspace.css?v=fiscal-workspace-results-20261013-4">
+  <link rel="stylesheet" href="./assets/css/fiscal-results.css?v=fiscal-workspace-modern-20261013-5">
 </head>
 <body>
   <div class="app-shell">
@@ -99,14 +99,14 @@
           <h1>Conferência Fiscal × Contábil</h1>
           <p>Compare os relatórios do Domínio e investigue somente as contas que precisam de atenção.</p>
         </div>
-        <div class="fiscal-setup" aria-labelledby="fiscalSetupTitle">
-          <div class="fiscal-setup-heading">
+        <details class="fiscal-setup" id="fiscalSetup" open aria-labelledby="fiscalSetupTitle">
+          <summary class="fiscal-setup-heading">
             <div>
               <h2 id="fiscalSetupTitle">Preparar conferência</h2>
               <p>Envie o resumo e o razão. O filtro de filial é opcional quando houver apenas uma.</p>
             </div>
-            <span class="fiscal-setup-filetype">Arquivos Domínio</span>
-          </div>
+            <span class="fiscal-setup-filetype">Arquivos Domínio <span class="fiscal-setup-chevron" aria-hidden="true">⌄</span></span>
+          </summary>
           <form id="fiscal242Form" class="fiscal-form">
             <div class="fiscal-step">
               <div class="fiscal-step-heading">
@@ -149,7 +149,7 @@
             </div>
             <p id="fiscal242Message" class="helper" role="status" aria-live="polite"></p>
           </form>
-        </div>
+        </details>
           <section id="fiscal242Results" class="fiscal-results" aria-live="polite" hidden>
             <nav class="fiscal-workflow-nav" aria-label="Navegar pelos resultados">
               <span class="fiscal-workflow-label">RESULTADOS</span>
@@ -198,7 +198,7 @@
               <span id="fiscal242ProgressAlerts" class="fiscal-progress-alerts" title="Com alertas"></span>
               <span id="fiscal242ProgressPending" class="fiscal-progress-pending" title="Para revisar"></span>
             </div>
-            <div id="fiscal242Warnings" class="fiscal-warnings"></div>
+            <details class="fiscal-result-notes"><summary>Avisos da conferência <span id="fiscal242WarningCount"></span></summary><div id="fiscal242Warnings" class="fiscal-warnings"></div></details>
             <div id="fiscal242NextStep" class="fiscal-next-step" hidden>
               <div>
                 <strong id="fiscal242NextStepTitle">Contas para investigar</strong>
@@ -229,7 +229,7 @@
               </div>
               <p class="fiscal-empty" id="fiscal242Empty" hidden>Nenhuma conta encontrada. Tente outra busca ou situação.</p>
               <p class="fiscal-table-count" id="fiscal242Count" aria-live="polite"></p>
-              <p class="fiscal-disclaimer fiscal-table-note">Contábil considerado: lançamentos do Razão classificados como compatíveis com o fiscal. Diferença = contábil considerado − fiscal. A composição e o total do Razão aparecem no detalhe da conta.</p>
+              <details class="fiscal-reading-guide"><summary>Como interpretar os valores</summary><p class="fiscal-disclaimer fiscal-table-note">Contábil considerado: lançamentos do Razão classificados como compatíveis com o fiscal. Diferença = contábil considerado − fiscal. A composição e o total do Razão aparecem no detalhe da conta.</p></details>
             </div>
             <div id="fiscal242Detail" class="fiscal-detail" hidden></div>
             <section id="fiscal242Investigacao" class="fiscal-investigation" hidden aria-labelledby="fiscalInvestigacaoTitle">
@@ -307,7 +307,7 @@
                 <button type="button" class="secondary-action" id="fiscal242AIExport" disabled>Exportar análise Excel (.xlsx)</button>
               </div>
               <p id="fiscal242AIStatus" class="fiscal-ai-inline-status" role="status" aria-live="polite">Faça uma conferência para iniciar a análise.</p>
-              <p id="fiscal242AIMessage" role="status" aria-live="polite">Verificando disponibilidade da IA…</p>
+              <details class="fiscal-ai-processing-notes"><summary>Detalhes do processamento</summary><p id="fiscal242AIMessage" role="status" aria-live="polite">Verificando disponibilidade da IA…</p></details>
               <details class="fiscal-ai-privacy"><summary>Como seus dados são analisados</summary><p>Groq, Gemini ou OpenRouter podem receber contexto das contas com divergência ou alertas, incluindo datas, valores e históricos selecionados que podem conter nomes. Na investigação documental, apenas pendências e lançamentos não conciliados são enviados à IA. As respostas são sugestões para revisão humana; nunca alteram cálculos ou arquivos.</p></details>
               <div id="fiscal242AIToolbar" class="fiscal-ai-toolbar" hidden>
                 <div class="fiscal-ai-toolbar-heading">
@@ -576,8 +576,8 @@
   <script src="./assets/js/workspace-ui.js?v=5"></script>
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=fiscal-layout-2"></script>
-  <script src="./assets/js/migration.js?v=fiscal-universal-1"></script>
-  <script src="./assets/js/fiscal-242.js?v=fiscal-workspace-results-20261013-4"></script>
+  <script src="./assets/js/migration.js?v=fiscal-modern-20261013-5"></script>
+  <script src="./assets/js/fiscal-242.js?v=fiscal-workspace-modern-20261013-5"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>

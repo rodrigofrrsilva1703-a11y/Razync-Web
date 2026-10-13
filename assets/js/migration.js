@@ -433,7 +433,7 @@ $("#applyReview").addEventListener("click",async()=>{
   try {const r=await fetch(`${API()}/api/v1/base-inteligente/${code}/revisar`,{method:"POST",body:data});if(!r.ok)throw new Error(await responseError(r));await downloadBlob(r,`RAZYNC_${code}_REVISADO.xlsx`);msg.textContent="Revisão aplicada. Baixe e confira o arquivo.";refreshBaseStats();}catch(e){msg.textContent=e.message;}
 });
 
-$("#txtForm").addEventListener("submit",async event=>{
+$("#txtForm")?.addEventListener("submit",async event=>{
   event.preventDefault();const data=new FormData();data.append("file",$("#txtModel").files[0]);const msg=$("#txtMessage");
   try {appendPeriod(data,"#txtStart","#txtEnd");const r=await fetch(`${API()}/api/v1/modelo-dominio-txt`,{method:"POST",body:data});if(!r.ok)throw new Error(await responseError(r));await downloadBlob(r,"RAZYNC_MODELO_DOMINIO.txt");msg.textContent="TXT gerado com as regras de histórico do original.";}catch(e){msg.textContent=e.message;}
 });

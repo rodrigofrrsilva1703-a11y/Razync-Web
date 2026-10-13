@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HTML = (ROOT / "index.html").read_text("utf-8")
 JS = (ROOT / "assets/js/fiscal-242.js").read_text("utf-8")
-CSS = (ROOT / "assets/css/fiscal-workspace.css").read_text("utf-8")
+CSS = (ROOT / "assets/css/fiscal-results.css").read_text("utf-8")
 
 
 class Elements(HTMLParser):
@@ -45,7 +45,7 @@ assert all(a in JS for a in ("syncQuickFilters()", 'focusFiscalSection("fiscal24
                              'focusFiscalSection("fiscal242ResultsCard")',
                              'investigation.hidden', 'renderTable();'))
 assert 'id="fiscal242ResultsCard"' in HTML
-assert './assets/css/fiscal-workspace.css?v=' in HTML
+assert './assets/css/fiscal-results.css?v=' in HTML
 assert './assets/js/fiscal-242.js?v=fiscal-workspace-' in HTML
 
 assert "grid-template-columns:repeat(2,minmax(0,1fr))" in CSS

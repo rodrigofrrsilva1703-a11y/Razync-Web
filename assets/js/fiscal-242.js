@@ -260,10 +260,18 @@
     wrap.appendChild(list);
     return wrap;
   }
+  function differenceMeaning(amount) {
+    const value = Number(amount || 0);
+    if (Math.abs(value) <= 0.01) return "Os valores fiscal e contábil considerado são iguais. Confira os alertas e a origem dos lançamentos.";
+    return "Contábil considerado " + money.format(Math.abs(value)) +
+      (value < 0 ? " abaixo do fiscal." : " acima do fiscal.");
+  }
   function renderAIEntries(entries) {
       for (const item of entries) {
         if (aiCards.some(entry => keyOf(entry.item) === keyOf(item))) continue;
         const card = node("details", "fiscal-ai-card fiscal-ai-account");
+        card.classList.add("fiscal-card-arrive");
+        card.addEventListener("animationend", () => card.classList.remove("fiscal-card-arrive"), {once:true});
         const heading = node("summary", "fiscal-ai-card-heading fiscal-ai-account-summary");
         const title = node("div", "fiscal-ai-card-title");
         title.appendChild(node("h4", "", `Conta ${item.conta}`));
@@ -281,6 +289,9 @@
         compact.appendChild(node("span", "fiscal-ai-account-chevron", "⌄"));
         heading.append(title, metadata, compact);
         const content = node("div", "fiscal-ai-account-content");
+        if (item.valores?.diferenca !== undefined && item.valores?.diferenca !== null) {
+          content.appendChild(node("p", "fiscal-difference-reading", differenceMeaning(item.valores.diferenca)));
+        }
         const officialRow = (data?.contas || []).find(row => keyOf(row) === keyOf(item)) || item;
         const accumulatorInfo = accumulatorBreakdown(officialRow);
         const analysis = node("section", "fiscal-ai-analysis");
@@ -654,6 +665,8 @@
     message.dataset.state = kind || "";
   }
   function clearState() {
+    byId("fiscalSetup").open = true;
+    byId("fiscalSetupTitle").textContent = "Preparar conferência";
     resetInvestigation();
     discardPendingAI(); aiRetry.hidden = true;
     aiController?.abort(); aiController = null;
@@ -740,6 +753,7 @@
       metrics.appendChild(card);
     });
     details.appendChild(metrics);
+    details.appendChild(node("p", "fiscal-difference-reading", differenceMeaning(row.diferenca)));
 
     const explanation = node("p", "fiscal-disclaimer fiscal-detail-explanation",
       "Valor contábil considerado: lançamentos classificados pelo sistema como compatíveis com o fiscal. " +
@@ -925,6 +939,8 @@
     const warningBox = byId("fiscal242Warnings");
     warningBox.replaceChildren();
     (report.avisos || []).forEach(aviso => warningBox.appendChild(node("p", "", aviso)));
+    byId("fiscal242WarningCount").textContent = "(" + (report.avisos || []).length + ")";
+    warningBox.parentElement.hidden = !(report.avisos || []).length;
     const semConta = report.sem_conta || [];
     const pendentes = byId("fiscal242Unmapped");
     const pendentesCorpo = byId("fiscal242UnmappedRows");
@@ -962,6 +978,9 @@
     });
     syncQuickFilters();
     renderTable();
+    byId("fiscalSetup").open = false;
+    byId("fiscalSetupTitle").textContent = "Arquivos da conferência · trocar ou conferir";
+    focusFiscalSection("fiscal242Overview");
   }
 
   // A investigação documental é uma segunda etapa. Nenhuma requisição

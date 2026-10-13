@@ -6,7 +6,7 @@ const path = require("node:path");
 const root = path.join(__dirname, "../..");
 const js = fs.readFileSync(path.join(root, "assets/js/fiscal-242.js"), "utf8");
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
-const css = fs.readFileSync(path.join(root, "assets/css/fiscal-workspace.css"), "utf8");
+const css = fs.readFileSync(path.join(root, "assets/css/fiscal-results.css"), "utf8");
 
 class Element {
   constructor(tag = "div", className = "", content = "") {

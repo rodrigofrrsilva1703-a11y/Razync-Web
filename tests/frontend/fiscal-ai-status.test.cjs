@@ -200,6 +200,7 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
   const start = source.indexOf('  function renderAIEntries(entries) {');
   const end = source.indexOf('  function normalizeAISearch(value) {', start);
   const node = (tag, className, value) => ({tag,className,textContent:value,children:[],
+    classList:{add(){},remove(){}},addEventListener(){},
     append(...children) { this.children.push(...children); },
     appendChild(child) { this.children.push(child); }});
   const cards = [];
