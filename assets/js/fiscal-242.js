@@ -911,10 +911,10 @@
   function focusFiscalSection(id) {
     const target = byId(id);
     if (!target || target.hidden || results.hidden) return;
-    const panel = target.closest("[data-fiscal-panel]");
-    if (panel) pane.querySelectorAll("[data-fiscal-panel]").forEach(item => {item.hidden = item !== panel;});
+    const aiView = id === "fiscal242AISection";
+    pane.querySelectorAll("[data-fiscal-panel]").forEach(item => {item.hidden = (item.dataset.fiscalPanel === "ai") !== aiView;});
     workflowButtons.forEach(button => {
-      const current = button.dataset.fiscalTarget === id;
+      const current = (button.dataset.fiscalTarget === "fiscal242AISection") === aiView;
       button.classList.toggle("is-current", current);
       if (current) button.setAttribute("aria-current", "location");
       else button.removeAttribute("aria-current");
@@ -1004,7 +1004,8 @@
       fiscalValue.dataset.label = "Fiscal";
       const accountingValue = cell(tr, money.format(row.contabil), "fiscal-money fiscal-money-accounting");
       accountingValue.dataset.label = "Contábil";
-      const diferenca = cell(tr, money.format(row.diferenca), "fiscal-money fiscal-difference");
+      const diferenca = cell(tr, "", "fiscal-money fiscal-difference");
+      diferenca.appendChild(node("span", "fiscal-difference-number", money.format(row.diferenca)));
       diferenca.dataset.label = "Diferença";
       diferenca.appendChild(node("small", "fiscal-table-secondary", Math.abs(Number(row.diferenca || 0)) <= 0.01 ? "Sem diferença" : row.diferenca < 0 ? "Abaixo do fiscal" : "Acima do fiscal"));
       if (Math.abs(Number(row.diferenca || 0)) <= 0.01) diferenca.classList.add("fiscal-difference-zero");
@@ -1089,7 +1090,6 @@
     selectedKey = "";
     filter.value = "todas";
     search.value = "";
-    byId("fiscal242InvestigacaoJump").hidden = investigation.hidden;
     workflowButtons.forEach(button => {
       const current = button.dataset.fiscalTarget === "fiscal242Overview";
       button.classList.toggle("is-current", current);

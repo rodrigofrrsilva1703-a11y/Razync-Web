@@ -183,3 +183,56 @@
 @media (prefers-reduced-motion:reduce) {
   #fiscalView .fiscal-section-panel {animation:none;}
 }
+
+/* Conferência em fluxo único; a IA permanece como área separada. */
+#fiscalView .fiscal-workflow-nav {gap:27px;}
+#fiscalView .fiscal-results-card {border-color:#dce6ef;box-shadow:0 4px 20px #203e5c04;}
+#fiscalView .fiscal-results-heading {padding:21px 22px 18px;gap:16px;}
+#fiscalView .fiscal-results-heading h3 {font-size:20px;font-weight:700;}
+#fiscalView .fiscal-results-heading p {color:#6d8398;}
+#fiscalView .fiscal-results-controls {grid-template-columns:minmax(0,1fr) 190px;}
+#fiscalView .fiscal-results-card .fiscal-table thead th {background:#f3f6f9;padding:12px 16px;border-top:1px solid #e5ecf3;border-bottom:1px solid #dce6ef;font-weight:650;}
+#fiscalView #fiscal242Rows > .fiscal-result-row > td {padding:14px 16px;border-bottom:1px solid #e8eef4;}
+#fiscalView #fiscal242Rows > .fiscal-result-row:nth-child(even) {background:#fbfcfd;}
+#fiscalView #fiscal242Rows > .fiscal-result-row:hover {background:#f1f6fb;}
+#fiscalView #fiscal242Rows > .fiscal-result-row.selected {background:#eaf2fa;}
+#fiscalView #fiscal242Rows > .fiscal-result-row > td.fiscal-money {font-size:13px;font-weight:600;color:#3e5870;font-variant-numeric:tabular-nums;}
+#fiscalView #fiscal242Rows > .fiscal-result-row > td.fiscal-difference {background:transparent;}
+#fiscalView #fiscal242Rows .fiscal-account-link {padding:4px 9px;min-height:31px;gap:8px;border:1px solid #e0e9f2;border-radius:7px;background:#f5f8fb;color:#285777;font-size:13px;font-weight:750;text-decoration:none;}
+#fiscalView #fiscal242Rows .fiscal-account-link:hover {border-color:#a9c2d9;background:#edf4fb;}
+#fiscalView #fiscal242Rows .fiscal-account-link[aria-expanded="true"] {background:#2a5e8a;border-color:#2a5e8a;color:#fff;}
+#fiscalView #fiscal242Rows .fiscal-account-link[aria-expanded="true"] .fiscal-account-chevron {color:#fff;}
+#fiscalView #fiscal242Rows .fiscal-account-description {font-size:12px;line-height:1.6;color:#59748c;margin-top:7px;}
+#fiscalView #fiscal242Rows .fiscal-account-type {letter-spacing:.04em;font-size:9px;color:#8397a9;}
+#fiscalView #fiscal242Rows .fiscal-accum-tag {background:#fff;border:1px solid #dde7ef;border-radius:5px;font-size:10.5px;color:#506e86;}
+#fiscalView .fiscal-difference-number {display:inline-block;padding:5px 8px;border-radius:6px;background:#eaf3fc;color:#23557e;font-size:13px;font-weight:750;line-height:1.4;}
+#fiscalView .fiscal-difference-zero .fiscal-difference-number {padding:5px 0;background:transparent;color:#8b9bab;font-weight:500;}
+#fiscalView #fiscal242Rows .fiscal-table-secondary {font-size:10px;color:#8093a5;margin-top:4px;}
+#fiscalView #fiscal242Rows .fiscal-status {font-size:10px;white-space:nowrap;border-radius:6px;padding:5px 8px;font-weight:600;}
+#fiscalView .fiscal-table-count {padding:13px 20px;color:#758a9e;font-size:11px;background:#fff;border-top:0;margin:0;}
+#fiscalView .fiscal-reading-guide {background:#fafcfe;padding:12px 20px;}
+#fiscalView .fiscal-reading-guide > summary {font-size:11px;font-weight:600;}
+#fiscalView .fiscal-inline-host .fiscal-detail {padding:22px;background:#f5f9fd;}
+#fiscalView .fiscal-inline-host .fiscal-detail-heading {gap:12px;}
+#fiscalView .fiscal-inline-host .fiscal-detail-heading h3 {font-size:20px;letter-spacing:-.03em;}
+#fiscalView .fiscal-inline-host .fiscal-detail-heading p {font-size:12px;}
+#fiscalView .fiscal-inline-host .fiscal-detail-metrics {gap:0;border:1px solid #dce7f0;border-radius:9px;overflow:hidden;background:#fff;}
+#fiscalView .fiscal-inline-host .fiscal-detail-metric {padding:15px 16px;min-height:80px;border:0;border-right:1px solid #e3ebf2;border-radius:0;background:transparent;box-shadow:none;}
+#fiscalView .fiscal-inline-host .fiscal-detail-metric:last-child {border-right:0;background:#edf4fb;}
+#fiscalView .fiscal-inline-host .fiscal-detail-metric small {font-size:10.5px;color:#738da3;}
+#fiscalView .fiscal-inline-host .fiscal-detail-metric strong {font-size:19px;font-weight:650;letter-spacing:-.03em;color:#2d526f;}
+#fiscalView .fiscal-inline-host .fiscal-detail-metric-hint {font-size:10px;line-height:1.5;color:#8a9faf;}
+#fiscalView .fiscal-inline-host .fiscal-difference-reading {padding:11px 13px;font-size:12px;background:transparent;border-left:2px solid #7fa4c5;}
+#fiscalView .fiscal-inline-host .fiscal-detail-explanation {font-size:11px;line-height:1.65;color:#718ba0;}
+#fiscalView .fiscal-inline-host .fiscal-accum-breakdown {border-color:#e1e9f1;border-radius:9px;background:#fff;}
+#fiscalView .fiscal-inline-host .fiscal-detail-close {font-size:11px;min-height:32px;background:#fff;}
+@media (max-width:680px) {
+  #fiscalView .fiscal-results-controls {grid-template-columns:1fr;}
+  #fiscalView .fiscal-results-heading {padding:18px 15px;}
+  #fiscalView #fiscal242Rows .fiscal-account-link {font-size:14px;min-height:34px;}
+  #fiscalView .fiscal-inline-host .fiscal-detail {padding:16px;}
+  #fiscalView .fiscal-inline-host .fiscal-detail-metric {padding:13px;border-bottom:1px solid #e3ebf2;}
+  #fiscalView .fiscal-inline-host .fiscal-detail-metric:nth-child(even) {border-right:0;}
+  #fiscalView .fiscal-inline-host .fiscal-detail-metric:nth-child(n+3) {border-bottom:0;}
+  #fiscalView .fiscal-inline-host .fiscal-detail-metric strong {font-size:17px;}
+}
