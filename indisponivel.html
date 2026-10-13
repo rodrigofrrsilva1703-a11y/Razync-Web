@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#14243b">
+  <title>Razync · Fora do horário de funcionamento</title>
+  <link rel="icon" href="./assets/razync-icon.png" type="image/png">
+  <style>
+    :root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172c41;background:#f5f7fa}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:22px}
+    main{background:#fff;border:1px solid #e1e8ef;border-radius:16px;padding:clamp(26px,5vw,46px);max-width:490px;width:100%;box-shadow:0 12px 40px rgba(17,43,70,.055);text-align:center}
+    .brand{display:flex;align-items:center;justify-content:center;gap:11px;font-weight:750;letter-spacing:-.4px;font-size:20px}
+    .brand img{height:33px;width:33px;object-fit:contain}
+    .signal{height:8px;width:8px;border-radius:50%;background:#7892aa;display:inline-block;margin-right:6px}
+    .label{font-size:12px;color:#5d7085;margin:29px 0 10px}
+    h1{font-size:clamp(23px,4vw,29px);margin:0 0 15px;line-height:1.22;letter-spacing:-.6px}
+    p{font-size:14px;line-height:1.65;color:#5d7085;margin:0}
+    .hours{font-size:24px;font-weight:760;color:#183750;letter-spacing:-.6px;margin:24px 0 6px}
+    .timezone{font-size:12px;margin-bottom:25px}
+    .foot{padding-top:18px;border-top:1px solid #e8edf3;font-size:12px;color:#718196}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand"><img src="./assets/razync-icon.png" alt="">Razync</div>
+    <div class="label"><span class="signal"></span>Fora do horário de funcionamento</div>
+    <h1>Até amanhã de manhã.</h1>
+    <p>O Razync pausa o acesso durante a madrugada para reduzir o consumo de recursos. Seus arquivos e dados permanecem preservados.</p>
+    <div class="hours">07h às 00h</div>
+    <p class="timezone">Todos os dias · Horário de Brasília</p>
+    <div class="foot">A página será aberta automaticamente a partir das 7h.</div>
+  </main>
+  <script>
+    (() => {
+      const hour = () => Number(new Intl.DateTimeFormat("en-GB", {
+        timeZone: "America/Sao_Paulo", hour: "2-digit", hourCycle: "h23"
+      }).format(new Date()));
+      const update = () => {
+        if (hour() >= 7) window.location.replace("./");
+      };
+      update();
+      setInterval(update, 15000);
+    })();
+  </script>
+</body>
+</html>
