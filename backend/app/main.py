@@ -49,7 +49,7 @@ async def enforce_operating_hours(request: Request, call_next):
         from app.operating_hours import is_open, seconds_until_open
         if not is_open():
             return JSONResponse(
-                {"detail": "Razync indisponível das 00h às 07h (horário de Brasília).",
+                {"detail": "Razync disponível de segunda a sábado, das 07h às 00h (horário de Brasília).",
                  "codigo": "FORA_DO_EXPEDIENTE",
                  "abre_as": "07:00",
                  "fuso": "America/Sao_Paulo"},
