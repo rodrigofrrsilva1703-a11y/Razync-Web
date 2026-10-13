@@ -1640,9 +1640,25 @@ $$('.company-filter').forEach(button=>button.addEventListener('click',()=>{
 }));
 backButton.addEventListener("click", closeCompany);
 
+async function fetchAfterWake(url) {
+  // Serverless pode devolver 502/503 enquanto inicia o contêiner.
+  // Repetir apenas essas consultas iniciais evita falso aviso de offline.
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const response = await fetch(url);
+      if (response.ok || ![502, 503, 504].includes(response.status) || attempt === 3) {
+        return response;
+      }
+    } catch (error) {
+      if (attempt === 3) throw error;
+    }
+    await new Promise(resolve => setTimeout(resolve, [1500, 3000, 5000][attempt]));
+  }
+}
+
 async function loadCompanies() {
   try {
-    const response = await fetch(`${API()}/api/v1/companies`);
+    const response = await fetchAfterWake(`${API()}/api/v1/companies`);
     if (!response.ok) throw new Error();
     companies = await response.json();
   } catch {
@@ -1655,7 +1671,7 @@ async function loadCompanies() {
 async function checkApi() {
   if (!API()) return apiStatus.textContent = "API não configurada";
   try {
-    const response = await fetch(`${API()}/health`);
+    const response = await fetchAfterWake(`${API()}/health`);
     if (!response.ok) throw new Error();
     apiStatus.textContent = "Sistema online";
     apiStatus.classList.add("online");
