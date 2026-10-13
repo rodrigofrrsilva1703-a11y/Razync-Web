@@ -16,6 +16,7 @@ from fastapi.responses import Response
 from fastapi.concurrency import run_in_threadpool
 from app.fiscal_242 import conferencia_fiscal_preview
 from app.ai_budget import request_slot, daily_report
+from app.fiscal_ai_audit import audit_analysis
 from app.groq_fiscal import complete as _groq_completion, is_enabled as _groq_enabled, selected_model as _groq_model
 
 logger = logging.getLogger(__name__)
@@ -627,8 +628,12 @@ def _gemini_completion(payload, key, model, *, legacy=False):
 
 def _gemini_send(payload, key, model, *, legacy=False):
     """Envia ao Gemini o mesmo contexto e schema usado no OpenRouter."""
-    if not legacy and model not in {"gemini-3.1-flash-lite", "gemini-2.5-flash-lite"}:
-        raise HTTPException(503, "GEMINI_FREE_MODEL deve ser um modelo Flash-Lite gratuito.")
+    if legacy or os.getenv("GEMINI_FREE_TIER_CONFIRMED") != "1":
+        raise HTTPException(503, "Modo custo zero: Gemini pago/legado ou projeto não confirmado como gratuito bloqueado.")
+    if model not in {"gemini-3.1-flash-lite", "gemini-2.5-flash-lite"}:
+        raise HTTPException(503, "Modo custo zero: somente modelos Gemini Flash-Lite gratuitos são permitidos.")
+    if payload.get("tools") or payload.get("toolConfig") or payload.get("cachedContent"):
+        raise HTTPException(503, "Modo custo zero: ferramentas externas e cache cobrado estão bloqueados.")
     request = urllib.request.Request(
         f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
@@ -700,6 +705,7 @@ def _validar_resposta_ia(result, report, mapping, references):
                        "explicacao": padronizar_moeda(item["explicacao"]),
                        "verificar": padronizar_moeda(item["verificar"]),
                        "evidencias":[references[ref] for ref in dict.fromkeys(evidence)]})
+        output[-1]["auditoria"] = audit_analysis(output[-1])
     if seen != set(mapping):
         raise ValueError("Empty answer")
     return output
@@ -711,7 +717,7 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
     provider_choice = preferred_provider or os.getenv("RAZYNC_AI_PRIMARY", "openrouter")
     groq_ready = _groq_enabled() and provider_choice == "groq"
     legacy = os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1"
-    legacy_direct = not openrouter_key and not gemini_key and legacy
+    legacy_direct = False  # Segurança obrigatória: não há fallback para Gemini legado/pago.
     if only_provider not in (None, "gemini", "groq", "openrouter"):
         raise HTTPException(422, "Provedor inválido.")
     if only_provider:
@@ -730,8 +736,6 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
         gemini_key = ""
         legacy_direct = False
         groq_ready = False
-    if legacy_direct:
-        gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not (openrouter_key or gemini_key or groq_ready):
         raise HTTPException(503, "IA gratuita indisponível. Configure um provedor gratuito aprovado.")
     context, mapping, references, coverage = detailed_context(report)
@@ -983,22 +987,21 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
 def status():
     openrouter = bool(os.getenv("OPENROUTER_API_KEY", "").strip())
     gemini_free = bool(_gemini_free_key())
-    legacy = bool(
-        os.getenv("RAZYNC_AI_LEGACY_GEMINI", "") == "1"
-        and os.getenv("GEMINI_API_KEY", "").strip()
-    )
+    legacy = False  # Modo custo zero obrigatório: configuração legada ignorada.
     groq_selected = _groq_enabled() and os.getenv("RAZYNC_AI_PRIMARY") == "groq"
     providers = [p for p, ready in (("groq", _groq_enabled()), ("gemini", gemini_free),
                                    ("openrouter", openrouter)) if ready]
     return {
-        "configurado": bool(providers) or legacy,
+        "configurado": bool(providers),
         "provedores": providers,
         "provedor": "groq" if groq_selected
             else "gemini" if gemini_free and os.getenv("RAZYNC_AI_PRIMARY", "openrouter") == "gemini"
             else "openrouter" if openrouter
             else "gemini" if (gemini_free or legacy)
             else "groq" if _groq_enabled() else None,
-        "gratuito": not (legacy and not providers),
+        "gratuito": True,
+        "modo_custo_zero_obrigatorio": True,
+        "modelo_pago_permitido": False,
         "fallback_gemini": bool((openrouter or groq_selected) and gemini_free),
         "cooperacao": len(providers) > 1,
     }
