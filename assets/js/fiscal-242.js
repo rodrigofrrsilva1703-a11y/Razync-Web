@@ -299,6 +299,17 @@
         }
         content.appendChild(accumulatorInfo);
         content.append(analysis, review);
+        if (item.auditoria) {
+          const audit = node("section", "fiscal-ai-audit");
+          const alerts = Array.isArray(item.auditoria.alertas) ? item.auditoria.alertas : [];
+          audit.appendChild(node("strong", "", alerts.length
+            ? "Auditoria automática · revisar evidências"
+            : "Auditoria automática · sem alertas estruturais"));
+          for (const alert of alerts) audit.appendChild(node("p", "", String(alert)));
+          audit.appendChild(node("small", "",
+            "A auditoria confere referências e valores conhecidos; a conclusão contábil exige revisão humana."));
+          content.appendChild(audit);
+        }
         if (item.evidencias?.length) {
           const details = node("details", "fiscal-ai-evidence");
           details.append(node("summary", "", `Lançamentos citados (${item.evidencias.length})`));
@@ -1195,6 +1206,13 @@
       card.appendChild(renderNarrative(item.explicacao));
       card.appendChild(node("h5", "", "O que conferir"));
       card.appendChild(renderChecklist(item.verificar));
+      if (item.auditoria) {
+        const notes = Array.isArray(item.auditoria.alertas) ? item.auditoria.alertas : [];
+        const audit = node("div", "fiscal-ai-audit");
+        audit.appendChild(node("strong", "", notes.length ? "Auditoria · precisa revisar" : "Auditoria · sem alertas estruturais"));
+        for (const note of notes) audit.appendChild(node("p", "", String(note)));
+        card.appendChild(audit);
+      }
       docAiResults.appendChild(card);
     });
   }
