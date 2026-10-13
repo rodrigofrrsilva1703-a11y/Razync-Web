@@ -1191,6 +1191,18 @@ def processar_arquivo_pdf(caminho_pdf, filename_original=None):
                     arquivo_btg.read()
                 ).to_dict('records')
 
+        # Santander Aplicativo Empresas: PDF de Valor + Saldo, históricos
+        # multilinha e continuações entre páginas. Recusa leitura parcial
+        # quando a sequência de saldos não fecha, em vez de omitir movimentos.
+        from app.santander_aplicativo import (
+            parece_extrato_santander_aplicativo,
+            processar_extrato_santander_aplicativo_texto,
+        )
+        if parece_extrato_santander_aplicativo(texto_completo):
+            return processar_extrato_santander_aplicativo_texto(
+                texto_completo, banco="BANCO SANTANDER"
+            )
+
         # Santander Empresarial: formato Data / Histórico / Valor.
         # É processado antes do parser universal porque o próprio PDF informa
         # o sinal com "- R$" nas saídas e sem hífen nas entradas.
