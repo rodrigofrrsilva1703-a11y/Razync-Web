@@ -630,9 +630,9 @@ def _compact_transport(payload):
             return [redact(v) for v in value]
         if not isinstance(value, str):
             return value
-        value = re.sub(r"\\b\\d{2}[.]?\\d{3}[.]?\\d{3}[/]?\\d{4}[-]?\\d{2}\\b", "[CNPJ]", value)
-        value = re.sub(r"\\b\\d{3}[.]?\\d{3}[.]?\\d{3}[-]?\\d{2}\\b", "[CPF]", value)
-        return re.sub(r"[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}", "[EMAIL]", value)
+        value = re.sub(r"\b\d{2}[.]?\d{3}[.]?\d{3}[/]?\d{4}[-]?\d{2}\b", "[CNPJ]", value)
+        value = re.sub(r"\b\d{3}[.]?\d{3}[.]?\d{3}[-]?\d{2}\b", "[CPF]", value)
+        return re.sub(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", "[EMAIL]", value)
     context = redact(context)
     payload["contents"][0]["parts"][0]["text"] = json.dumps(context, ensure_ascii=False, separators=(",", ":"))
     return payload
