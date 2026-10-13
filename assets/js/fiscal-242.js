@@ -27,6 +27,7 @@
   let aiConfigured = false;
 
   let selectedKey = "";
+  let tableSort = {key:"", descending:true};
   let pendingRequest = null;
 
   const byId = id => document.getElementById(id);
@@ -51,6 +52,34 @@
   const usageRefresh = byId("fiscal242UsageRefresh");
   const usageNumber = new Intl.NumberFormat("pt-BR");
   let usageController = null;
+  const loadingPanel = byId("fiscal242AILoading");
+  const loadingMeter = byId("fiscal242LoadingMeter");
+  let loadingCounts = {done:0, total:0};
+  function showAIProgress(phase, done = loadingCounts.done, total = loadingCounts.total, waiting = "") {
+    loadingCounts = {done, total};
+    loadingPanel.hidden = false;
+    loadingPanel.dataset.phase = phase;
+    const titles = {preparing:"Preparando a análise", analyzing:"Analisando contas e evidências", waiting:"Aguardando disponibilidade da IA", complete:"Pareceres prontos", partial:"Análise parcialmente concluída", cancelled:"Análise cancelada", error:"Não foi possível concluir a análise"};
+    byId("fiscal242LoadingTitle").textContent = titles[phase];
+    byId("fiscal242LoadingCaption").textContent = waiting || ({preparing:"Organizando o contexto das contas com pendências.", analyzing:"Os resultados concluídos já podem ser consultados abaixo.", complete:"Abra uma conta para ler o parecer e as verificações recomendadas.", partial:"Os pareceres recebidos foram mantidos. Você pode repetir os lotes pendentes.", cancelled:"Os valores da conferência foram preservados.", error:"Consulte os detalhes do processamento e tente novamente."}[phase] || "Os resultados já recebidos continuam disponíveis.");
+    const active = ["preparing", "analyzing", "waiting"].includes(phase);
+    loadingPanel.querySelector(".fiscal-ai-loading-orbit span").textContent = active ? "✦" : phase === "complete" ? "✓" : phase === "cancelled" ? "−" : "!";
+    byId("fiscal242LoadingTime").hidden = !active;
+    loadingPanel.setAttribute("aria-busy", String(active));
+    byId("fiscal242LoadingCount").textContent = total > 0 ? done + " de " + total + " grupos concluídos" : active ? "Preparando os grupos de contas…" : "Processamento encerrado";
+    byId("fiscal242LoadingFill").style.width = total > 0 ? Math.min(100, 100 * done / total) + "%" : "";
+    if (total > 0) {
+      loadingMeter.setAttribute("aria-valuemin", "0"); loadingMeter.setAttribute("aria-valuemax", String(total)); loadingMeter.setAttribute("aria-valuenow", String(done));
+    } else {
+      loadingMeter.removeAttribute("aria-valuemin"); loadingMeter.removeAttribute("aria-valuemax"); loadingMeter.removeAttribute("aria-valuenow");
+    }
+    const stage = phase === "preparing" ? 0 : active ? 1 : 2;
+    [...loadingPanel.querySelectorAll("[data-loading-stage]")].forEach((el, index) => {
+      el.classList.toggle("is-done", index < stage || phase === "complete");
+      el.classList.toggle("is-current", active && index === stage);
+      if (active && index === stage) el.setAttribute("aria-current", "step"); else el.removeAttribute("aria-current");
+    });
+  }
 
   function usageTime(value) {
     if (!value) return "—";
@@ -277,7 +306,6 @@
         title.appendChild(node("h4", "", `Conta ${item.conta}`));
         if (item.descricao) title.appendChild(node("p", "fiscal-ai-card-description", item.descricao));
         const metadata = node("div", "fiscal-ai-card-meta");
-        if (item.provedor) metadata.appendChild(node("span", "fiscal-ai-type", item.provedor === "groq" ? "Groq" : item.provedor === "gemini" ? "Gemini" : "OpenRouter"));
         if (item.tipo) metadata.appendChild(node("span", "fiscal-ai-type", item.tipo));
         if (item.situacao) metadata.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(item.situacao), statusLabels[item.situacao] || item.situacao));
         const compact = node("div", "fiscal-ai-account-compact");
@@ -340,6 +368,7 @@
           }
           content.append(details);
         }
+        if (item.provedor) content.appendChild(node("p", "fiscal-ai-source", "Parecer elaborado por " + (item.provedor === "groq" ? "Groq" : item.provedor === "gemini" ? "Gemini" : "OpenRouter") + " · revise as evidências antes de ajustar lançamentos."));
         card.append(heading, content);
         aiCards.push({item, card});
         aiResult.append(card);
@@ -386,6 +415,7 @@
     aiEmpty.hidden = matching.size > 0 || !aiCards.length;
   }
   function clearAIAccounts() {
+    loadingPanel.hidden = true;
     aiCards = [];
     aiToolbar.hidden = true;
     aiEmpty.hidden = true;
@@ -513,14 +543,15 @@
     aiController.abort();
     aiMessage.textContent = "Solicitação cancelada. Os valores da conferência foram preservados.";
     aiInlineStatus.textContent = "Análise cancelada. Você pode iniciar outra quando quiser.";
+    showAIProgress("cancelled");
   });
-  aiButton.after(aiCancelButton);
+  loadingPanel.querySelector(".fiscal-ai-loading-head").appendChild(aiCancelButton);
 
   const aiRetry = node("button", "secondary-action", "Repetir lotes pendentes");
   aiRetry.type = "button";
   aiRetry.hidden = true;
   aiRetry.addEventListener("click", () => aiButton.click());
-  aiCancelButton.after(aiRetry);
+  aiButton.after(aiRetry);
 
   aiButton.addEventListener("click", async () => {
     if (!previewBody || !aiConfigured) return;
@@ -533,19 +564,26 @@
     if (!resuming) { aiResult.replaceChildren(); clearAIAccounts(); }
     aiResult.setAttribute("aria-busy", "true");
     aiCancelButton.hidden = false;
+    loadingCounts = {done:0, total:0};
+    byId("fiscal242LoadingTime").textContent = "0 s";
+    showAIProgress("preparing", 0, 0);
+    aiInlineStatus.hidden = true;
     aiInlineStatus.textContent = "Análise em andamento. Você pode cancelar a espera sem alterar a conferência.";
     aiMessage.textContent = "Enviando dados para análise…";
     const startedAt = Date.now();
     const progressTimer = window.setInterval(() => {
       if (aiController !== controller || controller.signal.aborted) return;
       const secs = Math.floor((Date.now() - startedAt) / 1000);
+      byId("fiscal242LoadingTime").textContent = secs + " s";
+      if (secs % 4 !== 0) return;
       aiMessage.textContent = "A IA está preparando os pareceres (" + secs + " s). " +
         (secs >= 25 ? "Modelos gratuitos podem ter fila; aguarde ou cancele." : "Validando contas e evidências.");
-    }, 4000);
+    }, 1000);
     try {
       const result = await analyzeInBatches(snapshot, controller, (done, total, failed, waiting, ready) => {
         if (aiController !== controller || controller.signal.aborted) return;
         if (ready?.length) renderAIEntries(ready);
+        showAIProgress(waiting ? "waiting" : "analyzing", done, total, waiting);
         aiInlineStatus.textContent = done + " de " + total + " grupos concluídos" +
           (failed ? " · " + failed + " lotes pendentes" : "") + ". " +
           (waiting || "As IAs gratuitas dividem os lotes; resultados concluídos são reaproveitados.");
@@ -569,6 +607,7 @@
         ? "Parecer recebido do " + providerLabel + ". Selecione uma conta para ler a análise ou exporte o Excel."
         : "O " + providerLabel + " concluiu a análise. Não foram identificadas contas a explicar.";
       const entries = Array.isArray(result.analises) ? result.analises : [];
+      showAIProgress(result.grupos_pendentes ? "partial" : "complete", entries.length, entries.length + Number(result.grupos_pendentes || 0));
       aiToolbar.hidden = entries.length === 0;
       aiTotal.textContent = entries.length ? "(" + entries.length + ")" : "";
       renderAIEntries(entries);
@@ -580,10 +619,12 @@
       if (!controller.signal.aborted && previewBody === snapshot) {
         aiMessage.textContent = error.message || "Não foi possível gerar a análise.";
         aiInlineStatus.textContent = "A análise não foi concluída. Confira o painel e tente novamente.";
+        showAIProgress("error");
       }
     } finally {
       window.clearInterval(progressTimer);
       if (aiController === controller) {
+        aiInlineStatus.hidden = false;
         aiResult.setAttribute("aria-busy", "false");
         aiController = null;
         aiCancelButton.hidden = true;
@@ -665,6 +706,8 @@
     message.dataset.state = kind || "";
   }
   function clearState() {
+    loadingPanel.hidden = true;
+    aiInlineStatus.hidden = false;
     byId("fiscalSetup").open = true;
     byId("fiscalSetupTitle").textContent = "Preparar conferência";
     resetInvestigation();
@@ -859,8 +902,29 @@
   });
   byId("fiscal242NextStepButton").addEventListener("click", () => focusFiscalSection("fiscal242Investigacao"));
 
+  function sortFiscalRows(rows, key, descending) {
+    if (!key) return rows;
+    return [...rows].sort((a, b) => {
+      const comparison = key === "conta" ? String(a.conta).localeCompare(String(b.conta), "pt-BR", {numeric:true})
+        : key === "diferenca" ? Math.abs(Number(a[key] || 0)) - Math.abs(Number(b[key] || 0))
+        : Number(a[key] || 0) - Number(b[key] || 0);
+      return descending ? -comparison : comparison;
+    });
+  }
+  const sortButtons = [...pane.querySelectorAll("[data-fiscal-sort]")];
+  sortButtons.forEach(button => button.addEventListener("click", () => {
+    const key = button.dataset.fiscalSort;
+    tableSort = {key, descending:tableSort.key === key ? !tableSort.descending : key !== "conta"};
+    sortButtons.forEach(control => {
+      const active = control.dataset.fiscalSort === key;
+      control.parentElement.setAttribute("aria-sort", active ? tableSort.descending ? "descending" : "ascending" : "none");
+      control.querySelector("span").textContent = active ? tableSort.descending ? "↓" : "↑" : "↕";
+    });
+    renderTable();
+  }));
+
   function renderTable() {
-    const rows = filteredRows();
+    const rows = sortFiscalRows(filteredRows(), tableSort.key, tableSort.descending);
     tableBody.replaceChildren();
     const total = (data?.contas || []).length;
     resultsCount.textContent = `Exibindo ${rows.length} de ${total} contas. Abra uma conta para consultar os valores detalhados e os lançamentos.`;
@@ -891,12 +955,15 @@
       const accumulatorCell = cell(tr, "", "fiscal-accum-cell");
       accumulatorCell.dataset.label = "Acumuladores";
       accumulatorCell.appendChild(accumulatorTags(row));
+      const accumulatorCount = accumulatorRows(row).length;
+      if (accumulatorCount > 1) accumulatorCell.appendChild(node("small", "fiscal-table-secondary", accumulatorCount + " acumuladores"));
       const fiscalValue = cell(tr, money.format(row.fiscal), "fiscal-money fiscal-money-fiscal");
       fiscalValue.dataset.label = "Fiscal";
       const accountingValue = cell(tr, money.format(row.contabil), "fiscal-money fiscal-money-accounting");
       accountingValue.dataset.label = "Contábil";
       const diferenca = cell(tr, money.format(row.diferenca), "fiscal-money fiscal-difference");
       diferenca.dataset.label = "Diferença";
+      diferenca.appendChild(node("small", "fiscal-table-secondary", Math.abs(Number(row.diferenca || 0)) <= 0.01 ? "Sem diferença" : row.diferenca < 0 ? "Abaixo do fiscal" : "Acima do fiscal"));
       if (Math.abs(Number(row.diferenca || 0)) <= 0.01) diferenca.classList.add("fiscal-difference-zero");
       const td = cell(tr, "", "fiscal-situation-cell");
       td.dataset.label = "Situação";

@@ -110,7 +110,7 @@ test('tabela compacta preserva acumuladores e reserva totais técnicos para deta
   const html = fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8');
   const match = html.match(/<table class="fiscal-table">([\s\S]*?)<\/table>/);
   assert.ok(match);
-  const headings = [...match[1].matchAll(/<th\b[^>]*>([^<]+)<\/th>/g)].map(x=>x[1]);
+  const headings = [...match[1].matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/g)].map(x=>x[1].replace(/<span\b[^>]*>[\s\S]*?<\/span>/g,'').replace(/<[^>]+>/g,'').trim());
   assert.deepEqual(headings,[
     'Conta / descrição','Acumuladores','Fiscal','Contábil considerado','Diferença','Situação'
   ]);

@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
   <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=investigacao-documental-1">
-  <link rel="stylesheet" href="./assets/css/fiscal-results.css?v=fiscal-workspace-modern-20261013-6">
+  <link rel="stylesheet" href="./assets/css/fiscal-results.css?v=fiscal-workspace-ai-loading-20261013-7">
 </head>
 <body>
   <div class="app-shell">
@@ -223,7 +223,7 @@
               </div>
               <div class="fiscal-table-scroll">
                 <table class="fiscal-table">
-                  <thead><tr><th scope="col">Conta / descrição</th><th scope="col">Acumuladores</th><th scope="col" class="fiscal-head-money">Fiscal</th><th scope="col" class="fiscal-head-money">Contábil considerado</th><th scope="col" class="fiscal-head-money">Diferença</th><th scope="col">Situação</th></tr></thead>
+                  <thead><tr><th scope="col" aria-sort="none"><button type="button" class="fiscal-sort" data-fiscal-sort="conta">Conta / descrição <span aria-hidden="true">↕</span></button></th><th scope="col">Acumuladores</th><th scope="col" class="fiscal-head-money" aria-sort="none"><button type="button" class="fiscal-sort" data-fiscal-sort="fiscal">Fiscal <span aria-hidden="true">↕</span></button></th><th scope="col" class="fiscal-head-money" aria-sort="none"><button type="button" class="fiscal-sort" data-fiscal-sort="contabil">Contábil considerado <span aria-hidden="true">↕</span></button></th><th scope="col" class="fiscal-head-money" aria-sort="none"><button type="button" class="fiscal-sort" data-fiscal-sort="diferenca">Diferença <span aria-hidden="true">↕</span></button></th><th scope="col">Situação</th></tr></thead>
                   <tbody id="fiscal242Rows"></tbody>
                 </table>
               </div>
@@ -273,7 +273,7 @@
             <section class="fiscal-ai">
               <div class="fiscal-ai-heading" id="fiscal242AISection">
                 <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
-                <div><span class="fiscal-ai-eyebrow">ETAPA OPCIONAL · IA GRATUITA</span><h3>Análise das pendências</h3><p>Pareceres com hipóteses e orientações de conferência. Os cálculos permanecem no Razync.</p></div>
+                <div><span class="fiscal-ai-eyebrow">ASSISTENTE DE CONFERÊNCIA</span><h3>Análise das pendências</h3><p>Entenda as diferenças, consulte as evidências e veja o que conferir em cada conta.</p></div>
                 <div class="fiscal-ai-heading-tools">
                   <span class="fiscal-ai-provider" id="fiscal242AIProvider">IA</span>
                   <button type="button" class="fiscal-usage-trigger" id="fiscal242UsageButton" aria-haspopup="dialog" aria-controls="fiscal242UsageDialog" aria-expanded="false" title="Ver uso e limites das IAs gratuitas">
@@ -306,6 +306,16 @@
                 <button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button>
                 <button type="button" class="secondary-action" id="fiscal242AIExport" disabled>Exportar análise Excel (.xlsx)</button>
               </div>
+              <section id="fiscal242AILoading" class="fiscal-ai-loading" data-phase="preparing" aria-label="Progresso da análise com IA" hidden>
+                <div class="fiscal-ai-loading-head">
+                  <div class="fiscal-ai-loading-orbit" aria-hidden="true"><span>✦</span></div>
+                  <div class="fiscal-ai-loading-copy"><span class="fiscal-ai-loading-eyebrow">ANÁLISE EM ANDAMENTO</span><h4 id="fiscal242LoadingTitle">Preparando a análise</h4><p id="fiscal242LoadingCaption">Organizando contas e evidências para a IA.</p></div>
+                  <span id="fiscal242LoadingTime" class="fiscal-ai-loading-time">0 s</span>
+                </div>
+                <div class="fiscal-ai-loading-meter" id="fiscal242LoadingMeter" role="progressbar" aria-label="Grupos analisados"><span id="fiscal242LoadingFill"></span></div>
+                <div class="fiscal-ai-loading-footer"><span id="fiscal242LoadingCount" role="status" aria-live="polite">Preparando os grupos de contas…</span><span>Os pareceres aparecem assim que ficam prontos.</span></div>
+                <ol class="fiscal-ai-loading-stages" aria-label="Etapas da análise"><li data-loading-stage="preparing">Preparar contexto</li><li data-loading-stage="analyzing">Gerar pareceres</li><li data-loading-stage="complete">Concluir</li></ol>
+              </section>
               <p id="fiscal242AIStatus" class="fiscal-ai-inline-status" role="status" aria-live="polite">Faça uma conferência para iniciar a análise.</p>
               <details class="fiscal-ai-processing-notes"><summary>Detalhes do processamento</summary><p id="fiscal242AIMessage" role="status" aria-live="polite">Verificando disponibilidade da IA…</p></details>
               <details class="fiscal-ai-privacy"><summary>Como seus dados são analisados</summary><p>Groq, Gemini ou OpenRouter podem receber contexto das contas com divergência ou alertas, incluindo datas, valores e históricos selecionados que podem conter nomes. Na investigação documental, apenas pendências e lançamentos não conciliados são enviados à IA. As respostas são sugestões para revisão humana; nunca alteram cálculos ou arquivos.</p></details>
@@ -577,7 +587,7 @@
   <script src="./assets/js/company-guides.js?v=2"></script>
   <script src="./assets/js/app.js?v=fiscal-layout-2"></script>
   <script src="./assets/js/migration.js?v=fiscal-modern-20261013-5"></script>
-  <script src="./assets/js/fiscal-242.js?v=fiscal-workspace-modern-20261013-6"></script>
+  <script src="./assets/js/fiscal-242.js?v=fiscal-workspace-ai-loading-20261013-7"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>
