@@ -32,7 +32,7 @@ CONFIGURACOES_ACCEDE = {
         "empresa": "1001 - ACCEDE EQUIPAMENTOS",
         "slug": "accede_equipamentos",
         "arquivo": "ACCEDE_Equipamentos",
-        "contas_bancarias": {"itau": "508", "sicredi": "505"},
+        "contas_bancarias": {"itau": "508", "sicredi": "505", "santander": "513"},
     },
 }
 
