@@ -556,3 +556,15 @@ def test_razao_completo_interno_nao_vai_para_contexto_da_ia():
     report = preparar_relatorio_pendencias_para_ia(f,"f.xlsx",r,"r.xlsx",(detail(),"d.xlsx"),filial="242")
     assert "_razao_completo" not in report
     assert len(report["lancamentos"]) <= 30
+
+
+def test_candidato_ja_conciliado_a_outra_serie_permanece_ambiguo():
+    rows = pd.read_excel(io.BytesIO(detail()), header=None).values.tolist()
+    rows[3].append("Série")
+    rows[4].append("1")
+    rows.insert(5, [1152, 100, "03/08/2026", 1102, 900, "", "Fornecedor Teste", "2"])
+    group = post(saida=False, entrada_bytes=book(rows)).json()["contas"][0]
+    docs = [d for d in group["documentos"] if d["nota"] == "100"]
+    assert next(d for d in docs if d["serie"] == "1")["situacao"] == "CONCILIADO"
+    assert next(d for d in docs if d["serie"] == "2")["situacao"] == "AMBIGUO"
+    assert group["composicao"]["confere_com_inicial"] is True

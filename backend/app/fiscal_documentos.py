@@ -451,7 +451,7 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
                 d["criterio"] = "Há mais de uma correspondência possível para nota e valor."
             else:
                 near = near_candidates[d["id"]]
-                if len(near) == 1 and near[0][1] and not near[0][2] and ledger_by_id[near[0][0]]["nota_explicita"]:
+                if len(near) == 1 and near[0][1] and not near[0][2] and ledger_by_id[near[0][0]]["nota_explicita"] and not ledger_to_docs[near[0][0]]:
                     d["situacao"] = "VALOR_DIFERENTE"
                     d["razao_id"] = near[0][0]
                     d["criterio"] = "Nota identificada na conta, mas valor contábil diferente."
