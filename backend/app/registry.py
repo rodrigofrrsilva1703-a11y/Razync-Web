@@ -77,8 +77,9 @@ CAPABILITIES = {
         "roles": [
             {"name": "itau", "label": "SIG Itaú", "accept": ".xls,.xlsx", "multiple": True, "optional": True},
             {"name": "sicredi", "label": "SIG Sicredi", "accept": ".xls,.xlsx", "multiple": True, "optional": True},
+            {"name": "santander", "label": "SIG Santander", "accept": ".xls,.xlsx", "multiple": True, "optional": True},
         ],
-        "banks": {"itau": "508", "sicredi": "505"},
+        "banks": {"itau": "508", "sicredi": "505", "santander": "513"},
     },
     1064: {
         "status": "api_ready",
