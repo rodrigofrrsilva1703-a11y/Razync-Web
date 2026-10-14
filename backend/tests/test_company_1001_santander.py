@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from openpyxl import load_workbook
 
 from app import engine, operating_hours
+from app.advanced import processar_planilha_accede_sig
 from app.main import app
 from app.migration_services import workflow
 from app.registry import CAPABILITIES
@@ -34,7 +35,7 @@ def test_cadastro_empresa_1001_possui_santander_513_sem_mudar_demais_contas():
 
 def test_parser_sig_santander_identifica_banco_e_conserva_lancamentos():
     with engine.processing_context("accede_equipamentos"):
-        frame = engine.processar_planilha_accede_sig(sample_sig("santander"), "santander", "accede_equipamentos")
+        frame = processar_planilha_accede_sig(sample_sig("santander"), "santander", "accede_equipamentos")
     assert frame["DESCRIÇÃO"].tolist() == ["BANCO SANTANDER", "BANCO SANTANDER"]
     assert frame["VALOR"].tolist() == [150.75, -45.2]
     assert "RECEBIMENTO" in frame.iloc[0]["HISTÓRICO"]
