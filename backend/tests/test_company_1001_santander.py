@@ -26,13 +26,13 @@ def sample_sig(bank):
     ], title=bank.title())
 
 
-def sample_santander_pdf():
+def sample_santander_pdf(titular="ACCEDE EQUIPAMENTOS INDUSTRIAIS LTDA"):
     """Saldos em ordem inversa: 920,00 -> 1000,00 -> 800,00 -> 799,95."""
     doc = fitz.open()
     first = doc.new_page()
     lines = [
         "Aplicativo Santander Empresas",
-        "ACCEDE EQUIPAMENTOS INDUSTRIAIS LTDA Agencia: 4433 Conta: 11111",
+        f"{titular} Agencia: 4433 Conta: 11111",
         "Periodos: 01/07/2026 a 31/08/2026",
         "Data Historico Documento Valor (R$) Saldo (R$)",
         "03/08/2026 Pix Enviado Fornecedor Teste -80,00 920,00",
@@ -123,3 +123,15 @@ def test_api_1001_aceita_extrato_pdf_e_retorna_modelo(monkeypatch):
     )
     assert response.status_code == 200, response.text
     assert load_workbook(io.BytesIO(response.content)).sheetnames == ["Santander"]
+
+def test_1001_nao_aceita_pdf_santander_de_outra_empresa():
+    pdf = sample_santander_pdf("EMPRESA FICTICIA DE TESTE LTDA")
+    with pytest.raises(ValueError, match="titular"):
+        workflow(1001, {"santander": [("extrato.pdf", pdf)]}, {})
+
+
+def test_fluxo_avancado_reutiliza_mesma_regra_pdf():
+    from app.advanced import workflow_modelo
+    content, name = workflow_modelo(1001, {"santander": [("extrato.pdf", sample_santander_pdf())]}, {})
+    assert name == "ACCEDE_1001_MODELO_DOMINIO.xlsx"
+    assert load_workbook(io.BytesIO(content)).sheetnames == ["Santander"]
