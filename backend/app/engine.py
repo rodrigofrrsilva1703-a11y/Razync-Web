@@ -2975,7 +2975,9 @@ def processar_planilha_accede_sig(file_bytes, banco_nome, empresa=''):
             dc_principal = texto_exato(principal.iloc[c_dc]) if c_dc is not None else ''
             complemento = texto_exato(principal.iloc[c_comp]) if c_comp is not None else ''
             conf_principal = texto_exato(principal.iloc[c_conf]) if c_conf is not None else ''
-            descricao_banco = 'BANCO ITAÚ' if normalizar_texto(banco_nome) == 'itau' else 'SICREDI'
+            descricao_banco = {'itau': 'BANCO ITAÚ', 'sicredi': 'SICREDI', 'santander': 'BANCO SANTANDER'}.get(normalizar_texto(banco_nome))
+            if descricao_banco is None:
+                raise ValueError(f'Banco SIG não reconhecido: {banco_nome}.')
 
             detalhes_validos = []
             for detalhe in detalhes:
