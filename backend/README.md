@@ -64,3 +64,5 @@ O contexto de Gemini/OpenRouter preserva lançamentos, datas, contrapartidas e h
 A formatação e a auditoria são locais. Os resultados validados continuam sendo reaproveitados pelo cache, cuja versão muda com o plano de resposta. Provedores/modelos pagos permanecem bloqueados; cota indisponível usa somente reservas gratuitas ou informa espera. Não são contratadas novas cotas.
 
 O parecer também explica localmente o lado do Razão usado, os movimentos considerados e excluídos, o fechamento apenas por valor e o objetivo de cada conferência. A classificação por histórico é heurística; pagamento não comprova duplicidade. Essa leitura é atualizada nos pareceres em cache sem nova chamada ao modelo.
+
+A leitura do parecer separa conclusão, observações das fontes e hipóteses. Referências citadas são vinculadas somente à própria conta; referências inexistentes permanecem sinalizadas. Hipóteses de antecipação, ajuste interno e duplicidade exigem indícios nos históricos ou pares de movimentos/notas. Pareceres em cache recebem essa revisão local, sem nova geração. A cobertura de meses é apresentada como ponto de investigação, nunca como prova de omissão.

@@ -7,6 +7,8 @@ Nenhum dado é enviado a outro serviço e nenhuma chamada de IA é executada.
 from decimal import Decimal, InvalidOperation
 import re
 import unicodedata
+from collections import Counter
+from datetime import datetime
 
 _MONEY = re.compile(r"R\$\s*(-?\s*\d(?:[\d.,]*\d)?)", flags=re.IGNORECASE)
 
@@ -73,6 +75,56 @@ def grounded_review_steps(item):
             f"2. Compare cada nota com os históricos, datas, valores e contrapartidas da conta {account}"
             + (f", começando pelas referências {refs}.\n" if refs else ".\n")
             + "3. Separe documentos pareados e ainda não vinculados; confirme o período e a conta usada antes de atribuir a causa ou propor ajuste.")
+
+
+def link_text_evidence(item, rows):
+    """Vincula referências citadas somente quando pertencem às fontes da própria conta."""
+    quoted = set(re.findall(r"\bL\d+\b", (str(item.get("explicacao") or "") + " " + str(item.get("verificar") or "")).upper()))
+    evidence = list(item.get("evidencias") or [])
+    linked = {str(row.get("referencia", "")).upper() for row in evidence if isinstance(row, dict)}
+    for row in rows:
+        if len(evidence) >= 8:
+            break
+        ref = str(row.get("_referencia_ia") or row.get("referencia") or "").upper()
+        if ref in quoted - linked and str(row.get("conta")) == str(item.get("conta")):
+            evidence.append({key: value for key, value in dict(row, referencia=ref).items() if key != "_referencia_ia"})
+            linked.add(ref)
+    item["evidencias"] = evidence
+
+
+def unsupported_scenarios(item, rows):
+    """Uma possibilidade concreta precisa de um indício nas fontes da conta."""
+    _, sections = narrative_sections(item.get("explicacao"))
+    hypothesis = sections.get("hipoteses") or str(item.get("explicacao") or "")
+    source = " ".join(str(row.get("historico") or "") for row in rows if isinstance(row, dict))
+    reasons = []
+    if re.search(r"pagamentos? antecipados?|adiantamentos?", hypothesis, re.I) and not re.search(r"antecip|adiant", source, re.I):
+        reasons.append("Os históricos não indicam antecipação ou adiantamento; essa hipótese foi retirada.")
+    if re.search(r"ajustes? internos?", hypothesis, re.I) and not re.search(r"ajuste|reclassifica|transfer[eê]ncia interna", source, re.I):
+        reasons.append("Não há registro explícito de ajuste interno nos históricos; essa hipótese foi retirada.")
+    duplication_claim = any("duplic" in sentence.lower() and not re.search(r"não|sem (?:prova|comprova)|não comprova", sentence, re.I)
+                            for sentence in re.split(r"(?<=[.!?])\s+", hypothesis))
+    if duplication_claim:
+        notes = Counter()
+        signatures = Counter()
+        for row in rows:
+            history = str(row.get("historico") or "").strip().casefold()
+            for number in re.findall(r"\b(?:nf|nfe|nota fiscal)\s*[:#.-]?\s*(\d+)\b", history, re.I):
+                notes[(number, str(row.get("contrapartida") or ""))] += 1
+            if history:
+                signatures[(history, str(row.get("debito") or 0), str(row.get("credito") or 0), str(row.get("contrapartida") or ""))] += 1
+        if not any(count > 1 for count in (*notes.values(), *signatures.values())):
+            reasons.append("Não foi encontrado um par repetido de nota ou movimento nas fontes enviadas; a hipótese de duplicidade foi retirada.")
+    return reasons
+
+
+def _record_date(value):
+    for pattern in ("%d/%m/%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(str(value), pattern)
+        except ValueError:
+            pass
+    return None
 
 
 def audit_analysis(item):
@@ -175,7 +227,7 @@ def _brl(value):
     return ("-" if number < 0 else "") + "R$ " + body
 
 
-def comparison_reading(item, rows):
+def comparison_reading(item, rows, periodo_fiscal=None):
     """Explica a regra aplicada aos relatórios, sem pedir ao modelo que a adivinhe."""
     values = item.get("valores") or {}
     if any(key not in values for key in ("fiscal", "contabil", "total_conta")):
@@ -248,10 +300,52 @@ def comparison_reading(item, rows):
                   "objetivo": "Separe número da nota, data e valor. Assim você transforma o total fiscal em documentos que podem ser comparados individualmente, em vez de procurar o código do acumulador no Razão."})
     steps.append({"acao": f"Compare essas notas com os lançamentos da conta {account}",
                   "objetivo": "Use histórico, data, valor e contrapartida para confirmar o vínculo. Se uma nota não for localizada, confira período, filial e conta usada antes de concluir ausência; valores parecidos, sozinhos, não provam correspondência."})
-    return {"explicacoes": paragraphs, "excluidos": movements, "orientacoes": steps}
+    included = []
+    for row, amount in selected:
+        if row.get("classificacao") not in {"FISCAL PROVÁVEL", "FECHAMENTO POR VALOR - VALIDAR"}:
+            continue
+        history = str(row.get("historico") or "Histórico não informado")
+        included.append({"referencia": row.get("_referencia_ia") or row.get("referencia") or "—", "data": row.get("data", ""),
+                         "historico": history, "contrapartida": str(row.get("contrapartida") or "—"), "valor_brl": _brl(amount),
+                         "motivo": "Indício fiscal no histórico" if row.get("classificacao") == "FISCAL PROVÁVEL" else "Fechamento de valor; validar documento"})
+    observations = []
+    if probable or value_only or excluded:
+        parts = []
+        if probable: parts.append(f"{len(probable)} com indício fiscal no histórico")
+        if excluded: parts.append(f"{len(excluded)} fora da comparação")
+        if value_only: parts.append(f"{len(value_only)} incluídos apenas por fechamento de valor, sem comprovação da natureza")
+        observations.append(f"Foram examinados {len(selected)} movimentos: " + "; ".join(parts) + ".")
+    notes = list(dict.fromkeys(number for row in included for number in re.findall(r"\b(?:NF|NFE|NOTA FISCAL)\s*[:#.-]?\s*(\d+)\b", row["historico"], re.I)))
+    if notes:
+        observations.append("Os movimentos considerados citam as notas " + ", ".join(notes[:8]) + (f" e outras {len(notes)-8}" if len(notes)>8 else "") + ". A presença da nota no histórico não confirma, sozinha, o vínculo com o acumulador.")
+    if excluded:
+        observations.append(f"Os movimentos fora da comparação somam {_brl(sum((amount for _,amount in excluded),Decimal(0)))}. "
+                            "Históricos de pagamento ou baixa podem representar liquidação de uma obrigação; confira o documento de origem antes de somá-los novamente ao fiscal.")
+    dates = [_record_date(row.get("data")) for row,_ in selected]
+    dates = [date for date in dates if date]
+    if dates:
+        observations.append(f"Os movimentos deste lado no contexto vão de {min(dates):%d/%m/%Y} a {max(dates):%d/%m/%Y}.")
+    period = periodo_fiscal or {}
+    begin, end = _record_date(period.get("inicio")), _record_date(period.get("fim"))
+    missing_months = []
+    if begin and end and 0 <= (end.year-begin.year)*12+end.month-begin.month <= 24:
+        expected = range(begin.year*12+begin.month-1, end.year*12+end.month)
+        present = {date.year*12+date.month-1 for date in dates}
+        missing_months = [f"{month%12+1:02d}/{month//12}" for month in expected if month not in present]
+    if missing_months and selected and len(dates) == len(selected):
+        observations.append("O período fiscal inclui " + ", ".join(missing_months) + ", sem movimentos desse lado no contexto da conta. "
+                            "Verifique se há notas desses meses no acumulador e onde foram escrituradas; isso não comprova ausência de lançamento.")
+        steps.append({"acao": "Confira as competências " + ", ".join(missing_months), "objetivo": "Localize as notas desses meses no detalhamento fiscal e confira conta, filial e data de escrituração. O resumo cobre um período maior que as datas dos movimentos enviados."})
+    if abs(difference) <= Decimal("0.01"):
+        result = f"Os valores comparados fecham em {_brl(fiscal)}. " + ("Os alertas vêm dos movimentos separados ou incluídos apenas por valor; a natureza ainda precisa ser validada." if excluded or value_only else "A confirmação documental continua necessária para comprovar a origem dos valores.")
+    else:
+        result = f"O contábil considerado está {_brl(abs(difference))} {'abaixo' if difference < 0 else 'acima'} do fiscal. A origem dessa diferença ainda não está confirmada."
+    return {"explicacoes": paragraphs, "resultado": result,
+            "criterio": f"Comparação pelo lado dos {side}; o lado oposto não entra. A seleção por histórico é um indício, não uma validação documental.",
+            "observacoes": observations, "considerados": included, "excluidos": movements, "orientacoes": steps}
 
 
-def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=False):
+def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=False, periodo_fiscal=None):
     """Os fatos vêm do relatório; a narrativa do modelo permanece interpretação."""
     text, sections = narrative_sections(item.get("explicacao"))
     total = len(rows)
@@ -264,7 +358,8 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
     missing = ["A causa do alerta ou da diferença exige conferir os documentos e a natureza dos lançamentos."]
     if not documentary:
         missing.append("O resumo por acumulador não contém documentos fiscais individuais para comprovar omissão ou duplicidade.")
-    unsafe_narrative = ungrounded_tax_explanation(item) or contradicts_existing_entries(item)
+    scenario_issues = unsupported_scenarios(item, rows)
+    unsafe_narrative = ungrounded_tax_explanation(item) or contradicts_existing_entries(item) or bool(scenario_issues)
     if sections.get("limitacoes") and not unsafe_narrative:
         missing.append("Limitação indicada pela IA: " + sections["limitacoes"])
     hypothesis = sections.get("hipoteses")
@@ -273,8 +368,14 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
         hypothesis = "A causa está indeterminada: os lançamentos disponíveis não sustentam uma explicação por créditos tributários ou ajustes de apuração. Compare as notas que compõem o fiscal com os registros da conta para identificar a origem da diferença."
     if contradicts_existing_entries(item):
         hypothesis = "Os lançamentos citados já constam no Razão. A diferença entre os totais não identifica a causa; compare os documentos fiscais com a escrituração para confirmá-la."
+    validation = audit_analysis(item)
+    text_issues = validation["referencias_sem_evidencia"] or validation["valores_sem_comprovacao"]
+    display_text = hypothesis or (text if not sections.get("hipoteses") else "")
+    if scenario_issues or text_issues or not sections.get("hipoteses"):
+        display_text = "Os dados disponíveis não sustentam uma causa específica. A investigação deve partir dos movimentos identificados abaixo e dos documentos que compõem o fiscal."
     return {"versao": ANALYSIS_VERSION, "fatos": facts,
-            "leitura_comparacao": comparison_reading(item, rows),
+            "analise_exibicao": display_text, "sugestoes_retiradas": scenario_issues,
+            "leitura_comparacao": comparison_reading(item, rows, periodo_fiscal),
             "observacoes": "" if tax_without_source and _TAX_CAUSE.search(sections.get("fatos", "")) else sections.get("fatos", ""),
             "verificacoes": grounded_review_steps(item) if unsafe_narrative or invalid_accumulator_lookup(item) else str(item.get("verificar") or ""),
             "hipoteses": hypothesis or "A resposta não identifica hipóteses separadamente. Confira a interpretação da IA abaixo.",

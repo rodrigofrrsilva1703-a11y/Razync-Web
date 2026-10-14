@@ -427,3 +427,16 @@
 #fiscalView .fiscal-ai-interpretation-title {margin:20px 0 10px!important;font-size:13px!important;}
 #fiscalView .fiscal-ai-explained-checklist strong {display:block;font-size:12px;line-height:1.7;font-weight:600;}
 #fiscalView .fiscal-ai-step-purpose {margin:5px 0 0;color:#647b8f;font-size:12px;line-height:1.75;}
+
+/* Parecer organizado por resultado, observações e conferência. */
+#fiscalView .fiscal-ai-account-content .fiscal-ai-values {margin:0;padding:20px 0;border-bottom:1px solid #e5ecf2;}
+#fiscalView .fiscal-ai-organized-analysis > h5 {margin:24px 0 10px;font-size:14px;color:#284e6d;}
+#fiscalView .fiscal-ai-conclusion {border-left:3px solid #809bb3;background:#f5f8fb;padding:13px 16px;margin:0;font-size:14px;line-height:1.7;color:#294b66;border-radius:0 8px 8px 0;}
+#fiscalView .fiscal-ai-finding-list {margin:0;padding:0;list-style:none;}
+#fiscalView .fiscal-ai-finding-list li {position:relative;padding:9px 0 9px 16px;border-bottom:1px solid #eef2f5;font-size:13px;line-height:1.75;color:#425b70;}
+#fiscalView .fiscal-ai-finding-list li::before {content:"";position:absolute;top:19px;left:0;width:4px;height:4px;background:#8b9fae;border-radius:50%;}
+#fiscalView .fiscal-ai-open-question {font-size:13px;line-height:1.8;color:#425b70;margin:0;}
+#fiscalView .fiscal-ai-comparison-rule {font-size:11px;line-height:1.65;color:#74899b;margin:16px 0 0;}
+#fiscalView .fiscal-ai-quality-note {border-top:1px solid #e8eef3;margin:14px 0 0;padding-top:12px;font-size:11px;line-height:1.7;color:#718596;}
+#fiscalView .fiscal-ai-data-table td:not(.fiscal-ai-data-value) {text-align:left;}
+#fiscalView .fiscal-ai-data-table td {font-size:12px;line-height:1.65;}

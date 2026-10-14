@@ -244,6 +244,15 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
   assert.doesNotMatch(texts(explained).join(' '),/Não repetir este texto/);
   const stepsExplained = context.renderAIReviewSteps({parecer:{leitura_comparacao:{orientacoes:[{acao:'Compare a nota com L5.',objetivo:'Confirma o vínculo, sem presumir duplicidade.'}]}}});
   assert.match(texts(stepsExplained).join(' '),/Confirma o vínculo/);
+  const organized = context.renderAIFindings({parecer:{analise_exibicao:'A origem exige detalhamento fiscal.',hipoteses:'Texto antigo com duplicidade.',
+    leitura_comparacao:{resultado:'Os valores fecham para o conjunto considerado.',criterio:'Comparação pelos débitos.',observacoes:['Quatro pagamentos ficaram fora.']}}});
+  const organizedText = texts(organized).join(' ');
+  assert.match(organizedText,/Resultado da conta/);
+  assert.match(organizedText,/O que os lançamentos mostram/);
+  assert.match(organizedText,/Quatro pagamentos ficaram fora/);
+  assert.doesNotMatch(organizedText,/Texto antigo com duplicidade/);
+  const table = context.renderAIConsidered({parecer:{leitura_comparacao:{considerados:[{referencia:'L7',data:'01/08/2026',historico:'Compra NF 1',contrapartida:'9',valor_brl:'R$ 10,00',motivo:'Indício fiscal no histórico'}]}}});
+  assert.match(texts(table).join(' '),/Entraram na comparação/);
   const points = context.responsePoints('L1 tem R$ 1.234,56. Pode ser corte de período.\n- Conferir nota.');
   assert.deepEqual(Array.from(points),['L1 tem R$ 1.234,56.','Pode ser corte de período.','Conferir nota.']);
   const fallback = context.renderAIFindings({parecer:{versao:'grounded-v2',hipoteses:'Revisar.',

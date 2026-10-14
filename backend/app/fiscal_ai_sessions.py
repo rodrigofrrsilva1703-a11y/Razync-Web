@@ -170,10 +170,11 @@ def _refresh_cached_review(result, report):
             continue
         rows = [row for row in report.get("lancamentos", []) if row.get("conta") == item.get("conta")]
         groq = item.get("provedor", result.get("provedor")) == "groq"
+        fiscal_ai.link_text_evidence(item, rows)
         item["parecer"] = fiscal_ai.structured_analysis(item, rows,
             sent=min(10, len(rows)) if groq else len(rows),
             shortened=groq and any(len(str(row.get("historico") or "")) > 180 for row in rows),
-            documentary=report.get("documentos_pendentes") is not None)
+            documentary=report.get("documentos_pendentes") is not None, periodo_fiscal=report.get("periodo_fiscal"))
         item["parecer"]["comparacoes_documentais"] = report.get("documentos_pendentes", {}).get(
             f'{item["conta"]}:{item.get("tipo", "")}', [])
         item["auditoria"] = fiscal_ai.audit_analysis(item)

@@ -16,7 +16,7 @@ from fastapi.responses import Response
 from fastapi.concurrency import run_in_threadpool
 from app.fiscal_242 import conferencia_fiscal_preview
 from app.ai_budget import request_slot, daily_report
-from app.fiscal_ai_audit import audit_analysis, structured_analysis
+from app.fiscal_ai_audit import audit_analysis, structured_analysis, link_text_evidence
 from app.fiscal_ai_strategy import REVIEW_PROMPT, output_budget, compact_summary
 from app.groq_fiscal import complete as _groq_completion, is_enabled as _groq_enabled, selected_model as _groq_model
 
@@ -721,10 +721,12 @@ def _validar_resposta_ia(result, report, mapping, references, *, groq=False, pro
                        "evidencias":[references[ref] for ref in dict.fromkeys(evidence)],
                        "documentos_evidencias": [documented[ref] for ref in sorted(cited_docs)]})
         rows = [row for row in report.get("lancamentos", []) if row.get("conta") == mapping[ident]["conta"]]
-        output[-1]["parecer"] = structured_analysis(output[-1], rows,
+        source_rows = [dict(row, referencia=ref) for ref,row in references.items() if str(row.get("conta")) == str(mapping[ident]["conta"])]
+        link_text_evidence(output[-1], source_rows)
+        output[-1]["parecer"] = structured_analysis(output[-1], source_rows,
             sent=min(10, len(rows)) if groq else len(rows),
             shortened=groq and any(len(str(row.get("historico") or "")) > 180 for row in rows),
-            documentary=report.get("documentos_pendentes") is not None)
+            documentary=report.get("documentos_pendentes") is not None, periodo_fiscal=report.get("periodo_fiscal"))
         output[-1]["parecer"]["comparacoes_documentais"] = docs
         output[-1]["auditoria"] = audit_analysis(output[-1])
         output[-1].update(provedor=provider, modelo_usado=model)
@@ -1069,7 +1071,7 @@ def gerar_excel_analise(payload: dict) -> bytes:
 
     head = ["Conta", "Descrição", "Tipo", "Situação", "Acumuladores",
             "Fiscal", "Contábil considerado", "Total do Razão", "Diferença",
-            "Explicação da IA", "O que conferir", "Referências citadas"]
+            "Análise revisada", "O que conferir", "Referências citadas"]
     main.append([""] * len(head))
     main.append(head)
     codes.append(["Conta", "Tipo", "Acumulador", "Descrição", "Valor fiscal"])
@@ -1087,12 +1089,22 @@ def gerar_excel_analise(payload: dict) -> bytes:
         fatos = item.get("evidencias") or []
         if not isinstance(codigos, list) or not isinstance(fatos, list) or len(codigos) > 100 or len(fatos) > 12:
             raise ValueError("A lista de acumuladores ou lançamentos é inválida.")
+        parecer = item.get("parecer") or {}
+        displayed_explanation, displayed_steps = item.get("explicacao"), item.get("verificar")
+        if isinstance(parecer, dict) and "analise_exibicao" in parecer:
+            reading = parecer.get("leitura_comparacao") or {}
+            displayed_explanation = "\n\n".join(str(part) for part in [reading.get("resultado"), *reading.get("observacoes", []), parecer.get("analise_exibicao")] if part)
+            instructions = reading.get("orientacoes") or []
+            if instructions:
+                displayed_steps = "\n".join(f"{index}. {step.get('acao', '')} — {step.get('objetivo', '')}" for index,step in enumerate(instructions,1))
+            else:
+                displayed_steps = parecer.get("verificacoes") or item.get("verificar")
         main.append([
             conta, texto(item.get("descricao"), 300), tipo, texto(item.get("situacao"), 80),
             texto(item.get("acumuladores"), 400),
             numero(valores.get("fiscal")), numero(valores.get("contabil")),
             numero(valores.get("total_conta")), numero(valores.get("diferenca")),
-            texto(item.get("explicacao")), texto(item.get("verificar")),
+            texto(displayed_explanation), texto(displayed_steps),
             texto(", ".join(str(e.get("referencia", "")) for e in fatos if isinstance(e, dict)), 600)
         ])
         parecer = item.get("parecer") or {}
@@ -1102,7 +1114,7 @@ def gerar_excel_analise(payload: dict) -> bytes:
             if not isinstance(missing, list) or len(missing) > 20:
                 raise ValueError("Informações faltantes inválidas.")
             grounded.append([conta, tipo, "Valores oficiais na aba Análises IA; calculados pela ferramenta.",
-                texto(parecer.get("hipoteses")), texto("\n".join(str(x) for x in missing)),
+                texto(parecer.get("analise_exibicao", parecer.get("hipoteses"))), texto("\n".join(str(x) for x in missing)),
                 texto(f"{coverage.get('enviados', 0)} de {coverage.get('disponiveis', 0)} lançamentos; "
                       f"históricos abreviados: {'sim' if coverage.get('historicos_abreviados') else 'não'}"),
                 texto(" · ".join(str(x) for x in (item.get("provedor"), item.get("modelo_usado")) if x), 300)])

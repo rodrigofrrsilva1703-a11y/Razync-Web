@@ -128,3 +128,68 @@ def test_cached_analysis_gains_explanation_without_an_ai_call(monkeypatch):
     assert "R$ 20,00 abaixo" in text
     assert "Todos os movimentos" in text
     assert "leitura_comparacao" not in item
+
+
+def test_unsupported_payment_scenarios_do_not_reach_displayed_analysis():
+    item = {"conta":"354","tipo":"ENTRADAS","valores":{"fiscal":1610.56,"contabil":1610.56,"total_conta":5202.19},
+        "explicacao":"Hipóteses: Pode haver pagamentos antecipados ou ajustes internos. Pode haver duplicidade de pagamentos. Limitações: Conferir as notas.",
+        "verificar":"Compare L5, L6 e L10.","evidencias":[{"referencia":"L5","conta":"354","historico":"Pago: Eletropaulo ref. 07/2026","debito":1831.06}]}
+    rows = [{"_referencia_ia":ref,"conta":"354","natureza":"DÉBITO","data":"17/08/2026","classificacao":"ALERTA - NÃO FISCAL","historico":history,"debito":amount,"credito":0}
+        for ref,amount,history in [("L5",1831.06,"Pago: Eletropaulo ref. 07/2026"),("L6",150.01,"Pago: Eletropaulo ref. 07/2026"),("L10",1461.67,"Pago: Enel NF 093495297")]]
+    from app.fiscal_ai_audit import link_text_evidence
+    link_text_evidence(item, rows)
+    assert {row["referencia"] for row in item["evidencias"]} == {"L5","L6","L10"}
+    result = structured_analysis(item, rows)
+    assert len(result["sugestoes_retiradas"]) == 3
+    assert "duplicidade" not in result["analise_exibicao"]
+    assert "antecipados" not in result["analise_exibicao"]
+    assert "não sustentam uma causa específica" in result["analise_exibicao"]
+    assert not audit_analysis(item)["referencias_sem_evidencia"]
+    assert "pagamentos antecipados" in item["explicacao"]  # Fonte original preservada.
+
+
+def test_known_references_are_linked_but_unknown_or_other_accounts_are_not():
+    from app.fiscal_ai_audit import link_text_evidence
+    item = {"conta":"1","explicacao":"Hipóteses: Revise L1, L2 e L999.","verificar":"Conferir.","evidencias":[]}
+    link_text_evidence(item,[{"conta":"1","referencia":"L1","historico":"Compra NF 1"}, {"conta":"2","referencia":"L2"}])
+    assert [row["referencia"] for row in item["evidencias"]] == ["L1"]
+    result = structured_analysis(item, [])
+    assert "L999" not in result["analise_exibicao"]
+    assert audit_analysis(item)["referencias_sem_evidencia"] == ["L2","L999"]
+
+
+def test_month_coverage_is_specific_and_does_not_claim_missing_postings():
+    from app.fiscal_ai_audit import comparison_reading
+    item={"conta":"366","tipo":"ENTRADAS","valores":{"fiscal":3115.94,"contabil":1683.62,"total_conta":1683.62}}
+    rows=[{"_referencia_ia":"L16","conta":"366","data":"03/08/2026","natureza":"DÉBITO","debito":1181.02,"credito":0,"historico":"SERVIÇOS DE TERCEIROS CF NF 90702","classificacao":"FISCAL PROVÁVEL"}]
+    result=comparison_reading(item,rows,{"inicio":"01/08/2026","fim":"30/09/2026"})
+    text=" ".join(result["observacoes"])
+    assert "90702" in text and "09/2026" in text
+    assert "não comprova ausência" in text
+    assert result["considerados"][0]["referencia"] == "L16"
+    assert "09/2026" in result["orientacoes"][-1]["acao"]
+    rows[0]["data"]="data ilegível"
+    assert "sem movimentos" not in " ".join(comparison_reading(item,rows,{"inicio":"01/08/2026","fim":"30/09/2026"})["observacoes"])
+
+
+def test_duplicate_candidate_requires_a_repeat_in_sources():
+    from app.fiscal_ai_audit import unsupported_scenarios
+    item={"explicacao":"Hipóteses: Pode haver duplicidade da NF 123, a confirmar pelos documentos."}
+    rows=[{"historico":"Compra CF NF 123","debito":100,"contrapartida":"9"}, {"historico":"Compra CF NF 123","debito":100,"contrapartida":"9"}]
+    assert unsupported_scenarios(item,rows) == []
+    assert unsupported_scenarios(item,rows[:1])
+
+
+def test_excel_uses_the_reviewed_text_and_steps_from_the_page():
+    import io
+    from openpyxl import load_workbook
+    from app.fiscal_ai import gerar_excel_analise
+    item={"conta":"354","tipo":"ENTRADAS","explicacao":"Pode haver duplicidade sem evidência.","verificar":"Procure créditos ausentes.","evidencias":[],
+        "valores":{"fiscal":10,"contabil":10,"total_conta":20},"parecer":{"versao":"grounded-depth-v7","analise_exibicao":"A causa exige confirmar os documentos.",
+        "leitura_comparacao":{"resultado":"Os valores comparados fecham.","observacoes":["Um pagamento ficou fora."],"orientacoes":[{"acao":"Compare a nota.","objetivo":"Confirme o vínculo."}]}}}
+    wb=load_workbook(io.BytesIO(gerar_excel_analise({"analises":[item]})))
+    text=wb["Análises IA"]["J6"].value
+    assert "Os valores comparados fecham" in text and "Um pagamento ficou fora" in text
+    assert "duplicidade" not in text
+    assert "Confirme o vínculo" in wb["Análises IA"]["K6"].value
+    assert "créditos ausentes" not in wb["Análises IA"]["K6"].value
