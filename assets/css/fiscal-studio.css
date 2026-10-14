@@ -408,3 +408,17 @@
   #fiscalView #fiscal242AIResult {max-height:68dvh;padding-right:3px;}
   #fiscalView .fiscal-ai-account-nav {max-height:none;overflow-y:visible;}
 }
+
+/* Leitura contínua: resumo, ações, evidências e limitações. */
+#fiscalView .fiscal-ai-account-content > .fiscal-ai-analysis {padding-top:20px;}
+#fiscalView .fiscal-ai-account-content > .fiscal-ai-analysis h5,
+#fiscalView .fiscal-ai-evidence-group > h5 {font-size:15px;color:#284e6d;margin:0 0 12px;}
+#fiscalView .fiscal-ai-account-content > .fiscal-ai-analysis .fiscal-difference-reading {margin:0 0 12px;padding:0;border:0;background:transparent;font-size:14px;line-height:1.65;}
+#fiscalView .fiscal-ai-account-content .fiscal-ai-values {grid-template-columns:repeat(3,minmax(0,1fr));margin-top:16px;}
+#fiscalView .fiscal-ai-evidence-group {border-top:1px solid #e6ecf1;padding-top:20px;}
+#fiscalView .fiscal-ai-evidence-group .fiscal-ai-data {margin-top:16px;}
+#fiscalView .fiscal-ai-evidence-group .fiscal-ai-data > h5 {font-size:12px;font-weight:600;color:#647b8f;}
+#fiscalView .fiscal-ai-card-title .fiscal-ai-provider {color:#718497;font-size:10px;}
+@media (max-width:680px) {
+  #fiscalView .fiscal-ai-account-content .fiscal-ai-values {grid-template-columns:repeat(2,minmax(0,1fr));}
+}

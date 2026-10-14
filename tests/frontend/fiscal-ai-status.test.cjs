@@ -228,10 +228,10 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
   const texts = entry => [entry.textContent || '', ...entry.children.flatMap(texts)];
   const rendered = texts(cards.find(entry=>entry.item.conta==='1').card).join(' ');
   assert.match(rendered,/Groq · openai\/gpt-oss-120b/);
-  assert.match(rendered,/Possíveis explicações/);
-  assert.match(rendered,/Próximos passos/);
+  assert.match(rendered,/Resumo/);
+  assert.match(rendered,/O que conferir/);
   assert.match(rendered,/10 de 12.*amostra parcial.*históricos abreviados/);
-  assert.match(rendered,/Limites e texto completo da análise/);
+  assert.match(rendered,/Limitações/);
   assert.equal(context.aiSourceLabel({provedor:'gemini',modelo_usado:'gemini-2.5-flash-lite'}),'Gemini · gemini-2.5-flash-lite');
   assert.equal(context.aiSourceLabel({provedor:'openrouter',modelo_usado:'openrouter/free'}),'OpenRouter · openrouter/free');
   assert.equal(context.aiSourceLabel({}),'IA não identificada');
@@ -239,7 +239,7 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
   assert.deepEqual(Array.from(points),['L1 tem R$ 1.234,56.','Pode ser corte de período.','Conferir nota.']);
   const fallback = context.renderAIFindings({parecer:{versao:'grounded-v2',hipoteses:'Revisar.',
     interpretacao:'Texto sem títulos <script>original</script>',informacoes_faltantes:[]}});
-  assert.match(texts(fallback).join(' '),/Interpretação da IA/);
+  assert.match(texts(fallback).join(' '),/Resumo/);
 });
 
 test('exportação Gemini usa relatório pronto, sem nova chamada ao modelo', () => {
@@ -267,8 +267,9 @@ test('pareceres ficam visíveis por conta sem controles para abrir respostas', (
   assert.match(source,/node\("article", "fiscal-ai-card fiscal-ai-account"\)/);
   assert.match(source,/node\("div", "fiscal-ai-card-heading fiscal-ai-account-summary"\)/);
   assert.match(source,/const composition = renderAIComposition\(officialRow\)/);
-  assert.match(source,/reading\.append\(analysis, review\)/);
-  assert.match(source,/content\.appendChild\(renderAIEvidence\(item\)\)/);
+  assert.match(source,/content\.appendChild\(analysis\)/);
+  assert.match(source,/reading\.appendChild\(review\)/);
+  assert.match(source,/evidence\.appendChild\(renderAIEvidence\(item\)\)/);
   assert.match(source,/aiResult\.append\(card\)/);
   assert.match(css,/\.fiscal-ai-account-summary\s*\{/);
   assert.match(css,/\.fiscal-ai-account-content/);
