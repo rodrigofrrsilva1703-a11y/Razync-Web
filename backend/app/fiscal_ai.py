@@ -115,7 +115,8 @@ def detailed_context(report):
             "conta", "tipo", "descricao", "acumuladores", "detalhes_fiscais", "fiscal", "contabil", "total_conta", "diferenca", "extras", "sem_evidencia")}
         group["valores_brl"] = {campo: formatar_brl(summary.get(campo, 0))
             for campo in ("fiscal", "contabil", "total_conta", "diferenca")}
-        candidates = indexed.get(account["conta"], [])
+        candidates = [(i, row) for i, row in indexed.get(account["conta"], [])
+                      if row.get("_tipo_ia", account["tipo"]) == account["tipo"]]
         selected = candidates
         group["lancamentos"] = []
         for i, row in selected:
@@ -133,6 +134,7 @@ def detailed_context(report):
             key = f'{account["conta"]}:{account["tipo"]}'
             group["pendencias_documentais"] = pendentes.get(key, [])
             group["cobertura_documental"] = report.get("cobertura_documental", {}).get(key, {})
+            group["resumo_documental_local"] = report.get("resumo_documental", {}).get(key, {})
     context = {
         "periodo_fiscal": report.get("periodo_fiscal", {}),
         "periodo_razao": report.get("periodo_razao", {}),
@@ -144,7 +146,7 @@ def detailed_context(report):
     coverage = f"Analisados {len(groups)} de {sum(r['situacao'] != 'CONFERE' for r in report['contas'])} grupos com alertas/divergências; {len(references)} lançamentos distintos enviados. Sem corte por quantidade de grupos ou registros no contexto local."
     if isinstance(report.get("documentos_pendentes"), dict):
         coverage = (f"{len(groups)} grupos documentais; {len(references)} lançamentos enviados. "
-                    "Seleção de até 30 documentos e 30 movimentos pendentes por conta/tipo, "
+                    "Nas contas com cobertura documental: seleção de até 30 documentos e 30 movimentos pendentes por conta/tipo. Nas demais, contexto original do Razão. "
                     "priorizando diferenças de valor e data. A cobertura por grupo informa o total "
                     "local e a amostra enviada. Não concluir ausência ou duplicidade sobre registros não enviados.")
     if len(json.dumps(context, ensure_ascii=False).encode()) > 2_000_000:
@@ -720,13 +722,17 @@ def _validar_resposta_ia(result, report, mapping, references, *, groq=False, pro
                        "verificar": padronizar_moeda(item["verificar"]),
                        "evidencias":[references[ref] for ref in dict.fromkeys(evidence)],
                        "documentos_evidencias": [documented[ref] for ref in sorted(cited_docs)]})
-        rows = [row for row in report.get("lancamentos", []) if row.get("conta") == mapping[ident]["conta"]]
+        rows = [row for row in report.get("lancamentos", []) if row.get("conta") == mapping[ident]["conta"]
+                and row.get("_tipo_ia", mapping[ident]["tipo"]) == mapping[ident]["tipo"]]
         source_rows = [dict(row, referencia=ref) for ref,row in references.items() if str(row.get("conta")) == str(mapping[ident]["conta"])]
+        output[-1]["resumo_documental"] = report.get("resumo_documental", {}).get(f'{mapping[ident]["conta"]}:{mapping[ident]["tipo"]}', {})
+        output[-1]["cobertura_documental"] = report.get("cobertura_documental", {}).get(f'{mapping[ident]["conta"]}:{mapping[ident]["tipo"]}', {})
+        output[-1]["parecer"] = {"comparacoes_documentais": docs}
         link_text_evidence(output[-1], source_rows)
         output[-1]["parecer"] = structured_analysis(output[-1], source_rows,
             sent=min(10, len(rows)) if groq else len(rows),
             shortened=groq and any(len(str(row.get("historico") or "")) > 180 for row in rows),
-            documentary=report.get("documentos_pendentes") is not None, periodo_fiscal=report.get("periodo_fiscal"))
+            documentary=bool(output[-1].get("resumo_documental")) or ("resumo_documental" not in report and report.get("documentos_pendentes") is not None), periodo_fiscal=report.get("periodo_fiscal"))
         output[-1]["parecer"]["comparacoes_documentais"] = docs
         output[-1]["auditoria"] = audit_analysis(output[-1])
         output[-1].update(provedor=provider, modelo_usado=model)
@@ -798,7 +804,11 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
             " ETAPA DOCUMENTAL: pendencias_documentais contém apenas registros não conciliados ou ambíguos; "
             "os conciliados foram removidos. Use nota, acumulador, CFOP, data e valor como indícios. "
             "cobertura_documental informa enviados/total pendente local; declare amostras sem generalizar. "
-            "Datas diferentes exigem confirmar o período. Ausência neste contexto não prova omissão."
+            "resumo_documental_local resume o cruzamento integral feito pelo sistema, inclusive conciliados e composição da diferença. "
+            "Use a composição para explicar por que o total difere, citando as pendências selecionadas. "
+            "conta_razao_candidato informa possível vínculo em outra conta; não conclua falta do lançamento ou mapeamento incorreto sem confirmação. "
+            "Se o resumo documental do grupo estiver vazio, analise pelo resumo e Razão disponíveis. "
+            "Datas diferentes e estornos exigem conferir a origem. Ausência neste contexto não prova omissão."
         )
     # Gemini/OpenRouter usam o contexto abaixo; Groq compacta os registros e adapta o prompt.
     # Um resultado só é aceito após validação integral das contas e evidências.
@@ -993,6 +1003,7 @@ async def analyze(
     acumuladores: UploadFile = File(...), razao: UploadFile = File(...),
     filial: str = Form(""), empresa_codigo: str = Form(""),
     provedor: Literal["", "openrouter"] = Form(""),
+    entradas: UploadFile | None = File(None), saidas: UploadFile | None = File(None),
 ):
     if not status()["configurado"]:
         raise HTTPException(
@@ -1003,10 +1014,19 @@ async def analyze(
     if filial and not filial.isdigit():
         raise HTTPException(422, "Código da filial inválido.")
     try:
-        report = await run_in_threadpool(conferencia_fiscal_preview,
-            await acumuladores.read(), acumuladores.filename or "fiscal.xlsx",
-            await razao.read(), razao.filename or "razao.xlsx",
-            int(empresa_codigo) if empresa_codigo else None, filial or None)
+        if entradas is not None or saidas is not None:
+            from app.fiscal_documentos import preparar_relatorio_pendencias_para_ia
+            report = await run_in_threadpool(preparar_relatorio_pendencias_para_ia,
+                await acumuladores.read(), acumuladores.filename or "fiscal.xlsx",
+                await razao.read(), razao.filename or "razao.xlsx",
+                (await entradas.read(), entradas.filename or "entradas.xlsx") if entradas else None,
+                (await saidas.read(), saidas.filename or "saidas.xlsx") if saidas else None,
+                filial, manter_outros_tipos=True)
+        else:
+            report = await run_in_threadpool(conferencia_fiscal_preview,
+                await acumuladores.read(), acumuladores.filename or "fiscal.xlsx",
+                await razao.read(), razao.filename or "razao.xlsx",
+                int(empresa_codigo) if empresa_codigo else None, filial or None)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     if provedor == "openrouter":

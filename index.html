@@ -17,8 +17,8 @@
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
   <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=investigacao-documental-1">
-  <link rel="stylesheet" href="./assets/css/fiscal-results.css?v=documentos-20261014-13">
-  <link rel="stylesheet" href="./assets/css/fiscal-studio.css?v=documentos-20261014-13">
+  <link rel="stylesheet" href="./assets/css/fiscal-results.css?v=ia-documentos-20261014-14">
+  <link rel="stylesheet" href="./assets/css/fiscal-studio.css?v=ia-documentos-20261014-14">
 </head>
 <body>
   <div class="app-shell">
@@ -267,18 +267,13 @@
                 <p id="fiscal242InvestigarMessage" role="status" aria-live="polite"></p>
               </form>
               <div id="fiscal242InvestigarResultado" hidden></div>
-              <div id="fiscal242InvestigarIAArea" class="fiscal-investigation-ia" hidden>
-                <button type="button" class="secondary-action" id="fiscal242InvestigarIA">Explicar pendências com IA gratuita</button>
-                <p id="fiscal242InvestigarIAMessage" role="status" aria-live="polite"></p>
-                <div id="fiscal242InvestigarIAPareceres"></div>
-              </div>
             </section>
             </div>
             <div class="fiscal-section-panel" data-fiscal-panel="ai" hidden>
             <section class="fiscal-ai">
               <div class="fiscal-ai-heading" id="fiscal242AISection">
                 <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
-                <div><span class="fiscal-ai-eyebrow">ASSISTENTE DE CONFERÊNCIA</span><h3>Análise das pendências</h3><p>Entenda as diferenças, consulte as evidências e veja o que conferir em cada conta.</p><p id="fiscal242AIContext" class="fiscal-ai-context"></p></div>
+                <div><span class="fiscal-ai-eyebrow">REVISÃO DAS CONTAS · IA GRATUITA</span><h3>Análise inteligente</h3><p>Das diferenças às evidências, com um caminho claro para conferir cada conta.</p><p id="fiscal242AIContext" class="fiscal-ai-context"></p></div>
                 <div class="fiscal-ai-heading-tools">
                   <span class="fiscal-ai-provider" id="fiscal242AIProvider">IA</span>
                   <button type="button" class="fiscal-usage-trigger" id="fiscal242UsageButton" aria-haspopup="dialog" aria-controls="fiscal242UsageDialog" aria-expanded="false" title="Ver uso e limites das IAs gratuitas">
@@ -307,6 +302,7 @@
                   </div>
                 </div>
               </dialog>
+              <div class="fiscal-ai-source-panel"><span class="fiscal-ai-source-title">Base da análise</span><div id="fiscal242AISources" class="fiscal-ai-sources"></div><p id="fiscal242AISourceNote">Resumo e Razão formam a base da análise. Entradas e Saídas complementam as evidências quando anexadas.</p></div>
               <div class="fiscal-ai-actions">
                 <button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button>
                 <button type="button" class="secondary-action" id="fiscal242AIExport" disabled>Exportar análise Excel (.xlsx)</button>
@@ -323,7 +319,7 @@
               </section>
               <p id="fiscal242AIStatus" class="fiscal-ai-inline-status" role="status" aria-live="polite">Faça uma conferência para iniciar a análise.</p>
               <details class="fiscal-ai-processing-notes"><summary>Detalhes do processamento</summary><p id="fiscal242AIMessage" role="status" aria-live="polite">Verificando disponibilidade da IA…</p></details>
-              <details class="fiscal-ai-privacy"><summary>Como seus dados são analisados</summary><p>Groq, Gemini ou OpenRouter podem receber contexto das contas com divergência ou alertas, incluindo datas, valores e históricos selecionados que podem conter nomes. Na investigação documental, apenas pendências e lançamentos não conciliados são enviados à IA. As respostas são sugestões para revisão humana; nunca alteram cálculos ou arquivos.</p></details>
+              <details class="fiscal-ai-privacy"><summary>Como seus dados são analisados</summary><p>Groq, Gemini ou OpenRouter podem receber contexto das contas com divergência ou alertas, incluindo datas, valores e históricos selecionados que podem conter nomes. Quando Entradas ou Saídas estão anexadas, o sistema cruza os documentos localmente e envia totais do cruzamento e uma seleção das pendências. Tipos sem documento mantêm o contexto do resumo e do Razão. As respostas são sugestões para revisão humana; nunca alteram cálculos ou arquivos.</p></details>
               <div id="fiscal242AIToolbar" class="fiscal-ai-toolbar" hidden>
                 <div class="fiscal-ai-toolbar-heading">
                   <div>
@@ -589,7 +585,7 @@
   <script src="./assets/js/company-guides.js?v=1001-santander-pdf"></script>
   <script src="./assets/js/app.js?v=operating-hours-20261013-1"></script>
   <script src="./assets/js/migration.js?v=fiscal-modern-20261013-5"></script>
-  <script src="./assets/js/fiscal-242.js?v=fiscal-workspace-documentos-20261014-13"></script>
+  <script src="./assets/js/fiscal-242.js?v=fiscal-workspace-ia-documentos-20261014-14"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>

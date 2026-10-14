@@ -23,6 +23,7 @@
   };
   let data = null;
   let previewBody = null;
+  let aiInputBody = null;
   let aiController = null;
   let aiConfigured = false;
 
@@ -421,6 +422,25 @@
       item.evidencias.map(row => [row.referencia, row.data || "—", row.historico || "Histórico não informado",
         row.contrapartida || "—", money.format(Number(row.debito || 0)), money.format(Number(row.credito || 0))]), "fiscal-ai-evidence");
   }
+  function renderAIDocumentary(item, evidence = false) {
+    const summary = item.resumo_documental;
+    const docs = item.parecer?.comparacoes_documentais || [];
+    if ((!summary && !docs.length) || (evidence && !docs.length)) return null;
+    const section = node("section", "fiscal-ai-documentary");
+    section.appendChild(node("h5", "", evidence ? "Documentos usados na análise" : "Cruzamento de Entradas e Saídas"));
+    if (summary && !evidence) section.appendChild(node("p", "fiscal-ai-documentary-summary", summary.conciliados + " de " + summary.documentos_lidos +
+      " linhas fiscais conciliadas no cruzamento local · " + summary.documentos_pendentes + " para conferir."));
+    if (evidence && docs.length) section.appendChild(renderAIDataTable("Documentos selecionados para a IA", ["Nota / acumulador", "Fiscal", "Razão candidato", "Diferença", "Leitura"],
+      docs.map(d => [d.nota + " · " + d.acumulador, d.valor_fiscal_grupo_brl || d.valor_brl,
+        (d.valor_razao_candidato_brl || "Não identificado") + (d.conta_razao_candidato ? " · conta " + d.conta_razao_candidato : ""),
+        d.diferenca_candidato_brl || "—", investigationStatus(d.situacao)]), "fiscal-ai-documents"));
+    const coverage = item.cobertura_documental;
+    if (coverage) section.appendChild(node("p", "fiscal-ai-documentary-coverage", "Enviado à IA: " + coverage.documentos_enviados + "/" + coverage.documentos_pendentes +
+      " documentos pendentes e " + coverage.lancamentos_enviados + "/" + coverage.lancamentos_pendentes + " movimentos." +
+      (coverage.amostra ? " A amostra não representa leitura integral pela IA." : "")));
+    return section;
+  }
+
   function renderAIEntries(entries) {
       for (const item of entries) {
         if (aiCards.some(entry => keyOf(entry.item) === keyOf(item))) continue;
@@ -459,6 +479,8 @@
           });
           content.appendChild(metrics);
         }
+        const documentary = renderAIDocumentary(item);
+        if (documentary) content.appendChild(documentary);
         content.appendChild(analysis);
         const composition = renderAIComposition(officialRow);
         const reading = node("div", "fiscal-ai-reading");
@@ -473,6 +495,8 @@
         }
         const evidence = node("section", "fiscal-ai-evidence-group");
         evidence.appendChild(node("h5", "", "Base da análise"));
+        const documentaryEvidence = renderAIDocumentary(item, true);
+        if (documentaryEvidence) evidence.appendChild(documentaryEvidence);
         const considered = renderAIConsidered(item);
         if (considered) evidence.appendChild(considered);
         else if (item.evidencias?.length) evidence.appendChild(renderAIEvidence(item));
@@ -510,7 +534,9 @@
       ]);
       return normalizeAISearch([
         item.conta, item.descricao, item.tipo, status, item.explicacao,
-        item.verificar, ...evidencias
+        item.verificar, ...evidencias,
+        ...(item.parecer?.leitura_comparacao?.observacoes || []),
+        ...(item.parecer?.comparacoes_documentais || []).flatMap(d => [d.referencia, d.nota, d.acumulador, d.conta_razao_candidato, d.criterio])
       ].join(" ")).includes(searchText);
     });
   }
@@ -611,6 +637,12 @@
     let completed = [...results.values()].reduce((total, result) => total + result.analises.length, 0);
     const cleanup = () => { if (options.get() === state) options.discard(); };
     onProgress(completed, session.grupos, 0);
+    if (!session.lotes.length) {
+      options.discard();
+      return {analises:[], provedor:"local", gratuito:true, grupos_pendentes:0,
+        apoio_documental:session.apoio_documental, cobertura_documental:session.cobertura_documental,
+        aviso:"Não restaram contas com pendências para a IA. Conferência concluída localmente, sem consumir tokens."};
+    }
     controller.signal.addEventListener("abort", cleanup, {once:true});
     try {
       const providers = [...new Set(session.lotes.map(batch => batch.provedor))];
@@ -658,6 +690,7 @@
         modelo_usado:[...new Set(ordered.map(result => result.modelo_usado).filter(Boolean))].join("; "),
         fallback_usado:ordered.some(result => result.fallback_usado),
         cobertura_documental:session.cobertura_documental,
+        apoio_documental:session.apoio_documental,
         aviso:pending ? "Análise parcial: " + completed + " de " + session.grupos + " grupos concluídos; " + pending + " pendentes. " + failures.map(item => item.mensagem).join(" ")
           : "Análise concluída para todos os " + session.grupos + " grupos com alertas/divergências. Sugestões para revisão humana; os cálculos foram preservados.",
         limite:session.registros + " registros disponíveis no processamento local, sem corte global de 1.500 registros ou 12 grupos. " +
@@ -689,14 +722,41 @@
   aiRetry.addEventListener("click", () => aiButton.click());
   aiButton.after(aiRetry);
 
+  function syncAISources() {
+    const area = byId("fiscal242AISources");
+    if (!area) return;
+    area.replaceChildren();
+    [["Resumo fiscal", !!previewBody], ["Razão", !!previewBody],
+      ["Entradas", !!byId("fiscal242Entradas").files?.length], ["Saídas", !!byId("fiscal242Saidas").files?.length]]
+      .forEach(([label, ready]) => {
+        const chip = node("span", "fiscal-ai-source" + (ready ? " is-ready" : ""), (ready ? "✓ " : "+ ") + label);
+        area.appendChild(chip);
+      });
+    const hasDocuments = !!byId("fiscal242Entradas").files?.length || !!byId("fiscal242Saidas").files?.length;
+    byId("fiscal242AISourceNote").textContent = hasDocuments ?
+      "Os documentos anexados serão cruzados localmente. A IA receberá os totais do cruzamento e uma seleção das pendências." :
+      "Resumo e Razão formam a base da análise. Entradas e Saídas anexadas em Resultados complementam as evidências.";
+  }
+  function selectedAIRequest() {
+    if (!previewBody) return null;
+    if (aiInputBody) return aiInputBody;
+    aiInputBody = new FormData();
+    for (const [key, value] of previewBody.entries()) aiInputBody.append(key, value);
+    for (const [id, key] of [["fiscal242Entradas", "entradas"], ["fiscal242Saidas", "saidas"]]) {
+      const file = byId(id).files?.[0]; if (file) aiInputBody.append(key, file);
+    }
+    return aiInputBody;
+  }
+
   aiButton.addEventListener("click", async () => {
     if (!previewBody || !aiConfigured) return;
-    const resuming = pendingAIState?.snapshot === previewBody;
+    const requestBody = selectedAIRequest();
+    const resuming = pendingAIState?.snapshot === requestBody;
     if (!resuming) aiReport = null;
     aiRetry.hidden = true;
     aiExport.disabled = true;
     aiController?.abort(); const controller = new AbortController(); aiController = controller;
-    const snapshot = previewBody; aiButton.disabled = true;
+    const snapshot = requestBody; aiButton.disabled = true;
     if (!resuming) { aiResult.replaceChildren(); clearAIAccounts(); }
     aiResult.setAttribute("aria-busy", "true");
     aiCancelButton.hidden = false;
@@ -724,8 +784,13 @@
           (failed ? " · " + failed + " lotes pendentes" : "") + ". " +
           (waiting || "As IAs gratuitas dividem os lotes; resultados concluídos são reaproveitados.");
       });
-      if (controller.signal.aborted || previewBody !== snapshot) return;
+      if (controller.signal.aborted || selectedAIRequest() !== snapshot) return;
       aiReport = result;
+      const support = result.apoio_documental;
+      if (support?.tipos?.length) byId("fiscal242AISourceNote").textContent =
+        support.documentos_lidos + " linhas fiscais cruzadas localmente · " + support.conciliados + " conciliadas. " +
+        (support.contas_resolvidas?.length ? support.contas_resolvidas.length + " conta(s) resolvida(s) sem chamada de IA. " : "") +
+        "A IA recebeu somente o contexto necessário e as pendências selecionadas; a cobertura aparece em cada conta.";
       // Preserva os cartões já recebidos e as contas abertas durante a espera.
       // A troca de provedor é transparente: os mesmos pareceres são renderizados.
       if (result.provedor === "cooperacao") {
@@ -739,7 +804,7 @@
       }
       aiExport.disabled = !(Array.isArray(result.analises) && result.analises.length);
       const providerLabel = result.provedor === "cooperacao" ? (result.nomes_provedores || "Gemini + Groq") : result.provedor === "groq" ? "GroqCloud" : result.provedor === "openrouter" ? "OpenRouter" : result.provedor === "gemini" ? "Gemini" : "IA";
-      aiInlineStatus.textContent = result.analises?.length
+      aiInlineStatus.textContent = result.provedor === "local" ? "Conferência concluída localmente; não há pendências para enviar à IA." : result.analises?.length
         ? "Parecer recebido do " + providerLabel + ". Selecione uma conta para ler a análise ou exporte o Excel."
         : "O " + providerLabel + " concluiu a análise. Não foram identificadas contas a explicar.";
       const entries = Array.isArray(result.analises) ? result.analises : [];
@@ -752,7 +817,7 @@
         (result.modelo_usado ? " Modelo utilizado: " + result.modelo_usado + "." : "") +
         (result.fallback_usado ? " A análise foi concluída pelo provedor de reserva." : "");
     } catch (error) {
-      if (!controller.signal.aborted && previewBody === snapshot) {
+      if (!controller.signal.aborted && selectedAIRequest() === snapshot) {
         aiMessage.textContent = error.message || "Não foi possível gerar a análise.";
         aiInlineStatus.textContent = "A análise não foi concluída. Confira o painel e tente novamente.";
         showAIProgress("error");
@@ -860,7 +925,7 @@
       pendingRequest = null;
     }
     data = null;
-    previewBody = null;
+    previewBody = null; aiInputBody = null; syncAISources();
     byId("fiscal242Unmapped").hidden = true;
     byId("fiscal242UnmappedRows").replaceChildren();
     selectedKey = "";
@@ -1152,6 +1217,7 @@
     if (fiscal.inicio && fiscal.fim) parts.push("Fiscal: " + fiscal.inicio + " a " + fiscal.fim);
     if (report.filial_aplicada) parts.push("Filial do Razão: " + report.filial_aplicada);
     byId("fiscal242Period").textContent = parts.join(" · ");
+    syncAISources();
     byId("fiscal242AIContext").textContent = (report.empresa_nome || "Conferência atual") +
       (parts.length ? " · " + parts.join(" · ") : "");
     const warningBox = byId("fiscal242Warnings");
@@ -1208,35 +1274,9 @@
   const investigationMessage = byId("fiscal242InvestigarMessage");
   const investigationResults = byId("fiscal242InvestigarResultado");
   let investigationController = null;
-  let investigationReport = null;
-  let investigationBody = null;
-  let docAIController = null;
-  let pendingDocAI = null;
-
-  function discardDocAI() {
-    const old = pendingDocAI;
-    pendingDocAI = null;
-    if (old) fetch(old.url, {method:"DELETE", keepalive:true}).catch(() => {});
-  }
-  function clearDocAI() {
-    docAIController?.abort();
-    docAIController = null;
-    discardDocAI();
-    byId("fiscal242InvestigarIA").disabled = false;
-    byId("fiscal242InvestigarIA").textContent = "Analisar pendências com IA";
-    byId("fiscal242InvestigarIAPareceres").replaceChildren();
-    byId("fiscal242InvestigarIAMessage").textContent = "";
-  }
-
   function resetInvestigation() {
     investigationController?.abort();
     investigationController = null;
-    investigationReport = null;
-    investigationBody = null;
-    clearDocAI();
-    byId("fiscal242InvestigarIAArea").hidden = true;
-    byId("fiscal242InvestigarIAPareceres").replaceChildren();
-    byId("fiscal242InvestigarIAMessage").textContent = "";
     investigation.hidden = true;
     investigationResults.hidden = true;
     investigationResults.replaceChildren();
@@ -1494,10 +1534,6 @@
       investigationMessage.textContent = "Selecione Entradas, Saídas ou ambos.";
       return;
     }
-    clearDocAI();
-    investigationReport = null;
-    investigationBody = null;
-    byId("fiscal242InvestigarIAArea").hidden = true;
     const snapshot = data;
     const body = new FormData();
     const files = selectedFiles();
@@ -1518,12 +1554,7 @@
       if (!response.ok) throw new Error(await responseError(response));
       const result = await response.json();
       if (controller.signal.aborted || snapshot !== data) return;
-      investigationReport = result;
-      investigationBody = body;
       renderInvestigation(result);
-      byId("fiscal242InvestigarIAArea").hidden = !(result.contas || []).some(row => row.razao_pendente_total || (row.documentos || []).some(doc => doc.situacao !== "CONCILIADO"));
-      byId("fiscal242InvestigarIAPareceres").replaceChildren();
-      byId("fiscal242InvestigarIAMessage").textContent = "";
       investigationMessage.textContent = "Investigação concluída. Selecione uma conta para comparar os documentos e os lançamentos lado a lado.";
     } catch (error) {
       if (error.name !== "AbortError" && snapshot === data) {
@@ -1539,101 +1570,16 @@
 
 
 
-  const docAi = byId("fiscal242InvestigarIA");
-  const docAiMessage = byId("fiscal242InvestigarIAMessage");
-  const docAiResults = byId("fiscal242InvestigarIAPareceres");
   ["fiscal242Entradas", "fiscal242Saidas"].forEach(id => byId(id).addEventListener("change", () => {
-    investigationController?.abort();
-    investigationController = null;
+    investigationController?.abort(); investigationController = null;
     investigationButton.disabled = false;
-    investigationReport = null;
-    investigationBody = null;
-    clearDocAI();
-    investigationResults.replaceChildren();
-    investigationResults.hidden = true;
-    byId("fiscal242InvestigarIAArea").hidden = true;
+    investigationResults.replaceChildren(); investigationResults.hidden = true;
     investigationMessage.textContent = "Arquivos alterados. Investigue novamente para atualizar as pendências.";
+    aiController?.abort(); discardPendingAI(); aiInputBody = null; aiReport = null;
+    clearAIAccounts(); aiResult.replaceChildren(); aiExport.disabled = true; aiRetry.hidden = true;
+    aiInlineStatus.textContent = "Os documentos foram alterados. Gere uma nova análise para usar os dados atuais.";
+    syncAISources();
   }));
-  function renderDocAI(entries) {
-    docAiResults.replaceChildren();
-    entries.forEach(item => {
-      const card = node("article", "fiscal-investigation-account");
-      card.appendChild(node("h4", "", "Conta " + item.conta + " · " + item.tipo));
-      card.appendChild(node("p", "fiscal-ai-provider", aiSourceLabel(item)));
-      if (item.valores) card.appendChild(node("p", "fiscal-difference-reading",
-        "Fiscal: " + money.format(Number(item.valores.fiscal || 0)) + " · Contábil considerado: " + money.format(Number(item.valores.contabil || 0)) + " · Diferença: " + money.format(Number(item.valores.diferenca || 0))));
-      const comparisons = item.parecer?.comparacoes_documentais || [];
-      if (comparisons.length) {
-        const facts = node("details", "fiscal-ledger-disclosure");
-        facts.appendChild(node("summary", "fiscal-ledger-toggle", "Comparação por documento · cálculo do sistema"));
-        facts.appendChild(investigationTable(["Referência / nota", "Fiscal", "Razão candidato", "Diferença"], comparisons, (tr, doc) => {
-          cell(tr, doc.referencia + " · " + doc.nota);
-          cell(tr, doc.valor_brl);
-          cell(tr, doc.valor_razao_candidato_brl || "Não identificado");
-          cell(tr, doc.diferenca_candidato_brl || "—");
-        }));
-        facts.appendChild(node("p", "fiscal-disclaimer", "Diferença = valor do candidato no Razão menos fiscal. O candidato é um indício; confirme o vínculo antes de ajustar."));
-        card.appendChild(facts);
-      }
-      card.appendChild(renderAIFindings(item));
-      card.appendChild(node("h5", "", "Próximos passos"));
-      card.appendChild(renderAIReviewSteps(item));
-      if (item.auditoria) {
-        const notes = Array.isArray(item.auditoria.alertas) ? item.auditoria.alertas : [];
-        const audit = node("div", "fiscal-ai-audit");
-        audit.appendChild(node("strong", "", notes.length ? "Auditoria · precisa revisar" : "Auditoria · sem alertas estruturais"));
-        for (const note of notes) audit.appendChild(node("p", "", String(note)));
-        card.appendChild(audit);
-      }
-      card.appendChild(renderAILimits(item));
-      docAiResults.appendChild(card);
-    });
-  }
-  docAi.addEventListener("click", async () => {
-    if (!data || !investigationReport || !investigationBody || !aiConfigured) {
-      docAiMessage.textContent = "Verifique a disponibilidade da IA gratuita e conclua a investigação documental.";
-      return;
-    }
-    const snapshot = data;
-    const body = investigationBody;
-    const controller = new AbortController();
-    docAIController?.abort();
-    docAIController = controller;
-    docAi.disabled = true;
-    docAiMessage.textContent = "Enviando somente pendências e evidências necessárias para a IA gratuita…";
-    try {
-      const report = await analyzeInBatches(body, controller, (done, total, failed, waiting, ready) => {
-        if (data !== snapshot || investigationBody !== body || controller.signal.aborted) return;
-        docAiMessage.textContent = waiting || "Análise documental: " + done + " de " + total + " grupos concluídos." +
-          (failed ? " Há lotes pendentes que poderão ser retomados." : "");
-        if (ready) renderDocAI(ready);
-      }, {get: () => pendingDocAI, set: value => { pendingDocAI = value; }, discard: discardDocAI,
-          endpoint: "/api/v1/conferencia-fiscal/investigar/ia/sessoes", documental:true});
-      if (data !== snapshot || investigationBody !== body || controller.signal.aborted) return;
-      renderDocAI(report.analises || []);
-      const provider = report.provedor === "groq" ? "GroqCloud" :
-        report.provedor === "gemini" ? "Gemini" :
-        report.provedor === "openrouter" ? "OpenRouter" : report.nomes_provedores || "IA";
-      const coverage = Object.entries(report.cobertura_documental || {}).map(([key, c]) =>
-        "Conta " + key + ": " + c.documentos_enviados + "/" + c.documentos_pendentes +
-        " documentos e " + c.lancamentos_enviados + "/" + c.lancamentos_pendentes + " movimentos enviados" +
-        (c.amostra ? " (amostra para economizar a cota; revisão restante necessária)" : "") + ".").join(" ");
-      docAiMessage.textContent = (report.aviso || "Análise concluída.") +
-        ((report.analises || []).length ? " Provedor: " + provider + "." : "") +
-        (report.fallback_usado ? " Foi utilizado um provedor gratuito de reserva." : "") + " " + coverage;
-      docAi.textContent = report.grupos_pendentes ? "Retomar lotes pendentes" : "Ver análise já concluída";
-    } catch (error) {
-      if (error.name !== "AbortError" && data === snapshot && investigationBody === body) {
-        docAiMessage.textContent = (error.message || "Não foi possível consultar a IA.") +
-          " As pendências documentais calculadas permanecem disponíveis. Você pode tentar novamente mais tarde.";
-      }
-    } finally {
-      if (docAIController === controller) {
-        docAIController = null;
-        docAi.disabled = false;
-      }
-    }
-  });
 
   filter.addEventListener("change", () => { renderTable(); syncQuickFilters(); });
   search.addEventListener("input", renderTable);
@@ -1675,7 +1621,7 @@
       const report = await response.json();
       if (controller.signal.aborted) return;
       renderResponse(report);
-      previewBody = body;
+      previewBody = body; aiInputBody = null; syncAISources();
       aiButton.disabled = !aiConfigured;
       refreshAIStatus();
       setMessage("Conferência concluída. Os resultados estão abaixo.", "success");

@@ -150,6 +150,7 @@ def _compact_group(group):
         # Somente pendências documentais; documentos conciliados nunca entram aqui.
         "pendencias_documentais": group.get("pendencias_documentais", [])[:30],
         "cobertura_documental": group.get("cobertura_documental", {}),
+        "resumo_documental_local": group.get("resumo_documental_local", {}),
     }
 
 

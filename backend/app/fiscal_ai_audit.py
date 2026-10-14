@@ -149,10 +149,19 @@ def audit_analysis(item):
             if parsed is not None:
                 amounts.add(parsed)
     for doc in (item.get("parecer") or {}).get("comparacoes_documentais", []):
-        for field in ("valor_brl", "valor_razao_candidato_brl", "diferenca_candidato_brl"):
+        for field in ("valor_brl", "valor_fiscal_grupo_brl", "valor_razao_candidato_brl", "diferenca_candidato_brl"):
             parsed = _number(doc.get(field))
             if parsed is not None:
                 amounts.add(parsed)
+    local = item.get("resumo_documental") or {}
+    for part in (local.get("composicao") or {}).get("itens", []):
+        parsed = _number(part.get("valor"))
+        if parsed is not None:
+            amounts.add(parsed)
+    for field in ("total", "documentos_lidos", "razao_completo_conta"):
+        parsed = _number((local.get("composicao") or {}).get(field))
+        if parsed is not None:
+            amounts.add(parsed)
     cited = set()
     for text in (item.get("explicacao") or "", item.get("verificar") or ""):
         for raw in _MONEY.findall(str(text)):
@@ -417,6 +426,34 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
     if scenario_issues or text_issues or not sections.get("hipoteses"):
         display_text = "Os dados disponíveis não sustentam uma causa específica. A investigação deve partir dos movimentos identificados abaixo e dos documentos que compõem o fiscal."
     reading = comparison_reading(item, rows, periodo_fiscal)
+    local = item.get("resumo_documental") or {}
+    if local:
+        docs = (item.get("parecer") or {}).get("comparacoes_documentais", [])
+        coverage = item.get("cobertura_documental") or {}
+        composition = local.get("composicao") or {}
+        observations = [f"O sistema cruzou {local.get('documentos_lidos', 0)} linhas fiscais: "
+                        f"{local.get('conciliados', 0)} conciliadas e {local.get('documentos_pendentes', 0)} pendentes de conferência."]
+        if coverage:
+            observations.append(f"A IA recebeu {coverage.get('documentos_enviados', 0)} de {coverage.get('documentos_pendentes', 0)} documentos pendentes e "
+                                f"{coverage.get('lancamentos_enviados', 0)} de {coverage.get('lancamentos_pendentes', 0)} movimentos. "
+                                "As contagens completas vêm do cruzamento local; não significam leitura integral pela IA.")
+        for effect in composition.get("itens", []):
+            value = _signed_amount(effect.get("valor"))
+            if value:
+                observations.append(f"{effect['descricao']}: {_brl(value)} de efeito na diferença inicial.")
+        other_accounts = list(dict.fromkeys(str(d["conta_razao_candidato"]) for d in docs if d.get("conta_razao_candidato")))
+        if other_accounts:
+            observations.append("Há candidatos nas contas " + ", ".join(other_accounts) + ". Nota, data, valor e parceiro sustentam a investigação; o vínculo ainda precisa ser confirmado.")
+        notes = list(dict.fromkeys(str(d.get("nota")) for d in docs if d.get("nota")))[:3]
+        steps = [{"acao": "Confira as notas " + ", ".join(notes) if notes else "Confira os movimentos pendentes desta conta",
+                  "objetivo": "Compare documento, série, parceiro, data e valor com os registros candidatos. Confirme o vínculo antes de ajustar a escrituração."}]
+        if other_accounts:
+            steps.insert(0, {"acao": "Verifique o mapeamento do acumulador e as contas " + ", ".join(other_accounts),
+                             "objetivo": "Confira em qual conta a mesma operação foi registrada. Um candidato em outra conta não prova erro nem ausência do lançamento."})
+        reading = {"resultado": f"O cruzamento documental conciliou {local.get('conciliados', 0)} de {local.get('documentos_lidos', 0)} linhas fiscais. "
+                                "A diferença inicial e sua composição permanecem calculadas pelo sistema.",
+                   "observacoes": observations, "orientacoes": steps, "considerados": [], "excluidos": [],
+                   "criterio": "Entradas usam débitos; Saídas usam créditos. Documentos conciliados não foram enviados individualmente à IA; os pendentes foram selecionados com cobertura explícita."}
     if (scenario_issues or text_issues) and reading.get("relacoes"):
         display_text = "Há pares com número de nota e valor coincidentes entre os registros considerados e os pagamentos. Isso sustenta investigar se correspondem à mesma operação em etapas diferentes; não confirma duplicidade nem liquidação. Valide o emissor, os comprovantes e as contrapartidas desses pares."
     return {"versao": ANALYSIS_VERSION, "fatos": facts,

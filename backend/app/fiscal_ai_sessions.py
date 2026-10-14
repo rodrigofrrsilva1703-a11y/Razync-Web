@@ -40,7 +40,7 @@ def _scope_report(report, accounts):
     scoped.update(contas=accounts, lancamentos=[row for row in report.get("lancamentos", [])
                                                if row.get("conta") in codes])
     keys = {f'{row["conta"]}:{row["tipo"]}' for row in accounts}
-    for field in ("documentos_pendentes", "cobertura_documental"):
+    for field in ("documentos_pendentes", "cobertura_documental", "resumo_documental"):
         if field in report:
             scoped[field] = {k: v for k, v in report[field].items() if k in keys}
     return scoped
@@ -149,6 +149,7 @@ def prepare(report):
     timer.start()
     return {"sessao": token, "grupos": len(eligible), "registros": len(report.get("lancamentos", [])),
             "cobertura_documental": report.get("cobertura_documental", {}),
+            "apoio_documental": report.get("apoio_documental", {}),
             "cooperacao": len(providers) > 1, "provedores": providers,
             "lotes": [{k: batch[k] for k in ("id", "provedor", "grupos", "criterio")} for batch in batches]}
 
@@ -168,13 +169,18 @@ def _refresh_cached_review(result, report):
     for item in refreshed.get("analises", []):
         if not isinstance(item, dict) or not isinstance(item.get("valores"), dict) or not item.get("explicacao"):
             continue
-        rows = [row for row in report.get("lancamentos", []) if row.get("conta") == item.get("conta")]
+        rows = [row for row in report.get("lancamentos", []) if row.get("conta") == item.get("conta")
+                and row.get("_tipo_ia", item.get("tipo")) == item.get("tipo")]
         groq = item.get("provedor", result.get("provedor")) == "groq"
+        key = f'{item["conta"]}:{item.get("tipo", "")}'
+        item["resumo_documental"] = report.get("resumo_documental", {}).get(key, {})
+        item["cobertura_documental"] = report.get("cobertura_documental", {}).get(key, {})
+        item.setdefault("parecer", {})["comparacoes_documentais"] = report.get("documentos_pendentes", {}).get(key, [])
         fiscal_ai.link_text_evidence(item, rows)
         item["parecer"] = fiscal_ai.structured_analysis(item, rows,
             sent=min(10, len(rows)) if groq else len(rows),
             shortened=groq and any(len(str(row.get("historico") or "")) > 180 for row in rows),
-            documentary=report.get("documentos_pendentes") is not None, periodo_fiscal=report.get("periodo_fiscal"))
+            documentary=bool(item.get("resumo_documental")) or ("resumo_documental" not in report and report.get("documentos_pendentes") is not None), periodo_fiscal=report.get("periodo_fiscal"))
         item["parecer"]["comparacoes_documentais"] = report.get("documentos_pendentes", {}).get(
             f'{item["conta"]}:{item.get("tipo", "")}', [])
         item["auditoria"] = fiscal_ai.audit_analysis(item)
@@ -304,16 +310,26 @@ def process(token, batch_id):
 
 @router.post("")
 async def create(acumuladores: UploadFile = File(...), razao: UploadFile = File(...),
-                 filial: str = Form(""), empresa_codigo: str = Form("")):
+                 filial: str = Form(""), empresa_codigo: str = Form(""),
+                 entradas: UploadFile | None = File(None), saidas: UploadFile | None = File(None)):
     if not fiscal_ai.status()["configurado"]:
         raise HTTPException(503, "IA não configurada.")
     if (empresa_codigo and not empresa_codigo.isdigit()) or (filial and not filial.isdigit()):
         raise HTTPException(422, "Código de empresa ou filial inválido.")
     try:
-        report = await run_in_threadpool(fiscal_ai.conferencia_fiscal_preview,
-            await acumuladores.read(), acumuladores.filename or "fiscal.xlsx",
-            await razao.read(), razao.filename or "razao.xlsx",
-            int(empresa_codigo) if empresa_codigo else None, filial or None)
+        if entradas is not None or saidas is not None:
+            from app.fiscal_documentos import preparar_relatorio_pendencias_para_ia
+            report = await run_in_threadpool(preparar_relatorio_pendencias_para_ia,
+                await acumuladores.read(), acumuladores.filename or "fiscal.xlsx",
+                await razao.read(), razao.filename or "razao.xlsx",
+                (await entradas.read(), entradas.filename or "entradas.xlsx") if entradas else None,
+                (await saidas.read(), saidas.filename or "saidas.xlsx") if saidas else None,
+                filial, manter_outros_tipos=True)
+        else:
+            report = await run_in_threadpool(fiscal_ai.conferencia_fiscal_preview,
+                await acumuladores.read(), acumuladores.filename or "fiscal.xlsx",
+                await razao.read(), razao.filename or "razao.xlsx",
+                int(empresa_codigo) if empresa_codigo else None, filial or None)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     return JSONResponse(await run_in_threadpool(prepare, report), headers={"Cache-Control": "no-store"})

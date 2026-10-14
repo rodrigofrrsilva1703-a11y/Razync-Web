@@ -568,3 +568,73 @@ def test_candidato_ja_conciliado_a_outra_serie_permanece_ambiguo():
     assert next(d for d in docs if d["serie"] == "1")["situacao"] == "CONCILIADO"
     assert next(d for d in docs if d["serie"] == "2")["situacao"] == "AMBIGUO"
     assert group["composicao"]["confere_com_inicial"] is True
+
+
+def test_ia_principal_usa_entradas_sem_descartar_saidas_sem_anexo():
+    from app.fiscal_documentos import preparar_relatorio_pendencias_para_ia
+    f, r = initial()
+    report = preparar_relatorio_pendencias_para_ia(f,"f.xlsx",r,"r.xlsx",(detail(),"d.xlsx"),filial="242",manter_outros_tipos=True)
+    assert {(g["conta"],g["tipo"]) for g in report["contas"]} == {("508","ENTRADAS"),("408","SAÍDAS")}
+    assert any(m["conta"] == "408" and m["credito"] == 700 for m in report["lancamentos"])
+    assert report["resumo_documental"]["508:ENTRADAS"]["conciliados"] == 1
+    assert report["apoio_documental"]["tipos"] == ["ENTRADAS"]
+    assert "408:SAÍDAS" not in report["resumo_documental"]
+    assert not any("CF NF 100" in m["historico"] for m in report["lancamentos"])
+
+
+def test_rota_principal_com_documentos_entrega_evidencias_e_composicao_sem_ia_extra(monkeypatch):
+    from app import fiscal_ai, fiscal_ai_sessions as sessions
+    monkeypatch.setattr(fiscal_ai, "status", lambda:{"configurado":True})
+    monkeypatch.setattr(sessions, "free_providers", lambda:["gemini"])
+    calls=[]
+    def explain(report, **kwargs):
+        calls.append(report)
+        context,mapping,refs,_=fiscal_ai.detailed_context(report)
+        incoming=next(g for g in context["grupos"] if g["resumo"]["conta"]=="508")
+        assert incoming["resumo_documental_local"]["composicao"]["confere_com_inicial"] is True
+        assert all(d["nota"]!="100" for d in incoming["pendencias_documentais"])
+        answer={"analises":[{"grupo":g["grupo"],"explicacao":"Fatos: os registros permitem revisão. Hipóteses: conferir os documentos pendentes. Limitações: confirmar os vínculos.","verificar":"1. Compare as notas e os valores com o Razão.","evidencias":[]} for g in context["grupos"]]}
+        return {"analises":fiscal_ai._validar_resposta_ia(answer,report,mapping,refs,provider="gemini",model="free"),"provedor":"gemini","gratuito":True}
+    monkeypatch.setattr(fiscal_ai,"explain",explain)
+    f,r=initial();client=TestClient(app)
+    response=client.post('/api/v1/conferencia-fiscal/ia/sessoes',files={"acumuladores":('f.xlsx',f),"razao":('r.xlsx',r),"entradas":('d.xlsx',detail())},data={"filial":"242"})
+    assert response.status_code==200,response.text
+    manifest=response.json();assert manifest["apoio_documental"]["documentos_lidos"]==3
+    url='/api/v1/conferencia-fiscal/ia/sessoes/'+manifest['sessao']
+    result=client.post(url+'/lotes/0');assert result.status_code==200,result.text
+    item=next(i for i in result.json()['analises'] if i['conta']=='508')
+    assert item['resumo_documental']['documentos_lidos']==3
+    assert item['cobertura_documental']['documentos_enviados']==2
+    assert item['parecer']['comparacoes_documentais'][0]['nota']=='101'
+    assert item['parecer']['leitura_comparacao']['considerados']==[]
+    assert 'cruzamento documental' in item['parecer']['leitura_comparacao']['resultado'].lower()
+    assert client.post(url+'/lotes/0').status_code==200
+    assert len(calls)==1
+    assert client.delete(url).status_code==200
+
+
+def test_contexto_documental_informa_candidato_em_outra_conta():
+    from app.fiscal_documentos import preparar_relatorio_pendencias_para_ia
+    f,r=initial();table=pd.read_excel(io.BytesIO(r),header=None).values.tolist()
+    table[2][1]=9999;table[4][2]='COMPRA CF NF 100 - Fornecedor Teste'
+    table.insert(5,table[3].copy());table.insert(5,['Conta:',508])
+    report=preparar_relatorio_pendencias_para_ia(f,'f.xlsx',book(table),'r.xlsx',(detail(),'d.xlsx'),filial='242',manter_outros_tipos=True)
+    d=next(d for d in report['documentos_pendentes']['508:ENTRADAS'] if d['nota']=='100')
+    assert d['conta_razao_candidato']=='9999'
+    assert d['valor_razao_candidato_brl']=='R$ 1.000,00'
+    assert d['vinculo_confirmado'] is False
+
+
+def test_entrada_documental_nao_mistura_saida_da_mesma_conta_no_contexto():
+    from app.fiscal_documentos import preparar_relatorio_pendencias_para_ia
+    from app.fiscal_ai import detailed_context
+    f,r=initial()
+    fr=pd.read_excel(io.BytesIO(f),header=None).values.tolist();fr[7][3]=508
+    rr=pd.read_excel(io.BytesIO(r),header=None).values.tolist();rr[-3][1]=508
+    report=preparar_relatorio_pendencias_para_ia(book(fr),'f.xlsx',book(rr),'r.xlsx',(detail(),'d.xlsx'),filial='242',manter_outros_tipos=True)
+    context,*_=detailed_context(report)
+    incoming=next(g for g in context['grupos'] if g['resumo']['tipo']=='ENTRADAS')
+    outgoing=next(g for g in context['grupos'] if g['resumo']['tipo']=='SAÍDAS')
+    assert incoming['lancamentos'] and all(m['debito'] for m in incoming['lancamentos'])
+    assert outgoing['lancamentos'] and all(m['credito'] for m in outgoing['lancamentos'])
+    assert outgoing['resumo_documental_local']=={}
