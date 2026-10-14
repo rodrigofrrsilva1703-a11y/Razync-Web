@@ -93,3 +93,17 @@ def test_unsupported_tax_cause_is_locally_blocked_without_ai_retry():
     assert item == original
     item["evidencias"][0]["historico"] = "Ajuste de apuração documentado"
     assert structured_analysis(item, item["evidencias"])["hipoteses"] == "Pode ser crédito de imposto ou ajuste de apuração."
+
+
+def test_existing_invoice_cannot_be_suggested_as_not_yet_posted():
+    from app.fiscal_ai_audit import structured_analysis, audit_analysis
+    item = {"conta":"366", "acumuladores":"3082", "explicacao":
+        "Fatos: L16 registra NF 90702. Hipóteses: Pode ser que parte da NF 90702 ainda não tenha sido lançada no razão. Limitações: Falta conferir a ausência.",
+        "verificar":"1. Localizar no razão a referência do acumulador 3082.\n2. Confira os débitos ausentes.",
+        "evidencias":[{"referencia":"L16", "historico":"Serviços NF 90702"}]}
+    review = structured_analysis(item, item["evidencias"])
+    assert "já constam no Razão" in review["hipoteses"]
+    assert "Localizar no razão a referência do acumulador" not in review["verificacoes"]
+    assert "NF 90702" in review["observacoes"]
+    assert not any("conferir a ausência" in text for text in review["informacoes_faltantes"])
+    assert len(audit_analysis(item)["alertas"]) >= 2
