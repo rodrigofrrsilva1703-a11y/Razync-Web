@@ -477,7 +477,9 @@
     return entries.some(entry => keyOf(entry.item) === activeKey) ? activeKey : entries.length ? keyOf(entries[0].item) : "";
   }
   function renderAIReader(matching) {
+    const previousKey = activeAIKey;
     activeAIKey = chooseAIKey(matching, activeAIKey);
+    if (previousKey !== activeAIKey) aiResult.scrollTop = 0;
     aiReader.hidden = matching.length === 0;
     aiAccounts.replaceChildren();
     matching.forEach(({item, card}) => {
@@ -491,7 +493,7 @@
       footer.appendChild(node("small", "", statusLabels[item.situacao] || item.situacao || item.tipo));
       if (item.valores?.diferenca !== undefined) footer.appendChild(node("b", "", money.format(Number(item.valores.diferenca) || 0)));
       button.appendChild(footer);
-      button.addEventListener("click", () => {activeAIKey = keyOf(item); renderAIReader(matching);});
+      button.addEventListener("click", () => {activeAIKey = keyOf(item); renderAIReader(matching); aiResult.scrollTop = 0;});
       aiAccounts.appendChild(button);
     });
   }

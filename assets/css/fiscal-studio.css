@@ -400,3 +400,11 @@
 #fiscalView .fiscal-ai-data-value {text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
 #fiscalView .fiscal-ai-evidence td:nth-child(3) {min-width:180px;max-width:340px;overflow-wrap:anywhere;}
 #fiscalView .fiscal-ai-composition td:nth-child(2) {text-align:left;white-space:normal;}
+/* O parecer rola dentro do próprio painel; as contas ficam ao lado. */
+#fiscalView #fiscal242AIResult {max-height:min(76dvh,860px);overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable;padding-right:5px;}
+#fiscalView #fiscal242AIResult:focus-visible {outline:2px solid #8aaac5;outline-offset:3px;border-radius:10px;}
+#fiscalView .fiscal-ai-account-nav {max-height:min(76dvh,860px);overflow-y:auto;overscroll-behavior-y:contain;}
+@media (max-width:680px) {
+  #fiscalView #fiscal242AIResult {max-height:68dvh;padding-right:3px;}
+  #fiscalView .fiscal-ai-account-nav {max-height:none;overflow-y:visible;}
+}
