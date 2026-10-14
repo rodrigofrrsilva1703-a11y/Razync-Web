@@ -399,7 +399,7 @@
         const review = node("section", "fiscal-ai-review");
         const reviewHeading = node("div", "fiscal-ai-section-heading");
         reviewHeading.appendChild(node("h5", "", "O que conferir"));
-        review.append(reviewHeading, renderChecklist(item.verificar));
+        review.append(reviewHeading, renderChecklist(item.parecer?.verificacoes || item.verificar));
         content.appendChild(analysis);
         if (item.valores) {
           const metrics = node("div", "fiscal-ai-values");
@@ -1409,7 +1409,7 @@
       }
       card.appendChild(renderAIFindings(item));
       card.appendChild(node("h5", "", "Próximos passos"));
-      card.appendChild(renderChecklist(item.verificar));
+      card.appendChild(renderChecklist(item.parecer?.verificacoes || item.verificar));
       if (item.auditoria) {
         const notes = Array.isArray(item.auditoria.alertas) ? item.auditoria.alertas : [];
         const audit = node("div", "fiscal-ai-audit");

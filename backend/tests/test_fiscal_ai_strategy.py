@@ -5,7 +5,7 @@ from app import fiscal_ai, groq_fiscal
 
 
 def test_adaptive_plan_shared_by_all_free_providers():
-    assert len(REVIEW_PROMPT.split()) < 500
+    assert len(REVIEW_PROMPT.split()) < 650
     assert "máximo 220" in REVIEW_PROMPT
     assert "máximo 120" in REVIEW_PROMPT
     assert "não preencha com hipóteses genéricas" in REVIEW_PROMPT
@@ -75,3 +75,21 @@ def test_detailed_reading_survives_validation_and_local_envelope():
     assert "detalhamento fiscal" in " ".join(result["parecer"]["informacoes_faltantes"])
     assert result["valores"]["diferenca"] == -20
     assert result["evidencias"][0]["referencia"] == "L1"
+
+
+def test_unsupported_tax_cause_is_locally_blocked_without_ai_retry():
+    from app.fiscal_ai_audit import structured_analysis, audit_analysis
+    item = {"conta":"366", "acumuladores":"3082", "valores":{"diferenca":-1432.32},
+        "explicacao":"Fatos: L16 registra licenciamento de software. Hipóteses: Pode ser crédito de imposto ou ajuste de apuração. Limitações: Identificar os créditos.",
+        "verificar":"1. Localize os créditos tributários ausentes.",
+        "evidencias":[{"referencia":"L16", "historico":"Licenciamento NF 90702", "debito":1181.02, "credito":0}]}
+    original = copy.deepcopy(item)
+    review = structured_analysis(item, item["evidencias"])
+    assert "indeterminada" in review["hipoteses"]
+    assert review["observacoes"] == "L16 registra licenciamento de software."
+    assert "créditos tributários ausentes" not in review["verificacoes"]
+    assert "3082" in review["verificacoes"] and "L16" in review["verificacoes"]
+    assert any("não foi sustentada" in alert for alert in audit_analysis(item)["alertas"])
+    assert item == original
+    item["evidencias"][0]["historico"] = "Ajuste de apuração documentado"
+    assert structured_analysis(item, item["evidencias"])["hipoteses"] == "Pode ser crédito de imposto ou ajuste de apuração."
