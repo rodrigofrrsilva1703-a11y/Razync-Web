@@ -1,13 +1,16 @@
-"""Integração Santander (conta 513) exclusiva da empresa 1001."""
+"""Regressão Accede 1001: PDF real do aplicativo Santander + bancos SIG originais.
+
+Usa PDF sintético, sem armazenar extratos confidenciais no repositório.
+"""
 import io
 import json
 
+import fitz
 import pytest
 from fastapi.testclient import TestClient
 from openpyxl import load_workbook
 
-from app import engine, operating_hours
-from app.advanced import processar_planilha_accede_sig
+from app import operating_hours
 from app.main import app
 from app.migration_services import workflow
 from app.registry import CAPABILITIES
@@ -23,57 +26,100 @@ def sample_sig(bank):
     ], title=bank.title())
 
 
-def test_cadastro_empresa_1001_possui_santander_513_sem_mudar_demais_contas():
+def sample_santander_pdf():
+    """Saldos em ordem inversa: 920,00 -> 1000,00 -> 800,00 -> 799,95."""
+    doc = fitz.open()
+    first = doc.new_page()
+    lines = [
+        "Aplicativo Santander Empresas",
+        "ACCEDE EQUIPAMENTOS INDUSTRIAIS LTDA Agencia: 4433 Conta: 11111",
+        "Periodos: 01/07/2026 a 31/08/2026",
+        "Data Historico Documento Valor (R$) Saldo (R$)",
+        "03/08/2026 Pix Enviado Fornecedor Teste -80,00 920,00",
+        "02/08/2026 Resgate Cdb/rdb 200,00 1.000,00",
+    ]
+    for i, line in enumerate(lines):
+        first.insert_text((40, 50 + i * 25), line, fontsize=9)
+    second = doc.new_page()
+    lines = [
+        "01/08/2026 Rendimento Liquido De Contamax 7000",
+        "RENDIMENTO LIQUIDO DE CONTAMAX 0,05 800,00",
+        "30/07/2026 Mensalidade De Seguro",
+        "INCENDIO EMP 000111 -7,00 799,95",
+        "Saldo de ContaMax 920,00",
+        "Saldo Disponivel 0,00",
+    ]
+    for i, line in enumerate(lines):
+        second.insert_text((40, 50 + i * 25), line, fontsize=9)
+    result = doc.tobytes()
+    doc.close()
+    return result
+
+
+def test_cadastro_santander_1001_somente_pdf_sem_alterar_outros():
     cap = CAPABILITIES[1001]
     assert cap["banks"] == {"itau": "508", "sicredi": "505", "santander": "513"}
-    santander = next(role for role in cap["roles"] if role["name"] == "santander")
-    assert santander["accept"] == ".xls,.xlsx"
-    assert santander["multiple"] is True and santander["optional"] is True
+    role = next(role for role in cap["roles"] if role["name"] == "santander")
+    assert role["accept"] == ".pdf"
+    assert role["multiple"] is True and role["optional"] is True
     assert CONFIGURACOES_ACCEDE["accede_equipamentos"]["contas_bancarias"]["santander"] == "513"
     assert "santander" not in CAPABILITIES[1000]["banks"]
 
 
-def test_parser_sig_santander_identifica_banco_e_conserva_lancamentos():
-    with engine.processing_context("accede_equipamentos"):
-        frame = processar_planilha_accede_sig(sample_sig("santander"), "santander", "accede_equipamentos")
-    assert frame["DESCRIÇÃO"].tolist() == ["BANCO SANTANDER", "BANCO SANTANDER"]
-    assert frame["VALOR"].tolist() == [150.75, -45.2]
-    assert "RECEBIMENTO" in frame.iloc[0]["HISTÓRICO"]
-    assert "PAGAMENTO" in frame.iloc[1]["HISTÓRICO"]
+def test_pdf_santander_1001_gera_aba_e_conta_513_com_datas_corretas():
+    content, name = workflow(1001, {"santander": [("extrato.pdf", sample_santander_pdf())]}, {})
+    assert name == "ACCEDE_1001_MODELO_DOMINIO.xlsx"
+    workbook = load_workbook(io.BytesIO(content))
+    assert workbook.sheetnames == ["Santander"]
+    rows = list(workbook.active.values)[1:]
+    assert len(rows) == 4
+    assert [r[0] for r in rows] == ["BANCO SANTANDER"] * 4
+    assert [r[1] for r in rows] == ["03/08/2026", "02/08/2026", "01/08/2026", "30/07/2026"]
+    assert [r[2] for r in rows] == [-80, 200, 0.05, -7]
+    assert [str(r[3]) if r[3] else "" for r in rows] == ["", "513", "513", ""]
+    assert [str(r[4]) if r[4] else "" for r in rows] == ["513", "", "", "513"]
 
 
-def test_1001_santander_sozinho_gera_aba_e_conta_513():
-    raw, filename = workflow(1001, {"santander": [("santander.xlsx", sample_sig("santander"))]}, {})
-    assert filename == "ACCEDE_1001_MODELO_DOMINIO.xlsx"
-    wb = load_workbook(io.BytesIO(raw))
-    assert wb.sheetnames == ["Santander"]
-    rows = list(wb.active.values)
-    assert rows[1][0] == "BANCO SANTANDER"
-    assert rows[1][2] == 150.75 and str(rows[1][3]) == "513" and not rows[1][4]
-    assert rows[2][2] == -45.2 and not rows[2][3] and str(rows[2][4]) == "513"
+def test_pdf_santander_1001_filtro_agosto_exclui_julho():
+    content, _ = workflow(1001, {"santander": [("extrato.pdf", sample_santander_pdf())]},
+                          {"data_inicial": "2026-08-01", "data_final": "2026-08-31"})
+    rows = list(load_workbook(io.BytesIO(content)).active.values)[1:]
+    assert len(rows) == 3
+    assert all(r[1].endswith("/08/2026") for r in rows)
 
 
-def test_1001_multibanco_preserva_abas_e_nao_altera_saldos_anteriores():
-    roles = {name: [(f"{name}.xlsx", sample_sig(name))] for name in ("itau", "sicredi", "santander")}
-    raw, _ = workflow(1001, roles, {})
-    wb = load_workbook(io.BytesIO(raw))
+def test_multibanco_com_santander_pdf_e_sig_itau_sicredi():
+    roles = {bank: [(f"{bank}.xlsx", sample_sig(bank))] for bank in ("itau", "sicredi")}
+    roles["santander"] = [("extrato-santander.pdf", sample_santander_pdf())]
+    content, _ = workflow(1001, roles, {})
+    wb = load_workbook(io.BytesIO(content))
     assert wb.sheetnames == ["Itau", "Sicredi", "Santander"]
-    assert [ws["C2"].value for ws in wb.worksheets] == [150.75, 150.75, 150.75]
     assert wb["Itau"]["A2"].value == "BANCO ITAÚ"
     assert wb["Sicredi"]["A2"].value == "SICREDI"
     assert wb["Santander"]["A2"].value == "BANCO SANTANDER"
+    assert wb["Itau"]["C2"].value == wb["Sicredi"]["C2"].value == 150.75
 
 
-def test_1001_workflow_endpoint_aceita_santander(monkeypatch):
+def test_santander_1001_rejeita_sig_pdf_invalido_e_arquivo_repetido():
+    with pytest.raises(ValueError, match="PDF"):
+        workflow(1001, {"santander": [("sig.xlsx", sample_sig("santander"))]}, {})
+    with pytest.raises(ValueError, match="PDF|layout|não foi possível"):
+        workflow(1001, {"santander": [("extrato.pdf", b"%PDF-not-real")]}, {})
+    pdf = sample_santander_pdf()
+    with pytest.raises(ValueError, match="mais de uma vez"):
+        workflow(1001, {"santander": [("a.pdf", pdf), ("b.pdf", pdf)]}, {})
+
+
+def test_api_1001_aceita_extrato_pdf_e_retorna_modelo(monkeypatch):
     monkeypatch.setattr(operating_hours, "is_open", lambda *a: True)
     client = TestClient(app)
-    company = client.get("/api/v1/companies/1001")
-    assert company.status_code == 200
-    assert company.json()["capabilities"]["banks"]["santander"] == "513"
+    response = client.get("/api/v1/companies/1001")
+    assert response.status_code == 200
+    assert next(r for r in response.json()["capabilities"]["roles"] if r["name"] == "santander")["accept"] == ".pdf"
     response = client.post(
         "/api/v1/workflow/1001",
         data={"roles_json": json.dumps(["santander"]), "options_json": "{}"},
-        files={"files": ("santander.xlsx", sample_sig("santander"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+        files={"files": ("santander.pdf", sample_santander_pdf(), "application/pdf")},
     )
     assert response.status_code == 200, response.text
     assert load_workbook(io.BytesIO(response.content)).sheetnames == ["Santander"]
