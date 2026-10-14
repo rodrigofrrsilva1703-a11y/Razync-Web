@@ -385,7 +385,7 @@
     }
     if (missing.children.length) body.appendChild(missing);
     const coverage = item.parecer?.cobertura;
-    if (coverage) body.appendChild(node("p", "fiscal-ai-source", `Contexto da IA: ${coverage.enviados} de ${coverage.disponiveis} lançamentos disponíveis nesta conta${coverage.parcial ? " · amostra parcial" : ""}${coverage.historicos_abreviados ? " · históricos abreviados" : ""}.`));
+    if (coverage && !item.cobertura_documental) body.appendChild(node("p", "fiscal-ai-source", `Contexto da IA: ${coverage.enviados} de ${coverage.disponiveis} lançamentos disponíveis nesta conta${coverage.parcial ? " · amostra parcial" : ""}${coverage.historicos_abreviados ? " · históricos abreviados" : ""}.`));
     const revised = item.parecer?.sugestoes_retiradas?.length || item.auditoria?.alertas?.length;
     if (revised && item.parecer?.analise_exibicao !== undefined) {
       body.appendChild(node("p", "fiscal-ai-quality-note", "Resposta revisada: sugestões sem apoio suficiente nas fontes foram desconsideradas na interpretação exibida. Os valores da conferência foram preservados."));
@@ -427,7 +427,7 @@
     const docs = item.parecer?.comparacoes_documentais || [];
     if ((!summary && !docs.length) || (evidence && !docs.length)) return null;
     const section = node("section", "fiscal-ai-documentary");
-    section.appendChild(node("h5", "", evidence ? "Documentos usados na análise" : "Cruzamento de Entradas e Saídas"));
+    if (!evidence) section.appendChild(node("h5", "", "Cruzamento de Entradas e Saídas"));
     if (summary && !evidence) section.appendChild(node("p", "fiscal-ai-documentary-summary", summary.conciliados + " de " + summary.documentos_lidos +
       " linhas fiscais conciliadas no cruzamento local · " + summary.documentos_pendentes + " para conferir."));
     if (evidence && docs.length) section.appendChild(renderAIDataTable("Documentos selecionados para a IA", ["Nota / acumulador", "Fiscal", "Razão candidato", "Diferença", "Leitura"],
