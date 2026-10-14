@@ -237,6 +237,13 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
   assert.equal(context.aiSourceLabel({provedor:'gemini',modelo_usado:'gemini-2.5-flash-lite'}),'Gemini · gemini-2.5-flash-lite');
   assert.equal(context.aiSourceLabel({provedor:'openrouter',modelo_usado:'openrouter/free'}),'OpenRouter · openrouter/free');
   assert.equal(context.aiSourceLabel({}),'IA não identificada');
+  const explained = context.renderAIFindings({parecer:{hipoteses:'Causa ainda não confirmada.',observacoes:'Não repetir este texto.',
+    leitura_comparacao:{explicacoes:['O total inclui movimentos fora da comparação.']}}});
+  assert.match(texts(explained).join(' '),/O total inclui movimentos fora da comparação/);
+  assert.match(texts(explained).join(' '),/Análise da IA/);
+  assert.doesNotMatch(texts(explained).join(' '),/Não repetir este texto/);
+  const stepsExplained = context.renderAIReviewSteps({parecer:{leitura_comparacao:{orientacoes:[{acao:'Compare a nota com L5.',objetivo:'Confirma o vínculo, sem presumir duplicidade.'}]}}});
+  assert.match(texts(stepsExplained).join(' '),/Confirma o vínculo/);
   const points = context.responsePoints('L1 tem R$ 1.234,56. Pode ser corte de período.\n- Conferir nota.');
   assert.deepEqual(Array.from(points),['L1 tem R$ 1.234,56.','Pode ser corte de período.','Conferir nota.']);
   const fallback = context.renderAIFindings({parecer:{versao:'grounded-v2',hipoteses:'Revisar.',

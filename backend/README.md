@@ -62,3 +62,5 @@ As três APIs usam o contrato de `app/fiscal_ai_strategy.py`: totais, sentido da
 O contexto de Gemini/OpenRouter preserva lançamentos, datas, contrapartidas e históricos completos, eliminando apenas valores duplicados já presentes em `valores_brl`. Groq mantém a amostra declarada e os indicadores locais. A saída tem teto por quantidade de grupos, com margem para o raciocínio baixo da Groq. O teto não representa consumo real, nem garante que todos os modelos sigam o limite de palavras.
 
 A formatação e a auditoria são locais. Os resultados validados continuam sendo reaproveitados pelo cache, cuja versão muda com o plano de resposta. Provedores/modelos pagos permanecem bloqueados; cota indisponível usa somente reservas gratuitas ou informa espera. Não são contratadas novas cotas.
+
+O parecer também explica localmente o lado do Razão usado, os movimentos considerados e excluídos, o fechamento apenas por valor e o objetivo de cada conferência. A classificação por histórico é heurística; pagamento não comprova duplicidade. Essa leitura é atualizada nos pareceres em cache sem nova chamada ao modelo.

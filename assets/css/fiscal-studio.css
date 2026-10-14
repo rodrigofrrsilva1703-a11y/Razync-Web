@@ -422,3 +422,8 @@
 @media (max-width:680px) {
   #fiscalView .fiscal-ai-account-content .fiscal-ai-values {grid-template-columns:repeat(2,minmax(0,1fr));}
 }
+
+#fiscalView .fiscal-ai-comparison-reading p {margin:0 0 12px;font-size:12px;line-height:1.8;color:#425b70;}
+#fiscalView .fiscal-ai-interpretation-title {margin:20px 0 10px!important;font-size:13px!important;}
+#fiscalView .fiscal-ai-explained-checklist strong {display:block;font-size:12px;line-height:1.7;font-weight:600;}
+#fiscalView .fiscal-ai-step-purpose {margin:5px 0 0;color:#647b8f;font-size:12px;line-height:1.75;}

@@ -159,6 +159,98 @@ def narrative_sections(value):
     return text, sections
 
 
+def _signed_amount(value):
+    try:
+        number = Decimal(str(value or 0))
+        return number.quantize(Decimal("0.01")) if number.is_finite() else None
+    except (InvalidOperation, ValueError, TypeError):
+        return None
+
+
+def _brl(value):
+    number = _signed_amount(value)
+    if number is None:
+        return "valor não disponível"
+    body = f"{abs(number):,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
+    return ("-" if number < 0 else "") + "R$ " + body
+
+
+def comparison_reading(item, rows):
+    """Explica a regra aplicada aos relatórios, sem pedir ao modelo que a adivinhe."""
+    values = item.get("valores") or {}
+    if any(key not in values for key in ("fiscal", "contabil", "total_conta")):
+        return {"explicacoes": [], "excluidos": [], "orientacoes": []}
+    fiscal, considered, total = (_signed_amount(values.get(key)) for key in ("fiscal", "contabil", "total_conta"))
+    if any(value is None for value in (fiscal, considered, total)) or not values:
+        return {"explicacoes": [], "excluidos": [], "orientacoes": []}
+    outgoing = item.get("tipo") == "SAÍDAS"
+    side, field, opposite = ("créditos", "credito", "débitos") if outgoing else ("débitos", "debito", "créditos")
+    selected = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        nature = "".join(c for c in unicodedata.normalize("NFD", str(row.get("natureza") or "").upper()) if not unicodedata.combining(c))
+        if nature and ("CREDITO" if outgoing else "DEBITO") not in nature:
+            continue
+        amount = _signed_amount(row.get(field))
+        if amount is not None and abs(amount) >= Decimal("0.005"):
+            selected.append((row, amount))
+    excluded = [(row, amount) for row, amount in selected if row.get("classificacao") == "ALERTA - NÃO FISCAL"]
+    probable = [row for row, _ in selected if row.get("classificacao") == "FISCAL PROVÁVEL"]
+    value_only = [row for row, _ in selected if row.get("classificacao") == "FECHAMENTO POR VALOR - VALIDAR"]
+    paragraphs = [f"Nesta conta, a comparação usa os {side} das {'saídas' if outgoing else 'entradas/serviços'}. "
+                  f"Os {opposite} do lado oposto não participam; valores negativos no lado escolhido reduzem o total como estorno."]
+    if selected and len(excluded) + len(probable) + len(value_only) == len(selected):
+        paragraphs.append(f"Dos {len(selected)} movimentos desse lado, {len(probable)} foram considerados por indícios fiscais no histórico, "
+                          f"{len(excluded)} ficaram fora da comparação e {len(value_only)} entraram apenas por fechamento de valor, ainda sujeitos a validação.")
+    if excluded:
+        delta = total - considered
+        if abs(sum((amount for _, amount in excluded), Decimal(0)) - delta) <= Decimal("0.01"):
+            paragraphs.append(f"O total do Razão é {_brl(total)}, mas a comparação usa {_brl(considered)}. "
+                              f"Os movimentos fora da comparação representam {_brl(delta)}; eles não foram apagados da conta, apenas separados nesta conferência.")
+        else:
+            paragraphs.append(f"O total do Razão ({_brl(total)}) e o contábil considerado ({_brl(considered)}) têm escopos diferentes. "
+                              "Confira os movimentos separados antes de interpretar a diferença.")
+        paragraphs.append("Históricos que começam com Pago, Pagamento, Recebido, Recebimento ou Baixa são separados pela regra da ferramenta, "
+                          "assim como históricos sem indício fiscal reconhecido. Esse filtro não prova que o movimento seja indevido: "
+                          "um pagamento pode liquidar uma despesa já registrada, e a natureza deve ser confirmada no documento.")
+    elif probable and len(probable) == len(selected):
+        paragraphs.append("Todos os movimentos desse lado foram considerados porque seus históricos contêm indícios fiscais. "
+                          "Isso permite comparar os valores, mas não comprova que todas as notas do resumo estejam vinculadas ao Razão.")
+    if not excluded and abs(total - considered) > Decimal("0.01"):
+        paragraphs.append(f"O total do Razão ({_brl(total)}) é diferente do contábil considerado ({_brl(considered)}). "
+                          "O primeiro reúne os movimentos do lado analisado; o segundo é o conjunto selecionado para a comparação fiscal. "
+                          "As classificações disponíveis neste contexto não permitem detalhar todos os movimentos dessa separação.")
+    if value_only:
+        paragraphs.append("O fechamento por valor inclui movimentos mesmo sem indício fiscal suficiente no histórico. "
+                          "A soma bater não substitui a confirmação da natureza de cada documento.")
+    difference = considered - fiscal
+    if abs(difference) <= Decimal("0.01"):
+        paragraphs.append(f"O fiscal e o contábil considerado coincidem em {_brl(fiscal)}. "
+                          "O resultado fecha para os movimentos selecionados; os alertas permanecem para revisar a classificação e a ligação com as notas.")
+    else:
+        paragraphs.append(f"O contábil considerado está {_brl(abs(difference))} {'abaixo' if difference < 0 else 'acima'} do fiscal. "
+                          "Essa diferença informa quanto falta conciliar entre os dois conjuntos, sem demonstrar sozinha omissão, duplicidade ou erro.")
+    codes = str(item.get("acumuladores") or "vinculados a esta conta")
+    account = str(item.get("conta") or "selecionada")
+    movements = []
+    for row, amount in excluded:
+        history = str(row.get("historico") or "Histórico não informado")
+        payment = bool(re.match(r"^(PAGO|PAGAMENTO|RECEBIDO|RECEBIMENTO|BAIXA)\b", history, re.I))
+        movements.append({"referencia": row.get("_referencia_ia") or row.get("referencia") or "—", "data": row.get("data", ""),
+                          "historico": history, "valor_brl": _brl(amount),
+                          "motivo": "Histórico de pagamento/recebimento/baixa" if payment else "Sem indício fiscal reconhecido no histórico"})
+    steps = []
+    if excluded or value_only:
+        steps.append({"acao": f"Revise os {len(excluded)} movimentos fora da comparação" if excluded else "Revise os movimentos incluídos apenas pelo valor",
+                      "objetivo": "Compare o comprovante com o documento de origem e com o reconhecimento na conta. Isso esclarece se o movimento pertence à operação fiscal ou à sua liquidação; o alerta não confirma duplicidade."})
+    steps.append({"acao": f"Abra o detalhamento dos acumuladores {codes} e identifique as notas que compõem o fiscal",
+                  "objetivo": "Separe número da nota, data e valor. Assim você transforma o total fiscal em documentos que podem ser comparados individualmente, em vez de procurar o código do acumulador no Razão."})
+    steps.append({"acao": f"Compare essas notas com os lançamentos da conta {account}",
+                  "objetivo": "Use histórico, data, valor e contrapartida para confirmar o vínculo. Se uma nota não for localizada, confira período, filial e conta usada antes de concluir ausência; valores parecidos, sozinhos, não provam correspondência."})
+    return {"explicacoes": paragraphs, "excluidos": movements, "orientacoes": steps}
+
+
 def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=False):
     """Os fatos vêm do relatório; a narrativa do modelo permanece interpretação."""
     text, sections = narrative_sections(item.get("explicacao"))
@@ -182,6 +274,7 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
     if contradicts_existing_entries(item):
         hypothesis = "Os lançamentos citados já constam no Razão. A diferença entre os totais não identifica a causa; compare os documentos fiscais com a escrituração para confirmá-la."
     return {"versao": ANALYSIS_VERSION, "fatos": facts,
+            "leitura_comparacao": comparison_reading(item, rows),
             "observacoes": "" if tax_without_source and _TAX_CAUSE.search(sections.get("fatos", "")) else sections.get("fatos", ""),
             "verificacoes": grounded_review_steps(item) if unsafe_narrative or invalid_accumulator_lookup(item) else str(item.get("verificar") or ""),
             "hipoteses": hypothesis or "A resposta não identifica hipóteses separadamente. Confira a interpretação da IA abaixo.",
