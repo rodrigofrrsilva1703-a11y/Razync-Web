@@ -74,8 +74,8 @@ def test_pdf_santander_1001_gera_aba_e_conta_513_com_datas_corretas():
     rows = list(workbook.active.values)[1:]
     assert len(rows) == 4
     assert [r[0] for r in rows] == ["BANCO SANTANDER"] * 4
-    assert [r[1] for r in rows] == ["03/08/2026", "02/08/2026", "01/08/2026", "30/07/2026"]
-    assert [r[2] for r in rows] == [-80, 200, 0.05, -7]
+    assert [r[1] for r in rows] == ["30/07/2026", "01/08/2026", "02/08/2026", "03/08/2026"]
+    assert [r[2] for r in rows] == [-7, 0.05, 200, -80]
     assert [str(r[3]) if r[3] else "" for r in rows] == ["", "513", "513", ""]
     assert [str(r[4]) if r[4] else "" for r in rows] == ["513", "", "", "513"]
 
