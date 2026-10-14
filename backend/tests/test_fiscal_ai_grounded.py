@@ -193,3 +193,35 @@ def test_excel_uses_the_reviewed_text_and_steps_from_the_page():
     assert "duplicidade" not in text
     assert "Confirme o vínculo" in wb["Análises IA"]["K6"].value
     assert "créditos ausentes" not in wb["Análises IA"]["K6"].value
+
+
+def test_invoice_payment_pairs_are_candidates_not_confirmed_duplicates():
+    from app.fiscal_ai_audit import comparison_reading
+    item={"conta":"354","tipo":"ENTRADAS","valores":{"fiscal":148.89,"contabil":148.89,"total_conta":297.78}}
+    rows=[{"_referencia_ia":"L7","conta":"354","natureza":"DÉBITO","data":"25/08/2026","historico":"SERVIÇOS CF NF 93490088","debito":148.89,"contrapartida":"2085","classificacao":"FISCAL PROVÁVEL"},
+          {"_referencia_ia":"L9","conta":"354","natureza":"DÉBITO","data":"14/09/2026","historico":"Pago: Enel NF 093490088","debito":148.89,"contrapartida":"508","classificacao":"ALERTA - NÃO FISCAL"}]
+    reading=comparison_reading(item,rows,{"inicio":"01/08/2026","fim":"30/09/2026"})
+    assert len(reading["relacoes"]) == 1
+    pair=reading["relacoes"][0]
+    assert pair["registro"] == "L7" and pair["pagamento"] == "L9"
+    assert pair["contrapartida_registro"] == "2085" and pair["contrapartida_pagamento"] == "508"
+    assert "vínculo candidato" in " ".join(reading["observacoes"])
+    assert "não confirma duplicidade ou liquidação" in reading["orientacoes"][0]["objetivo"]
+    rows[1]["debito"]=149
+    assert not comparison_reading(item,rows)["relacoes"]
+
+
+def test_payment_competence_before_fiscal_period_is_explained_as_a_reference():
+    from app.fiscal_ai_audit import comparison_reading
+    item={"conta":"354","tipo":"ENTRADAS","valores":{"fiscal":0,"contabil":0,"total_conta":150}}
+    rows=[{"_referencia_ia":"L6","conta":"354","natureza":"DÉBITO","data":"17/08/2026","historico":"Pago: Eletropaulo ref. 07/2026","debito":150,"classificacao":"ALERTA - NÃO FISCAL"}]
+    text=" ".join(comparison_reading(item,rows,{"inicio":"01/08/2026","fim":"30/09/2026"})["observacoes"])
+    assert "L6" in text and "07/2026, anterior" in text
+    assert "competência descrita no histórico" in text
+
+
+def test_repeated_records_do_not_authorize_assertive_duplicate_conclusion():
+    from app.fiscal_ai_audit import unsupported_scenarios
+    item={"explicacao":"Hipóteses: Há duplicidade confirmada da NF 123."}
+    rows=[{"historico":"Compra CF NF 123","debito":100,"contrapartida":"9"}]*2
+    assert any("não comprovação" in message for message in unsupported_scenarios(item,rows))

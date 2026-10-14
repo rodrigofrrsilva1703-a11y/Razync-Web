@@ -115,6 +115,10 @@ def unsupported_scenarios(item, rows):
                 signatures[(history, str(row.get("debito") or 0), str(row.get("credito") or 0), str(row.get("contrapartida") or ""))] += 1
         if not any(count > 1 for count in (*notes.values(), *signatures.values())):
             reasons.append("Não foi encontrado um par repetido de nota ou movimento nas fontes enviadas; a hipótese de duplicidade foi retirada.")
+        elif any("duplic" in sentence.lower() and re.search(r"\b(?:há|houve|existe|ocorreu|confirmad[oa]|comprovad[oa]|constatad[oa]|confirmam|comprovam)\b", sentence, re.I)
+                 and not re.search(r"pode|poss[ií]vel|hip[oó]tese|ind[ií]cio|não", sentence, re.I)
+                 for sentence in re.split(r"(?<=[.!?])\s+", hypothesis)):
+            reasons.append("Um par de registros é indício para revisão, não comprovação de duplicidade; a conclusão afirmativa foi retirada.")
     return reasons
 
 
@@ -290,7 +294,7 @@ def comparison_reading(item, rows, periodo_fiscal=None):
         history = str(row.get("historico") or "Histórico não informado")
         payment = bool(re.match(r"^(PAGO|PAGAMENTO|RECEBIDO|RECEBIMENTO|BAIXA)\b", history, re.I))
         movements.append({"referencia": row.get("_referencia_ia") or row.get("referencia") or "—", "data": row.get("data", ""),
-                          "historico": history, "valor_brl": _brl(amount),
+                          "historico": history, "contrapartida": str(row.get("contrapartida") or "—"), "valor_brl": _brl(amount),
                           "motivo": "Histórico de pagamento/recebimento/baixa" if payment else "Sem indício fiscal reconhecido no histórico"})
     steps = []
     if excluded or value_only:
@@ -308,6 +312,25 @@ def comparison_reading(item, rows, periodo_fiscal=None):
         included.append({"referencia": row.get("_referencia_ia") or row.get("referencia") or "—", "data": row.get("data", ""),
                          "historico": history, "contrapartida": str(row.get("contrapartida") or "—"), "valor_brl": _brl(amount),
                          "motivo": "Indício fiscal no histórico" if row.get("classificacao") == "FISCAL PROVÁVEL" else "Fechamento de valor; validar documento"})
+    relations = []
+    def invoice_number(history):
+        found = re.search(r"\b(?:NF|NFE|NOTA FISCAL)\s*[:#.-]?\s*(\d+)\b", history, re.I)
+        return (found.group(1).lstrip("0") or "0") if found else None
+    payment_index = {}
+    for row in movements:
+        number = invoice_number(row["historico"])
+        if number and row["motivo"] == "Histórico de pagamento/recebimento/baixa":
+            payment_index.setdefault((number,row["valor_brl"]), []).append(row)
+    total_relations = 0
+    for considered_row in included:
+        number = invoice_number(considered_row["historico"])
+        if not number: continue
+        candidates = payment_index.get((number,considered_row["valor_brl"]), [])
+        total_relations += len(candidates)
+        for paid_row in candidates[:max(0,20-len(relations))]:
+            relations.append({"nota": number, "registro": considered_row["referencia"], "pagamento": paid_row["referencia"],
+                              "data_registro": considered_row["data"], "data_pagamento": paid_row["data"], "valor_brl": paid_row["valor_brl"],
+                              "contrapartida_registro": considered_row["contrapartida"], "contrapartida_pagamento": paid_row["contrapartida"]})
     observations = []
     if probable or value_only or excluded:
         parts = []
@@ -321,6 +344,26 @@ def comparison_reading(item, rows, periodo_fiscal=None):
     if excluded:
         observations.append(f"Os movimentos fora da comparação somam {_brl(sum((amount for _,amount in excluded),Decimal(0)))}. "
                             "Históricos de pagamento ou baixa podem representar liquidação de uma obrigação; confira o documento de origem antes de somá-los novamente ao fiscal.")
+    for pair in relations[:6]:
+        observations.append(f"A nota {pair['nota']} aparece em {pair['registro']} ({pair['data_registro']}, contrapartida {pair['contrapartida_registro']}) "
+                            f"e em {pair['pagamento']} ({pair['data_pagamento']}, contrapartida {pair['contrapartida_pagamento']}), pelo mesmo valor de {pair['valor_brl']}. "
+                            "O primeiro entrou na comparação; o segundo tem histórico de pagamento e ficou fora. É um vínculo candidato entre registros, a confirmar nos documentos.")
+    if total_relations > 6:
+        observations.append(f"Foram encontrados {total_relations} pares candidatos; os seis primeiros estão descritos acima. A relação não confirma que sejam a mesma operação.")
+    if relations:
+        pairs = ", ".join(f"{pair['registro']}/{pair['pagamento']}" for pair in relations[:6])
+        steps.insert(0, {"acao": "Confronte os pares " + pairs, "objetivo": "Confira emissor, número da nota, valor, comprovante e contrapartidas. Isso esclarece se os registros representam a mesma operação em etapas diferentes ou um registro adicional; coincidência de número e valor não confirma duplicidade ou liquidação."})
+    fiscal_begin = _record_date((periodo_fiscal or {}).get("inicio"))
+    competence_refs = {}
+    for row in movements:
+        match = re.search(r"\bref\.?\s*(\d{2})/(\d{4})\b", row['historico'], re.I)
+        if match and fiscal_begin:
+            month, year = int(match.group(1)), int(match.group(2))
+            if 1 <= month <= 12 and (year,month) < (fiscal_begin.year,fiscal_begin.month):
+                competence_refs.setdefault(f"{month:02d}/{year}", []).append(row['referencia'])
+    for competence, refs in competence_refs.items():
+        observations.append(f"Os pagamentos {', '.join(refs)} trazem referência a {competence}, anterior ao início do período fiscal. "
+                            "A data do pagamento e a competência descrita no histórico são diferentes; confira o documento de origem antes de incluí-los no fiscal deste período.")
     dates = [_record_date(row.get("data")) for row,_ in selected]
     dates = [date for date in dates if date]
     if dates:
@@ -342,7 +385,7 @@ def comparison_reading(item, rows, periodo_fiscal=None):
         result = f"O contábil considerado está {_brl(abs(difference))} {'abaixo' if difference < 0 else 'acima'} do fiscal. A origem dessa diferença ainda não está confirmada."
     return {"explicacoes": paragraphs, "resultado": result,
             "criterio": f"Comparação pelo lado dos {side}; o lado oposto não entra. A seleção por histórico é um indício, não uma validação documental.",
-            "observacoes": observations, "considerados": included, "excluidos": movements, "orientacoes": steps}
+            "observacoes": observations, "relacoes": relations, "considerados": included, "excluidos": movements, "orientacoes": steps}
 
 
 def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=False, periodo_fiscal=None):
@@ -373,9 +416,12 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
     display_text = hypothesis or (text if not sections.get("hipoteses") else "")
     if scenario_issues or text_issues or not sections.get("hipoteses"):
         display_text = "Os dados disponíveis não sustentam uma causa específica. A investigação deve partir dos movimentos identificados abaixo e dos documentos que compõem o fiscal."
+    reading = comparison_reading(item, rows, periodo_fiscal)
+    if (scenario_issues or text_issues) and reading.get("relacoes"):
+        display_text = "Há pares com número de nota e valor coincidentes entre os registros considerados e os pagamentos. Isso sustenta investigar se correspondem à mesma operação em etapas diferentes; não confirma duplicidade nem liquidação. Valide o emissor, os comprovantes e as contrapartidas desses pares."
     return {"versao": ANALYSIS_VERSION, "fatos": facts,
             "analise_exibicao": display_text, "sugestoes_retiradas": scenario_issues,
-            "leitura_comparacao": comparison_reading(item, rows, periodo_fiscal),
+            "leitura_comparacao": reading,
             "observacoes": "" if tax_without_source and _TAX_CAUSE.search(sections.get("fatos", "")) else sections.get("fatos", ""),
             "verificacoes": grounded_review_steps(item) if unsafe_narrative or invalid_accumulator_lookup(item) else str(item.get("verificar") or ""),
             "hipoteses": hypothesis or "A resposta não identifica hipóteses separadamente. Confira a interpretação da IA abaixo.",
