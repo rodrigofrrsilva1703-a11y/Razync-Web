@@ -326,8 +326,10 @@ def _workflow(code, roles, options):
                     frames = [engine.processar_planilha_accede_sig(content, bank, slug(code)) for _, content in roles[bank]]
                     frame = filter_frame(pd.concat(frames, ignore_index=True), options)
                     if bank == 'santander' and code == 1001:
-                        # Conta bancária contábil 513: entrada debita o banco; saída credita.
+                        # O leitor SIG legado é mantido intacto; só a identificação do
+                        # novo banco e a conta 513 são adaptadas na empresa 1001.
                         frame = frame.copy()
+                        frame['DESCRIÇÃO'] = 'BANCO SANTANDER'
                         frame['DÉBITO'] = frame['VALOR'].apply(lambda value: '513' if float(value) > 0 else '')
                         frame['CRÉDITO'] = frame['VALOR'].apply(lambda value: '513' if float(value) < 0 else '')
                     data[bank.title()] = {'principal': frame, 'retirados': pd.DataFrame()}
