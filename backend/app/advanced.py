@@ -319,7 +319,9 @@ def processar_planilha_accede_sig(file_bytes, banco_nome, empresa=""):
             dc = texto_exato(principal.iloc[c_dc]) if c_dc is not None else ""
             complemento = texto_exato(principal.iloc[c_comp]) if c_comp is not None else ""
             conf = texto_exato(principal.iloc[c_conf]) if c_conf is not None else ""
-            descricao = "BANCO ITAÚ" if normalizar_texto(banco_nome) == "itau" else "SICREDI"
+            descricao = {"itau": "BANCO ITAÚ", "sicredi": "SICREDI", "santander": "BANCO SANTANDER"}.get(normalizar_texto(banco_nome))
+            if descricao is None:
+                raise ValueError(f"Banco SIG não reconhecido: {banco_nome}.")
 
             detalhes_validos = []
             for detalhe in detalhes:
@@ -526,16 +528,17 @@ def workflow_modelo(company_code: int, roles: dict[str, list[tuple[str, bytes]]]
     if company_code in {1000,1001}:
         empresa = "accede_automacao" if company_code == 1000 else "accede_equipamentos"
         sheets={}
-        for bank in ("itau","sicredi"):
+        for bank in (("itau", "sicredi", "santander") if company_code == 1001 else ("itau", "sicredi")):
             if roles.get(bank):
                 frames=[processar_planilha_accede_sig(b, bank, empresa) for _,b in roles[bank]]
                 df=pd.concat(frames,ignore_index=True).sort_values("DATA",kind="stable")
-                conta={"itau":"508","sicredi":"505"}[bank]
+                conta={"itau":"508","sicredi":"505","santander":"513"}[bank]
                 if company_code==1001:
                     df=_aplicar_conta(df,conta)
                 sheets[bank.title()] = df
         if not sheets:
-            raise ValueError("Envie a planilha SIG do Itaú e/ou Sicredi.")
+            raise ValueError("Envie a planilha SIG do Itaú, Sicredi e/ou Santander." if company_code == 1001 else
+                             "Envie a planilha SIG do Itaú e/ou Sicredi.")
         return gerar_modelo_abas(sheets), f"ACCEDE_{company_code}_MODELO_DOMINIO.xlsx"
 
     if company_code == 1096:
