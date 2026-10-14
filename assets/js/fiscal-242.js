@@ -1249,16 +1249,34 @@
   function investigationStatus(status) {
     return ({
       CONCILIADO: "Conciliado por documento",
-      CONTA_DIFERENTE: "Possível lançamento em outra conta",
+      CONTA_DIFERENTE: "Possível outra conta",
+      ESTORNO_EM_ANALISE: "Estorno para conferir",
       AMBIGUO: "Correspondência ambígua",
       VALOR_DIFERENTE: "Valor divergente",
       DATA_DIFERENTE: "Data divergente",
-      PROVAVEL: "Correspondência provável, confirme o documento",
+      PROVAVEL: "Vínculo provável",
       SEM_LANCAMENTO_IDENTIFICADO: "Sem lançamento identificado",
       SEM_DOCUMENTO_IDENTIFICADO: "Sem documento identificado",
       CORRESPONDENCIA_EM_ANALISE: "Correspondência em análise",
       DOCUMENTOS_NAO_IDENTIFICAVEIS: "Detalhamento não identificável"
     })[status] || status || "Revisar";
+  }
+
+  function compactDocumentHistory(history, document) {
+    const original = String(history || "");
+    const key = value => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const separator = original.lastIndexOf(" - ");
+    if (separator < 0 || !document.parceiro || key(original.slice(separator + 3)) !== key(document.parceiro)) return original;
+    const beginning = original.slice(0, separator);
+    // Só resuma quando a nota e o parceiro já estão expostos na coluna fiscal.
+    const reference = beginning.match(/(?:CF\s*)?(?:NF|N\.F\.|NOTA(?: FISCAL)?|CTRC|CT-?E)\s*(?:REF\.\s*NF\s*)?(\d+)/i);
+    if (reference && reference[1].replace(/^0+/, "") === String(document.nota).replace(/^0+/, "")) {
+      if (beginning.slice(reference.index + reference[0].length).trim()) return original;
+      const label = beginning.slice(0, reference.index).replace(/[\s.-]+$/, "").trim();
+      return !label || /^REF$/i.test(label) ? "Referência à nota " + document.nota : label;
+    }
+    if (/^\s*\d+\s*$/.test(beginning) && beginning.trim().replace(/^0+/, "") === String(document.nota).replace(/^0+/, "")) return "Número no histórico · confirmar NF";
+    return original;
   }
 
   function investigationTable(headers, rows, renderRow) {
@@ -1283,10 +1301,12 @@
   function renderInvestigation(report) {
     investigationResults.replaceChildren();
     const groups = report.contas || [];
-    const count = report.resumo || {};
     const header = node("div", "fiscal-investigation-summary");
-    [["Contas investigadas", count.contas || 0], ["Linhas fiscais conciliadas", count.conciliados || 0],
-      ["Pendências para conferir", count.pendentes || 0], ["Linhas com vínculo ambíguo", count.ambiguos || 0]]
+    const allComparisons = groups.flatMap(g => g.comparacoes || g.documentos || []);
+    const pendingRecords = allComparisons.filter(d => d.situacao !== "CONCILIADO").length +
+      groups.reduce((sum, g) => sum + (g.razao_sem_vinculo || g.razao_pendente || []).length, 0);
+    [["Contas investigadas", groups.length], ["Correspondências conciliadas", allComparisons.filter(d => d.situacao === "CONCILIADO").length],
+      ["Registros para revisar", pendingRecords]]
       .forEach(([label, value]) => {
         const metric = node("div", "fiscal-investigation-metric");
         metric.append(node("small", "", label), node("strong", "", value)); header.appendChild(metric);
@@ -1313,13 +1333,26 @@
       buttons.forEach((button, item) => button.setAttribute("aria-current", item === active ? "true" : "false"));
       reader.replaceChildren(); reader.scrollTop = 0;
       reader.append(node("small", "fiscal-doc-eyebrow", group.tipo + " · CONTA " + group.conta),
-        node("h4", "", group.descricao || "Cruzamento documental"),
-        node("p", "fiscal-disclaimer", "Conferência inicial: " + money.format(group.diferenca || 0) +
-          ". O cruzamento documental pode incluir parcelas antes separadas pelo histórico. Em cada linha, diferença = Razão − fiscal."));
-      const totals = node("div", "fiscal-doc-totals");
-      [["Resumo fiscal", group.fiscal], ["Razão considerado inicialmente", group.contabil], ["Diferença inicial", group.diferenca]]
-        .forEach(([label, value]) => { const metric = node("div"); metric.append(node("small", "", label), node("strong", "", money.format(value || 0))); totals.appendChild(metric); });
-      reader.appendChild(totals);
+        node("h4", "", group.descricao || "Cruzamento documental"));
+      const balance = node("div", "fiscal-doc-balance");
+      const balanceHead = node("div", "fiscal-doc-balance-head");
+      balanceHead.append(node("span", "", "Diferença da conferência inicial"), node("strong", "", money.format(group.diferenca || 0)));
+      balance.appendChild(balanceHead);
+      if (group.composicao) {
+        const lines = node("div", "fiscal-doc-balance-lines");
+        const effects = (group.composicao.itens || []).filter(item => Math.abs(item.valor) >= .005);
+        effects.forEach(item => {
+          const line = node("div");
+          line.append(node("span", "", item.descricao), node("strong", "", (item.valor > 0 ? "+ " : "") + money.format(item.valor)));
+          lines.appendChild(line);
+        });
+        if (!effects.length) lines.appendChild(node("p", "", "Os valores dos documentos e do Razão fecham com o resumo fiscal."));
+        balance.appendChild(lines);
+        balance.appendChild(node("small", "", group.composicao.confere_com_inicial ?
+          "A soma dos efeitos explica o total acima. Vínculos em análise ainda precisam de confirmação." :
+          "A composição não fecha com a conferência inicial. Revise a cobertura dos relatórios."));
+      } else balance.appendChild(node("small", "", "Diferença = Razão considerado − resumo fiscal."));
+      reader.appendChild(balance);
       const coverageTable = investigationTable(["Acumulador", "Resumo fiscal", "Documentos lidos", "Diferença de cobertura"],
         group.acumuladores || [], (tr, acc) => {
           cell(tr, acc.codigo + " · " + (acc.descricao || ""));
@@ -1335,11 +1368,13 @@
       const select = node("select", "fiscal-doc-filter"); select.setAttribute("aria-label", "Filtrar correspondências");
       const options = [["review", "Para revisar"], ["all", "Todos os documentos"], ["CONCILIADO", "Conciliados"],
         ["VALOR_DIFERENTE", "Valor diferente"], ["DATA_DIFERENTE", "Data diferente"], ["CONTA_DIFERENTE", "Possível outra conta"],
+        ["ESTORNO_EM_ANALISE", "Estorno para conferir"],
         ["PROVAVEL", "Vínculo provável"], ["AMBIGUO", "Vínculo ambíguo"],
         ["SEM_LANCAMENTO_IDENTIFICADO", "Fiscal sem lançamento"], ["ledger", "Razão sem vínculo"]];
       options.forEach(([value, label]) => {
         const quantity = value === "all" ? comparisons.length : value === "review" ? comparisons.filter(d => d.situacao !== "CONCILIADO").length :
           value === "ledger" ? ledger.length : comparisons.filter(d => d.situacao === value).length;
+        if (!quantity && !["review", "all"].includes(value)) return;
         const option = node("option", "", label + " (" + quantity + ")"); option.value = value; select.appendChild(option);
       });
       if (!comparisons.some(d => d.situacao !== "CONCILIADO")) select.value = ledger.length ? "ledger" : "all";
@@ -1358,7 +1393,11 @@
       [25, 50, 100].forEach(n => { const o = node("option", "", n + " por página"); o.value = String(n); pageSize.appendChild(o); });
       pagination.append(previous, pageLabel, next, pageSize); reader.append(caption, pagination, rowsArea, node("h5", "fiscal-doc-coverage-title", "Cobertura dos acumuladores"), coverageTable);
       let page = 0;
-      const indexed = comparisons.map(d => ({item:d, text:[d.nota, d.serie, d.parceiro, d.criterio,
+      const priority = {VALOR_DIFERENTE:0, ESTORNO_EM_ANALISE:1, CONTA_DIFERENTE:2, DATA_DIFERENTE:3,
+        SEM_LANCAMENTO_IDENTIFICADO:4, AMBIGUO:5, PROVAVEL:6, CONCILIADO:7};
+      const ordered = [...comparisons].sort((a, b) => (priority[a.situacao] ?? 8) - (priority[b.situacao] ?? 8) ||
+        Math.abs(b.diferenca || 0) - Math.abs(a.diferenca || 0));
+      const indexed = ordered.map(d => ({item:d, text:[d.nota, d.serie, d.parceiro, d.criterio,
         ...(d.linhas_fiscais || []).map(p => p.acumulador + " " + p.cfop),
         ...(d.lancamentos || []).map(m => m.historico + " " + (m.conta || group.conta))].join(" ").toLocaleLowerCase("pt-BR")}));
       const ledgerIndex = ledger.map(m => ({item:m, text:[m.nota, m.historico, m.id, m.data].join(" ").toLocaleLowerCase("pt-BR")}));
@@ -1372,39 +1411,46 @@
         const rows = filtered(); const size = Number(pageSize.value); const pages = Math.max(1, Math.ceil(rows.length / size));
         page = Math.min(page, pages - 1); const start = page * size;
         caption.textContent = rows.length ? (start + 1) + "–" + Math.min(start + size, rows.length) + " de " + rows.length +
-          " registros · todos os registros processados estão disponíveis nos filtros e na exportação." : "Nenhum registro neste filtro.";
+          " registros" : "Nenhum registro neste filtro.";
         pageLabel.textContent = "Página " + (page + 1) + " de " + pages;
         previous.disabled = page === 0; next.disabled = page + 1 >= pages;
         rowsArea.replaceChildren();
         if (!rows.length) { rowsArea.appendChild(node("p", "fiscal-doc-empty", "Nenhum resultado. Consulte os conciliados ou altere a busca.")); return; }
         if (select.value === "ledger") {
           rowsArea.appendChild(investigationTable(["Referência / data", "Histórico do Razão", "Valor", "Leitura"], rows.slice(start, start + size), (tr, m) => {
-            cell(tr, m.id + " · " + m.data); cell(tr, m.historico); cell(tr, money.format(m.valor), "fiscal-money");
-            cell(tr, investigationStatus(m.situacao) + ". " + (m.classificacao || "") + ". Confira se este movimento pertence aos documentos anexados.");
+            cell(tr, m.id + " · " + m.data).setAttribute("data-label", "Referência / data");
+            cell(tr, m.historico).setAttribute("data-label", "Histórico");
+            cell(tr, money.format(m.valor), "fiscal-money").setAttribute("data-label", "Valor");
+            cell(tr, investigationStatus(m.situacao) + ". " + (m.classificacao || "") + ". Confira se este movimento pertence aos documentos anexados.").setAttribute("data-label", "Leitura");
           })); return;
         }
         rowsArea.appendChild(investigationTable(["Documento fiscal", "Lançamentos no Razão", "Diferença / resultado"],
           rows.slice(start, start + size), (tr, d) => {
-            const docCell = node("td", "fiscal-doc-source");
+            const docCell = node("td", "fiscal-doc-source"); docCell.setAttribute("data-label", "Fiscal");
             docCell.append(node("strong", "fiscal-doc-value", money.format(d.valor_fiscal)), node("strong", "", "Nota " + d.nota + (d.serie ? " · série " + d.serie : "")),
               node("span", "", d.data), node("span", "", d.parceiro || "Parceiro não informado"));
             (d.linhas_fiscais || []).forEach(p => docCell.appendChild(node("small", "", p.id + " · acumulador " + p.acumulador +
               " · CFOP " + p.cfop + " · " + money.format(p.valor) + " · linha " + p.linha_origem)));
             tr.appendChild(docCell);
-            const movCell = node("td", "fiscal-doc-source");
+            const movCell = node("td", "fiscal-doc-source"); movCell.setAttribute("data-label", "Razão");
             movCell.appendChild(node("strong", "fiscal-doc-value", d.valor_razao == null ? "Valor não confirmado" : money.format(d.valor_razao)));
             (d.lancamentos || []).forEach(m => {
               const block = node("div", "fiscal-doc-movement");
-              block.append(node("strong", "", m.id + " · " + m.data + " · conta " + (m.conta || group.conta)),
-                node("span", "", m.historico), node("small", "", money.format(m.valor) + (m.contrapartida ? " · contrapartida " + m.contrapartida : "")));
+              const history = node("span", "", compactDocumentHistory(m.historico, d)); history.title = m.historico;
+              block.append(node("strong", "", money.format(m.valor)), history,
+                node("small", "", m.data + " · conta " + (m.conta || group.conta) + " · " + m.id +
+                  (m.contrapartida ? " · contrapartida " + m.contrapartida : "")));
               movCell.appendChild(block);
             });
             if (!d.lancamentos?.length) movCell.appendChild(node("span", "fiscal-disclaimer", "Nenhum lançamento identificado pelos critérios disponíveis."));
             tr.appendChild(movCell);
-            const statusCell = node("td", "fiscal-doc-status");
+            const statusCell = node("td", "fiscal-doc-status"); statusCell.setAttribute("data-label", "Resultado");
             if (d.diferenca != null) statusCell.appendChild(node("strong", d.diferenca ? "fiscal-doc-difference" : "", money.format(d.diferenca)));
-            statusCell.append(node("span", "fiscal-doc-badge fiscal-doc-badge-" + d.situacao.toLowerCase(), investigationStatus(d.situacao)),
-              node("small", "", d.criterio || "")); tr.appendChild(statusCell);
+            statusCell.appendChild(node("span", "fiscal-doc-badge fiscal-doc-badge-" + d.situacao.toLowerCase(), investigationStatus(d.situacao)));
+            const reason = d.situacao === "VALOR_DIFERENTE" ? (d.linhas_fiscais?.length || 1) + " linha(s) fiscal(is) × " + (d.lancamentos?.length || 0) + " parcela(s) no Razão." :
+              d.situacao === "CONCILIADO" ? "Documento, data e valores conferem." : d.criterio || "";
+            const criterion = node("small", "", reason); criterion.title = d.criterio || "";
+            statusCell.appendChild(criterion); tr.appendChild(statusCell);
           }));
       }
       select.addEventListener("change", () => { page = 0; paint(); });
@@ -1428,9 +1474,9 @@
     }
     groups.forEach(group => {
       const button = node("button", "fiscal-doc-account"); button.type = "button";
-      button.append(node("strong", "", "Conta " + group.conta), node("small", "", group.tipo),
-        node("span", "", group.descricao || "Sem descrição"),
-        node("small", "", group.documentos_total + " linhas fiscais · " + money.format(group.diferenca || 0) + " na conferência inicial"));
+      const name = node("div", "fiscal-doc-account-head"); name.append(node("strong", "", "Conta " + group.conta), node("small", "", group.tipo));
+      const description = node("span", "", (group.descricao || "Sem descrição").split(" | ")[0]); description.title = group.descricao || "";
+      button.append(name, description, node("small", "", group.documentos_total + " linhas · " + money.format(group.diferenca || 0)));
       button.addEventListener("click", () => selectAccount(group)); accounts.appendChild(button); buttons.set(group, button);
     });
     selectAccount(active); investigationResults.hidden = false;

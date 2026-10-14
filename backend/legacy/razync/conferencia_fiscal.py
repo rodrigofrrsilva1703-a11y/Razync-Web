@@ -707,6 +707,7 @@ def processar_conferencia(
     return {
         "sem_conta": sem_conta,
         "resumo": resumo, "detalhes": detalhes, "acumuladores": acumuladores,
+        "razao_completo": razao,
         "periodo_fiscal": periodo_fiscal, "periodo_razao": periodo_razao,
         "periodo_aplicado": bool(periodo_aplicado),
         "movimentos_fora_periodo": movimentos_fora_periodo,

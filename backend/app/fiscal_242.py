@@ -112,6 +112,7 @@ def conferencia_fiscal_preview(
     acumuladores_bytes: bytes, acumuladores_nome: str,
     razao_bytes: bytes, razao_nome: str,
     codigo_empresa: int | None = None, filial_alvo: str | None = None,
+    *, incluir_razao_completo: bool = False,
 ) -> dict:
     if not acumuladores_nome.lower().endswith((".xls", ".xlsx")):
         raise ValueError("Envie o Resumo por Acumulador em XLS ou XLSX.")
@@ -227,7 +228,20 @@ def conferencia_fiscal_preview(
         origem = "Razão" if resultado.get("empresa_razao") else "Resumo por Acumulador"
         avisos.append(f"Razão social identificada pelo {origem}; o outro relatório não contém o nome reconhecível para confirmar.")
 
+    full_ledger = []
+    if incluir_razao_completo:
+        for i, mov in enumerate(resultado["razao_completo"].to_dict("records")):
+            date = pd.to_datetime(mov.get("DATA"), errors="coerce")
+            full_ledger.append({
+                "id": f"R-F-{i+1}", "conta": str(mov.get("CONTA", "")),
+                "data": date.strftime("%d/%m/%Y") if pd.notna(date) else "",
+                "historico": str(mov.get("HISTÓRICO", "")),
+                "contrapartida": str(mov.get("CONTRAPARTIDA", "")),
+                "debito": round(float(mov.get("DÉBITO", 0) or 0), 2),
+                "credito": round(float(mov.get("CRÉDITO", 0) or 0), 2),
+            })
     return {
+        **({"_razao_completo": full_ledger} if incluir_razao_completo else {}),
         "empresa": codigo_empresa,
         "empresa_nome": nome_empresa,
         "empresa_fiscal": resultado.get("empresa_fiscal", ""),

@@ -1226,3 +1226,45 @@
 #fiscalView .fiscal-doc-value {font-size:15px;color:#253e59;margin-bottom:12px;}
 #fiscalView .fiscal-doc-coverage-title {margin:24px 0 12px;font-size:12px;color:#52708d;}
 @media (max-width:680px) {#fiscalView .fiscal-doc-rows .fiscal-investigation-table {min-width:560px;}#fiscalView .fiscal-doc-reader .fiscal-investigation-table td {padding:12px 8px;}#fiscalView .fiscal-doc-value {font-size:13px;}}
+/* Leitura enxuta: composição do saldo, parcelas sem repetição e cartões no celular. */
+#fiscalView .fiscal-investigation-summary {grid-template-columns:repeat(3,minmax(0,1fr));}
+#fiscalView .fiscal-doc-account {padding:11px;gap:5px;}
+#fiscalView .fiscal-doc-account-head {display:flex;align-items:center;justify-content:space-between;gap:8px;}
+#fiscalView .fiscal-doc-account-head small {font-size:9px;letter-spacing:.035em;}
+#fiscalView .fiscal-doc-balance {margin:15px 0 18px;padding:14px 16px;background:#f7f9fc;border-radius:9px;}
+#fiscalView .fiscal-doc-balance-head {display:flex;justify-content:space-between;gap:16px;align-items:center;font-size:12px;color:#425873;}
+#fiscalView .fiscal-doc-balance-head strong {font-size:21px;color:#263b55;white-space:nowrap;}
+#fiscalView .fiscal-doc-balance-lines {display:grid;gap:7px;margin:12px 0 8px;border-top:1px solid #e3e9f0;padding-top:11px;}
+#fiscalView .fiscal-doc-balance-lines > div {display:flex;justify-content:space-between;gap:16px;font-size:11px;line-height:1.5;color:#5c6e83;}
+#fiscalView .fiscal-doc-balance-lines strong {white-space:nowrap;font-weight:600;color:#354d68;}
+#fiscalView .fiscal-doc-balance > small {display:block;font-size:10px;line-height:1.6;color:#738095;}
+#fiscalView .fiscal-doc-rows .fiscal-doc-status {text-align:left;}
+#fiscalView .fiscal-doc-rows .fiscal-doc-status > strong {font-size:15px;}
+#fiscalView .fiscal-doc-source > small {line-height:1.5;}
+#fiscalView .fiscal-doc-movement > strong {font-size:12px;}
+#fiscalView .fiscal-doc-movement > span {font-size:11px;color:#566c84;line-height:1.5;}
+#fiscalView .fiscal-doc-movement > small {font-size:9px;}
+#fiscalView .fiscal-doc-rows td::before {display:none;}
+@media(max-width:680px) {
+  #fiscalView .fiscal-investigation-summary {grid-template-columns:repeat(3,minmax(0,1fr));}
+  #fiscalView .fiscal-investigation-metric {padding:10px 8px;}
+  #fiscalView .fiscal-investigation-metric small {font-size:9px;}
+  #fiscalView .fiscal-doc-accounts {flex-direction:row;max-height:none;overflow-x:auto;overflow-y:hidden;padding-bottom:4px;}
+  #fiscalView .fiscal-doc-account {flex:0 0 175px;}
+  #fiscalView .fiscal-doc-reader {padding:12px;}
+  #fiscalView .fiscal-doc-balance {padding:12px;}
+  #fiscalView .fiscal-doc-balance-head {align-items:flex-start;}
+  #fiscalView .fiscal-doc-balance-head strong {font-size:18px;}
+  #fiscalView .fiscal-doc-rows .fiscal-table-scroll {overflow:visible;}
+  #fiscalView .fiscal-doc-rows .fiscal-investigation-table {min-width:0;display:block;border:0;}
+  #fiscalView .fiscal-doc-rows .fiscal-investigation-table thead {display:none;}
+  #fiscalView .fiscal-doc-rows .fiscal-investigation-table tbody {display:grid;gap:12px;}
+  #fiscalView .fiscal-doc-rows .fiscal-investigation-table tr {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid #e1e7ef;border-radius:9px;overflow:hidden;}
+  #fiscalView .fiscal-doc-rows .fiscal-investigation-table td {display:block;width:auto;border:0;padding:12px 9px;}
+  #fiscalView .fiscal-doc-rows .fiscal-investigation-table td::before {display:block;content:attr(data-label);font-size:9px;font-weight:600;letter-spacing:.06em;color:#74869c;margin-bottom:10px;}
+  #fiscalView .fiscal-doc-rows .fiscal-doc-status {grid-column:1/-1;background:#f8fafc;border-top:1px solid #e6ecf2;}
+  #fiscalView .fiscal-doc-status .fiscal-doc-badge {display:inline-block;margin-right:10px;}
+  #fiscalView .fiscal-doc-rows .fiscal-doc-status > strong {display:inline-block;margin-right:12px;}
+  #fiscalView .fiscal-doc-source > strong {font-size:11px;}
+  #fiscalView .fiscal-doc-source > .fiscal-doc-value {font-size:14px;}
+}

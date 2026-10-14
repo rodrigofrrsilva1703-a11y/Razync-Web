@@ -27,7 +27,8 @@ function setup() {
     valor_fiscal:100,valor_razao:i<1000?100:110,diferenca:i<1000?0:10,
     linhas_fiscais:[{id:'E-'+i,acumulador:'1152',cfop:'1102',valor:100,linha_origem:i+1}],
     lancamentos:[{id:'R-'+i,data:'03/08/2026',valor:i<1000?100:110,historico:'COMPRA CF NF '+(i+1),contrapartida:'800'}]}));
-  const group={conta:'508',tipo:'ENTRADAS',descricao:'Compras',fiscal:110000,contabil:111000,diferenca:1000,
+  const group={composicao:{confere_com_inicial:true,itens:[
+      {descricao:'Diferenças nos vínculos',valor:1009.99},{descricao:'Fora da conferência inicial',valor:-9.99},{descricao:'Cobertura',valor:0}]},conta:'508',tipo:'ENTRADAS',descricao:'Compras',fiscal:110000,contabil:111000,diferenca:1000,
     documentos_total:1100,comparacoes:docs,acumuladores:[],razao_sem_vinculo:[]};
   context.renderInvestigation({resumo:{contas:2,conciliados:1000,pendentes:100},contas:[group,{...group,conta:'509',comparacoes:[],documentos_total:0}]});
   return {root,all,byClass,exportedBlob:()=>exported};
@@ -65,4 +66,23 @@ test('exportação inclui o filtro completo e as linhas de origem, além da pág
   assert.match(csv,/Linhas fiscais \/ origem/);
   assert.match(csv,/"1100";"1";"03\/08\/2026"/);
   assert.match(csv,/E-1099 CFOP 1102/);
+});
+
+
+test('composição do total destaca efeitos não nulos e mantém os sinais',()=>{
+  const {byClass,all}=setup();
+  assert.equal(byClass('fiscal-doc-balance-lines').children.length,2);
+  const amounts=all(byClass('fiscal-doc-balance')).filter(el=>el.tag==='strong').map(el=>el.textContent);
+  assert.match(amounts[0],/1\.000,00/);
+  assert.match(amounts[1],/\+ R\$/);
+  assert.match(amounts[2],/-R\$/);
+});
+
+test('histórico só é resumido quando nota e parceiro já estão visíveis, preservando qualificações',()=>{
+  const code=source.slice(source.indexOf('  function compactDocumentHistory('),source.indexOf('  function investigationTable('));
+  const context={};vm.createContext(context);vm.runInContext(code,context);
+  const d={nota:'100',parceiro:'Fornecedor Teste'};
+  assert.equal(context.compactDocumentHistory('COMPRA CF NF 00100 - Fornecedor Teste',d),'COMPRA');
+  assert.equal(context.compactDocumentHistory('COMPRA CF NF 100 CANCELADA - Fornecedor Teste',d),'COMPRA CF NF 100 CANCELADA - Fornecedor Teste');
+  assert.equal(context.compactDocumentHistory('COMPRA CF NF 100 - Outro Fornecedor',d),'COMPRA CF NF 100 - Outro Fornecedor');
 });

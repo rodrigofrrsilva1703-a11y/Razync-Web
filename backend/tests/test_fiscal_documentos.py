@@ -485,3 +485,74 @@ def test_mesmo_valor_e_data_com_outra_nf_nao_cria_indicio_falso():
     table[4][2] = "COMPRA CF NF 999"
     d = next(d for d in post(saida=False, fiscal=f, razao=book(table)).json()["contas"][0]["documentos"] if d["nota"] == "100")
     assert d["situacao"] == "SEM_LANCAMENTO_IDENTIFICADO"
+
+
+def test_procura_nota_em_conta_fora_do_mapeamento_fiscal():
+    f, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table[2][1] = 9999  # Nenhum acumulador está vinculado a esta conta.
+    table[4][2] = "COMPRA CF NF 100 - Fornecedor Teste"
+    table.insert(5, table[3].copy())
+    table.insert(5, ["Conta:", 508])
+    group = next(g for g in post(saida=False, fiscal=f, razao=book(table)).json()["contas"] if g["conta"] == "508")
+    pair = next(c for c in group["comparacoes"] if c["nota"] == "100")
+    assert pair["situacao"] == "CONTA_DIFERENTE"
+    assert pair["lancamentos"][0]["conta"] == "9999"
+    assert pair["lancamentos"][0]["id"].startswith("R-F-")
+    assert group["composicao"]["confere_com_inicial"] is True
+
+
+def test_busca_completa_nao_inclui_outra_filial_ou_competencia():
+    f, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table[2][1] = 9999
+    table[4][2] = "COMPRA CF NF 100 - Fornecedor Teste"
+    table[4][4] = 1408
+    table.insert(5, table[3].copy())
+    table.insert(5, ["Conta:", 508])
+    table += [["Conta:", 8888], table[3].copy(), ["03/07/2026", 7, "COMPRA CF NF 100 - Fornecedor Teste", 800, 242, 1000, 0]]
+    group = next(g for g in post(saida=False, fiscal=f, razao=book(table)).json()["contas"] if g["conta"] == "508")
+    assert next(c for c in group["comparacoes"] if c["nota"] == "100")["situacao"] == "SEM_LANCAMENTO_IDENTIFICADO"
+
+
+def test_serie_explicita_diferente_nao_concilia_nem_agrupa_parcelas():
+    f, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table[4][2] = "COMPRA CF NF 100 SERIE 2 - Fornecedor Teste"
+    rows = pd.read_excel(io.BytesIO(detail()), header=None).values.tolist()
+    rows[3].append("Série")
+    rows[4].append("1")
+    group = post(saida=False, fiscal=f, razao=book(table), entrada_bytes=book(rows)).json()["contas"][0]
+    assert next(d for d in group["documentos"] if d["nota"] == "100")["situacao"] == "SEM_LANCAMENTO_IDENTIFICADO"
+
+
+def test_estorno_da_mesma_nota_impede_conciliacao_prematura():
+    f, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table[4][2] = "COMPRA CF NF 100 - Fornecedor Teste"
+    table.insert(5, ["07/08/2026", 5, "ESTORNO CF NF 100 - Fornecedor Teste", 800, 242, -1000, 0])
+    group = post(saida=False, fiscal=f, razao=book(table)).json()["contas"][0]
+    pair = next(c for c in group["comparacoes"] if c["nota"] == "100")
+    assert pair["situacao"] == "ESTORNO_EM_ANALISE"
+    assert pair["valor_razao"] == 0
+    assert pair["diferenca"] == -1000
+    assert len(pair["lancamentos"]) == 2
+    assert group["composicao"]["confere_com_inicial"] is True
+
+
+def test_composicao_fecha_sem_duplicar_lancamento_ambiguo():
+    data = post(saida=False, entrada_bytes=detail(repeated=True)).json()
+    group = data["contas"][0]
+    composition = group["composicao"]
+    assert composition["confere_com_inicial"] is True
+    assert composition["vinculos_incertos"] is True
+    assert round(sum(i["valor"] for i in composition["itens"]), 2) == group["diferenca"]
+    assert composition["razao_completo_conta"] == 1250
+
+
+def test_razao_completo_interno_nao_vai_para_contexto_da_ia():
+    from app.fiscal_documentos import preparar_relatorio_pendencias_para_ia
+    f, r = initial()
+    report = preparar_relatorio_pendencias_para_ia(f,"f.xlsx",r,"r.xlsx",(detail(),"d.xlsx"),filial="242")
+    assert "_razao_completo" not in report
+    assert len(report["lancamentos"]) <= 30
