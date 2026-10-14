@@ -209,7 +209,7 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
   const context = {node,aiCards:cards,aiResult:root,aiToolbar:{hidden:true},aiTotal:{},
     data:{contas:[]}, keyOf:row=>row.conta+':'+row.tipo,
     money:{format:String},statusClass:()=>'',statusLabels:{},
-    accumulatorBreakdown:()=>node('section'),renderNarrative:()=>node('div'),renderChecklist:()=>node('ol'),
+    accumulatorBreakdown:()=>node('section'),accumulatorRows:()=>[],renderNarrative:()=>node('div'),renderChecklist:()=>node('ol'),
     updateAIFilters:()=>{}};
   vm.createContext(context);vm.runInContext(source.slice(start,end),context);
   const first = {conta:'1',tipo:'ENTRADAS',provedor:'groq',modelo_usado:'openai/gpt-oss-120b',parecer:{versao:'grounded-v1',
@@ -266,9 +266,9 @@ test('pareceres ficam visíveis por conta sem controles para abrir respostas', (
   }
   assert.match(source,/node\("article", "fiscal-ai-card fiscal-ai-account"\)/);
   assert.match(source,/node\("div", "fiscal-ai-card-heading fiscal-ai-account-summary"\)/);
-  assert.match(source,/composition\.append\(node\("summary", "", "Composição dos acumuladores"\), accumulatorInfo\)/);
+  assert.match(source,/const composition = renderAIComposition\(officialRow\)/);
   assert.match(source,/reading\.append\(analysis, review\)/);
-  assert.match(source,/content\.append\(details\)/);
+  assert.match(source,/content\.appendChild\(renderAIEvidence\(item\)\)/);
   assert.match(source,/aiResult\.append\(card\)/);
   assert.match(css,/\.fiscal-ai-account-summary\s*\{/);
   assert.match(css,/\.fiscal-ai-account-content/);

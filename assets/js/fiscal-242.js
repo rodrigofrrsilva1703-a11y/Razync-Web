@@ -44,6 +44,7 @@
   const aiCount = byId("fiscal242AICount");
   const aiEmpty = byId("fiscal242AIEmpty");
   const aiReader = byId("fiscal242AIReader");
+  const aiAccounts = byId("fiscal242AIAccounts");
   let activeAIKey = "";
   const usageButton = byId("fiscal242UsageButton");
   const usageDialog = byId("fiscal242UsageDialog");
@@ -339,6 +340,35 @@
     limits.appendChild(body);
     return limits;
   }
+  function renderAIDataTable(title, headers, rows, className) {
+    const section = node("section", "fiscal-ai-data " + className);
+    section.appendChild(node("h5", "", title));
+    const wrap = node("div", "fiscal-ai-data-scroll");
+    const table = node("table", "fiscal-ai-data-table");
+    const head = node("thead", ""), heading = node("tr", "");
+    for (const label of headers) { const cell = node("th", "", label); cell.scope = "col"; heading.appendChild(cell); }
+    head.appendChild(heading);
+    const body = node("tbody", "");
+    for (const values of rows) {
+      const row = node("tr", "");
+      values.forEach((value, index) => row.appendChild(node("td", index >= headers.length - 2 ? "fiscal-ai-data-value" : "", value ?? "—")));
+      body.appendChild(row);
+    }
+    table.append(head, body); wrap.appendChild(table); section.appendChild(wrap);
+    return section;
+  }
+  function renderAIComposition(row) {
+    const items = accumulatorRows(row);
+    if (!items.length) return accumulatorBreakdown(row);
+    return renderAIDataTable("Composição dos acumuladores", ["Acumulador", "Descrição", "Valor fiscal"],
+      items.map(item => [item.codigo, item.descricao || "Descrição não informada", item.valor === null ? "—" : money.format(item.valor)]), "fiscal-ai-composition");
+  }
+  function renderAIEvidence(item) {
+    return renderAIDataTable(`Lançamentos citados (${item.evidencias.length})`,
+      ["Referência", "Data", "Histórico", "Contrapartida", "Débito", "Crédito"],
+      item.evidencias.map(row => [row.referencia, row.data || "—", row.historico || "Histórico não informado",
+        row.contrapartida || "—", money.format(Number(row.debito || 0)), money.format(Number(row.credito || 0))]), "fiscal-ai-evidence");
+  }
   function renderAIEntries(entries) {
       for (const item of entries) {
         if (aiCards.some(entry => keyOf(entry.item) === keyOf(item))) continue;
@@ -368,7 +398,6 @@
           content.appendChild(summary);
         }
         const officialRow = (data?.contas || []).find(row => keyOf(row) === keyOf(item)) || item;
-        const accumulatorInfo = accumulatorBreakdown(officialRow);
         const analysis = renderAIFindings(item);
         const review = node("section", "fiscal-ai-review");
         const reviewHeading = node("div", "fiscal-ai-section-heading");
@@ -384,8 +413,7 @@
           });
           content.appendChild(metrics);
         }
-        const composition = node("details", "fiscal-ai-composition");
-        composition.append(node("summary", "", "Composição dos acumuladores"), accumulatorInfo);
+        const composition = renderAIComposition(officialRow);
         const reading = node("div", "fiscal-ai-reading");
         reading.append(analysis, review);
         content.appendChild(reading);
@@ -400,22 +428,7 @@
             "A auditoria confere referências e valores conhecidos; a conclusão contábil exige revisão humana."));
           content.appendChild(audit);
         }
-        if (item.evidencias?.length) {
-          const details = node("details", "fiscal-ai-evidence");
-          details.append(node("summary", "", `Lançamentos citados (${item.evidencias.length})`));
-          for (const row of item.evidencias) {
-            const value = n => Number(n || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
-            const record = node("div", "fiscal-ai-record");
-            const title = node("div", "fiscal-ai-record-title");
-            title.append(node("strong", "", row.referencia), node("span", "", row.data));
-            const metrics = node("dl", "fiscal-ai-record-metrics");
-            for (const [label, content] of [["Conta", row.conta], ["Contrapartida", row.contrapartida], ["Débito", value(row.debito)], ["Crédito", value(row.credito)]]) {
-              const metric = node("div", ""); metric.append(node("dt", "", label), node("dd", "", content)); metrics.append(metric);
-            }
-            record.append(title, node("p", "", row.historico), metrics); details.append(record);
-          }
-          content.append(details);
-        }
+        if (item.evidencias?.length) content.appendChild(renderAIEvidence(item));
         content.append(composition, renderAILimits(item));
         card.append(heading, content);
         aiCards.push({item, card});
@@ -466,12 +479,27 @@
   function renderAIReader(matching) {
     activeAIKey = chooseAIKey(matching, activeAIKey);
     aiReader.hidden = matching.length === 0;
-    aiReader.classList.add("is-all");
+    aiAccounts.replaceChildren();
+    matching.forEach(({item, card}) => {
+      const selected = keyOf(item) === activeAIKey;
+      card.classList.toggle("is-reading", selected);
+      const button = node("button", "fiscal-ai-nav-account" + (selected ? " is-selected" : ""));
+      button.type = "button";
+      button.setAttribute("aria-pressed", String(selected));
+      button.append(node("strong", "", "Conta " + item.conta), node("span", "fiscal-ai-nav-description", item.descricao || item.tipo || "Parecer da conta"));
+      const footer = node("span", "fiscal-ai-nav-meta");
+      footer.appendChild(node("small", "", statusLabels[item.situacao] || item.situacao || item.tipo));
+      if (item.valores?.diferenca !== undefined) footer.appendChild(node("b", "", money.format(Number(item.valores.diferenca) || 0)));
+      button.appendChild(footer);
+      button.addEventListener("click", () => {activeAIKey = keyOf(item); renderAIReader(matching);});
+      aiAccounts.appendChild(button);
+    });
   }
   function clearAIAccounts() {
     loadingPanel.hidden = true;
     aiCards = [];
     activeAIKey = "";
+    aiAccounts.replaceChildren();
     aiReader.hidden = true;
     aiToolbar.hidden = true;
     aiEmpty.hidden = true;

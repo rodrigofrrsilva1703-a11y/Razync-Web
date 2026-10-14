@@ -389,3 +389,14 @@
 #fiscalView .fiscal-ai-limits {border-top:1px solid #e6ecf1;margin-top:18px;padding:18px 0 0;}
 #fiscalView .fiscal-ai-limits > h5 {margin:0;font-size:13px;color:#4b647a;}
 #fiscalView .fiscal-ai-limits-content {padding-top:12px;}
+/* Fontes do parecer abertas e organizadas em linhas comparáveis. */
+#fiscalView .fiscal-ai-data {padding:20px 0 0;margin-top:18px;border-top:1px solid #e5ebf1;}
+#fiscalView .fiscal-ai-data > h5 {margin:0 0 12px;font-size:14px;color:#34556f;}
+#fiscalView .fiscal-ai-data-scroll {overflow-x:auto;border:1px solid #e3eaf0;border-radius:7px;}
+#fiscalView .fiscal-ai-data-table {width:100%;border-collapse:collapse;font-size:11px;line-height:1.65;}
+#fiscalView .fiscal-ai-data-table th {background:#f6f8fb;text-align:left;padding:10px 12px;color:#63798b;font-weight:600;white-space:nowrap;}
+#fiscalView .fiscal-ai-data-table td {padding:11px 12px;border-top:1px solid #e8edf2;vertical-align:top;color:#435e74;}
+#fiscalView .fiscal-ai-data-table td:first-child {font-weight:600;white-space:nowrap;}
+#fiscalView .fiscal-ai-data-value {text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+#fiscalView .fiscal-ai-evidence td:nth-child(3) {min-width:180px;max-width:340px;overflow-wrap:anywhere;}
+#fiscalView .fiscal-ai-composition td:nth-child(2) {text-align:left;white-space:normal;}
