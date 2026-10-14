@@ -355,7 +355,9 @@ def _workflow(code, roles, options):
                     if bank == 'santander' and code == 1001:
                         if frame.empty:
                             raise ValueError('Santander 513: nenhum lançamento no período selecionado.')
-                        frame = frame.copy()
+                        # Leitor valida os saldos na ordem original; o Modelo Domínio
+                        # recebe as movimentações em ordem cronológica estável.
+                        frame = frame.sort_values('DATA', kind='stable').reset_index(drop=True).copy()
                         frame['DÉBITO'] = frame['VALOR'].apply(lambda value: '513' if float(value) > 0 else '')
                         frame['CRÉDITO'] = frame['VALOR'].apply(lambda value: '513' if float(value) < 0 else '')
                     data[bank.title()] = {'principal': frame, 'retirados': pd.DataFrame()}
