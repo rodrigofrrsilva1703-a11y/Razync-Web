@@ -259,7 +259,7 @@ def test_documento_transporte_explicito_sem_confundir_texto_comum():
     assert _nota_historico("PACOTE 263553") == ""
     f, r = initial()
     rows = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
-    rows[4][2] = "FRETE CONTRATADO CF CTRC 100 - TRANSPORTADORA"
+    rows[4][2] = "FRETE CONTRATADO CF CTRC 100 - Fornecedor Teste"
     result = post(saida=False, fiscal=f, razao=book(rows)).json()
     assert next(d for d in result["contas"][0]["documentos"] if d["nota"] == "100")["situacao"] == "CONCILIADO"
 
@@ -372,3 +372,116 @@ def test_referencia_documental_inventada_ou_de_outra_conta_e_rejeitada():
     item = next(i for i in validated if i["conta"] == "508")
     assert item["documentos_evidencias"][0]["referencia"] == "E-2"
     assert item["parecer"]["comparacoes_documentais"][0]["diferenca_candidato_brl"] == "R$ 50,00"
+
+
+def test_parcelas_da_mesma_nf_sao_somadas_sem_falsa_divergencia():
+    f, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table[4][2] = "COMPRA CF NF 100 - Fornecedor Teste"
+    table[4][5] = 900
+    table.insert(5, ["03/08/2026", 5, "FRETE CF NF 100 - Fornecedor Teste", 800, 242, 100, 0])
+    group = post(saida=False, fiscal=f, razao=book(table)).json()["contas"][0]
+    d = next(d for d in group["documentos"] if d["nota"] == "100")
+    assert d["situacao"] == "CONCILIADO"
+    pair = next(c for c in group["comparacoes"] if c["nota"] == "100")
+    assert pair["valor_fiscal"] == pair["valor_razao"] == 1000
+    assert pair["diferenca"] == 0
+    assert len(pair["lancamentos"]) == 2
+    assert not any(m["nota"] == "100" for m in group["razao_sem_vinculo"])
+
+
+def test_mesma_nf_dividida_por_cfop_e_parcelas_preserva_linhas_de_origem():
+    f, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table[4][2] = "COMPRA CF NF 100 - Fornecedor Teste"
+    table[4][5] = 900
+    table.insert(5, ["03/08/2026", 5, "FRETE CF NF 100 - Fornecedor Teste", 800, 242, 100, 0])
+    rows = pd.read_excel(io.BytesIO(detail()), header=None).values.tolist()
+    rows[4][4] = 600
+    rows.insert(5, [1152, 100, "03/08/2026", 1403, 400, "", "Fornecedor Teste"])
+    group = post(saida=False, fiscal=f, razao=book(table), entrada_bytes=book(rows)).json()["contas"][0]
+    pair = next(c for c in group["comparacoes"] if c["nota"] == "100")
+    assert len(pair["linhas_fiscais"]) == 2
+    assert pair["valor_fiscal"] == pair["valor_razao"] == 1000
+    assert all(d["situacao"] == "CONCILIADO" for d in group["documentos"] if d["nota"] == "100")
+
+
+def test_parcelas_divergentes_mostram_diferenca_conjunta_uma_vez():
+    f, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table[4][2] = "COMPRA CF NF 100 - Fornecedor Teste"
+    table[4][5] = 850
+    table.insert(5, ["03/08/2026", 5, "FRETE CF NF 100 - Fornecedor Teste", 800, 242, 100, 0])
+    pair = next(c for c in post(saida=False, fiscal=f, razao=book(table)).json()["contas"][0]["comparacoes"] if c["nota"] == "100")
+    assert pair["situacao"] == "VALOR_DIFERENTE"
+    assert pair["valor_razao"] == 950
+    assert pair["diferenca"] == -50
+
+
+def test_parceiro_diferente_nao_vincula_mesma_nota_valor_e_data():
+    f, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table[4][2] = "COMPRA CF NF 100 - Outro Fornecedor"
+    group = post(saida=False, fiscal=f, razao=book(table)).json()["contas"][0]
+    assert next(d for d in group["documentos"] if d["nota"] == "100")["situacao"] == "SEM_LANCAMENTO_IDENTIFICADO"
+
+
+def test_relatorio_grande_retorna_todos_os_registros_e_comparacoes():
+    f, r, d = bulk_files(matched=1250, pending=350)
+    group = post(saida=False, fiscal=f, razao=r, entrada_bytes=d).json()["contas"][0]
+    assert group["documentos_total"] == len(group["documentos"]) == 1600
+    assert len(group["comparacoes"]) == 1600
+    assert group["resumo"]["conciliados"] == 1250
+    assert group["resumo"]["pendentes"] == 350
+    assert group["documentos"][0]["nota"] == "1251"
+    assert any(d["nota"] == "1600" for d in group["documentos"])
+
+
+def test_indicio_em_outra_conta_nao_e_ausencia_ou_conciliacao():
+    f, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table[4][2] = "COMPRA CF NF 100 - Fornecedor Teste"
+    table[2][1] = 509
+    table.insert(5, table[3].copy())
+    table.insert(5, ["Conta:", 508])
+    fiscal_rows = pd.read_excel(io.BytesIO(f), header=None).values.tolist()
+    fiscal_rows.insert(5, [1153, "Outra conta de compras", 1000, 509])
+    group = next(g for g in post(saida=False, fiscal=book(fiscal_rows), razao=book(table)).json()["contas"] if g["conta"] == "508")
+    pair = next(c for c in group["comparacoes"] if c["nota"] == "100")
+    assert pair["situacao"] == "CONTA_DIFERENTE"
+    assert pair["lancamentos"][0]["conta"] == "509"
+    assert pair["diferenca"] == 0
+    assert group["resumo"]["conciliados"] == 0
+
+
+def test_numero_repetido_em_datas_diferentes_prefere_data_exata():
+    f, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table.insert(5, ["05/08/2026", 5, "COMPRA CF NF 100", 800, 242, 1000, 0])
+    rows = pd.read_excel(io.BytesIO(detail()), header=None).values.tolist()
+    rows.insert(5, [1152, 100, "05/08/2026", 1102, 1000, "", "Fornecedor Teste"])
+    group = post(saida=False, fiscal=f, razao=book(table), entrada_bytes=book(rows)).json()["contas"][0]
+    docs = [d for d in group["documentos"] if d["nota"] == "100"]
+    assert len(docs) == 2
+    assert all(d["situacao"] == "CONCILIADO" for d in docs)
+    assert len({d["razao_id"] for d in docs}) == 2
+
+
+def test_parcelas_indistinguiveis_nao_conciliam_por_soma():
+    f, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table[4][2] = "COMPRA CF NF 100 - Fornecedor Teste"
+    table[4][5] = 500
+    table.insert(5, table[4].copy())
+    group = post(saida=False, fiscal=f, razao=book(table)).json()["contas"][0]
+    d = next(d for d in group["documentos"] if d["nota"] == "100")
+    assert d["situacao"] == "AMBIGUO"
+    assert next(c for c in group["comparacoes"] if c["nota"] == "100")["diferenca"] is None
+
+
+def test_mesmo_valor_e_data_com_outra_nf_nao_cria_indicio_falso():
+    f, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table[4][2] = "COMPRA CF NF 999"
+    d = next(d for d in post(saida=False, fiscal=f, razao=book(table)).json()["contas"][0]["documentos"] if d["nota"] == "100")
+    assert d["situacao"] == "SEM_LANCAMENTO_IDENTIFICADO"

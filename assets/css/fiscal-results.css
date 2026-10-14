@@ -1177,3 +1177,43 @@
 @media (prefers-reduced-motion:reduce) {
   #fiscalView .fiscal-ai-loading *,#fiscalView .fiscal-ai-loading *::before,#fiscalView .fiscal-ai-loading *::after {animation:none!important;transition:none!important;}
 }
+
+/* Investigação documental: navegação fixa e comparação completa por página. */
+#fiscalView .fiscal-doc-workspace {display:grid;grid-template-columns:245px minmax(0,1fr);gap:16px;margin-top:18px;align-items:start;}
+#fiscalView .fiscal-doc-accounts {display:flex;flex-direction:column;gap:7px;max-height:min(78dvh,920px);overflow-y:auto;overscroll-behavior:contain;}
+#fiscalView .fiscal-doc-account {display:flex;flex-direction:column;text-align:left;gap:5px;padding:13px;border:1px solid #e0e7ee;border-radius:10px;background:#fff;color:#233348;cursor:pointer;}
+#fiscalView .fiscal-doc-account[aria-current="true"] {background:#edf5ff;border-color:#7aa5df;box-shadow:inset 3px 0 #3579bf;}
+#fiscalView .fiscal-doc-account span {font-size:12px;line-height:1.45;}
+#fiscalView .fiscal-doc-account small {font-size:11px;color:#5c6d82;line-height:1.5;}
+#fiscalView .fiscal-doc-reader {min-width:0;max-height:min(78dvh,920px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;border:1px solid #e0e7ee;border-radius:12px;padding:20px;background:#fff;}
+#fiscalView .fiscal-doc-eyebrow {font-size:10px;font-weight:700;letter-spacing:.08em;color:#527497;}
+#fiscalView .fiscal-doc-reader h4 {margin:8px 0 10px;font-size:18px;line-height:1.45;}
+#fiscalView .fiscal-doc-totals {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:17px 0;}
+#fiscalView .fiscal-doc-totals > div {display:flex;flex-direction:column;gap:7px;padding:12px;background:#f7f9fc;border-radius:8px;}
+#fiscalView .fiscal-doc-totals small {color:#65758a;font-size:11px;}
+#fiscalView .fiscal-doc-totals strong {font-size:16px;color:#25374d;}
+#fiscalView .fiscal-doc-controls {display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 10px;}
+#fiscalView .fiscal-doc-controls input,#fiscalView .fiscal-doc-controls select {padding:10px;border:1px solid #dce4ed;border-radius:8px;background:#fff;font-size:12px;min-width:0;color:#33465d;}
+#fiscalView .fiscal-doc-search {flex:1 1 240px;}
+#fiscalView .fiscal-doc-controls button,#fiscalView .fiscal-doc-pagination button {border:1px solid #dce4ed;border-radius:8px;padding:9px 12px;background:#f8fafc;color:#2d4a6a;cursor:pointer;font-size:12px;}
+#fiscalView .fiscal-doc-caption {font-size:11px;line-height:1.6;color:#66768c;margin:10px 0;}
+#fiscalView .fiscal-doc-rows .fiscal-investigation-table {min-width:850px;font-size:12px;}
+#fiscalView .fiscal-doc-rows th {background:#f3f6fa;color:#52708d;font-size:11px;}
+#fiscalView .fiscal-doc-rows td {vertical-align:top;padding:16px 12px;white-space:normal;}
+#fiscalView .fiscal-doc-source {min-width:210px;}
+#fiscalView .fiscal-doc-source > span,#fiscalView .fiscal-doc-source > strong,#fiscalView .fiscal-doc-source > small,#fiscalView .fiscal-doc-movement > * {display:block;line-height:1.55;margin-bottom:5px;}
+#fiscalView .fiscal-doc-source small,#fiscalView .fiscal-doc-status small {font-size:10px;color:#617389;line-height:1.6;}
+#fiscalView .fiscal-doc-movement + .fiscal-doc-movement {border-top:1px solid #e6ecf2;padding-top:10px;margin-top:10px;}
+#fiscalView .fiscal-doc-status {min-width:170px;}
+#fiscalView .fiscal-doc-status > * {display:block;margin-bottom:8px;}
+#fiscalView .fiscal-doc-badge {font-size:10px;line-height:1.45;padding:5px 7px;border-radius:6px;background:#f0f3f7;color:#51637a;}
+#fiscalView .fiscal-doc-badge-conciliado {color:#236e54;background:#edf8f2;}
+#fiscalView .fiscal-doc-badge-valor_diferente,#fiscalView .fiscal-doc-badge-conta_diferente {color:#93601b;background:#fff5e6;}
+#fiscalView .fiscal-doc-difference {color:#a96420;}
+#fiscalView .fiscal-doc-pagination {display:flex;gap:12px;align-items:center;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;font-size:12px;}
+#fiscalView .fiscal-doc-pagination select {padding:8px;border:1px solid #dce4ed;border-radius:8px;background:#fff;}
+#fiscalView .fiscal-doc-pagination button:disabled {opacity:.45;cursor:default;}
+#fiscalView .fiscal-doc-empty {padding:30px 15px;background:#f8fafc;text-align:center;border-radius:8px;color:#617389;}
+@media (max-width:1000px) {#fiscalView .fiscal-doc-workspace {grid-template-columns:190px minmax(0,1fr);}#fiscalView .fiscal-doc-reader {padding:14px;}#fiscalView .fiscal-doc-totals {grid-template-columns:1fr;}}
+@media (max-width:680px) {#fiscalView .fiscal-doc-workspace {grid-template-columns:1fr;}#fiscalView .fiscal-doc-accounts {max-height:200px;}#fiscalView .fiscal-doc-reader {max-height:72dvh;}#fiscalView .fiscal-doc-controls > * {flex:1 1 100%;}#fiscalView .fiscal-doc-pagination {justify-content:center;}}
+#fiscalView .fiscal-doc-pagination {position:sticky;top:0;z-index:2;background:#fff;padding:10px 0;margin:0 0 10px;border-bottom:1px solid #e8edf3;}

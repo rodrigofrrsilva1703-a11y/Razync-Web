@@ -198,6 +198,17 @@ def _nota_historico(texto):
     m = NOTE_RE.search(str(texto or ""))
     return _nota(m.group(1)) if m else ""
 
+
+def _parceiro_chave(texto):
+    return re.sub(r"[^A-Z0-9]", "", _rotulo(texto))
+
+
+def _parceiro_historico(texto):
+    # Somente o parceiro exposto depois do separador, sem aproximação de nomes.
+    parts = re.split(r"\s+-\s+", str(texto or ""), maxsplit=1)
+    return _parceiro_chave(parts[1]) if len(parts) == 2 else ""
+
+
 def _nota_inferida_historico(texto):
     # Alguns Razões reais trazem apenas "149249 - NOME", sem a sigla NF.
     # Número inicial é indício, não confirmação de nota fiscal.
@@ -289,6 +300,21 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
                 "tipos_investigados": []}
     all_docs = [doc for report in reports.values() for doc in report["documentos"]]
     result = []
+    # Índice da filial já validada para indicar possíveis contas diferentes.
+    other_accounts = defaultdict(list)
+    for i, mov in enumerate(preview["lancamentos"]):
+        note = _nota_historico(mov.get("historico")) or _nota_inferida_historico(mov.get("historico"))
+        if not note:
+            continue
+        for tipo, side in (("ENTRADAS", "debito"), ("SAÍDAS", "credito")):
+            amount = _centavos(mov.get(side))
+            if amount:
+                other_accounts[(tipo, note, str(mov.get("data", "")), amount)].append({
+                    "id": f"R-{i+1}", "conta": str(mov["conta"]),
+                    "data": str(mov.get("data", "")), "valor": amount / 100,
+                    "historico": str(mov.get("historico", "")),
+                    "contrapartida": mov.get("contrapartida", ""),
+                })
     for (account, tipo), row in targets.items():
         if tipo not in reports:
             continue
@@ -324,25 +350,42 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
             mov["_cents"] = _centavos(mov["valor"])
             if mov["nota"]:
                 by_note[mov["nota"]].append(mov)
-            by_amount_day[(mov["_cents"], mov_day)].append(mov)
+            # Dois indícios bastam para reconhecer ambiguidade; não percorra
+            # milhares de pagamentos de mesmo valor para cada documento.
+            if not mov["nota"]:
+                bucket = by_amount_day[(mov["_cents"], mov_day)]
+                if len(bucket) < 2:
+                    bucket.append(mov)
         for d in docs:
             dt = datetime.strptime(d["data"], "%d/%m/%Y").date()
             cents = _centavos(d["valor"])
-            candidates = {mov["id"]: mov for mov in (
-                by_note.get(d["nota"], []) + by_amount_day.get((cents, dt), [])
-            )}.values()
+            candidates = by_note.get(d["nota"]) or by_amount_day.get((cents, dt), [])
             for mov in candidates:
                 if abs((dt - mov["_day"]).days) > 45:
                     continue
+                partner = _parceiro_historico(mov["historico"])
+                if partner and d.get("parceiro") and partner != _parceiro_chave(d["parceiro"]):
+                    continue
                 note_equal = bool(mov["nota"] and mov["nota"] == d["nota"])
+                if mov["nota_explicita"] and not note_equal:
+                    continue  # Outra NF explícita não vira candidata só pelo valor.
                 amount_equal = cents == mov["_cents"]
                 if note_equal and amount_equal:
                     strong_candidates[d["id"]].append(mov["id"])
                     ledger_to_docs[mov["id"]].append(d["id"])
                 elif note_equal or (amount_equal and dt == mov["_day"]):
                     near_candidates[d["id"]].append((mov["id"], note_equal, amount_equal))
-        matched = set()
         ledger_by_id = {record["id"]: record for record in ledger}
+        # Repetições de número em competências diferentes: prefira a data exata
+        # antes de validar a exclusividade nas duas direções.
+        ledger_to_docs.clear()
+        for d in docs:
+            exact_day = [ref for ref in strong_candidates[d["id"]] if ledger_by_id[ref]["data"] == d["data"]]
+            if exact_day:
+                strong_candidates[d["id"]] = exact_day
+            for ref in strong_candidates[d["id"]]:
+                ledger_to_docs[ref].append(d["id"])
+        matched = set()
         for d in docs:
             choices = strong_candidates[d["id"]]
             if len(choices) == 1 and len(ledger_to_docs[choices[0]]) == 1:
@@ -377,12 +420,87 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
                     d["situacao"] = "SEM_LANCAMENTO_IDENTIFICADO"
                     d["razao_id"] = ""
                     d["criterio"] = "Nenhum lançamento identificado pelos critérios disponíveis."
+        # Uma NF pode ser desdobrada em CFOPs e em frete/despesas acessórias.
+        # Agrupe apenas a mesma nota, data e parceiro explicitamente presente.
+        # Linhas idênticas repetidas continuam ambíguas (não provar duplicidade).
+        doc_groups = defaultdict(list)
+        for d in docs:
+            if d["situacao"] != "CONCILIADO" and d.get("parceiro"):
+                doc_groups[(d["nota"], d["data"], _parceiro_chave(d["parceiro"]), d["serie"])].append(d)
+        parcel_index = defaultdict(list)
+        for mov in ledger:
+            partner = _parceiro_historico(mov["historico"])
+            if mov["id"] not in matched and mov["nota"] and partner:
+                parcel_index[(mov["nota"], mov["data"], partner)].append(mov)
+        identity_counts = Counter(key[:3] for key in doc_groups)
+        for key, parts in doc_groups.items():
+            movements = parcel_index.get(key[:3], [])
+            if not movements or identity_counts[key[:3]] != 1:
+                continue
+            signatures = [(d["acumulador"], d["cfop"], _centavos(d["valor"])) for d in parts]
+            if len(set(signatures)) != len(signatures):
+                continue
+            mov_signatures = [(m["historico"], m["_cents"], m["contrapartida"]) for m in movements]
+            if len(set(mov_signatures)) != len(mov_signatures):
+                continue  # Parcelas indistinguíveis não comprovam um vínculo único.
+            # Não substitua vínculo único individual por outro agrupamento.
+            if len(parts) == len(movements) == 1 and parts[0].get("razao_id"):
+                continue
+            fiscal_cents = sum(_centavos(d["valor"]) for d in parts)
+            ledger_cents = sum(m["_cents"] for m in movements)
+            explicit = all(m["nota_explicita"] for m in movements)
+            status = ("CONCILIADO" if explicit else "PROVAVEL") if fiscal_cents == ledger_cents else "VALOR_DIFERENTE" if explicit else "PROVAVEL"
+            ident = parts[0]["id"]
+            for d in parts:
+                d.update(situacao=status, razao_id=movements[0]["id"],
+                         razao_ids=[m["id"] for m in movements], documento_grupo_id=ident,
+                         valor_fiscal_grupo=fiscal_cents / 100,
+                         valor_razao_candidato=ledger_cents / 100,
+                         data_razao_candidato=key[1],
+                         diferenca_candidato=(ledger_cents - fiscal_cents) / 100,
+                         criterio=f"Mesma nota, data e parceiro: {len(parts)} linha(s) fiscal(is) × {len(movements)} lançamento(s) no Razão. " +
+                                  ("Soma das parcelas confere." if fiscal_cents == ledger_cents else "Soma das parcelas apresenta diferença de valor.") +
+                                  (" Número sem indicação explícita de NF: confirme o documento." if not explicit else ""))
+            if status == "CONCILIADO":
+                matched.update(m["id"] for m in movements)
         for document in docs:
+            if document.get("documento_grupo_id"):
+                continue
             candidate = ledger_by_id.get(document.get("razao_id"))
             if candidate and document["situacao"] != "CONCILIADO":
                 document["valor_razao_candidato"] = candidate["valor"]
                 document["data_razao_candidato"] = candidate["data"]
                 document["diferenca_candidato"] = (_centavos(candidate["valor"]) - _centavos(document["valor"])) / 100
+        comparisons = []
+        grouped = defaultdict(list)
+        for d in docs:
+            grouped[d.get("documento_grupo_id", d["id"])].append(d)
+        assigned = set()
+        for parts in grouped.values():
+            d = parts[0]
+            refs = d.get("razao_ids") or ([d["razao_id"]] if d.get("razao_id") else [])
+            candidates = [ledger_by_id[ref] for ref in refs if ref in ledger_by_id]
+            if not candidates and d["situacao"] == "SEM_LANCAMENTO_IDENTIFICADO":
+                alternatives = [m for m in other_accounts.get((tipo, d["nota"], d["data"], _centavos(d["valor"])), [])
+                                if m["conta"] != account and _parceiro_historico(m["historico"]) == _parceiro_chave(d.get("parceiro", ""))
+                                and d.get("parceiro")]
+                if len(alternatives) == 1:
+                    candidates = alternatives
+                    d.update(situacao="CONTA_DIFERENTE", criterio="Nota, data, valor e parceiro coincidem em outra conta; confirme o vínculo e o mapeamento do acumulador.")
+            if not candidates and d["situacao"] == "AMBIGUO":
+                refs = list(dict.fromkeys(strong_candidates[d["id"]] + [ref for ref, *_ in near_candidates[d["id"]]]))
+                candidates = [ledger_by_id[ref] for ref in refs]
+            assigned.update(m["id"] for m in candidates if str(m.get("conta", account)) == account)
+            fiscal_value = sum(_centavos(part["valor"]) for part in parts) / 100
+            total = sum(_centavos(m["valor"]) for m in candidates) / 100 if candidates and d["situacao"] != "AMBIGUO" else None
+            comparisons.append({
+                "id": d["id"], "nota": d["nota"], "serie": d["serie"], "data": d["data"],
+                "parceiro": d.get("parceiro", ""), "situacao": d["situacao"], "criterio": d["criterio"],
+                "valor_fiscal": fiscal_value, "valor_razao": total,
+                "diferenca": round(total - fiscal_value, 2) if total is not None else None,
+                "linhas_fiscais": [{k: part[k] for k in ("id", "acumulador", "cfop", "valor", "linha_origem")} for part in parts],
+                "lancamentos": [{k: v for k, v in m.items() if not k.startswith("_")} for m in candidates],
+            })
         possible_ids = {ref for choices in strong_candidates.values() for ref in choices}
         possible_ids |= {ref for choices in near_candidates.values() for ref, *_ in choices}
         remaining = []
@@ -410,10 +528,13 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
         result.append({
             "conta": account, "tipo": tipo, "situacao_inicial": row["situacao"],
             "fiscal": row["fiscal"], "contabil": row["contabil"], "diferenca": row["diferenca"],
-            # A tela prioriza pendências. O contexto interno nunca passa por este corte.
-            "acumuladores": by_acc, "documentos": docs if completo else
-                sorted(docs, key=lambda d: d["situacao"] == "CONCILIADO")[:300],
-            "documentos_total": len(docs), "razao_pendente": remaining if completo else remaining[:300],
+            # A paginação é visual; nenhum registro é descartado no servidor.
+            "descricao": row.get("descricao", ""),
+            "comparacoes": comparisons,
+            "razao_sem_vinculo": [m for m in remaining if m["id"] not in assigned],
+            "situacoes": dict(Counter(c["situacao"] for c in comparisons)),
+            "acumuladores": by_acc, "documentos": sorted(docs, key=lambda d: d["situacao"] == "CONCILIADO"),
+            "documentos_total": len(docs), "razao_pendente": remaining,
             "razao_pendente_total": len(remaining),
             "resumo": {"conciliados": counts["CONCILIADO"],
                        "ambiguos": counts["AMBIGUO"],
@@ -421,9 +542,6 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
                            item for item in remaining if item["situacao"] == "SEM_DOCUMENTO_IDENTIFICADO"
                        ])},
         })
-        if not completo and (len(docs) > 300 or len(remaining) > 300):
-            warnings.append(f"Conta {account}: a tela mostra até 300 documentos e lançamentos pendentes; "
-                            "as contagens consideram todos os registros.")
     return {
         "filial": preview["filial_aplicada"], "empresa_nome": preview["empresa_nome"],
         "periodo": preview["periodo_fiscal"], "tipos_investigados": sorted(reports),
@@ -467,7 +585,7 @@ def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome,
                     "SEM_LANCAMENTO_IDENTIFICADO": 2, "PROVAVEL": 3, "AMBIGUO": 4}
         pending_docs.sort(key=lambda d: priority.get(d["situacao"], 5))
         chosen_docs = pending_docs[:30]
-        related = {d["razao_id"] for d in chosen_docs if d.get("razao_id")}
+        related = {ref for d in chosen_docs for ref in (d.get("razao_ids") or ([d["razao_id"]] if d.get("razao_id") else []))}
         other_ledger = sorted(other_ledger, key=lambda m: (m["id"] not in related,
                               m["situacao"] != "SEM_DOCUMENTO_IDENTIFICADO"))
         chosen_ledger = other_ledger[:30]
@@ -479,8 +597,11 @@ def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome,
             def brl(value):
                 return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
             # Cálculo em centavos. O candidato é indício, não integração comprovada.
-            difference = (_centavos(candidate["valor"]) - _centavos(document["valor"])) / 100
-            return {"valor_razao_candidato_brl": brl(candidate["valor"]),
+            total = document.get("valor_razao_candidato", candidate["valor"])
+            fiscal_total = document.get("valor_fiscal_grupo", document["valor"])
+            difference = (_centavos(total) - _centavos(fiscal_total)) / 100
+            return {"valor_razao_candidato_brl": brl(total),
+                    "valor_fiscal_grupo_brl": brl(fiscal_total),
                     "diferenca_candidato_brl": brl(difference),
                     "data_razao_candidato": candidate["data"], "vinculo_confirmado": False}
         coverage[key] = {"documentos_enviados": len(chosen_docs),
