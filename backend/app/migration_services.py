@@ -341,6 +341,10 @@ def _workflow(code, roles, options):
                             part = pd.DataFrame(
                                 processar_extrato_santander_aplicativo_pdf(content), columns=COLUNAS
                             )
+                            from pypdf import PdfReader
+                            header = (PdfReader(io.BytesIO(content), strict=False).pages[0].extract_text() or '')
+                            if 'ACCEDE EQUIPAMENTOS' not in ' '.join(header.upper().split()):
+                                raise ValueError('Santander 513: o titular do extrato não corresponde à empresa 1001.')
                             # Datas brasileiras explícitas: 03/08 não pode virar 08/03.
                             part['DATA'] = pd.to_datetime(
                                 part['DATA'], format='%d/%m/%Y', errors='raise'
