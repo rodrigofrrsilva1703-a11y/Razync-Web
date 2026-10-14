@@ -323,13 +323,34 @@ def _workflow(code, roles, options):
             permitted_banks = ('itau', 'sicredi', 'santander') if code == 1001 else ('itau', 'sicredi')
             for bank in permitted_banks:
                 if roles.get(bank):
-                    frames = [engine.processar_planilha_accede_sig(content, bank, slug(code)) for _, content in roles[bank]]
+                    if bank == 'santander' and code == 1001:
+                        # Extrato PDF real do Aplicativo Santander Empresas:
+                        # mantém as verificações de sequência de saldos em centavos
+                        # e não reutiliza o leitor de planilhas SIG.
+                        from app.santander_aplicativo import processar_extrato_santander_aplicativo_pdf
+                        import hashlib
+                        frames = []
+                        seen_files = set()
+                        for filename, content in roles[bank]:
+                            if not str(filename).lower().endswith('.pdf') or not content.startswith(b'%PDF'):
+                                raise ValueError('Santander 513: envie o extrato original em PDF.')
+                            fingerprint = hashlib.sha256(content).digest()
+                            if fingerprint in seen_files:
+                                raise ValueError('Santander 513: mesmo extrato PDF enviado mais de uma vez.')
+                            seen_files.add(fingerprint)
+                            frames.append(pd.DataFrame(
+                                processar_extrato_santander_aplicativo_pdf(content), columns=COLUNAS
+                            ))
+                    else:
+                        frames = [
+                            engine.processar_planilha_accede_sig(content, bank, slug(code))
+                            for _, content in roles[bank]
+                        ]
                     frame = filter_frame(pd.concat(frames, ignore_index=True), options)
                     if bank == 'santander' and code == 1001:
-                        # O leitor SIG legado é mantido intacto; só a identificação do
-                        # novo banco e a conta 513 são adaptadas na empresa 1001.
+                        if frame.empty:
+                            raise ValueError('Santander 513: nenhum lançamento no período selecionado.')
                         frame = frame.copy()
-                        frame['DESCRIÇÃO'] = 'BANCO SANTANDER'
                         frame['DÉBITO'] = frame['VALOR'].apply(lambda value: '513' if float(value) > 0 else '')
                         frame['CRÉDITO'] = frame['VALOR'].apply(lambda value: '513' if float(value) < 0 else '')
                     data[bank.title()] = {'principal': frame, 'retirados': pd.DataFrame()}
