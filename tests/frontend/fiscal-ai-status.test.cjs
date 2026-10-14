@@ -209,7 +209,7 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
   const context = {node,aiCards:cards,aiResult:root,aiToolbar:{hidden:true},aiTotal:{},
     data:{contas:[]}, keyOf:row=>row.conta+':'+row.tipo,
     money:{format:String},statusClass:()=>'',statusLabels:{},
-    accumulatorBreakdown:()=>node('section'),accumulatorRows:()=>[],renderNarrative:()=>node('div'),renderChecklist:()=>node('ol'),
+    accumulatorBreakdown:()=>node('section'),accumulatorRows:()=>[],renderNarrative:()=>node('div'),renderChecklist:value=>node('ol','',value),
     updateAIFilters:()=>{}};
   vm.createContext(context);vm.runInContext(source.slice(start,end),context);
   const first = {conta:'1',tipo:'ENTRADAS',provedor:'groq',modelo_usado:'openai/gpt-oss-120b',parecer:{versao:'grounded-v1',
