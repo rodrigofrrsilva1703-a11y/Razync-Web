@@ -223,6 +223,7 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
   assert.equal(root.children.length,2);
   assert.equal(root.children[1],opened);
   assert.equal(opened.open,true);
+  assert.equal(opened.tag,'article');
   assert.equal(context.aiTotal.textContent,'(2)');
   const texts = entry => [entry.textContent || '', ...entry.children.flatMap(texts)];
   const rendered = texts(cards.find(entry=>entry.item.conta==='1').card).join(' ');
@@ -256,21 +257,23 @@ test('exportação Gemini usa relatório pronto, sem nova chamada ao modelo', ()
 
 
 
-test('Gemini organiza pareceres completos em contas recolhíveis sem interface flutuante', () => {
+test('pareceres ficam visíveis por conta sem controles para abrir respostas', () => {
   const html = fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8');
   const css = fs.readFileSync(path.join(__dirname,'../../assets/css/fiscal-242.css'),'utf8');
   for(const id of ['fiscal242AIToolbar','fiscal242AISearch','fiscal242AIFilter',
-                   'fiscal242AICount','fiscal242AIExpand','fiscal242AICollapse','fiscal242AIEmpty']) {
+                   'fiscal242AICount','fiscal242AIEmpty']) {
     assert.ok(html.includes('id="' + id + '"'), 'Controle não encontrado: ' + id);
   }
-  assert.match(source,/node\("details", "fiscal-ai-card fiscal-ai-account"\)/);
-  assert.match(source,/node\("summary", "fiscal-ai-card-heading fiscal-ai-account-summary"\)/);
+  assert.match(source,/node\("article", "fiscal-ai-card fiscal-ai-account"\)/);
+  assert.match(source,/node\("div", "fiscal-ai-card-heading fiscal-ai-account-summary"\)/);
   assert.match(source,/composition\.append\(node\("summary", "", "Composição dos acumuladores"\), accumulatorInfo\)/);
   assert.match(source,/reading\.append\(analysis, review\)/);
   assert.match(source,/content\.append\(details\)/);
   assert.match(source,/aiResult\.append\(card\)/);
   assert.match(css,/\.fiscal-ai-account-summary\s*\{/);
   assert.match(css,/\.fiscal-ai-account-content/);
+  assert.doesNotMatch(html,/id="fiscal242AIExpand"|id="fiscal242AICollapse"/);
+  assert.match(source,/node\("section", "fiscal-ai-limits"\)/);
   assert.doesNotMatch(html,/id="fiscal242AIBubble"|id="fiscal242AIDrawer"/);
 });
 

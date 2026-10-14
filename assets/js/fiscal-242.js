@@ -43,12 +43,8 @@
   const aiFilter = byId("fiscal242AIFilter");
   const aiCount = byId("fiscal242AICount");
   const aiEmpty = byId("fiscal242AIEmpty");
-  const aiExpand = byId("fiscal242AIExpand");
-  const aiCollapse = byId("fiscal242AICollapse");
   const aiReader = byId("fiscal242AIReader");
-  const aiAccounts = byId("fiscal242AIAccounts");
   let activeAIKey = "";
-  let showAllAI = false;
   const usageButton = byId("fiscal242UsageButton");
   const usageDialog = byId("fiscal242UsageDialog");
   const usageContent = byId("fiscal242UsageContent");
@@ -331,8 +327,8 @@
     return analysis;
   }
   function renderAILimits(item) {
-    const limits = node("details", "fiscal-ai-limits");
-    limits.appendChild(node("summary", "", "Limites e texto completo da análise"));
+    const limits = node("section", "fiscal-ai-limits");
+    limits.appendChild(node("h5", "", "Limites e texto completo da análise"));
     const body = node("div", "fiscal-ai-limits-content");
     const missing = node("ul", "fiscal-ai-limit-points");
     for (const text of item.parecer?.informacoes_faltantes || []) missing.appendChild(node("li", "", text));
@@ -346,10 +342,10 @@
   function renderAIEntries(entries) {
       for (const item of entries) {
         if (aiCards.some(entry => keyOf(entry.item) === keyOf(item))) continue;
-        const card = node("details", "fiscal-ai-card fiscal-ai-account");
+        const card = node("article", "fiscal-ai-card fiscal-ai-account");
         card.classList.add("fiscal-card-arrive");
         card.addEventListener("animationend", () => card.classList.remove("fiscal-card-arrive"), {once:true});
-        const heading = node("summary", "fiscal-ai-card-heading fiscal-ai-account-summary");
+        const heading = node("div", "fiscal-ai-card-heading fiscal-ai-account-summary");
         const title = node("div", "fiscal-ai-card-title");
         title.appendChild(node("h4", "", `Conta ${item.conta}`));
         if (item.descricao) title.appendChild(node("p", "fiscal-ai-card-description", item.descricao));
@@ -363,7 +359,6 @@
           preview.append(node("small", "", "Diferença"), node("strong", "", money.format(Number(item.valores.diferenca) || 0)));
           compact.appendChild(preview);
         }
-        compact.appendChild(node("span", "fiscal-ai-account-chevron", "⌄"));
         heading.append(title, metadata, compact);
         const content = node("div", "fiscal-ai-account-content");
         if (item.valores?.diferenca !== undefined && item.valores?.diferenca !== null) {
@@ -396,8 +391,8 @@
         content.appendChild(reading);
         if (item.auditoria) {
           const alerts = Array.isArray(item.auditoria.alertas) ? item.auditoria.alertas : [];
-          const audit = node(alerts.length ? "section" : "details", "fiscal-ai-audit" + (alerts.length ? " has-alerts" : ""));
-          audit.appendChild(node(alerts.length ? "strong" : "summary", "", alerts.length
+          const audit = node("section", "fiscal-ai-audit" + (alerts.length ? " has-alerts" : ""));
+          audit.appendChild(node("strong", "", alerts.length
             ? "Atenção às evidências"
             : "Checagens locais · sem alertas estruturais"));
           for (const alert of alerts) audit.appendChild(node("p", "", String(alert)));
@@ -426,9 +421,6 @@
         aiCards.push({item, card});
         aiResult.append(card);
       }
-      // Pareceres longos começam recolhidos para não poluir a página.
-      // Um resultado isolado pode aparecer aberto para facilitar a leitura.
-      if (aiCards.length === 1) aiCards[0].card.open = true;
       for (const item of entries) {
         const existing = aiCards.find(entry => keyOf(entry.item) === keyOf(item));
         if (existing) aiResult.append(existing.card);
@@ -474,33 +466,13 @@
   function renderAIReader(matching) {
     activeAIKey = chooseAIKey(matching, activeAIKey);
     aiReader.hidden = matching.length === 0;
-    aiReader.classList.toggle("is-all", showAllAI);
-    aiAccounts.replaceChildren();
-    matching.forEach(({item, card}) => {
-      const selected = keyOf(item) === activeAIKey;
-      card.classList.toggle("is-reading", selected);
-      if (selected || showAllAI) card.open = true;
-      const button = node("button", "fiscal-ai-nav-account" + (selected ? " is-selected" : ""));
-      button.type = "button";
-      button.setAttribute("aria-pressed", String(selected));
-      button.append(node("strong", "", "Conta " + item.conta), node("span", "fiscal-ai-nav-description", item.descricao || item.tipo || "Parecer da conta"));
-      const footer = node("span", "fiscal-ai-nav-meta");
-      footer.appendChild(node("small", "", statusLabels[item.situacao] || item.situacao || item.tipo));
-      if (item.valores?.diferenca !== undefined && item.valores?.diferenca !== null) footer.appendChild(node("b", "", money.format(Number(item.valores.diferenca) || 0)));
-      button.appendChild(footer);
-      button.addEventListener("click", () => {activeAIKey = keyOf(item); showAllAI = false; renderAIReader(matching);});
-      aiAccounts.appendChild(button);
-    });
-    aiExpand.setAttribute("aria-pressed", String(showAllAI));
-    aiCollapse.setAttribute("aria-pressed", String(!showAllAI));
+    aiReader.classList.add("is-all");
   }
   function clearAIAccounts() {
     loadingPanel.hidden = true;
     aiCards = [];
     activeAIKey = "";
-    showAllAI = false;
     aiReader.hidden = true;
-    aiAccounts.replaceChildren();
     aiToolbar.hidden = true;
     aiEmpty.hidden = true;
     aiSearch.value = "";
@@ -510,17 +482,6 @@
   }
   aiSearch.addEventListener("input", updateAIFilters);
   aiFilter.addEventListener("change", updateAIFilters);
-  aiExpand.addEventListener("click", () => {
-    showAllAI = true;
-    for (const {card} of aiCards) if (!card.hidden) card.open = true;
-    updateAIFilters();
-  });
-  aiCollapse.addEventListener("click", () => {
-    showAllAI = false;
-    for (const {card} of aiCards) card.open = false;
-    updateAIFilters();
-  });
-
   let pendingAIState = null;
   function discardPendingAI() {
     const old = pendingAIState;

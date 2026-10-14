@@ -383,3 +383,9 @@
 /* Plano curto: uma leitura sequencial em todas as larguras. */
 #fiscalView .fiscal-ai-reading {grid-template-columns:minmax(0,1fr);gap:20px;}
 #fiscalView .fiscal-ai-reading .fiscal-ai-review {padding:18px 0 0;border-left:0;border-top:1px solid #e6ecf1;}
+/* Respostas completas, em sequência, sem interação para expandir pareceres. */
+#fiscalView .fiscal-ai-account-summary {cursor:default;}
+#fiscalView .fiscal-ai-reader.is-all #fiscal242AIResult {gap:24px;}
+#fiscalView .fiscal-ai-limits {border-top:1px solid #e6ecf1;margin-top:18px;padding:18px 0 0;}
+#fiscalView .fiscal-ai-limits > h5 {margin:0;font-size:13px;color:#4b647a;}
+#fiscalView .fiscal-ai-limits-content {padding-top:12px;}
