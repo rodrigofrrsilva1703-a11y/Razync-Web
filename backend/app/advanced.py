@@ -410,6 +410,10 @@ def _aplicar_conta(df: pd.DataFrame, conta: str) -> pd.DataFrame:
 
 
 def workflow_modelo(company_code: int, roles: dict[str, list[tuple[str, bytes]]], options: dict) -> tuple[bytes, str]:
+    if company_code == 1001:
+        # Fonte única da configuração Santander PDF / Itaú e Sicredi SIG.
+        from app.migration_services import workflow as workflow_atual
+        return workflow_atual(company_code, roles, options)
     if company_code in {3, 178, 343}:
         role = roles.get("mapa") or []
         if not role:
