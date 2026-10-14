@@ -320,13 +320,22 @@ def _workflow(code, roles, options):
             return engine.gerar_excel_nova_geracao(data, _template_bytes(), prefixar_historicos=False), f'RAZYNC_{code}_MODELO_DOMINIO.xlsx'
         if code in {1000, 1001, 1064}:
             data = {}
-            for bank in ('itau', 'sicredi'):
+            permitted_banks = ('itau', 'sicredi', 'santander') if code == 1001 else ('itau', 'sicredi')
+            for bank in permitted_banks:
                 if roles.get(bank):
                     frames = [engine.processar_planilha_accede_sig(content, bank, slug(code)) for _, content in roles[bank]]
-                    data[bank.title()] = {'principal': filter_frame(pd.concat(frames, ignore_index=True), options), 'retirados': pd.DataFrame()}
+                    frame = filter_frame(pd.concat(frames, ignore_index=True), options)
+                    if bank == 'santander' and code == 1001:
+                        # Conta bancária contábil 513: entrada debita o banco; saída credita.
+                        frame = frame.copy()
+                        frame['DÉBITO'] = frame['VALOR'].apply(lambda value: '513' if float(value) > 0 else '')
+                        frame['CRÉDITO'] = frame['VALOR'].apply(lambda value: '513' if float(value) < 0 else '')
+                    data[bank.title()] = {'principal': frame, 'retirados': pd.DataFrame()}
             if not data:
                 if code == 1064:
                     raise ValueError('Envie a planilha SIG do Sicredi.')
+                if code == 1001:
+                    raise ValueError('Envie a planilha SIG do Itaú, Sicredi e/ou Santander.')
                 raise ValueError('Envie a planilha SIG do Itaú e/ou Sicredi.')
             filename = 'TECH_CONTROL_1064_SICREDI_505_MODELO_DOMINIO.xlsx' if code == 1064 else f'ACCEDE_{code}_MODELO_DOMINIO.xlsx'
             return engine.gerar_excel_nova_geracao(data, _template_bytes()), filename
