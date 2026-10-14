@@ -338,9 +338,14 @@ def _workflow(code, roles, options):
                             if fingerprint in seen_files:
                                 raise ValueError('Santander 513: mesmo extrato PDF enviado mais de uma vez.')
                             seen_files.add(fingerprint)
-                            frames.append(pd.DataFrame(
+                            part = pd.DataFrame(
                                 processar_extrato_santander_aplicativo_pdf(content), columns=COLUNAS
-                            ))
+                            )
+                            # Datas brasileiras explícitas: 03/08 não pode virar 08/03.
+                            part['DATA'] = pd.to_datetime(
+                                part['DATA'], format='%d/%m/%Y', errors='raise'
+                            )
+                            frames.append(part)
                     else:
                         frames = [
                             engine.processar_planilha_accede_sig(content, bank, slug(code))
