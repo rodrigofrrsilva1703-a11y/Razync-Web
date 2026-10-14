@@ -1268,3 +1268,5 @@
   #fiscalView .fiscal-doc-source > strong {font-size:11px;}
   #fiscalView .fiscal-doc-source > .fiscal-doc-value {font-size:14px;}
 }
+#fiscalView .fiscal-doc-rows .fiscal-doc-status > span,
+#fiscalView .fiscal-doc-rows .fiscal-doc-status > small {text-align:left;}

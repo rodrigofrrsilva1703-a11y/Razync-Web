@@ -1430,15 +1430,15 @@
             docCell.append(node("strong", "fiscal-doc-value", money.format(d.valor_fiscal)), node("strong", "", "Nota " + d.nota + (d.serie ? " · série " + d.serie : "")),
               node("span", "", d.data), node("span", "", d.parceiro || "Parceiro não informado"));
             (d.linhas_fiscais || []).forEach(p => docCell.appendChild(node("small", "", p.id + " · acumulador " + p.acumulador +
-              " · CFOP " + p.cfop + " · " + money.format(p.valor) + " · linha " + p.linha_origem)));
+              " · CFOP " + p.cfop + (d.linhas_fiscais.length > 1 ? " · " + money.format(p.valor) : "") + " · linha " + p.linha_origem)));
             tr.appendChild(docCell);
             const movCell = node("td", "fiscal-doc-source"); movCell.setAttribute("data-label", "Razão");
             movCell.appendChild(node("strong", "fiscal-doc-value", d.valor_razao == null ? "Valor não confirmado" : money.format(d.valor_razao)));
             (d.lancamentos || []).forEach(m => {
               const block = node("div", "fiscal-doc-movement");
               const history = node("span", "", compactDocumentHistory(m.historico, d)); history.title = m.historico;
-              block.append(node("strong", "", money.format(m.valor)), history,
-                node("small", "", m.data + " · conta " + (m.conta || group.conta) + " · " + m.id +
+              if (d.lancamentos.length > 1) block.appendChild(node("strong", "", money.format(m.valor)));
+              block.append(history, node("small", "", m.data + " · conta " + (m.conta || group.conta) + " · " + m.id +
                   (m.contrapartida ? " · contrapartida " + m.contrapartida : "")));
               movCell.appendChild(block);
             });
