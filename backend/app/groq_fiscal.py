@@ -269,7 +269,7 @@ def _complete(payload, key, model, *, _tried_models=None, _deadline=None):
             ],
             "temperature": 0.2,
             "reasoning_effort": "none" if model.startswith("qwen/") else "low",
-            "max_completion_tokens": output_budget(len(batch)) + (0 if model.startswith("qwen/") else 400),
+            "max_completion_tokens": output_budget(batch) + (0 if model.startswith("qwen/") else 400),
             "response_format": {
                 "type": "json_schema",
                 "json_schema": {"name": "razync_parecer_fiscal", "strict": True, "schema": batch_schema},

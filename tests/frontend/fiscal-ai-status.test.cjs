@@ -213,7 +213,7 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
     updateAIFilters:()=>{}};
   vm.createContext(context);vm.runInContext(source.slice(start,end),context);
   const first = {conta:'1',tipo:'ENTRADAS',provedor:'groq',modelo_usado:'openai/gpt-oss-120b',parecer:{versao:'grounded-v1',
-    hipoteses:'Pode ser corte de período (L1).',informacoes_faltantes:['Conferir documento.'],
+    hipoteses:'Pode ser corte de período (L1).',observacoes:'L1 registra compra NF 123 em agosto; comparar a data fiscal e a contrapartida.',informacoes_faltantes:['Conferir documento.'],
     cobertura:{enviados:10,disponiveis:12,parcial:true,historicos_abreviados:true}}}, second = {conta:'2',tipo:'ENTRADAS'};
   context.renderAIEntries([second]);
   const opened = cards[0].card; opened.open=true;
@@ -229,6 +229,7 @@ test('resultados graduais preservam conta aberta e não duplicam cartões', () =
   const rendered = texts(cards.find(entry=>entry.item.conta==='1').card).join(' ');
   assert.match(rendered,/Groq · openai\/gpt-oss-120b/);
   assert.match(rendered,/Resumo/);
+  assert.match(rendered,/L1 registra compra NF 123 em agosto; comparar a data fiscal e a contrapartida/);
   assert.match(rendered,/O que conferir/);
   assert.match(rendered,/10 de 12.*amostra parcial.*históricos abreviados/);
   assert.match(rendered,/Limitações/);

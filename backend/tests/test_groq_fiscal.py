@@ -91,7 +91,7 @@ def test_groq_produz_parecer_realmente_validado_sem_alterar_valores(monkeypatch)
         assert data["response_format"]["json_schema"]["strict"] is True
         assert data["response_format"]["json_schema"]["schema"]["properties"]["analises"]["items"]["additionalProperties"] is False
         assert data["reasoning_effort"] == "low"
-        assert data["max_completion_tokens"] == 1500
+        assert data["max_completion_tokens"] == 2050
         assert "R$ 10.000,00" in data["messages"][1]["content"]
         assert "123.456.789-01" not in data["messages"][1]["content"]
         assert "usuario@teste.com" not in data["messages"][1]["content"]
@@ -178,7 +178,7 @@ def test_groq_resposta_truncada_identificada_e_preserva_fallback(monkeypatch, ca
 
     def fake(req, timeout):
         body = json.loads(req.data)
-        expected_budget = 1100 if body["model"].startswith("qwen/") else 1500
+        expected_budget = 1650 if body["model"].startswith("qwen/") else 2050
         assert body["max_completion_tokens"] == expected_budget
         return Response()
 
@@ -414,7 +414,7 @@ def test_qwen_reserva_gratuita_apos_cota_dos_dois_gpt_oss(monkeypatch):
             raise urllib.error.HTTPError(req.full_url, 429, "quota", {"Retry-After":"60"}, io.BytesIO(b"{}"))
         assert body["model"] == "qwen/qwen3.8-27b"
         assert body["reasoning_effort"] == "none"
-        assert body["max_completion_tokens"] == 1100
+        assert body["max_completion_tokens"] == 1650
         assert body["response_format"]["json_schema"]["strict"] is True
         return Response()
     monkeypatch.setattr(groq_fiscal.urllib.request, "urlopen", send)

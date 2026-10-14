@@ -57,7 +57,7 @@ Os testes verificam funções extraídas, contagens, valores, históricos, conta
 
 ### Plano de resposta das IAs gratuitas
 
-As três APIs usam o contrato de `app/fiscal_ai_strategy.py`: totais, sentido da diferença e evidências são conferidos localmente; o modelo produz somente uma hipótese sustentada, a limitação principal e duas verificações específicas, com alvo de até 80 palavras por conta. O texto original é preservado; respostas não são truncadas localmente para aparentar economia.
+As três APIs usam o contrato de `app/fiscal_ai_strategy.py`: totais, sentido da diferença e evidências são conferidos localmente; o modelo descreve os indícios dos lançamentos, hipóteses sustentadas, limitações e duas ou três verificações específicas. Contas divergentes recebem alvo de 130–200 palavras (teto 220); valores iguais com alertas, 60–100 (teto 120). O orçamento de saída varia conforme a situação, sem chamadas extras para formatação. O texto original é preservado; respostas não são truncadas localmente para aparentar economia.
 
 O contexto de Gemini/OpenRouter preserva lançamentos, datas, contrapartidas e históricos completos, eliminando apenas valores duplicados já presentes em `valores_brl`. Groq mantém a amostra declarada e os indicadores locais. A saída tem teto por quantidade de grupos, com margem para o raciocínio baixo da Groq. O teto não representa consumo real, nem garante que todos os modelos sigam o limite de palavras.
 

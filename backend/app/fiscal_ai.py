@@ -279,7 +279,7 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
         },
         "temperature": 0.2,
         # Limita o teto de geração sem retirar grupos ou lançamentos do contexto.
-        "max_tokens": output_budget(len(group_ids)),
+        "max_tokens": output_budget(source_context.get("grupos", [])),
     }
     # O roteador gratuito recomenda 'model' para uma escolha única.
     # A lista 'models' é usada somente quando houver vários candidatos.
@@ -314,7 +314,7 @@ def _openrouter_completion(payload, models, key, *, _repair=False):
                 "Se JSON não for possível, use por grupo: GRUPO: G1\\nEXPLICACAO: texto\\nVERIFICAR: 1. passo\\nEVIDENCIAS: L1,L2."
             )
             candidate["reasoning"] = {"enabled": False}
-            candidate["max_tokens"] = output_budget(len(allowed))
+            candidate["max_tokens"] = output_budget(source_context.get("grupos", []))
         if _repair:
             # O prompt resumido substitui a instrução original; por isso o
             # pedido de correção precisa ser preservado DEPOIS dessa troca.
@@ -790,7 +790,7 @@ def explain(report, preferred_provider=None, *, only_openrouter=False, only_prov
     payload = {"systemInstruction":{"parts":[{"text":REVIEW_PROMPT}]},
         "contents":[{"role":"user","parts":[{"text":json.dumps(context, ensure_ascii=False, separators=(",", ":"))}]}],
         "generationConfig":{"responseMimeType":"application/json", "responseSchema":schema,
-                            "temperature":0.2, "maxOutputTokens":output_budget(len(mapping))}}
+                            "temperature":0.2, "maxOutputTokens":output_budget(context["grupos"])}}
     if report.get("documentos_pendentes") is not None:
         payload["systemInstruction"]["parts"][0]["text"] += (
             " ETAPA DOCUMENTAL: pendencias_documentais contém apenas registros não conciliados ou ambíguos; "

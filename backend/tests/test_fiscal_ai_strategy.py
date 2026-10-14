@@ -4,14 +4,18 @@ from app.fiscal_ai_strategy import REVIEW_PROMPT, output_budget
 from app import fiscal_ai, groq_fiscal
 
 
-def test_short_plan_shared_by_all_free_providers():
-    assert len(REVIEW_PROMPT.split()) < 300
-    assert "no máximo 80 palavras" in REVIEW_PROMPT
-    assert "exatamente 2 passos" in REVIEW_PROMPT
+def test_adaptive_plan_shared_by_all_free_providers():
+    assert len(REVIEW_PROMPT.split()) < 500
+    assert "máximo 220" in REVIEW_PROMPT
+    assert "máximo 120" in REVIEW_PROMPT
+    assert "não preencha com hipóteses genéricas" in REVIEW_PROMPT
+    assert "2 ou 3 passos" in REVIEW_PROMPT
     assert "sem introdução nem repetição dos totais" in REVIEW_PROMPT
     assert "a causa está indeterminada" in REVIEW_PROMPT
     assert "não no Razão" in REVIEW_PROMPT
-    assert output_budget(2) == 1600
+    assert output_budget(2) == 2700
+    assert output_budget([{"situacao":"REVISAR"}, {"situacao":"CONFERE COM ALERTAS"}]) == 2200
+    assert output_budget([{"situacao":"CONFERE"}]) < output_budget([{"situacao":"CONFERE COM ALERTAS"}]) < output_budget([{"situacao":"REVISAR"}])
     assert output_budget(100) == 4096
     assert groq_fiscal.REVIEW_PROMPT == fiscal_ai.REVIEW_PROMPT == REVIEW_PROMPT
 
@@ -54,3 +58,20 @@ def test_local_cache_review_blocks_contradiction_without_new_ai_request(monkeypa
     assert updated['explicacao'] == item['explicacao']
     assert updated['provedor'] == 'openrouter'
     assert cached == original
+
+
+def test_detailed_reading_survives_validation_and_local_envelope():
+    report = {"contas":[{"conta":"1", "tipo":"ENTRADAS", "situacao":"REVISAR",
+        "fiscal":100, "contabil":80, "total_conta":80, "diferenca":-20}],
+        "lancamentos":[{"conta":"1", "data":"2026-08-01", "historico":"Compra NF 123", "debito":80, "credito":0}]}
+    record = {"conta":"1", "referencia":"L1", "data":"2026-08-01", "historico":"Compra NF 123", "debito":80, "credito":0}
+    answer = {"analises":[{"grupo":"G1", "explicacao":
+        "Fatos: L1 registra compra NF 123 em 01/08/2026.\nHipóteses: A causa está indeterminada; pode haver diferença de período, a confirmar pelos documentos.\nLimitações: Falta o detalhamento fiscal por nota.",
+        "verificar":"1. Localize NF 123 no fiscal e compare o período com L1.\n2. Compare os documentos do acumulador com a conta para identificar a origem da diferença.",
+        "evidencias":["L1"]}]}
+    result = fiscal_ai._validar_resposta_ia(answer, report, {"G1":{"conta":"1", "tipo":"ENTRADAS"}}, {"L1":record})[0]
+    assert result["parecer"]["observacoes"] == "L1 registra compra NF 123 em 01/08/2026."
+    assert "indeterminada" in result["parecer"]["hipoteses"]
+    assert "detalhamento fiscal" in " ".join(result["parecer"]["informacoes_faltantes"])
+    assert result["valores"]["diferenca"] == -20
+    assert result["evidencias"][0]["referencia"] == "L1"

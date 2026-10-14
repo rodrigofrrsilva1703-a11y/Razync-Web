@@ -323,7 +323,10 @@
     }
     const text = interpretation || item.parecer?.hipoteses || item.explicacao;
     const points = node("ul", "fiscal-ai-response-points");
-    for (const point of responsePoints(text)) points.appendChild(node("li", "", point));
+    const observations = item.parecer?.observacoes;
+    for (const point of [...responsePoints(observations), ...responsePoints(text)]) {
+      points.appendChild(node("li", "", point));
+    }
     if (!points.children.length) points.appendChild(node("li", "", "Nenhuma interpretação disponível para esta conta."));
     analysis.appendChild(points);
     return analysis;

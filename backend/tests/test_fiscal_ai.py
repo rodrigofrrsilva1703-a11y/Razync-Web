@@ -273,10 +273,10 @@ def test_gemini_exige_analise_didatica_com_limites_e_verificacoes(monkeypatch):
     def confirmar_instrucoes(req, timeout):
         dados = json.loads(req.data)
         prompt = dados["systemInstruction"]["parts"][0]["text"]
-        assert "dois parágrafos" in prompt
+        assert "três parágrafos" in prompt
         assert "Hipóteses:" in prompt and "Limitações:" in prompt
         assert "Revise ortografia" in prompt
-        assert "exatamente 2 passos numerados" in prompt
+        assert "2 ou 3 passos numerados" in prompt
         assert "acumulador" in prompt
         assert "não invente valores" in prompt
         assert "Diferença" in prompt or "DIFERENÇA" in prompt

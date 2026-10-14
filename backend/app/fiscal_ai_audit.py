@@ -100,7 +100,7 @@ def audit_analysis(item):
     }
 
 
-ANALYSIS_VERSION = "economic-v5"
+ANALYSIS_VERSION = "grounded-depth-v6"
 
 
 def narrative_sections(value):
@@ -143,6 +143,7 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
     if contradicts_existing_entries(item):
         hypothesis = "Os lançamentos citados já constam no Razão. A diferença entre os totais não identifica a causa; compare os documentos fiscais com a escrituração para confirmá-la."
     return {"versao": ANALYSIS_VERSION, "fatos": facts,
+            "observacoes": sections.get("fatos", ""),
             "hipoteses": hypothesis or "A resposta não identifica hipóteses separadamente. Confira a interpretação da IA abaixo.",
             "interpretacao": text if not sections.get("hipoteses") else "",
             "informacoes_faltantes": missing,
