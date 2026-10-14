@@ -1315,18 +1315,18 @@
       reader.append(node("small", "fiscal-doc-eyebrow", group.tipo + " · CONTA " + group.conta),
         node("h4", "", group.descricao || "Cruzamento documental"),
         node("p", "fiscal-disclaimer", "Conferência inicial: " + money.format(group.diferenca || 0) +
-          ". Abaixo, cada documento é comparado com as parcelas encontradas no Razão. Diferença = Razão − fiscal."));
+          ". O cruzamento documental pode incluir parcelas antes separadas pelo histórico. Em cada linha, diferença = Razão − fiscal."));
       const totals = node("div", "fiscal-doc-totals");
       [["Resumo fiscal", group.fiscal], ["Razão considerado inicialmente", group.contabil], ["Diferença inicial", group.diferenca]]
         .forEach(([label, value]) => { const metric = node("div"); metric.append(node("small", "", label), node("strong", "", money.format(value || 0))); totals.appendChild(metric); });
       reader.appendChild(totals);
-      reader.appendChild(investigationTable(["Acumulador", "Resumo fiscal", "Documentos lidos", "Diferença de cobertura"],
+      const coverageTable = investigationTable(["Acumulador", "Resumo fiscal", "Documentos lidos", "Diferença de cobertura"],
         group.acumuladores || [], (tr, acc) => {
           cell(tr, acc.codigo + " · " + (acc.descricao || ""));
           cell(tr, money.format(acc.valor_resumo), "fiscal-money");
           cell(tr, acc.detalhamento_disponivel ? money.format(acc.valor_documentos) : "Sem detalhamento", "fiscal-money");
           cell(tr, acc.detalhamento_disponivel ? money.format(acc.valor_documentos - acc.valor_resumo) : "Não calculada", "fiscal-money");
-        }));
+        });
       const comparisons = group.comparacoes || (group.documentos || []).map(d => ({...d,
         valor_fiscal:d.valor, valor_razao:d.valor_razao_candidato, diferenca:d.diferenca_candidato,
         linhas_fiscais:[d], lancamentos:[]}));
@@ -1356,7 +1356,7 @@
       const next = node("button", "", "Próxima"); next.type = "button";
       const pageSize = node("select"); pageSize.setAttribute("aria-label", "Registros por página");
       [25, 50, 100].forEach(n => { const o = node("option", "", n + " por página"); o.value = String(n); pageSize.appendChild(o); });
-      pagination.append(previous, pageLabel, next, pageSize); reader.append(caption, pagination, rowsArea);
+      pagination.append(previous, pageLabel, next, pageSize); reader.append(caption, pagination, rowsArea, node("h5", "fiscal-doc-coverage-title", "Cobertura dos acumuladores"), coverageTable);
       let page = 0;
       const indexed = comparisons.map(d => ({item:d, text:[d.nota, d.serie, d.parceiro, d.criterio,
         ...(d.linhas_fiscais || []).map(p => p.acumulador + " " + p.cfop),
@@ -1383,15 +1383,16 @@
             cell(tr, investigationStatus(m.situacao) + ". " + (m.classificacao || "") + ". Confira se este movimento pertence aos documentos anexados.");
           })); return;
         }
-        rowsArea.appendChild(investigationTable(["Documento fiscal", "Fiscal", "Lançamentos no Razão", "Razão", "Diferença / resultado"],
+        rowsArea.appendChild(investigationTable(["Documento fiscal", "Lançamentos no Razão", "Diferença / resultado"],
           rows.slice(start, start + size), (tr, d) => {
             const docCell = node("td", "fiscal-doc-source");
-            docCell.append(node("strong", "", "Nota " + d.nota + (d.serie ? " · série " + d.serie : "")),
+            docCell.append(node("strong", "fiscal-doc-value", money.format(d.valor_fiscal)), node("strong", "", "Nota " + d.nota + (d.serie ? " · série " + d.serie : "")),
               node("span", "", d.data), node("span", "", d.parceiro || "Parceiro não informado"));
             (d.linhas_fiscais || []).forEach(p => docCell.appendChild(node("small", "", p.id + " · acumulador " + p.acumulador +
               " · CFOP " + p.cfop + " · " + money.format(p.valor) + " · linha " + p.linha_origem)));
-            tr.appendChild(docCell); cell(tr, money.format(d.valor_fiscal), "fiscal-money");
+            tr.appendChild(docCell);
             const movCell = node("td", "fiscal-doc-source");
+            movCell.appendChild(node("strong", "fiscal-doc-value", d.valor_razao == null ? "Valor não confirmado" : money.format(d.valor_razao)));
             (d.lancamentos || []).forEach(m => {
               const block = node("div", "fiscal-doc-movement");
               block.append(node("strong", "", m.id + " · " + m.data + " · conta " + (m.conta || group.conta)),
@@ -1399,7 +1400,7 @@
               movCell.appendChild(block);
             });
             if (!d.lancamentos?.length) movCell.appendChild(node("span", "fiscal-disclaimer", "Nenhum lançamento identificado pelos critérios disponíveis."));
-            tr.appendChild(movCell); cell(tr, d.valor_razao == null ? "—" : money.format(d.valor_razao), "fiscal-money");
+            tr.appendChild(movCell);
             const statusCell = node("td", "fiscal-doc-status");
             if (d.diferenca != null) statusCell.appendChild(node("strong", d.diferenca ? "fiscal-doc-difference" : "", money.format(d.diferenca)));
             statusCell.append(node("span", "fiscal-doc-badge fiscal-doc-badge-" + d.situacao.toLowerCase(), investigationStatus(d.situacao)),
@@ -1413,9 +1414,9 @@
       exportButton.addEventListener("click", () => {
         const rows = filtered();
         const values = select.value === "ledger" ? [["Referência", "Data", "Histórico", "Valor", "Situação"], ...rows.map(m => [m.id, m.data, m.historico, m.valor, investigationStatus(m.situacao)])] :
-          [["Nota", "Série", "Data fiscal", "Parceiro", "Acumuladores", "Fiscal", "Razão", "Diferença", "Situação", "Critério", "Lançamentos"],
+          [["Nota", "Série", "Data fiscal", "Parceiro", "Acumuladores", "Linhas fiscais / origem", "Fiscal", "Razão", "Diferença", "Situação", "Critério", "Lançamentos"],
             ...rows.map(d => [d.nota, d.serie, d.data, d.parceiro, (d.linhas_fiscais || []).map(p => p.acumulador).join(", "),
-              d.valor_fiscal, d.valor_razao, d.diferenca, investigationStatus(d.situacao), d.criterio,
+              (d.linhas_fiscais || []).map(p => p.id + " CFOP " + p.cfop + " " + money.format(p.valor) + " linha " + p.linha_origem).join(" | "), d.valor_fiscal, d.valor_razao, d.diferenca, investigationStatus(d.situacao), d.criterio,
               (d.lancamentos || []).map(m => m.id + " " + m.data + " conta " + (m.conta || group.conta) + " " + m.historico + " " + money.format(m.valor)).join(" | ")])];
         const csvCell = value => '"' + String(value ?? "").replace(/^[=+@\t\r-]/, "'$&").replace(/"/g, '""') + '"';
         const blob = new Blob(["\ufeff" + values.map(row => row.map(csvCell).join(";")).join("\r\n")], {type:"text/csv;charset=utf-8"});

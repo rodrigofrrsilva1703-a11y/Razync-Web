@@ -14,8 +14,10 @@ function setup() {
     click() {this.events.click?.();}
   }
   const node=(...args)=>new Element(...args); const root=node('div');
+  let exported;
   const context={node,investigationResults:root,money:new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}),
-    cell:(tr,text,cls)=>tr.appendChild(node('td',cls,text)),Blob,URL,setTimeout:fn=>fn()};
+    cell:(tr,text,cls)=>tr.appendChild(node('td',cls,text)),Blob,
+    URL:{createObjectURL:blob=>{exported=blob;return 'blob:test';},revokeObjectURL:()=>{}},setTimeout:fn=>fn()};
   vm.createContext(context);
   vm.runInContext(source.slice(source.indexOf('  function investigationStatus('),source.indexOf('  investigationForm.addEventListener')),context);
   const all=(item=root)=>[item,...item.children.flatMap(child=>all(child))];
@@ -28,7 +30,7 @@ function setup() {
   const group={conta:'508',tipo:'ENTRADAS',descricao:'Compras',fiscal:110000,contabil:111000,diferenca:1000,
     documentos_total:1100,comparacoes:docs,acumuladores:[],razao_sem_vinculo:[]};
   context.renderInvestigation({resumo:{contas:2,conciliados:1000,pendentes:100},contas:[group,{...group,conta:'509',comparacoes:[],documentos_total:0}]});
-  return {root,all,byClass};
+  return {root,all,byClass,exportedBlob:()=>exported};
 }
 test('investigação mantém todos os resultados navegáveis sem renderizar milhares de linhas',()=>{
   const {all,byClass}=setup();
@@ -51,4 +53,16 @@ test('selecionar outra conta reinicia a leitura mantendo a navegação lateral',
   assert.match(byClass('fiscal-doc-reader').children[0].textContent,/CONTA 509/);
   assert.equal(all().filter(el=>el.className==='fiscal-doc-account').length,2);
   assert.equal(all().filter(el=>el.className==='fiscal-doc-account')[1].attributes['aria-current'],'true');
+});
+
+
+test('exportação inclui o filtro completo e as linhas de origem, além da página visível',async()=>{
+  const {byClass,exportedBlob}=setup();
+  const filter=byClass('fiscal-doc-filter'); filter.value='all'; filter.events.change();
+  byClass('fiscal-doc-export').click();
+  const csv=await exportedBlob().text();
+  assert.equal(csv.split('\r\n').length,1101);
+  assert.match(csv,/Linhas fiscais \/ origem/);
+  assert.match(csv,/"1100";"1";"03\/08\/2026"/);
+  assert.match(csv,/E-1099 CFOP 1102/);
 });

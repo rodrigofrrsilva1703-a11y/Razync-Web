@@ -1217,3 +1217,12 @@
 @media (max-width:1000px) {#fiscalView .fiscal-doc-workspace {grid-template-columns:190px minmax(0,1fr);}#fiscalView .fiscal-doc-reader {padding:14px;}#fiscalView .fiscal-doc-totals {grid-template-columns:1fr;}}
 @media (max-width:680px) {#fiscalView .fiscal-doc-workspace {grid-template-columns:1fr;}#fiscalView .fiscal-doc-accounts {max-height:200px;}#fiscalView .fiscal-doc-reader {max-height:72dvh;}#fiscalView .fiscal-doc-controls > * {flex:1 1 100%;}#fiscalView .fiscal-doc-pagination {justify-content:center;}}
 #fiscalView .fiscal-doc-pagination {position:sticky;top:0;z-index:2;background:#fff;padding:10px 0;margin:0 0 10px;border-bottom:1px solid #e8edf3;}
+#fiscalView .fiscal-doc-reader .fiscal-investigation-table {min-width:0;width:100%;table-layout:fixed;}
+#fiscalView .fiscal-doc-reader .fiscal-investigation-table th {white-space:normal;overflow-wrap:anywhere;line-height:1.5;}
+#fiscalView .fiscal-doc-source,#fiscalView .fiscal-doc-status {min-width:0;overflow-wrap:anywhere;}
+#fiscalView .fiscal-doc-rows .fiscal-investigation-table th:nth-child(1) {width:33%;}
+#fiscalView .fiscal-doc-rows .fiscal-investigation-table th:nth-child(2) {width:42%;}
+#fiscalView .fiscal-doc-rows .fiscal-investigation-table th:nth-child(3) {width:25%;}
+#fiscalView .fiscal-doc-value {font-size:15px;color:#253e59;margin-bottom:12px;}
+#fiscalView .fiscal-doc-coverage-title {margin:24px 0 12px;font-size:12px;color:#52708d;}
+@media (max-width:680px) {#fiscalView .fiscal-doc-rows .fiscal-investigation-table {min-width:560px;}#fiscalView .fiscal-doc-reader .fiscal-investigation-table td {padding:12px 8px;}#fiscalView .fiscal-doc-value {font-size:13px;}}
