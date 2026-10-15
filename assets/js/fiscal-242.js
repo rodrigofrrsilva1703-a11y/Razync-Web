@@ -319,16 +319,56 @@
     const reading = item.parecer?.leitura_comparacao;
     if (reading?.resultado) {
       analysis.classList.add("fiscal-ai-organized-analysis");
-      analysis.append(node("h5", "", "Resultado da conta"), node("p", "fiscal-ai-conclusion", reading.resultado));
-      analysis.appendChild(node("h5", "", "O que os lançamentos mostram"));
-      const facts = node("ul", "fiscal-ai-finding-list");
-      for (const observation of reading.observacoes || []) facts.appendChild(node("li", "", observation));
-      analysis.appendChild(facts);
-      const interpretation = item.parecer?.analise_exibicao;
-      if (interpretation) {
-        analysis.append(node("h5", "", "O que permanece em aberto"), node("p", "fiscal-ai-open-question", interpretation));
+      const documentary = reading.documental_especifico === true;
+      analysis.append(node("h5", "", documentary ? "Diagnóstico desta conta" : "Resultado da conta"),
+        node("p", "fiscal-ai-conclusion", reading.resultado));
+      if (reading.observacoes?.length) {
+        analysis.appendChild(node("h5", "", documentary ? "Tipos de pendência encontrados" : "O que os lançamentos mostram"));
+        const facts = node("ul", "fiscal-ai-finding-list");
+        for (const observation of reading.observacoes) facts.appendChild(node("li", "", observation));
+        analysis.appendChild(facts);
       }
-      analysis.appendChild(node("p", "fiscal-ai-comparison-rule", reading.criterio));
+      if (documentary && reading.destaques?.length) {
+        analysis.appendChild(node("h5", "", "Documentos para investigar primeiro"));
+        const examples = node("div", "fiscal-ai-document-highlights");
+        for (const entry of reading.destaques) {
+          const row = node("article", "fiscal-ai-document-highlight");
+          const head = node("div", "fiscal-ai-document-highlight-heading");
+          head.append(node("strong", "", entry.documento || "Documento fiscal"),
+            node("span", "", entry.referencia || ""));
+          row.appendChild(head);
+          row.appendChild(node("p", "fiscal-ai-document-highlight-reason", entry.tipo || ""));
+          const details = [];
+          if (entry.data) details.push("Data: " + entry.data);
+          if (entry.valor_fiscal) details.push("Fiscal: " + entry.valor_fiscal);
+          if (entry.conta_candidata) details.push("Candidato na conta " + entry.conta_candidata);
+          if (entry.valor_razao_candidato) details.push("Razão candidato: " + entry.valor_razao_candidato);
+          if (entry.diferenca_candidata) details.push("Diferença do candidato: " + entry.diferenca_candidata);
+          if (details.length) row.appendChild(node("p", "fiscal-ai-document-highlight-details", details.join(" · ")));
+          if (entry.como_verificar) row.appendChild(node("p", "fiscal-ai-document-highlight-action", entry.como_verificar));
+          examples.appendChild(row);
+        }
+        analysis.appendChild(examples);
+      }
+      if (documentary && reading.impactos?.length) {
+        const impacts = node("details", "fiscal-ai-impact-details");
+        impacts.appendChild(node("summary", "", "Ver composição da diferença calculada"));
+        const list = node("ul", "");
+        for (const effect of reading.impactos) {
+          const li = node("li", "");
+          li.append(node("span", "", effect.descricao), node("strong", "", effect.valor));
+          list.appendChild(li);
+        }
+        impacts.appendChild(list);
+        analysis.appendChild(impacts);
+      }
+      const interpretation = String(item.parecer?.analise_exibicao || "").trim();
+      const standardAnswer = /^(?:A causa ainda não está comprovada pelas evidências desta conta\.|Os dados disponíveis não sustentam uma causa específica\.|A causa está indeterminada: os lançamentos disponíveis não sustentam uma explicação)/i.test(interpretation);
+      if (interpretation && !(documentary && standardAnswer)) {
+        analysis.append(node("h5", "", documentary ? "Interpretação da IA" : "O que permanece em aberto"),
+          node("p", "fiscal-ai-open-question", interpretation));
+      }
+      if (reading.criterio) analysis.appendChild(node("p", "fiscal-ai-comparison-rule", reading.criterio));
       return analysis;
     }
     analysis.appendChild(node("h5", "", "Resumo"));
@@ -429,14 +469,17 @@
     if ((!summary && !docs.length) || (evidence && !docs.length)) return null;
     const section = node("section", "fiscal-ai-documentary");
     if (!evidence) section.appendChild(node("h5", "", "Cruzamento de Entradas e Saídas"));
-    if (summary && !evidence) section.appendChild(node("p", "fiscal-ai-documentary-summary", summary.conciliados + " de " + summary.documentos_lidos +
-      " linhas fiscais conciliadas no cruzamento local · " + summary.documentos_pendentes + " para conferir."));
+    if (summary && !evidence) section.appendChild(node("p", "fiscal-ai-documentary-summary", 
+      item.parecer?.leitura_comparacao?.documental_especifico
+        ? summary.conciliados + " de " + summary.documentos_lidos + " linhas conciliadas no cruzamento local."
+        : summary.conciliados + " de " + summary.documentos_lidos +
+          " linhas fiscais conciliadas no cruzamento local · " + summary.documentos_pendentes + " para conferir."));
     if (evidence && docs.length) section.appendChild(renderAIDataTable("Documentos selecionados para a IA", ["Nota / acumulador", "Fiscal", "Razão candidato", "Diferença", "Leitura"],
       docs.map(d => [d.nota + " · " + d.acumulador, d.valor_fiscal_grupo_brl || d.valor_brl,
         (d.valor_razao_candidato_brl || "Não identificado") + (d.conta_razao_candidato ? " · conta " + d.conta_razao_candidato : ""),
         d.diferenca_candidato_brl || "—", investigationStatus(d.situacao)]), "fiscal-ai-documents"));
     const coverage = item.cobertura_documental;
-    if (coverage) section.appendChild(node("p", "fiscal-ai-documentary-coverage", "Enviado à IA: " + coverage.documentos_enviados + "/" + coverage.documentos_pendentes +
+    if (coverage && (evidence || !item.parecer?.leitura_comparacao?.documental_especifico)) section.appendChild(node("p", "fiscal-ai-documentary-coverage", "Enviado à IA: " + coverage.documentos_enviados + "/" + coverage.documentos_pendentes +
       " documentos pendentes e " + coverage.lancamentos_enviados + "/" + coverage.lancamentos_pendentes + " movimentos." +
       (coverage.amostra ? " A amostra não representa leitura integral pela IA." : "")));
     return section;
