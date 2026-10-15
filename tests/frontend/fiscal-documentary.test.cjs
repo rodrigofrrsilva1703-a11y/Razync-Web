@@ -100,6 +100,22 @@ test('busca por acumulador mostra o Razão identificado e abre todos os document
   assert.match(cells[3].textContent,/1\.000,00/);
   const lookup=byClass('fiscal-doc-lookup-input'); lookup.value='acumulador 1152'; lookup.events.input();
   assert.equal(all(byClass('fiscal-doc-lookup-results')).filter(el=>el.tag==='tbody')[0].children.length,2);
+  assert.equal(byClass('fiscal-doc-search').value,'1152');
+  assert.equal(byClass('fiscal-doc-search-totals').children.length,0);
+});
+
+test('consulta abre a conta encontrada, restringe a lateral e restaura a navegação ao limpar',()=>{
+  const {byClass,all}=setup();
+  const lookup=byClass('fiscal-doc-lookup-input');
+  lookup.value='conta 509'; lookup.events.input();
+  assert.match(byClass('fiscal-doc-reader').children[0].textContent,/CONTA 509/);
+  const buttons=all().filter(el=>el.className==='fiscal-doc-account');
+  assert.equal(buttons[0].hidden,true); assert.equal(buttons[1].hidden,false);
+  lookup.value='inexistente';lookup.events.input();
+  assert.equal(byClass('fiscal-doc-workspace').hidden,true);
+  lookup.value='';lookup.events.input();
+  assert.equal(byClass('fiscal-doc-workspace').hidden,false);
+  assert.ok(buttons.every(button=>!button.hidden));
 });
 
 test('valores por acumulador não rateiam parcelas compartilhadas nem incorporam candidatos de outra conta',()=>{

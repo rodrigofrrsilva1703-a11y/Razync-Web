@@ -1270,6 +1270,14 @@
 }
 #fiscalView .fiscal-doc-rows .fiscal-doc-status > span,
 #fiscalView .fiscal-doc-rows .fiscal-doc-status > small {text-align:left;}
+/* Valores da consulta com base explícita e diferença fácil de localizar. */
+#fiscalView .fiscal-doc-lookup-results th,#fiscalView .fiscal-doc-search-totals th {font-size:10px;color:#536d87;white-space:normal;}
+#fiscalView .fiscal-doc-lookup-results td,#fiscalView .fiscal-doc-search-totals td {font-variant-numeric:tabular-nums;padding:10px 12px;}
+#fiscalView .fiscal-doc-lookup-results .fiscal-doc-lookup-difference,#fiscalView .fiscal-doc-search-totals .fiscal-doc-lookup-difference {background:#edf3fa;color:#294d73;font-weight:650;}
+#fiscalView .fiscal-doc-lookup-results .fiscal-doc-lookup-difference small,#fiscalView .fiscal-doc-search-totals .fiscal-doc-lookup-difference small {color:#546e88;}
+#fiscalView .fiscal-doc-lookup-results .fiscal-doc-lookup-note {margin-bottom:0;}
+#fiscalView .fiscal-doc-balance-head > span {font-size:11px;font-weight:600;color:#435f7b;}
+#fiscalView .fiscal-doc-balance-head strong {font-size:19px;}
 /* IA principal: preparação clara, fontes visíveis e leitura contínua dos pareceres. */
 /* Consulta e explicação dos resultados documentais, sem alterar a conferência inicial. */
 #fiscalView .fiscal-doc-lookup {display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,340px);align-items:center;justify-content:start;gap:9px 14px;margin:14px 0;padding:10px 0;border:0;border-radius:0;background:transparent;}

@@ -1409,6 +1409,7 @@
     workspace.append(accounts, reader); investigationResults.appendChild(workspace);
     let active = groups[0];
     const buttons = new Map();
+    const lookupQuery = value => String(value || "").trim().toLocaleLowerCase("pt-BR").replace(/^(?:conta|acumulador)\s+/, "");
     function selectAccount(group, accumulatorCode = "") {
       active = group;
       buttons.forEach((button, item) => button.setAttribute("aria-current", item === active ? "true" : "false"));
@@ -1417,7 +1418,7 @@
         node("h4", "", group.descricao || "Cruzamento documental"));
       const balance = node("div", "fiscal-doc-balance");
       const balanceHead = node("div", "fiscal-doc-balance-head");
-      balanceHead.append(node("span", "", "Diferença da conferência inicial"), node("strong", "", money.format(group.diferenca || 0)));
+      balanceHead.append(node("span", "", "Conta " + group.conta + " · diferença inicial"), node("strong", "", money.format(group.diferenca || 0)));
       balance.appendChild(balanceHead);
       const totals = node("div", "fiscal-doc-comparison-totals");
       [["Resumo fiscal", group.fiscal], ["Razão considerado", group.contabil]].forEach(([label, value]) => {
@@ -1438,7 +1439,9 @@
             cobertura:"O acompanhamento anexado tem um total diferente do Resumo por Acumulador.",
             fora_inicial:"Estes movimentos ficaram fora da comparação inicial. O ajuste mantém a mesma base do total acima; não significa que estejam errados."
           };
-          label.appendChild(node("span", "", item.descricao));
+          const labels = {vinculados:"Diferenças entre notas e Razão", razao_sem_vinculo:"Razão sem documento vinculado",
+            fiscal_sem_vinculo:"Fiscal sem vínculo nesta conta", cobertura:"Cobertura dos relatórios", fora_inicial:"Fora da comparação inicial"};
+          label.appendChild(node("span", "", labels[item.codigo] || item.descricao));
           if (explanations[item.codigo]) label.title = explanations[item.codigo];
           line.append(label, node("strong", "", (item.valor > 0 ? "+ " : "") + money.format(item.valor)));
           lines.appendChild(line);
@@ -1446,7 +1449,7 @@
         if (!effects.length) lines.appendChild(node("p", "", "Os valores dos documentos e do Razão fecham com o resumo fiscal."));
         balance.appendChild(lines);
         balance.appendChild(node("small", "", group.composicao.confere_com_inicial ?
-          "Soma dos efeitos = " + money.format(group.diferenca || 0) + ". Vínculos em análise exigem confirmação." :
+          (group.composicao.vinculos_incertos ? "A soma fecha com a diferença inicial. Há vínculos a confirmar." : "A soma fecha com a diferença inicial. Confira os registros pendentes.") :
           "A composição não fecha com a conferência inicial. Revise a cobertura dos relatórios."));
       } else balance.appendChild(node("small", "", "Diferença = Razão considerado − resumo fiscal."));
       reader.appendChild(balance);
@@ -1500,7 +1503,7 @@
         ...(d.lancamentos || []).map(m => m.historico + " " + (m.conta || group.conta))].join(" ").toLocaleLowerCase("pt-BR")}));
       const ledgerIndex = ledger.map(m => ({item:m, text:[m.nota, m.historico, m.id, m.data].join(" ").toLocaleLowerCase("pt-BR")}));
       function filtered() {
-        const query = input.value.trim().toLocaleLowerCase("pt-BR");
+        const query = lookupQuery(input.value);
         const acc = (group.acumuladores || []).find(a => String(a.codigo) === query);
         return (select.value === "ledger" ? ledgerIndex : indexed).filter(({item, text}) =>
           (!query || (query === String(group.conta) ? true : acc ? select.value !== "ledger" && (item.linhas_fiscais || []).some(p => String(p.acumulador) === query) : text.includes(query))) && (select.value === "ledger" || select.value === "all" ||
@@ -1508,10 +1511,13 @@
       }
       function paint() {
         searchTotals.replaceChildren();
-        const query = input.value.trim();
+        const query = lookupQuery(input.value);
         const acc = accumulatorTotals.get(group).find(a => String(a.acc.codigo) === query);
-        if (query === String(group.conta)) renderLookupTable(searchTotals, [{group}]);
-        else if (acc) renderLookupTable(searchTotals, [acc]);
+        // A consulta superior já mostra estes valores; evite repetir a mesma tabela no leitor.
+        if (query !== lookupQuery(lookupInput.value)) {
+          if (query === String(group.conta)) renderLookupTable(searchTotals, [{group}]);
+          else if (acc) renderLookupTable(searchTotals, [acc]);
+        }
         const rows = filtered(); const size = Number(pageSize.value); const pages = Math.max(1, Math.ceil(rows.length / size));
         page = Math.min(page, pages - 1); const start = page * size;
         caption.textContent = rows.length ? (start + 1) + "–" + Math.min(start + size, rows.length) + " de " + rows.length +
@@ -1559,7 +1565,7 @@
       }
       select.addEventListener("change", () => { page = 0; paint(); });
       input.addEventListener("input", () => {
-        if (input.value.trim() === String(group.conta) || (group.acumuladores || []).some(a => String(a.codigo) === input.value.trim())) select.value = "all";
+        if (lookupQuery(input.value) === String(group.conta) || (group.acumuladores || []).some(a => String(a.codigo) === lookupQuery(input.value))) select.value = "all";
         page = 0; paint();
       });
       pageSize.addEventListener("change", () => { page = 0; paint(); });
@@ -1581,7 +1587,7 @@
       paint();
     }
     function renderLookupTable(target, matches) {
-      target.appendChild(investigationTable(["Conta / acumulador", "Resumo fiscal", "Razão / base", "Diferença"], matches, (tr, match) => {
+      target.appendChild(investigationTable(["Conta / acumulador", "Resumo fiscal", "Razão comparado", "Diferença"], matches, (tr, match) => {
         const group = match.group;
         const source = cell(tr, "");
         const open = node("button", "fiscal-doc-lookup-open", (match.acc ? "Acumulador " + match.acc.codigo + " · " : "") + "Conta " + group.conta + " · " + group.tipo);
@@ -1592,27 +1598,38 @@
         const ledgerCell = cell(tr, amount == null ? "Não separável" : money.format(amount), "fiscal-money");
         ledgerCell.appendChild(node("small", "", match.acc ? "Identificado nos documentos" : "Considerado na conta"));
         const difference = match.acc ? match.difference : group.diferenca;
-        cell(tr, difference == null ? "Não calculada" : money.format(difference), "fiscal-money");
+        const differenceCell = cell(tr, difference == null ? "Não calculada" : money.format(difference), "fiscal-money fiscal-doc-lookup-difference");
+        differenceCell.appendChild(node("small", "", match.acc ? "Identificado − fiscal" : "Razão − fiscal"));
       }));
       if (matches.some(m => m.acc)) target.appendChild(node("p", "fiscal-doc-lookup-note", [...new Set(matches.filter(m => m.acc).map(m => m.note))].join(" ") + " Recorte documental; consulte a conta para o total contábil."));
     }
     lookupInput.addEventListener("input", () => {
       lookupResults.replaceChildren();
-      const query = lookupInput.value.trim().toLocaleLowerCase("pt-BR").replace(/^(?:conta|acumulador)\s+/, "");
-      if (!query) return;
+      const query = lookupQuery(lookupInput.value);
+      if (!query) {
+        buttons.forEach(button => { button.hidden = false; }); workspace.hidden = false;
+        selectAccount(active); return;
+      }
       const exactAccounts = groups.filter(g => String(g.conta) === query);
       const exactAccumulators = [...accumulatorTotals.values()].flat().filter(a => String(a.acc.codigo) === query);
       const matches = exactAccounts.length ? exactAccounts.map(group => ({group})) : exactAccumulators.length ? exactAccumulators :
         groups.filter(g => (g.conta + " " + g.descricao).toLocaleLowerCase("pt-BR").includes(query)).map(group => ({group}));
-      if (matches.length) renderLookupTable(lookupResults, matches);
-      else lookupResults.appendChild(node("p", "fiscal-doc-empty", "Nenhuma conta ou acumulador encontrado entre os investigados. Para buscar uma nota ou parceiro, use a pesquisa dos documentos abaixo."));
+      const matchingGroups = new Set(matches.map(match => match.group));
+      buttons.forEach((button, group) => { button.hidden = !matchingGroups.has(group); });
+      workspace.hidden = !matches.length;
+      if (matches.length) {
+        renderLookupTable(lookupResults, matches);
+        const selected = matches.find(match => match.group === active) || matches[0];
+        // Uma busca exata abre o recorte sem exigir mais um clique, preservando o foco na pesquisa.
+        if (exactAccounts.length || exactAccumulators.length || !matchingGroups.has(active)) selectAccount(selected.group, selected.acc ? String(selected.acc.codigo) : "");
+      } else lookupResults.appendChild(node("p", "fiscal-doc-empty", "Nenhuma conta ou acumulador encontrado entre os investigados. Limpe a consulta para voltar aos documentos."));
     });
     groups.forEach(group => {
       const button = node("button", "fiscal-doc-account"); button.type = "button";
       const name = node("div", "fiscal-doc-account-head"); name.append(node("strong", "", "Conta " + group.conta), node("small", "", group.tipo));
       const description = node("span", "", (group.descricao || "Sem descrição").split(" | ")[0]); description.title = group.descricao || "";
       button.append(name, description, node("small", "", group.documentos_total + " linhas · " + money.format(group.diferenca || 0)));
-      button.addEventListener("click", () => selectAccount(group)); accounts.appendChild(button); buttons.set(group, button);
+      button.addEventListener("click", () => selectAccount(group, (group.acumuladores || []).some(acc => String(acc.codigo) === lookupQuery(lookupInput.value)) ? lookupQuery(lookupInput.value) : "")); accounts.appendChild(button); buttons.set(group, button);
     });
     selectAccount(active); investigationResults.hidden = false;
   }
