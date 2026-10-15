@@ -120,7 +120,9 @@ def test_integracao_classify_retorna_cobertura_sem_alterar_regra_existente(monke
         row(debit=187, credit=8, history="PAGO JA REVISADO"),
         row(debit="", credit=8, history="PAGO SEM CONTRAPARTIDA"),
     ]})
-    result, summary = classification_service.classify(266, source, "modelo.xlsx", {})
+    base_workbook, base_summary = classification_service.classify(266, source, "modelo.xlsx", {})
+    assert "cobertura" not in base_summary  # Contrato original sem alterações.
+    result, summary = classification_service.classify_with_coverage(266, source, "modelo.xlsx", {})
     assert summary["cobertura"]["total"] == 2
     assert summary["cobertura"]["classificadas"] == 1
     assert summary["cobertura"]["pendentes"] == 1
@@ -130,3 +132,28 @@ def test_integracao_classify_retorna_cobertura_sem_alterar_regra_existente(monke
     assert book["Banco do Brasil"]["D2"].value == 187
     assert book["Banco do Brasil"]["E2"].value == 8
     book.close()
+
+
+def test_api_base_inteligente_inclui_percentual_no_cabecalho(monkeypatch):
+    import json
+    from fastapi.testclient import TestClient
+    from app import operating_hours
+    from app.main import app
+
+    monkeypatch.setattr(operating_hours, "is_open", lambda *args: True)
+    monkeypatch.setattr(classification_service, "records", lambda code: [])
+    source = workbook({"Banco do Brasil": [
+        row(debit=187, credit=8, history="PAGO CONFERIDO"),
+        row(debit="", credit=8, history="PAGO PENDENTE"),
+    ]})
+    response = TestClient(app).post(
+        "/api/v1/base-inteligente/266/classificar",
+        data={"options_json": "{}"},
+        files={"file": ("modelo.xlsx", source,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+    )
+    assert response.status_code == 200, response.text
+    info = json.loads(response.headers["x-razync-summary"])
+    assert info["cobertura"]["percentual"] == 50.0
+    assert info["cobertura"]["total"] == 2
+    assert info["cobertura"]["pendentes"] == 1
