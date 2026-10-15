@@ -306,7 +306,7 @@ def audit_analysis(item):
     }
 
 
-ANALYSIS_VERSION = "grounded-isolated-v8"
+ANALYSIS_VERSION = "evidence-dossier-v9"
 
 
 def narrative_sections(value):
@@ -562,6 +562,26 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
                    "criterio": "Entradas usam débitos; Saídas usam créditos. Documentos conciliados não foram enviados individualmente à IA; os pendentes foram selecionados com cobertura explícita."}
     if (scenario_issues or text_issues) and reading.get("relacoes"):
         display_text = "Há pares com número de nota e valor coincidentes entre os registros considerados e os pagamentos. Isso sustenta investigar se correspondem à mesma operação em etapas diferentes; não confirma duplicidade nem liquidação. Valide o emissor, os comprovantes e as contrapartidas desses pares."
+    # As orientações mais concretas vêm de indícios estruturados do Razync,
+    # não de uma nova inferência da IA. Preserva as verificações já existentes.
+    dossier = item.get("dossie_contabil") or {}
+    priorities = dossier.get("prioridades_de_investigacao") or []
+    if priorities:
+        specific_steps = []
+        for step in priorities[:3]:
+            if not isinstance(step, dict):
+                continue
+            ref = str(step.get("referencia") or "").strip()
+            action = str(step.get("acao") or "").strip()
+            goal = str(step.get("como_verificar") or "").strip()
+            if action and goal:
+                specific_steps.append({"acao": action + (f" ({ref})" if ref else ""),
+                                       "objetivo": goal})
+        if specific_steps:
+            reading["orientacoes"] = (specific_steps + list(reading.get("orientacoes") or []))[:3]
+    for limit in (dossier.get("limites_das_fontes") or [])[:2]:
+        if isinstance(limit, str) and limit and limit not in missing:
+            missing.append(limit)
     return {"versao": ANALYSIS_VERSION, "fatos": facts,
             "analise_exibicao": display_text, "sugestoes_retiradas": scenario_issues,
             "leitura_comparacao": reading,
