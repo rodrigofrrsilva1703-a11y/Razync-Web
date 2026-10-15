@@ -1169,7 +1169,18 @@ def gerar_excel_analise(payload: dict) -> bytes:
             ] if part)
             instructions = reading.get("orientacoes") or []
             if instructions:
-                displayed_steps = "\n".join(f"{index}. {step.get('acao', '')} — {step.get('objetivo', '')}" for index,step in enumerate(instructions,1))
+                blocks = []
+                for index, step in enumerate(instructions, 1):
+                    parts = [f"{index}. {step.get('acao', '')}"]
+                    for doc in (step.get("documentos") or [])[:4]:
+                        if not isinstance(doc, dict):
+                            continue
+                        parts.append("   • " + str(doc.get("titulo") or doc.get("referencia") or "Documento")
+                                     + (": " + str(doc["detalhes"]) if doc.get("detalhes") else ""))
+                    if step.get("objetivo"):
+                        parts.append("   Conferência: " + str(step["objetivo"]))
+                    blocks.append("\n".join(parts))
+                displayed_steps = "\n\n".join(blocks)
             else:
                 displayed_steps = parecer.get("verificacoes") or item.get("verificar")
         main.append([
