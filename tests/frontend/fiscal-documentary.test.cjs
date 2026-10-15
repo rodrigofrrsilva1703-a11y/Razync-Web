@@ -19,6 +19,7 @@ function setup() {
     cell:(tr,text,cls)=>tr.appendChild(node('td',cls,text)),Blob,
     URL:{createObjectURL:blob=>{exported=blob;return 'blob:test';},revokeObjectURL:()=>{}},setTimeout:fn=>fn()};
   vm.createContext(context);
+  vm.runInContext(source.slice(source.indexOf('  function differenceMeaning('),source.indexOf('  function aiSourceLabel(')),context);
   vm.runInContext(source.slice(source.indexOf('  function investigationStatus('),source.indexOf('  investigationForm.addEventListener')),context);
   const all=(item=root)=>[item,...item.children.flatMap(child=>all(child))];
   const byClass=cls=>all().find(el=>el.className===cls);
@@ -29,9 +30,9 @@ function setup() {
     lancamentos:[{id:'R-'+i,data:'03/08/2026',valor:i<1000?100:110,historico:'COMPRA CF NF '+(i+1),contrapartida:'800'}]}));
   const group={composicao:{confere_com_inicial:true,itens:[
       {descricao:'Diferenças nos vínculos',valor:1009.99},{descricao:'Fora da conferência inicial',valor:-9.99},{descricao:'Cobertura',valor:0}]},conta:'508',tipo:'ENTRADAS',descricao:'Compras',fiscal:110000,contabil:111000,diferenca:1000,
-    documentos_total:1100,comparacoes:docs,acumuladores:[],razao_sem_vinculo:[]};
+    documentos_total:1100,comparacoes:docs,acumuladores:[{codigo:'1152',descricao:'Compras',valor_resumo:110000,valor_documentos:110000,detalhamento_disponivel:true}],razao_sem_vinculo:[]};
   context.renderInvestigation({resumo:{contas:2,conciliados:1000,pendentes:100},contas:[group,{...group,conta:'509',comparacoes:[],documentos_total:0}]});
-  return {root,all,byClass,exportedBlob:()=>exported};
+  return {root,all,byClass,context,exportedBlob:()=>exported};
 }
 test('investigação mantém todos os resultados navegáveis sem renderizar milhares de linhas',()=>{
   const {all,byClass}=setup();
@@ -72,10 +73,44 @@ test('exportação inclui o filtro completo e as linhas de origem, além da pág
 test('composição do total destaca efeitos não nulos e mantém os sinais',()=>{
   const {byClass,all}=setup();
   assert.equal(byClass('fiscal-doc-balance-lines').children.length,2);
-  const amounts=all(byClass('fiscal-doc-balance')).filter(el=>el.tag==='strong').map(el=>el.textContent);
-  assert.match(amounts[0],/1\.000,00/);
-  assert.match(amounts[1],/\+ R\$/);
-  assert.match(amounts[2],/-R\$/);
+  const amounts=all(byClass('fiscal-doc-balance-lines')).filter(el=>el.tag==='strong').map(el=>el.textContent);
+  assert.match(amounts[0],/\+ R\$/);
+  assert.match(amounts[1],/-R\$/);
+  assert.match(all(byClass('fiscal-doc-balance-head')).find(el=>el.tag==='strong').textContent,/1\.000,00/);
+});
+
+test('busca por conta exibe fiscal, Razão considerado e diferença sem depender do filtro de pendências',()=>{
+  const {byClass,all}=setup();
+  const lookup=byClass('fiscal-doc-lookup-input'); lookup.value='508'; lookup.events.input();
+  const cells=all(byClass('fiscal-doc-lookup-results')).filter(el=>el.tag==='td');
+  assert.match(cells[1].textContent,/110\.000,00/);
+  assert.match(cells[2].textContent,/111\.000,00/);
+  assert.match(cells[3].textContent,/1\.000,00/);
+  const search=byClass('fiscal-doc-search'); search.value='508'; search.events.input();
+  assert.equal(byClass('fiscal-doc-filter').value,'all');
+  assert.match(byClass('fiscal-doc-caption').textContent,/de 1100 registros/);
+});
+
+test('busca por acumulador mostra o Razão identificado e abre todos os documentos do recorte',()=>{
+  const {byClass,all}=setup();
+  const search=byClass('fiscal-doc-search'); search.value='1152'; search.events.input();
+  assert.match(byClass('fiscal-doc-caption').textContent,/de 1100 registros/);
+  const cells=all(byClass('fiscal-doc-search-totals')).filter(el=>el.tag==='td');
+  assert.match(cells[2].textContent,/111\.000,00/);
+  assert.match(cells[3].textContent,/1\.000,00/);
+  const lookup=byClass('fiscal-doc-lookup-input'); lookup.value='acumulador 1152'; lookup.events.input();
+  assert.equal(all(byClass('fiscal-doc-lookup-results')).filter(el=>el.tag==='tbody')[0].children.length,2);
+});
+
+test('valores por acumulador não rateiam parcelas compartilhadas nem incorporam candidatos de outra conta',()=>{
+  const {context}=setup();
+  const group={conta:'470',acumuladores:[{codigo:'1102',valor_resumo:100,detalhamento_disponivel:true},{codigo:'1403',valor_resumo:200,detalhamento_disponivel:true}],
+    comparacoes:[{situacao:'PROVAVEL',linhas_fiscais:[{acumulador:'1102'},{acumulador:'1403'}],lancamentos:[{id:'R1',conta:'470',valor:300}]}]};
+  assert.ok(context.investigationAccumulatorTotals(group).every(a=>a.ledger===null && a.difference===null));
+  group.comparacoes=[{situacao:'CONTA_DIFERENTE',linhas_fiscais:[{acumulador:'1102'}],lancamentos:[{id:'R2',conta:'22517',valor:100}]}];
+  assert.equal(context.investigationAccumulatorTotals(group)[0].ledger,0);
+  group.comparacoes=[{situacao:'AMBIGUO',linhas_fiscais:[{acumulador:'1102'}],lancamentos:[{id:'R3',conta:'470',valor:100},{id:'R4',conta:'470',valor:100}]}];
+  assert.equal(context.investigationAccumulatorTotals(group)[0].ledger,null);
 });
 
 test('histórico só é resumido quando nota e parceiro já estão visíveis, preservando qualificações',()=>{

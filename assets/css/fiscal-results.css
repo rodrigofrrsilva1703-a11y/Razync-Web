@@ -1271,6 +1271,34 @@
 #fiscalView .fiscal-doc-rows .fiscal-doc-status > span,
 #fiscalView .fiscal-doc-rows .fiscal-doc-status > small {text-align:left;}
 /* IA principal: preparação clara, fontes visíveis e leitura contínua dos pareceres. */
+/* Consulta e explicação dos resultados documentais, sem alterar a conferência inicial. */
+#fiscalView .fiscal-doc-lookup {margin:20px 0;padding:16px 18px;border:1px solid #dce5ee;border-radius:10px;background:#fff;}
+#fiscalView .fiscal-doc-lookup > label {display:block;margin-bottom:9px;font-size:12px;font-weight:650;color:#304b69;}
+#fiscalView .fiscal-doc-lookup-input {width:100%;max-width:480px;padding:11px 12px;border:1px solid #cedae7;border-radius:8px;background:#fbfcfe;font-size:12px;color:#263e58;}
+#fiscalView .fiscal-doc-lookup-input:focus {outline:2px solid #b9d2ed;outline-offset:2px;}
+#fiscalView .fiscal-doc-lookup > small {display:block;margin-top:9px;font-size:11px;line-height:1.6;color:#657a90;}
+#fiscalView .fiscal-doc-lookup-results:empty,#fiscalView .fiscal-doc-search-totals:empty {display:none;}
+#fiscalView .fiscal-doc-lookup-results {margin-top:15px;}
+#fiscalView .fiscal-doc-lookup-results .fiscal-investigation-table,#fiscalView .fiscal-doc-search-totals .fiscal-investigation-table {min-width:540px;width:100%;table-layout:auto;}
+#fiscalView .fiscal-doc-lookup-results td,#fiscalView .fiscal-doc-search-totals td {vertical-align:top;white-space:normal;}
+#fiscalView .fiscal-doc-lookup-results td small,#fiscalView .fiscal-doc-search-totals td small {display:block;font-weight:400;font-size:10px;line-height:1.5;color:#6a7f95;margin-top:5px;}
+#fiscalView .fiscal-doc-lookup-open {padding:0;border:0;background:none;text-align:left;color:#315f8f;font:inherit;font-weight:650;cursor:pointer;}
+#fiscalView .fiscal-doc-lookup-open:hover {text-decoration:underline;}
+#fiscalView .fiscal-doc-lookup-note {font-size:11px;color:#5d738a;line-height:1.7;margin:10px 0 0;}
+#fiscalView .fiscal-doc-search-totals {padding:12px;border:1px solid #dce6f0;border-radius:9px;margin:12px 0;background:#fbfdff;}
+#fiscalView .fiscal-doc-balance {padding:18px;background:#f6f9fc;border:1px solid #e3eaf2;}
+#fiscalView .fiscal-doc-balance-reading {font-size:12px;line-height:1.7;color:#46617d;margin:9px 0 15px;}
+#fiscalView .fiscal-doc-comparison-totals {display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:12px 0;border-top:1px solid #e0e8f1;border-bottom:1px solid #e0e8f1;margin-bottom:10px;}
+#fiscalView .fiscal-doc-comparison-totals small {display:block;font-size:10px;color:#687c92;margin-bottom:5px;}
+#fiscalView .fiscal-doc-comparison-totals strong {font-size:15px;color:#2d4865;}
+#fiscalView .fiscal-doc-balance h5 {font-size:12px;color:#35536f;margin:20px 0 0;}
+#fiscalView .fiscal-doc-balance-lines {gap:0;border-top:0;margin:8px 0 12px;padding-top:0;}
+#fiscalView .fiscal-doc-balance-lines > div {padding:11px 0;border-bottom:1px solid #e1e8f0;align-items:flex-start;}
+#fiscalView .fiscal-doc-balance-lines > div > div {min-width:0;}
+#fiscalView .fiscal-doc-balance-lines span {font-size:12px;font-weight:550;color:#35536f;}
+#fiscalView .fiscal-doc-balance-lines small {display:block;font-size:10.5px;font-weight:400;line-height:1.65;margin-top:4px;color:#60758c;}
+#fiscalView .fiscal-doc-balance-lines strong {font-size:12px;padding-top:1px;}
+@media(max-width:680px) {#fiscalView .fiscal-doc-lookup {padding:13px;}#fiscalView .fiscal-doc-lookup-input {max-width:none;}#fiscalView .fiscal-doc-balance-lines > div {gap:10px;}#fiscalView .fiscal-doc-comparison-totals {gap:10px;}#fiscalView .fiscal-doc-comparison-totals strong {font-size:13px;}}
 #fiscalView .fiscal-ai {padding:22px;border-radius:15px;background:#fff;border:1px solid #e0e7ef;}
 #fiscalView .fiscal-ai-heading {gap:13px;padding-bottom:16px;border-bottom:1px solid #edf1f5;margin-bottom:16px;}
 #fiscalView .fiscal-ai-heading h3 {font-size:23px;letter-spacing:-.04em;margin:5px 0 7px;color:#233b55;}
