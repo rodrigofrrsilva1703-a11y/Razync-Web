@@ -136,3 +136,69 @@ def test_exportacao_excel_traz_notas_prioritarias_sem_texto_generico():
     assert "R$ 760,49" in explanation
     assert "A causa ainda não está comprovada pelas evidências" not in explanation
     assert "E-30" in workbook["Análises IA"]["K6"].value
+
+
+def test_tres_nfs_do_mesmo_problema_viram_uma_verificacao_com_dados_individuais():
+    """Reproduz a estrutura das NFs 9080/11188018/6988 apresentada pelo usuário."""
+    item = sample_item()
+    item["resumo_documental"]["situacoes"] = {
+        "CONCILIADO": 1229, "VALOR_DIFERENTE": 11,
+    }
+    item["parecer"]["comparacoes_documentais"] = [
+        {"referencia": "E-13", "situacao": "VALOR_DIFERENTE", "nota": "9080",
+         "acumulador": "1102", "data": "24/09/2026",
+         "valor_brl": "R$ 860,00", "valor_razao_candidato_brl": "R$ 850,00",
+         "diferenca_candidato_brl": "-R$ 10,00"},
+        {"referencia": "E-122", "situacao": "VALOR_DIFERENTE", "nota": "11188018",
+         "acumulador": "1403", "data": "19/08/2026",
+         "valor_brl": "R$ 1.000,00", "valor_razao_candidato_brl": "R$ 995,00",
+         "diferenca_candidato_brl": "-R$ 5,00"},
+        {"referencia": "E-129", "situacao": "VALOR_DIFERENTE", "nota": "6988",
+         "acumulador": "1403", "data": "26/08/2026",
+         "valor_brl": "R$ 700,00", "valor_razao_candidato_brl": "R$ 680,00",
+         "diferenca_candidato_brl": "-R$ 20,00"},
+    ]
+    reading = structured_analysis(item, [], documentary=True)["leitura_comparacao"]
+    steps = reading["orientacoes"]
+    value_steps = [step for step in steps if step.get("categoria") == "VALOR_DIFERENTE"]
+    assert len(value_steps) == 1
+    assert value_steps[0]["quantidade"] == 11
+    examples = value_steps[0]["documentos"]
+    assert [doc["referencia"] for doc in examples] == ["E-13", "E-122", "E-129"]
+    assert "NF 9080" in examples[0]["titulo"]
+    assert "Fiscal: R$ 860,00" in examples[0]["detalhes"]
+    assert "Razão candidato: R$ 850,00" in examples[0]["detalhes"]
+    assert "Diferença entre candidatos: -R$ 10,00" in examples[0]["detalhes"]
+    assert "NF 11188018" in examples[1]["titulo"]
+    assert "NF 6988" in examples[2]["titulo"]
+    assert steps[0]["acao"] != steps[-1]["acao"]
+    assert value_steps[0]["amostra"] is True
+
+
+def test_sem_valor_candidato_nao_inventa_parcelas_ou_diferenca():
+    item = sample_item()
+    item["parecer"]["comparacoes_documentais"] = [
+        {"referencia": "E-13", "situacao": "VALOR_DIFERENTE", "nota": "9080",
+         "data": "24/09/2026", "acumulador": "1102", "valor_brl": "R$ 860,00"},
+        {"referencia": "E-122", "situacao": "VALOR_DIFERENTE", "nota": "11188018",
+         "data": "19/08/2026", "acumulador": "1403", "valor_brl": "R$ 1.000,00"},
+    ]
+    reading = structured_analysis(item, [], documentary=True)["leitura_comparacao"]
+    step = next(x for x in reading["orientacoes"] if x.get("categoria") == "VALOR_DIFERENTE")
+    assert "não contém o valor" in step["objetivo"]
+    assert all("Diferença entre candidatos" not in doc["detalhes"]
+               for doc in step["documentos"])
+    assert len([x for x in reading["orientacoes"] if x.get("categoria") == "VALOR_DIFERENTE"]) == 1
+
+
+def test_mesma_nota_duas_referencias_nao_funde_documentos_diferentes():
+    item = sample_item()
+    original = item["parecer"]["comparacoes_documentais"][0]
+    item["parecer"]["comparacoes_documentais"] = [
+        original,
+        dict(original, referencia="E-22"),
+    ]
+    instructions = structured_analysis(item, [], documentary=True)["leitura_comparacao"]["orientacoes"]
+    group = next(x for x in instructions if x.get("categoria") == "CONTA_DIFERENTE")
+    assert len(group["documentos"]) == 2
+    assert [x["referencia"] for x in group["documentos"]] == ["E-21", "E-22"]
