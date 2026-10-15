@@ -306,7 +306,7 @@ def audit_analysis(item):
     }
 
 
-ANALYSIS_VERSION = "evidence-dossier-v9"
+ANALYSIS_VERSION = "evidence-specific-v10"
 
 
 def narrative_sections(value):
