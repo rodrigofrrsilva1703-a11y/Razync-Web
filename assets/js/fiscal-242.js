@@ -1365,7 +1365,7 @@
         difference:available ? (cents - Math.round(Number(acc.valor_resumo || 0) * 100)) / 100 : null,
         note:inseparable ? "Há parcelas compartilhadas ou candidatos ambíguos. O Razão não foi rateado entre acumuladores." :
           !acc.detalhamento_disponivel ? "Sem detalhamento fiscal suficiente para identificar o Razão por acumulador." :
-          "Razão identificado nos documentos desta conta, sem candidatos de outras contas. Não inclui movimentos sem vínculo; vínculos em análise exigem confirmação."};
+          "Só vínculos desta conta; exclui movimentos sem vínculo e candidatos de outras contas. Vínculos em análise exigem confirmação."};
     });
   }
 
@@ -1398,7 +1398,7 @@
     lookupInput.placeholder = "Ex.: conta 470 ou acumulador 1403";
     lookupInput.setAttribute("aria-label", "Pesquisar conta ou acumulador na investigação");
     const lookupResults = node("div", "fiscal-doc-lookup-results"); lookupResults.setAttribute("aria-live", "polite");
-    lookup.append(lookupLabel, lookupInput, node("small", "", "Consulta nas contas investigadas. Os valores da conta e os vínculos do acumulador têm bases diferentes, indicadas no resultado."), lookupResults);
+    lookup.append(lookupLabel, lookupInput, lookupResults);
     investigationResults.appendChild(lookup);
     const workspace = node("div", "fiscal-doc-workspace");
     const accounts = node("nav", "fiscal-doc-accounts");
@@ -1419,14 +1419,13 @@
       const balanceHead = node("div", "fiscal-doc-balance-head");
       balanceHead.append(node("span", "", "Diferença da conferência inicial"), node("strong", "", money.format(group.diferenca || 0)));
       balance.appendChild(balanceHead);
-      balance.appendChild(node("p", "fiscal-doc-balance-reading", differenceMeaning(group.diferenca)));
       const totals = node("div", "fiscal-doc-comparison-totals");
       [["Resumo fiscal", group.fiscal], ["Razão considerado", group.contabil]].forEach(([label, value]) => {
         const total = node("div"); total.append(node("small", "", label), node("strong", "", money.format(value || 0))); totals.appendChild(total);
       });
-      balance.append(totals, node("small", "", "Diferença = Razão considerado − resumo fiscal. Entradas usam débitos; Saídas usam créditos."));
+      balance.append(totals, node("small", "", "Razão − fiscal · Entradas: débitos · Saídas: créditos."));
       if (group.composicao) {
-        balance.appendChild(node("h5", "", "Como esta diferença se forma"));
+        balance.appendChild(node("h5", "", "Composição da diferença"));
         const lines = node("div", "fiscal-doc-balance-lines");
         const effects = (group.composicao.itens || []).filter(item => Math.abs(item.valor) >= .005);
         effects.forEach(item => {
@@ -1440,14 +1439,14 @@
             fora_inicial:"Estes movimentos ficaram fora da comparação inicial. O ajuste mantém a mesma base do total acima; não significa que estejam errados."
           };
           label.appendChild(node("span", "", item.descricao));
-          if (explanations[item.codigo]) label.appendChild(node("small", "", explanations[item.codigo]));
+          if (explanations[item.codigo]) label.title = explanations[item.codigo];
           line.append(label, node("strong", "", (item.valor > 0 ? "+ " : "") + money.format(item.valor)));
           lines.appendChild(line);
         });
         if (!effects.length) lines.appendChild(node("p", "", "Os valores dos documentos e do Razão fecham com o resumo fiscal."));
         balance.appendChild(lines);
         balance.appendChild(node("small", "", group.composicao.confere_com_inicial ?
-          "Somados, estes efeitos resultam em " + money.format(group.diferenca || 0) + ". O fechamento explica os valores; não confirma a causa nem os vínculos em análise." :
+          "Soma dos efeitos = " + money.format(group.diferenca || 0) + ". Vínculos em análise exigem confirmação." :
           "A composição não fecha com a conferência inicial. Revise a cobertura dos relatórios."));
       } else balance.appendChild(node("small", "", "Diferença = Razão considerado − resumo fiscal."));
       reader.appendChild(balance);
@@ -1595,7 +1594,7 @@
         const difference = match.acc ? match.difference : group.diferenca;
         cell(tr, difference == null ? "Não calculada" : money.format(difference), "fiscal-money");
       }));
-      if (matches.some(m => m.acc)) target.appendChild(node("p", "fiscal-doc-lookup-note", [...new Set(matches.filter(m => m.acc).map(m => m.note))].join(" ") + " Diferença do recorte = Razão identificado − resumo fiscal do acumulador. Consulte a conta para ver a diferença contábil completa."));
+      if (matches.some(m => m.acc)) target.appendChild(node("p", "fiscal-doc-lookup-note", [...new Set(matches.filter(m => m.acc).map(m => m.note))].join(" ") + " Recorte documental; consulte a conta para o total contábil."));
     }
     lookupInput.addEventListener("input", () => {
       lookupResults.replaceChildren();
