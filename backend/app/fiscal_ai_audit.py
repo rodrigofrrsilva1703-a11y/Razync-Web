@@ -77,6 +77,111 @@ def grounded_review_steps(item):
             + "3. Separe documentos pareados e ainda não vinculados; confirme o período e a conta usada antes de atribuir a causa ou propor ajuste.")
 
 
+_NOTE_NUMBERS = re.compile(
+    r"\b(?:NF(?:-?E)?|N\.?\s*F\.?|NOTAS?(?:\s+FISCA(?:L|IS))?|CTRC|CT\s*-?\s*E)"
+    r"\s*(?:N[º°.]\s*)?[:#.-]*\s*(\d+(?:[./]\d+)*(?:\s*(?:,|e)\s*\d+(?:[./]\d+)*)*)", re.I)
+
+
+def note_numbers(text):
+    return {re.sub(r"\D", "", number).lstrip("0") or "0" for match in _NOTE_NUMBERS.finditer(str(text or ""))
+            for number in re.findall(r"\d+(?:[./]\d+)*", match.group(1))}
+
+
+def local_review_sufficient(report):
+    """Caso objetivo: fiscal conciliado; só pagamentos fora da comparação.
+
+    Não conclui a natureza dos pagamentos nem propõe lançamentos. Se a cobertura
+    ou qualquer condição for incerta, deixa a conta seguir para a IA.
+    """
+    if len(report.get("contas", [])) != 1:
+        return False
+    account = report["contas"][0]
+    key = f'{account["conta"]}:{account["tipo"]}'
+    summary = report.get("resumo_documental", {}).get(key, {})
+    coverage = report.get("cobertura_documental", {}).get(key, {})
+    composition = summary.get("composicao", {})
+    rows = report.get("lancamentos", [])
+    if not (account.get("situacao") == "CONFERE COM ALERTAS" and account.get("diferenca") == 0
+            and summary.get("documentos_lidos", 0) > 0 and summary.get("conciliados") == summary.get("documentos_lidos")
+            and summary.get("documentos_pendentes") == 0 and coverage.get("amostra") is False
+            and coverage.get("lancamentos_enviados") == coverage.get("lancamentos_pendentes") == len(rows)
+            and rows and composition.get("confere_com_inicial") is True):
+        return False
+    if not all(re.search(r"\bpag[oa]|\bbaixa|\bliquida", str(row.get("historico", "")), re.I) for row in rows):
+        return False
+    values = {p["codigo"]: Decimal(str(p.get("valor", 0))) for p in composition.get("itens", [])}
+    return (all(values.get(k) == 0 for k in ("vinculados", "fiscal_sem_vinculo", "cobertura"))
+            and values.get("razao_sem_vinculo", 0) > 0
+            and values.get("fora_inicial") == -values["razao_sem_vinculo"])
+
+
+def protect_publication(item, rows, documents):
+    """Remove alegações inseguras localmente, sem repetir chamadas externas.
+
+    Fatos escritos pelo modelo não são publicados nem persistidos: a interface
+    e a exportação usam exclusivamente fatos calculados a partir das fontes.
+    """
+    raw = str(item.get("explicacao") or "")
+    _, sections = narrative_sections(raw)
+    source_notes = {str(d.get("nota", "")).lstrip("0") or "0" for d in documents if d.get("nota")}
+    source_notes |= {note for row in rows for note in note_numbers(row.get("historico", ""))}
+    quoted = raw + " " + str(item.get("verificar") or "")
+    unknown = note_numbers(quoted) - source_notes
+    reasons = list((item.get("checagem_semantica") or {}).get("motivos", []))
+    interpretation = sections.get("hipoteses", "") + " " + str(item.get("verificar") or "")
+    if _MONEY.search(interpretation) or (not sections.get("hipoteses") and _MONEY.search(raw)):
+        reasons.append("Valores monetários da narrativa foram retirados; consulte as diferenças e evidências calculadas pelo sistema.")
+    if unknown:
+        reasons.append("A resposta cita notas não comprovadas nas fontes desta conta: " + ", ".join(sorted(unknown)) + ".")
+    quoted_refs = set(re.findall(r"\bL\d+\b", quoted.upper()))
+    valid_refs = {str(row.get("referencia") or row.get("_referencia_ia") or "").upper() for row in rows}
+    if quoted_refs - valid_refs:
+        reasons.append("A resposta cita lançamentos fora das evidências desta conta.")
+    summary = item.get("resumo_documental") or {}
+    if summary.get("conciliados", 0) and re.search(r"nenhum[^.\n]{0,50}conciliad|(?:zero|0)\s+documentos?\s+conciliad", quoted, re.I):
+        reasons.append("A resposta contradiz documentos já conciliados pelo sistema.")
+    if summary.get("conciliados", 0) and summary.get("documentos_pendentes") == 0 and re.search(
+        r"documentos?[^.\n]{0,60}(?:ainda n[aã]o|n[aã]o foram|sem v[ií]nculo|n[aã]o vinculad)", quoted, re.I):
+        reasons.append("Os documentos fiscais desta conta já foram conciliados; o item em revisão é um movimento do Razão.")
+    reasons.extend(unsupported_scenarios(item, rows))
+    if contradicts_existing_entries(item):
+        reasons.append("A resposta sugere ausência de registros que já constam no Razão.")
+    if ungrounded_tax_explanation(item):
+        reasons.append("A causa tributária não está apoiada nas fontes da conta.")
+    if invalid_accumulator_lookup(item):
+        reasons.append("A instrução confunde acumulador fiscal com conta do Razão.")
+    hypothesis = sections.get("hipoteses") or raw
+    histories = " ".join(str(row.get("historico") or "") for row in rows)
+    for cause, evidence in (
+        (r"fretes?|encargos|despesas acess[oó]rias", r"frete|encargo|despesa acess[oó]ria"),
+        (r"arredondamento", r"arredond"),
+        (r"descontos?|abatimentos?", r"desconto|abatimento"),
+        (r"cancelamento|estorno", r"cancel|estorn"),
+    ):
+        if re.search(cause, hypothesis, re.I) and not re.search(evidence, histories, re.I):
+            reasons.append("A hipótese inclui uma causa sem registro correspondente nas fontes desta conta.")
+    if re.search(r"mapeamento|conta distinta|outra conta|contas distintas", hypothesis, re.I) and not any(
+        d.get("conta_razao_candidato") for d in documents
+    ) and not re.search(r"reclassifica|transfer[eê]ncia", histories, re.I):
+        reasons.append("Não há candidato em outra conta ou registro de reclassificação que sustente essa hipótese.")
+    # Nunca aceitar somas recalculadas pelo modelo, mesmo quando o número
+    # coincide com um total legítimo da conta (ex.: pagamentos da conta 361).
+    if re.search(r"totaliz\w*|somam\b|somando\b|soma (?:de|dos|das)", quoted, re.I):
+        reasons.append("As somas da narrativa foram retiradas; os totais exibidos são calculados pelo sistema.")
+    if reasons:
+        item["explicacao"] = ("Hipóteses: A causa ainda não está comprovada pelas evidências desta conta. "
+                              "Limitações: confirme os documentos e os vínculos apresentados pelo sistema antes de propor ajustes.")
+        item["verificar"] = grounded_review_steps(item)
+    elif sections.get("hipoteses"):
+        item["explicacao"] = "Hipóteses: " + sections["hipoteses"]
+        if sections.get("limitacoes"):
+            item["explicacao"] += "\n\nLimitações: " + sections["limitacoes"]
+    elif sections.get("fatos"):
+        item["explicacao"] = "Hipóteses: A resposta não forneceu uma interpretação separada dos fatos. Limitações: confira as evidências calculadas pelo sistema."
+    item["checagem_semantica"] = {"interpretacao_retirada": bool(reasons), "motivos": list(dict.fromkeys(reasons))}
+    return item
+
+
 def link_text_evidence(item, rows):
     """Vincula referências citadas somente quando pertencem às fontes da própria conta."""
     quoted = set(re.findall(r"\bL\d+\b", (str(item.get("explicacao") or "") + " " + str(item.get("verificar") or "")).upper()))
@@ -112,7 +217,7 @@ def unsupported_scenarios(item, rows):
             for number in re.findall(r"\b(?:nf|nfe|nota fiscal)\s*[:#.-]?\s*(\d+)\b", history, re.I):
                 notes[(number, str(row.get("contrapartida") or ""))] += 1
             if history:
-                signatures[(history, str(row.get("debito") or 0), str(row.get("credito") or 0), str(row.get("contrapartida") or ""))] += 1
+                signatures[(history, str(row.get("data") or ""), str(row.get("debito") or 0), str(row.get("credito") or 0), str(row.get("contrapartida") or ""))] += 1
         if not any(count > 1 for count in (*notes.values(), *signatures.values())):
             reasons.append("Não foi encontrado um par repetido de nota ou movimento nas fontes enviadas; a hipótese de duplicidade foi retirada.")
         elif any("duplic" in sentence.lower() and re.search(r"\b(?:há|houve|existe|ocorreu|confirmad[oa]|comprovad[oa]|constatad[oa]|confirmam|comprovam)\b", sentence, re.I)
@@ -189,6 +294,7 @@ def audit_analysis(item):
         alerts.append("A explicação sugere créditos tributários, retenções ou ajustes de apuração sem registro explícito nas evidências; essa causa não foi sustentada.")
     if unsupported:
         alerts.append("A resposta sugere omissão ou duplicidade como conclusão. A diferença de totais não comprova essa causa; confira os documentos.")
+    alerts.extend((item.get("checagem_semantica") or {}).get("motivos", []))
     return {
         "referencias_sem_evidencia": sorted(unlinked),
         "situacao": "revisao_necessaria" if alerts else "conferencia_assistida",
@@ -200,7 +306,7 @@ def audit_analysis(item):
     }
 
 
-ANALYSIS_VERSION = "grounded-depth-v7"
+ANALYSIS_VERSION = "grounded-isolated-v8"
 
 
 def narrative_sections(value):
@@ -459,7 +565,7 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
     return {"versao": ANALYSIS_VERSION, "fatos": facts,
             "analise_exibicao": display_text, "sugestoes_retiradas": scenario_issues,
             "leitura_comparacao": reading,
-            "observacoes": "" if tax_without_source and _TAX_CAUSE.search(sections.get("fatos", "")) else sections.get("fatos", ""),
+            "observacoes": "",
             "verificacoes": grounded_review_steps(item) if unsafe_narrative or invalid_accumulator_lookup(item) else str(item.get("verificar") or ""),
             "hipoteses": hypothesis or "A resposta não identifica hipóteses separadamente. Confira a interpretação da IA abaixo.",
             "interpretacao": text if not sections.get("hipoteses") and not tax_without_source else "",

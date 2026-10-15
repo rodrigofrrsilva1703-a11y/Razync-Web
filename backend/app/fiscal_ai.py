@@ -16,7 +16,7 @@ from fastapi.responses import Response
 from fastapi.concurrency import run_in_threadpool
 from app.fiscal_242 import conferencia_fiscal_preview
 from app.ai_budget import request_slot, daily_report
-from app.fiscal_ai_audit import audit_analysis, structured_analysis, link_text_evidence
+from app.fiscal_ai_audit import audit_analysis, structured_analysis, link_text_evidence, protect_publication, local_review_sufficient
 from app.fiscal_ai_strategy import REVIEW_PROMPT, output_budget, compact_summary
 from app.groq_fiscal import complete as _groq_completion, is_enabled as _groq_enabled, selected_model as _groq_model
 
@@ -729,6 +729,7 @@ def _validar_resposta_ia(result, report, mapping, references, *, groq=False, pro
         output[-1]["cobertura_documental"] = report.get("cobertura_documental", {}).get(f'{mapping[ident]["conta"]}:{mapping[ident]["tipo"]}', {})
         output[-1]["parecer"] = {"comparacoes_documentais": docs}
         link_text_evidence(output[-1], source_rows)
+        protect_publication(output[-1], source_rows, docs)
         output[-1]["parecer"] = structured_analysis(output[-1], source_rows,
             sent=min(10, len(rows)) if groq else len(rows),
             shortened=groq and any(len(str(row.get("historico") or "")) > 180 for row in rows),
@@ -742,6 +743,22 @@ def _validar_resposta_ia(result, report, mapping, references, *, groq=False, pro
 
 
 def explain(report, preferred_provider=None, *, only_openrouter=False, only_provider=None):
+    eligible = [row for row in report["contas"] if row["situacao"] != "CONFERE"]
+    if len(eligible) > 1:
+        # Também protege clientes antigos que chamam a análise sem sessões.
+        from app.fiscal_ai_sessions import _scope_report, _merge_results
+        results = [explain(_scope_report(report, [row]), preferred_provider,
+                           only_openrouter=only_openrouter, only_provider=only_provider) for row in eligible]
+        return _merge_results(results, eligible)
+    if local_review_sufficient(report):
+        context, mapping, references, coverage = detailed_context(report)
+        raw = {"analises": [{"grupo": next(iter(mapping)),
+            "explicacao": "Hipóteses: Os documentos fiscais desta conta já têm correspondência no cruzamento local. A revisão restante se refere a pagamentos separados na comparação inicial. Limitações: confirme a finalidade e o comprovante de cada pagamento antes de propor ajuste.",
+            "verificar": "1. Compare os pagamentos pendentes com os comprovantes e as contrapartidas.\n2. Confirme se representam liquidação de operações já registradas; não os some novamente ao fiscal sem identificar o documento.",
+            "evidencias": list(references)[:3]}]}
+        return {"analises": _validar_resposta_ia(raw, report, mapping, references, provider="local", model="regras_documentais"),
+                "provedor": "local", "modelo_usado": "regras_documentais", "gratuito": True,
+                "aviso": "Conferência por regras locais, sem chamada de IA.", "limite": coverage}
     openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
     gemini_key = _gemini_free_key()
     provider_choice = preferred_provider or os.getenv("RAZYNC_AI_PRIMARY", "openrouter")

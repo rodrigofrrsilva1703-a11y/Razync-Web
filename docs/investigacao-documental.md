@@ -53,3 +53,30 @@ sob controle dos provedores; não há promessa de 90 análises diárias.
 Validação: testes de datas, transporte, pendências depois de 300 correspondências,
 amostragem explícita, referências globais, sessão/cache, cancelamento e retomada.
 Os arquivos reais usados na conferência local não fazem parte do repositório.
+
+## Isolamento e publicação dos resultados
+
+Cada consulta externa recebe somente uma conta e uma natureza (entrada ou saída),
+mesmo quando a sessão agrupa duas contas em um lote. O sucesso de cada conta é
+salvo imediatamente: uma falha na seguinte não exige repetir a primeira consulta.
+Esse isolamento pode aumentar o número de chamadas novas por lote; o cache por
+conta e a conferência local evitam repetições e consultas desnecessárias.
+
+Quando todos os documentos fiscais já estão conciliados, a cobertura é completa,
+a diferença inicial é zero e a composição comprova que restam somente pagamentos
+separados na comparação inicial, o sistema apresenta uma conferência local sem
+chamar os provedores. Isso não determina a natureza do pagamento nem sugere ajuste.
+Qualquer condição incerta mantém a conta no fluxo de revisão por IA.
+
+Fatos, valores e contagens publicados vêm dos cálculos locais. A IA escreve apenas
+hipóteses e limitações curtas. Antes de exibir, exportar ou salvar no cache, o
+servidor retira interpretações que citam notas de outra conta, referências
+inexistentes, somas ou valores narrados pelo modelo, ou causas sem evidência nas
+fontes. A tela informa o motivo da retirada e mantém um roteiro de conferência.
+Essas verificações reduzem erros conhecidos, sem garantir o mérito contábil de uma
+hipótese. A versão `grounded-isolated-v8` invalida pareceres de versões anteriores.
+
+As regressões incluem notas cruzadas entre contas, somas incorretas, documentos já
+conciliados e pagamentos iguais em datas diferentes. Respostas reais previamente
+gravadas da empresa 242 também podem ser revalidadas localmente, sem reenviar os
+arquivos nem consumir novas chamadas dos provedores.

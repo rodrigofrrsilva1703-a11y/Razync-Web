@@ -6,12 +6,13 @@ REVIEW_PROMPT = (
     "Diferença = contábil considerado menos fiscal. Diferença zero não comprova origem fiscal; classificação é heurística. "
     "Conta, contrapartida e acumulador são códigos distintos. Observe datas, históricos, natureza e contrapartidas. "
     "PLANO DE RESPOSTA por grupo, sem introdução nem repetição dos totais: "
-    "divergência ou ausência no contábil: alvo de 130 a 200 palavras, máximo 220, incluindo verificações; "
-    "valores iguais com alertas: 60 a 100 palavras, máximo 120; conferida sem alerta: até 50 palavras. "
+    "divergência ou ausência no contábil: alvo de 80 a 130 palavras, máximo 150, incluindo verificações; "
+    "valores iguais com alertas: 40 a 70 palavras, máximo 90; conferida sem alerta: até 40 palavras. "
     "Use menos palavras quando não houver evidência suficiente; não preencha com hipóteses genéricas. "
-    "Em explicacao, use três parágrafos: Fatos: descreva o que os lançamentos mostram, "
-    "citando até 3 referências L com data, histórico ou contrapartida relevantes, sem repetir valores "
-    "já exibidos na tela. Hipóteses: explique como os indícios podem se relacionar à divergência; "
+    "Você recebe apenas uma conta e natureza. Não use notas de outra conta. "
+    "Os fatos, totais, contagens e somas são publicados diretamente pelo sistema. Não os reescreva; não cite valores R$ na narrativa nem nas verificações. "
+    "Em explicacao, use somente dois parágrafos: Hipóteses: explique como os indícios podem se relacionar à divergência, "
+    "citando até 3 referências L com histórico ou contrapartida relevantes; "
     "cite o indício que sustenta cada hipótese e o documento que a confirmaria. Não sugira duplicidade sem duas "
     "notas ou movimentos candidatos; pagamento não indica antecipação, ajuste interno ou duplicidade por si só. "
     "Limitações: diga qual documento ou informação falta para confirmar a causa. "
@@ -42,12 +43,12 @@ REVIEW_PROMPT = (
 def output_budget(groups):
     """Reserva saída conforme a situação, mantendo um teto por lote gratuito."""
     if isinstance(groups, int):
-        allowances = 1050 * max(1, groups)
+        allowances = 750 * max(1, groups)
     else:
-        allowances = sum(250 if group.get("situacao") == "CONFERE" else
-                         550 if group.get("situacao") == "CONFERE COM ALERTAS" else 1050
+        allowances = sum(200 if group.get("situacao") == "CONFERE" else
+                         400 if group.get("situacao") == "CONFERE COM ALERTAS" else 750
                          for group in groups)
-    return min(4096, 600 + max(250, allowances))
+    return min(4096, 400 + max(200, allowances))
 
 
 def compact_summary(summary):

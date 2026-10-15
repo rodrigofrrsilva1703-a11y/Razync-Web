@@ -200,8 +200,8 @@ def test_gemini_recebe_formatos_brl_e_devolve_valores_oficiais(monkeypatch):
     item = result["analises"][0]
     assert item["valores"]["fiscal"] == 9123.45
     assert item["valores"]["diferenca"] == -9123.45
-    assert item["explicacao"] == "Falta R$ 9.123,45."
-    assert item["verificar"] == "Verifique R$ 9.123,45."
+    assert item["checagem_semantica"]["interpretacao_retirada"]
+    assert "R$" not in item["explicacao"] + item["verificar"]
 
 
 def test_gemini_devolve_codigos_originais_de_acumuladores_e_conta(monkeypatch):
@@ -273,7 +273,7 @@ def test_gemini_exige_analise_didatica_com_limites_e_verificacoes(monkeypatch):
     def confirmar_instrucoes(req, timeout):
         dados = json.loads(req.data)
         prompt = dados["systemInstruction"]["parts"][0]["text"]
-        assert "três parágrafos" in prompt
+        assert "dois parágrafos" in prompt
         assert "Hipóteses:" in prompt and "Limitações:" in prompt
         assert "Revise ortografia" in prompt
         assert "2 ou 3 passos numerados" in prompt

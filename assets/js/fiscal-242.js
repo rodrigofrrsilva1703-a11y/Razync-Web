@@ -302,8 +302,9 @@
       (value < 0 ? " abaixo do fiscal." : " acima do fiscal.");
   }
   function aiSourceLabel(item) {
-    const names = {groq:"Groq",gemini:"Gemini",openrouter:"OpenRouter"};
+    const names = {groq:"Groq",gemini:"Gemini",openrouter:"OpenRouter",local:"Conferência local"};
     const name = names[item.provedor] || "IA não identificada";
+    if (item.provedor === "local") return name + " · sem chamada de IA";
     return name + (item.modelo_usado ? " · " + item.modelo_usado : "");
   }
   function responsePoints(textValue) {
@@ -685,7 +686,7 @@
         analises:ordered.flatMap(result => result.analises),
         grupos_pendentes:pending,
         provedor:actualProviders.length > 1 ? "cooperacao" : actualProviders[0],
-        nomes_provedores:actualProviders.map(provider => provider === "groq" ? "Groq" : provider === "gemini" ? "Gemini" : "OpenRouter").join(" + "),
+        nomes_provedores:actualProviders.map(provider => provider === "local" ? "Conferência local" : provider === "groq" ? "Groq" : provider === "gemini" ? "Gemini" : "OpenRouter").join(" + "),
         gratuito:ordered.every(result => result.gratuito === true),
         modelo_usado:[...new Set(ordered.map(result => result.modelo_usado).filter(Boolean))].join("; "),
         fallback_usado:ordered.some(result => result.fallback_usado),
@@ -801,6 +802,8 @@
         aiProvider.textContent = "OpenRouter · gratuito";
       } else if (result.provedor === "groq") {
         aiProvider.textContent = "GroqCloud · gratuito";
+      } else if (result.provedor === "local") {
+        aiProvider.textContent = "Conferência local · sem chamada de IA";
       }
       aiExport.disabled = !(Array.isArray(result.analises) && result.analises.length);
       const providerLabel = result.provedor === "cooperacao" ? (result.nomes_provedores || "Gemini + Groq") : result.provedor === "groq" ? "GroqCloud" : result.provedor === "openrouter" ? "OpenRouter" : result.provedor === "gemini" ? "Gemini" : "IA";

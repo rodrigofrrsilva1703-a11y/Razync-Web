@@ -75,7 +75,7 @@ def test_lote_concluido_e_cacheado_sem_gastar_tokens_novamente(monkeypatch):
     monkeypatch.setattr(fiscal_ai, "explain", lambda source, **k: calls.append(1) or {"analises": [{"conta": r["conta"]} for r in source["contas"]], "provedor":"groq"})
     first = sessions.process(manifest["sessao"], 0)
     assert sessions.process(manifest["sessao"], 0) == first
-    assert calls == [1]
+    assert calls == [1, 1]  # Uma chamada isolada por conta; repetir não chama a IA.
 
 
 def test_falha_nao_descarta_outro_lote_e_pode_ser_repetida(monkeypatch):
@@ -170,7 +170,7 @@ def test_api_le_arquivos_uma_vez_e_cacheia_resultado(monkeypatch):
         assert response.status_code == 200
         assert response.headers["cache-control"] == "no-store"
     assert read_calls == [1]
-    assert ai_calls == ["groq", "gemini"]
+    assert ai_calls == ["groq", "groq", "gemini", "gemini"]
     assert client.delete(f"/api/v1/conferencia-fiscal/ia/sessoes/{token}").status_code == 200
     assert client.post(f"/api/v1/conferencia-fiscal/ia/sessoes/{token}/lotes/0").status_code == 410
 
@@ -229,7 +229,7 @@ def test_reserva_valida_so_lote_pendente_e_cache_nao_reenvia(monkeypatch):
     first = sessions.process(manifest["sessao"], 0)
     assert first["provedor"] == "openrouter" and first["fallback_usado"] is True
     assert sessions.process(manifest["sessao"], 0) == first
-    assert seen == ["groq", "openrouter"]
+    assert seen == ["groq", "openrouter", "openrouter"]
 
 
 def test_sessao_nao_ativa_gemini_legado_sem_confirmacao_gratuita(monkeypatch):
@@ -274,7 +274,7 @@ def test_cache_entre_sessoes_reutiliza_sem_nova_chamada(monkeypatch):
     second = sessions.prepare(report(2))
     cached = sessions.process(second["sessao"], 0)
     assert cached["cache_reutilizado"] is True
-    assert len(calls) == 1
+    assert len(calls) == 2
 
 
 def test_resposta_incompleta_rejeitada_sem_cache(monkeypatch):
@@ -314,7 +314,7 @@ def test_alterar_uma_conta_reusa_outra_mesmo_em_outro_lote(monkeypatch):
     changed["contas"] = list(reversed(changed["contas"]))
     repeated = sessions.prepare(changed)
     results = [sessions.process(repeated["sessao"],i) for i in (0,1)]
-    assert calls == [["0","1"],["2","3"],["0"]]
+    assert calls == [["0"],["1"],["2"],["3"],["0"]]
     assert sum(len(result["analises"]) for result in results) == 4
 
 
@@ -330,7 +330,7 @@ def test_nao_reutiliza_parecer_de_outra_empresa(monkeypatch):
         manifest = sessions.prepare(source)
         sessions.process(manifest["sessao"],0)
         sessions.discard(manifest["sessao"])
-    assert len(calls) == 2
+    assert len(calls) == 4
 
 
 def test_duas_pessoas_com_mesma_conta_nao_duplicam_chamada(monkeypatch):
@@ -356,7 +356,7 @@ def test_duas_pessoas_com_mesma_conta_nao_duplicam_chamada(monkeypatch):
             release.set()
         future.result(timeout=5)
     assert sessions.process(second["sessao"],0)["cache_reutilizado"]
-    assert calls == [1]
+    assert calls == [1, 1]
 
 
 def test_provedor_com_fila_cheia_e_reserva_nao_primeira_opcao(monkeypatch):

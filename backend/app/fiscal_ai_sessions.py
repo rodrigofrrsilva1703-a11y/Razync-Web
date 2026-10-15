@@ -37,8 +37,10 @@ def _scope_report(report, accounts):
         "empresa_codigo", "empresa_nome", "filial_aplicada", "periodo_fiscal",
         "periodo_razao", "fonte_fiscal", "escopo_razao", "avisos") if key in report}
     codes = {row["conta"] for row in accounts}
+    identities = {_group_id(row) for row in accounts}
     scoped.update(contas=accounts, lancamentos=[row for row in report.get("lancamentos", [])
-                                               if row.get("conta") in codes])
+                                               if row.get("conta") in codes and
+                                               ("_tipo_ia" not in row or (str(row["conta"]), row["_tipo_ia"]) in identities)])
     keys = {f'{row["conta"]}:{row["tipo"]}' for row in accounts}
     for field in ("documentos_pendentes", "cobertura_documental", "resumo_documental"):
         if field in report:
@@ -177,6 +179,7 @@ def _refresh_cached_review(result, report):
         item["cobertura_documental"] = report.get("cobertura_documental", {}).get(key, {})
         item.setdefault("parecer", {})["comparacoes_documentais"] = report.get("documentos_pendentes", {}).get(key, [])
         fiscal_ai.link_text_evidence(item, rows)
+        fiscal_ai.protect_publication(item, rows, item["parecer"]["comparacoes_documentais"])
         item["parecer"] = fiscal_ai.structured_analysis(item, rows,
             sent=min(10, len(rows)) if groq else len(rows),
             shortened=groq and any(len(str(row.get("historico") or "")) > 180 for row in rows),
@@ -185,6 +188,40 @@ def _refresh_cached_review(result, report):
             f'{item["conta"]}:{item.get("tipo", "")}', [])
         item["auditoria"] = fiscal_ai.audit_analysis(item)
     return refreshed
+
+
+def _review_accounts(report, provider):
+    """Uma conta/natureza por consulta; preserva sucesso antes de uma falha."""
+    results = []
+    reused = 0
+    for account in report["contas"]:
+        scoped = _scope_report(report, [account])
+        digest = _cache_digest(scoped)
+        with _guard:
+            _prune_cache()
+            saved = _completed_cache.get(digest)
+            stored = saved["result"] if saved else ai_result_cache.read(digest)
+        if stored is not None:
+            results.append(_refresh_cached_review(stored, scoped))
+            reused += 1
+            continue
+        answer = fiscal_ai.explain(scoped, preferred_provider=provider, only_provider=provider)
+        analyses = answer.get("analises") if isinstance(answer, dict) else None
+        if not isinstance(analyses, list) or len(analyses) != 1 or not isinstance(analyses[0], dict):
+            raise HTTPException(502, "A IA não devolveu a conta solicitada.")
+        item = analyses[0]
+        if "tipo" not in item and str(item.get("conta")) == str(account["conta"]):
+            item = dict(item, tipo=account["tipo"])
+        if "conta" not in item or _group_id(item) != _group_id(account):
+            raise HTTPException(502, "A resposta da IA pertence a outra conta ou natureza.")
+        item = dict(item, provedor=answer.get("provedor"), modelo_usado=answer.get("modelo_usado"))
+        answer = dict(answer, analises=[item])
+        with _guard:
+            _completed_cache[digest] = {"result": copy.deepcopy(answer), "expires": time.monotonic() + CACHE_SECONDS}
+            if "auditoria" in item:
+                ai_result_cache.write(digest, answer)
+        results.append(answer)
+    return dict(_merge_results(results, report["contas"]), contas_reutilizadas=reused)
 
 
 def process(token, batch_id):
@@ -247,7 +284,7 @@ def process(token, batch_id):
                     continue
                 session["active_providers"].add(provider)
             try:
-                result = fiscal_ai.explain(work_report, preferred_provider=provider, only_provider=provider)
+                result = _review_accounts(work_report, provider)
                 expected = {_group_id(row) for row in work_report["contas"]}
                 analyses = result.get("analises") if isinstance(result, dict) else None
                 if not isinstance(analyses, list) or len(analyses) != len(expected):
@@ -277,19 +314,19 @@ def process(token, batch_id):
             if waiting:
                 raise HTTPException(429, "As IAs de reserva estão ocupadas. Aguarde a fila; os lotes concluídos foram preservados.", headers={"Retry-After": "15"})
             raise failure or HTTPException(429, "As IAs gratuitas estão ocupadas. Os lotes concluídos foram preservados.", headers={"Retry-After": "15"})
-        result = dict(result, analises=[dict(item, provedor=result.get("provedor"),
-                                          modelo_usado=result.get("modelo_usado")) for item in result["analises"]])
+        result = dict(result, analises=[dict(item, provedor=item.get("provedor") or result.get("provedor"),
+                                          modelo_usado=item.get("modelo_usado") or result.get("modelo_usado")) for item in result["analises"]])
         with _guard:
             for item in result["analises"]:
                 account = next(row for row in pending if _group_id(row) == _group_id(item))
                 digest = _cache_digest(_scope_report(batch["report"], [account]))
-                single = dict(result, analises=[copy.deepcopy(item)])
+                single = dict(result, analises=[copy.deepcopy(item)], provedor=item.get("provedor"), modelo_usado=item.get("modelo_usado"))
                 _completed_cache[digest] = {"result": single, "expires": time.monotonic() + CACHE_SECONDS}
                 if "auditoria" in item:
                     ai_result_cache.write(digest, single)
             if reused:
                 result = dict(_merge_results([*reused, result], batch["report"]["contas"]),
-                              contas_reutilizadas=len(reused))
+                              contas_reutilizadas=len(reused) + result.get("contas_reutilizadas", 0))
             batch["result"] = result
             _prune_cache()
             _completed_cache[batch["digest"]] = {

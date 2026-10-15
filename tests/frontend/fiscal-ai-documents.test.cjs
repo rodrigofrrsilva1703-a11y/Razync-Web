@@ -3,6 +3,13 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync('assets/js/fiscal-242.js','utf8');
+
+test('parecer local tem identificação própria e não exibe modelo de IA',()=>{
+  const context={};vm.createContext(context);
+  vm.runInContext(source.slice(source.indexOf('  function aiSourceLabel('),source.indexOf('  function responsePoints(')),context);
+  assert.equal(context.aiSourceLabel({provedor:'local',modelo_usado:'regras_documentais'}),'Conferência local · sem chamada de IA');
+  assert.equal(context.aiSourceLabel({provedor:'gemini',modelo_usado:'flash-lite'}),'Gemini · flash-lite');
+});
 test('a IA principal inclui os anexos e reaproveita a mesma requisição até mudar as fontes',()=>{
   class Body {constructor(){this.values=[];}append(...pair){this.values.push(pair);}entries(){return this.values.values();}}
   const base=new Body();base.append('acumuladores','fiscal');base.append('razao','razao');base.append('filial','242');
