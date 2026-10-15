@@ -47,7 +47,7 @@ def test_1240_linhas_geram_diagnostico_por_tipo_e_nao_resumo_repetitivo():
     reading = result["leitura_comparacao"]
     assert item == snapshot
     assert reading["documental_especifico"] is True
-    assert "11 documento(s) fiscais e 18 movimento(s)" in reading["resultado"]
+    assert "11 documentos fiscais e 18 movimentos contábeis" in reading["resultado"]
     assert "valor divergente (4)" in reading["resultado"].lower()
     assert not any("IA recebeu" in message or "O sistema cruzou" in message
                    for message in reading["observacoes"])
