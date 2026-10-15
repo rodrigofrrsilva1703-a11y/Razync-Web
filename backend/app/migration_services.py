@@ -297,7 +297,19 @@ def _workflow(code, roles, options):
             uploads = roles.get('consolidada', [])
             if not uploads:
                 raise ValueError('Envie a planilha consolidada.')
-            parsers = {'Itaú': engine.processar_nova_geracao_itau, 'Bradesco': engine.processar_nova_geracao_bradesco, 'Fibra': engine.processar_nova_geracao_fibra} if code == 266 else {'Itaú': engine.processar_nova_geracao_filial_itau, 'Bradesco': engine.processar_nova_geracao_filial_bradesco}
+            if code == 266:
+                from app.nova_geracao_bb_266 import ABA_MODELO, processar_nova_geracao_bb_266
+                parsers = {
+                    'Itaú': engine.processar_nova_geracao_itau,
+                    'Bradesco': engine.processar_nova_geracao_bradesco,
+                    'Fibra': engine.processar_nova_geracao_fibra,
+                    'Banco do Brasil': processar_nova_geracao_bb_266,
+                }
+            else:
+                parsers = {
+                    'Itaú': engine.processar_nova_geracao_filial_itau,
+                    'Bradesco': engine.processar_nova_geracao_filial_bradesco,
+                }
             data = {}
             errors = []
             selected_banks = normalize_selected_banks(options.get('bancos'))
@@ -314,7 +326,8 @@ def _workflow(code, roles, options):
                             raise ValueError(f'{bank}: {exc}') from exc
                         errors.append(f'{bank}: {exc}')
                 if principal:
-                    data[bank] = {'principal': pd.concat(principal, ignore_index=True).sort_values('DATA',kind='stable'), 'retirados': pd.concat(removed, ignore_index=True).sort_values('DATA',kind='stable')}
+                    sheet = ABA_MODELO if code == 266 and bank == 'Banco do Brasil' else bank
+                    data[sheet] = {'principal': pd.concat(principal, ignore_index=True).sort_values('DATA',kind='stable'), 'retirados': pd.concat(removed, ignore_index=True).sort_values('DATA',kind='stable')}
             if not data:
                 raise ValueError('; '.join(errors))
             return engine.gerar_excel_nova_geracao(data, _template_bytes(), prefixar_historicos=False), f'RAZYNC_{code}_MODELO_DOMINIO.xlsx'
