@@ -178,6 +178,14 @@ def _refresh_cached_review(result, report):
         item["resumo_documental"] = report.get("resumo_documental", {}).get(key, {})
         item["cobertura_documental"] = report.get("cobertura_documental", {}).get(key, {})
         item.setdefault("parecer", {})["comparacoes_documentais"] = report.get("documentos_pendentes", {}).get(key, [])
+        # O dossiê e as prioridades permanecem atualizados no reaproveitamento,
+        # sem solicitar novas inferências nem confiar em informações antigas.
+        from app.fiscal_ai_dossier import build_dossier
+        account = next((row for row in report.get("contas", [])
+                        if _group_id(row) == _group_id(item)), item)
+        item["dossie_contabil"] = build_dossier(
+            account, rows, item["parecer"]["comparacoes_documentais"],
+            item["resumo_documental"], item["cobertura_documental"])
         fiscal_ai.link_text_evidence(item, rows)
         fiscal_ai.protect_publication(item, rows, item["parecer"]["comparacoes_documentais"])
         item["parecer"] = fiscal_ai.structured_analysis(item, rows,
