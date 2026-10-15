@@ -150,26 +150,75 @@ def documentary_reading(item, docs, old_reading):
         if isinstance(part, dict) and abs(_amount(part.get("valor"))) >= Decimal("0.005")
     ][:5]
 
+    # Uma verificação por TIPO de problema, não uma frase repetida
+    # para cada nota. Os exemplos são evidências reais, não novas hipóteses.
+    by_status = {}
+    for doc in docs:
+        status = _text(doc.get("situacao")).upper()
+        if status in LABELS:
+            ref = _text(doc.get("referencia"), 48)
+            if ref and all(_text(existing.get("referencia")) != ref
+                           for existing in by_status.get(status, [])):
+                by_status.setdefault(status, []).append(doc)
+
     actions = []
-    for entry in highlights[:3]:
-        parts = [entry["documento"]]
-        if entry["conta_candidata"]:
-            parts.append("possível registro em outra conta " + entry["conta_candidata"])
-        if entry["data"]:
-            parts.append(entry["data"])
+    for status in PRIORITY:
+        selected = by_status.get(status, [])
+        if not selected or len(actions) >= 3:
+            continue
+        total_for_status = int(all_statuses.get(status, len(selected)) or len(selected))
+        count = max(len(selected), total_for_status)
+        label = LABELS[status]
+        title = f"{label} — {count} {'documento' if count == 1 else 'documentos'}"
+        examples = []
+        for doc in selected[:4]:
+            note = _text(doc.get("nota"), 48)
+            serie = _text(doc.get("serie"), 30)
+            ref = _text(doc.get("referencia"), 48)
+            heading = ("NF " + note) if note else ("Documento " + ref)
+            if serie:
+                heading += " · série " + serie
+            heading += " (" + ref + ")"
+            parts = []
+            if doc.get("valor_brl"):
+                parts.append("Fiscal: " + _text(doc["valor_brl"], 48))
+            if doc.get("valor_razao_candidato_brl"):
+                parts.append("Razão candidato: " + _text(doc["valor_razao_candidato_brl"], 48))
+            if doc.get("diferenca_candidato_brl"):
+                parts.append("Diferença entre candidatos: " + _text(doc["diferenca_candidato_brl"], 48))
+            if doc.get("conta_razao_candidato"):
+                parts.append("Conta candidata: " + _text(doc["conta_razao_candidato"], 30))
+            if doc.get("data_razao_candidato"):
+                parts.append("Data no Razão: " + _text(doc["data_razao_candidato"], 20))
+            if doc.get("data"):
+                parts.append("Data fiscal: " + _text(doc["data"], 20))
+            if doc.get("razao_id"):
+                parts.append("Referência do Razão: " + _text(doc["razao_id"], 48))
+            examples.append({"referencia": ref, "titulo": heading,
+                             "detalhes": " · ".join(parts),
+                             "valor_candidato_disponivel": bool(doc.get("valor_razao_candidato_brl"))})
+        advice = CHECKS[status]
+        if status == "VALOR_DIFERENTE" and not any(
+                example["valor_candidato_disponivel"] for example in examples):
+            advice = ("A amostra não contém o valor do lançamento contábil candidato. "
+                      "Localize a contrapartida no Razão e confronte os valores; não presuma parcelas ou estornos.")
         actions.append({
-            "acao": "Verifique " + " · ".join(parts) + f" ({entry['referencia']})",
-            "objetivo": entry["como_verificar"],
+            "categoria": status, "quantidade": count,
+            "acao": title,
+            "objetivo": advice,
+            "documentos": examples,
+            "amostra": count > len(selected) or bool(coverage.get("amostra")),
         })
     if not actions and pending:
         actions.append({
-            "acao": "Identifique as notas ainda pendentes dos acumuladores " + str(item.get("acumuladores") or "da conta"),
-            "objetivo": "Levante número, série, data e valor dos documentos pendentes e pesquise os registros correspondentes nas contas do Razão.",
+            "acao": "Localize os documentos fiscais sem correspondência confirmada",
+            "objetivo": "Identifique as notas pendentes por número, série, valor e competência e pesquise os respectivos lançamentos no Razão.",
         })
     if ledger and len(actions) < 3:
         actions.append({
-            "acao": f"Revise os {ledger} movimentos contábeis sem vínculo confirmado",
-            "objetivo": "Separe reconhecimento da operação, liquidações e eventuais estornos usando os históricos e contrapartidas.",
+            "acao": f"Analise os {ledger} movimentos do Razão sem vínculo confirmado",
+            "objetivo": ("Separe reconhecimento, liquidação e eventuais estornos pelos históricos e contrapartidas. "
+                         "A falta de correspondência nesta amostra não demonstra ausência de nota fiscal."),
         })
     if not actions:
         actions = list(old_reading.get("orientacoes") or [])[:2]
