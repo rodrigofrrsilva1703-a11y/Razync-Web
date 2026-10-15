@@ -118,3 +118,21 @@ def test_sem_resumo_documental_preserva_leitura_original():
     item = {"conta": "200", "tipo": "ENTRADAS"}
     original = {"resultado": "Sem resumo documental", "orientacoes": []}
     assert documentary_reading(item, [], original) is original
+
+
+def test_exportacao_excel_traz_notas_prioritarias_sem_texto_generico():
+    import io
+    from openpyxl import load_workbook
+    from app.fiscal_ai import gerar_excel_analise
+
+    item = sample_item()
+    item["descricao"] = "Serviços de terceiros"
+    item["situacao"] = "REVISAR"
+    item["parecer"].update(structured_analysis(item, [], documentary=True))
+    workbook = load_workbook(io.BytesIO(gerar_excel_analise({"analises": [item]})))
+    explanation = workbook["Análises IA"]["J6"].value
+    assert "NF 93218" in explanation
+    assert "NF 90702" in explanation
+    assert "R$ 760,49" in explanation
+    assert "A causa ainda não está comprovada pelas evidências" not in explanation
+    assert "E-30" in workbook["Análises IA"]["K6"].value
