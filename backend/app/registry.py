@@ -29,7 +29,7 @@ CAPABILITIES = {
         "status": "api_ready",
         "workflow": "advanced",
         "roles": [{"name": "consolidada", "label": "Planilha consolidada", "accept": ".xls,.xlsx", "multiple": False}],
-        "banks": {"itau": "", "bradesco": "", "fibra": ""},
+        "banks": {"itau": "", "bradesco": "", "fibra": "", "banco_brasil": "8"},
     },
     285: {
         "status": "api_ready",
@@ -155,7 +155,7 @@ CAPABILITIES[1248] = {'status':'api_ready','workflow':'advanced','banks':{'itau'
 # Accounts confirmed in the original modules/pages; never infer unknown accounts.
 CAPABILITIES[626]['banks'] = {'banco_brasil': '8', 'sicredi': '1155'}
 CAPABILITIES[625]['banks']['caixa'] = '504'
-CAPABILITIES[266]['banks'] = {'itau': '508', 'bradesco': '9', 'fibra': '506'}
+CAPABILITIES[266]['banks'] = {'itau': '508', 'bradesco': '9', 'fibra': '506', 'banco_brasil': '8'}
 CAPABILITIES[1396]['banks'] = {'itau': '515', 'bradesco': '514'}
 CAPABILITIES[1211]['banks'] = {'itau': '508'}
 # A matriz 242 usa os três relatórios bancários e período opcional.
