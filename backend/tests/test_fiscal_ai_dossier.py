@@ -127,8 +127,8 @@ def test_resposta_revisada_usa_verificacao_da_nota_em_outra_conta():
     assert result["valores"]["fiscal"] == 2300
     assert result["dossie_contabil"]["documentos"]["candidatos_a_verificar"][0]["nota"] == "90702"
     steps = result["parecer"]["leitura_comparacao"]["orientacoes"]
-    assert "E-9" in steps[0]["acao"]
-    assert "outra conta" in steps[0]["acao"]
+    assert steps[0]["documentos"][0]["referencia"] == "E-9"
+    assert "outra conta" in steps[0]["objetivo"]
     assert "377" in result["parecer"]["analise_exibicao"]
     assert result["auditoria"]["situacao"] in {"conferencia_assistida", "revisao_necessaria"}
 
