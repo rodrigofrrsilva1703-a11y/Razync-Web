@@ -76,7 +76,7 @@ test('composição do total destaca efeitos não nulos e mantém os sinais',()=>
   const amounts=all(byClass('fiscal-doc-balance-lines')).filter(el=>el.tag==='strong').map(el=>el.textContent);
   assert.match(amounts[0],/\+ R\$/);
   assert.match(amounts[1],/-R\$/);
-  assert.match(all(byClass('fiscal-doc-balance-head')).find(el=>el.tag==='strong').textContent,/1\.000,00/);
+  assert.match(all(byClass('fiscal-doc-total-difference')).find(el=>el.tag==='strong').textContent,/1\.000,00/);
 });
 
 test('busca por conta exibe fiscal, Razão considerado e diferença sem depender do filtro de pendências',()=>{

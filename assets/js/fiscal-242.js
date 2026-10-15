@@ -1417,12 +1417,13 @@
       reader.append(node("small", "fiscal-doc-eyebrow", group.tipo + " · CONTA " + group.conta),
         node("h4", "", group.descricao || "Cruzamento documental"));
       const balance = node("div", "fiscal-doc-balance");
-      const balanceHead = node("div", "fiscal-doc-balance-head");
-      balanceHead.append(node("span", "", "Conta " + group.conta + " · diferença inicial"), node("strong", "", money.format(group.diferenca || 0)));
-      balance.appendChild(balanceHead);
+      balance.appendChild(node("small", "fiscal-doc-balance-caption", "CONFERÊNCIA INICIAL · CONTA " + group.conta));
       const totals = node("div", "fiscal-doc-comparison-totals");
-      [["Resumo fiscal", group.fiscal], ["Razão considerado", group.contabil]].forEach(([label, value]) => {
-        const total = node("div"); total.append(node("small", "", label), node("strong", "", money.format(value || 0))); totals.appendChild(total);
+      [["Fiscal", group.fiscal], ["Razão considerado", group.contabil], ["Diferença", group.diferenca]].forEach(([label, value], index) => {
+        const total = node("div", index === 2 ? "fiscal-doc-total-difference" : "");
+        total.append(node("small", "", label), node("strong", "", money.format(value || 0)));
+        if (index === 2) total.appendChild(node("small", "fiscal-doc-difference-direction", Math.abs(value || 0) < .005 ? "Sem diferença" : value > 0 ? "Acima do fiscal" : "Abaixo do fiscal"));
+        totals.appendChild(total);
       });
       balance.append(totals, node("small", "", "Razão − fiscal · Entradas: débitos · Saídas: créditos."));
       if (group.composicao) {
