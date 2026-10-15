@@ -1605,7 +1605,7 @@
         link.download = "investigacao-conta-" + group.conta + "-" + group.tipo.toLowerCase() + ".csv";
         link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
       });
-      if (accumulatorCode) { input.value = accumulatorCode; select.value = "all"; }
+      if (accumulatorCode) select.value = "all";
       paint();
     }
     lookupInput.addEventListener("input", () => {
@@ -1635,7 +1635,7 @@
         if (matches.length > 1) lookupResults.appendChild(node("p", "fiscal-doc-query-status", matches.length + " resultados. Selecione a conta e o tipo na lateral."));
         const selected = matches.find(match => match.group === active) || matches[0];
         // Uma busca exata abre o recorte sem exigir mais um clique, preservando o foco na pesquisa.
-        if (exactAccounts.length || exactAccumulators.length || !matchingGroups.has(active)) selectAccount(selected.group, selected.acc ? String(selected.acc.codigo) : "");
+        selectAccount(selected.group, selected.acc ? String(selected.acc.codigo) : "");
       } else lookupResults.appendChild(node("p", "fiscal-doc-empty", "Nenhuma conta ou acumulador encontrado entre os investigados. Limpe a consulta para voltar aos documentos."));
     });
     groups.forEach(group => {

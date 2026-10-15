@@ -102,7 +102,7 @@ test('busca por acumulador mostra o Razão identificado e abre todos os document
   assert.match(byClass('fiscal-doc-document-title').textContent,/1152/);
   const lookup=byClass('fiscal-doc-lookup-input'); lookup.value='acumulador 1152'; lookup.events.input();
   assert.equal(all(byClass('fiscal-doc-lookup-results')).filter(el=>el.tag==='table').length,0);
-  assert.equal(byClass('fiscal-doc-search').value,'1152');
+  assert.equal(byClass('fiscal-doc-search').value,'');
   assert.equal(all().filter(el=>el.className==='fiscal-doc-search-totals').length,0);
 });
 
@@ -115,6 +115,8 @@ test('pesquisar uma nota dentro do acumulador mantém os totais e a lista no mes
   assert.match(byClass('fiscal-doc-caption').textContent,/de 1 registros/);
   assert.match(all(byClass('fiscal-doc-comparison-totals')).filter(el=>el.tag==='strong')[1].textContent,/111\.000,00/);
   assert.match(byClass('fiscal-doc-filter').children.find(el=>el.value==='all').textContent,/1100/);
+  lookup.value='Compras';lookup.events.input();
+  assert.match(byClass('fiscal-doc-balance-caption').textContent,/CONFERÊNCIA INICIAL/);
 });
 
 test('totais, contagens, cobertura e exportação usam apenas o acumulador selecionado',async()=>{
