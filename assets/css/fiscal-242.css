@@ -2045,3 +2045,57 @@
   .fiscal-investigation-accumulator { flex-direction: column; }
   .fiscal-investigation-accumulator-amount { text-align: left; }
 }
+
+
+/* Parecer específico da IA: notas e candidatos, sem repetir cartões de métricas. */
+#fiscalView .fiscal-ai-document-highlights {
+  display:grid;
+  gap:9px;
+  margin:10px 0 17px;
+}
+#fiscalView .fiscal-ai-document-highlight {
+  padding:12px 13px;
+  border:1px solid #dce5ee;
+  border-left:3px solid #7495b5;
+  border-radius:7px;
+  background:#fff;
+  min-width:0;
+}
+#fiscalView .fiscal-ai-document-highlight-heading {
+  display:flex;justify-content:space-between;align-items:baseline;
+  flex-wrap:wrap;gap:5px 14px;color:#23445f;font-size:12px;
+}
+#fiscalView .fiscal-ai-document-highlight-heading span {
+  font-size:11px;color:#76889a;font-variant-numeric:tabular-nums;
+}
+#fiscalView .fiscal-ai-document-highlight p {
+  margin:5px 0 0;line-height:1.6;font-size:12px;overflow-wrap:anywhere;
+}
+#fiscalView .fiscal-ai-document-highlight-reason {
+  color:#395d81;font-weight:650;
+}
+#fiscalView .fiscal-ai-document-highlight-details {color:#526a80;}
+#fiscalView .fiscal-ai-document-highlight-action {color:#334c64;}
+#fiscalView .fiscal-ai-impact-details {
+  margin:12px 0;padding:10px 13px;
+  border:1px solid #e0e8ef;border-radius:8px;
+}
+#fiscalView .fiscal-ai-impact-details summary {
+  cursor:pointer;color:#385979;font-size:12px;font-weight:650;
+}
+#fiscalView .fiscal-ai-impact-details ul {
+  list-style:none;padding:6px 0 0;margin:0;display:grid;gap:0;
+}
+#fiscalView .fiscal-ai-impact-details li {
+  display:flex;justify-content:space-between;align-items:start;gap:12px;
+  border-bottom:1px solid #edf1f6;padding:7px 0;
+  font-size:12px;color:#52677b;
+}
+#fiscalView .fiscal-ai-impact-details li:last-child {border:0;}
+#fiscalView .fiscal-ai-impact-details li strong {
+  color:#24445f;white-space:nowrap;font-variant-numeric:tabular-nums;
+}
+@media(max-width:650px){
+  #fiscalView .fiscal-ai-document-highlight{padding:10px 11px;}
+  #fiscalView .fiscal-ai-impact-details li{flex-direction:column;gap:3px;}
+}
