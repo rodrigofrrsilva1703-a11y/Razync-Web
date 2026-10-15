@@ -121,21 +121,25 @@ def documentary_reading(item, docs, old_reading):
             for status in PRIORITY if count[status]
         ]
 
+    doc_noun = "documento fiscal" if pending == 1 else "documentos fiscais"
+    ledger_noun = "movimento contábil" if ledger == 1 else "movimentos contábeis"
     if pending and ledger:
-        headline = f"{pending} documento(s) fiscais e {ledger} movimento(s) contábeis ainda exigem verificação de vínculo."
+        headline = f"{pending} {doc_noun} e {ledger} {ledger_noun} precisam de verificação de vínculo."
     elif pending:
-        headline = f"{pending} documento(s) fiscais continuam sem vínculo confirmado nesta conta."
+        headline = f"{pending} {doc_noun} continuam sem vínculo confirmado nesta conta."
     elif ledger:
-        headline = f"{ledger} movimento(s) do Razão permanecem para identificar ou justificar nesta conta."
+        headline = f"{ledger} {ledger_noun} permanecem para identificar ou justificar nesta conta."
     else:
-        headline = "Os documentos fiscais foram conciliados no cruzamento local."
+        headline = "Todos os documentos fiscais desta conta foram conciliados localmente."
     if statuses:
         main = statuses[0]
-        headline += f" A primeira prioridade é: {main['tipo'].lower()} ({main['quantidade']})."
+        headline += f" Prioridade inicial: {main['tipo'].lower()} ({main['quantidade']})."
+    headline = "Cruzamento documental — " + headline
 
     findings = []
     for entry in statuses[:4]:
-        findings.append(f"{entry['quantidade']} documento(s): {entry['tipo'].lower()}.")
+        count = entry["quantidade"]
+        findings.append(f"{count} {'documento' if count == 1 else 'documentos'}: {entry['tipo'].lower()}.")
     if pending and not highlights:
         findings.append("O resumo registra pendências, mas não há documentos individualizados suficientes para apontar notas específicas.")
 
@@ -150,7 +154,7 @@ def documentary_reading(item, docs, old_reading):
     for entry in highlights[:3]:
         parts = [entry["documento"]]
         if entry["conta_candidata"]:
-            parts.append("possível conta " + entry["conta_candidata"])
+            parts.append("possível registro em outra conta " + entry["conta_candidata"])
         if entry["data"]:
             parts.append(entry["data"])
         actions.append({
