@@ -90,6 +90,14 @@ def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
     with engine.processing_context(slug(code)):
+        # Empresa 266: layout BB Consultas com coluna Valor R$ e natureza C/D.
+        # Não substituir os outros leitores BB (Autorizável, CRJ, etc.).
+        if code == 266 and bank in {'banco_brasil', 'bb'} and str(filename).lower().endswith('.pdf'):
+            from app.bb_consultas_266 import (
+                parece_extrato_bb_consultas_266, ler_extrato_bb_consultas_266,
+            )
+            if parece_extrato_bb_consultas_266(content):
+                return pd.DataFrame(ler_extrato_bb_consultas_266(content), columns=COLUNAS)
         if code == 1248:
             from razync.rgr_1248 import ler_extrato_itau_rgr
             return ler_extrato_itau_rgr(content)
