@@ -45,7 +45,8 @@ assert all(a in JS for a in ("syncQuickFilters()", 'focusFiscalSection("fiscal24
                              'investigation.hidden', 'renderTable();'))
 assert 'id="fiscal242ResultsCard"' in HTML
 assert './assets/css/fiscal-results.css?v=' in HTML
-assert './assets/js/fiscal-242.js?v=fiscal-workspace-' in HTML
+assert any(tag == "script" and attrs.get("src", "").startswith("./assets/js/fiscal-242.js?v=")
+           and attrs["src"].split("?v=", 1)[1] for tag, attrs in p.elements), "Script fiscal sem versão de cache."
 
 assert "grid-template-columns:repeat(2,minmax(0,1fr))" in CSS
 assert "@media (max-width:680px)" in CSS
