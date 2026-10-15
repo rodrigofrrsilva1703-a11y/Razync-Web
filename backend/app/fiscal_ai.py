@@ -1144,7 +1144,29 @@ def gerar_excel_analise(payload: dict) -> bytes:
         displayed_explanation, displayed_steps = item.get("explicacao"), item.get("verificar")
         if isinstance(parecer, dict) and "analise_exibicao" in parecer:
             reading = parecer.get("leitura_comparacao") or {}
-            displayed_explanation = "\n\n".join(str(part) for part in [reading.get("resultado"), *reading.get("observacoes", []), parecer.get("analise_exibicao")] if part)
+            interpretation = str(parecer.get("analise_exibicao") or "")
+            if reading.get("documental_especifico") and interpretation.startswith((
+                "A causa ainda não está comprovada pelas evidências desta conta.",
+                "Os dados disponíveis não sustentam uma causa específica.",
+                "A causa está indeterminada: os lançamentos disponíveis não sustentam",
+            )):
+                interpretation = ""
+            evidence_lines = []
+            for example in (reading.get("destaques") or [])[:4]:
+                if not isinstance(example, dict):
+                    continue
+                extra = " · ".join(part for part in [
+                    example.get("tipo"), example.get("valor_fiscal"),
+                    ("conta candidata " + str(example["conta_candidata"]) if example.get("conta_candidata") else ""),
+                    example.get("diferenca_candidata"),
+                ] if part)
+                evidence_lines.append(str(example.get("documento") or example.get("referencia") or "Documento")
+                                      + (": " + extra if extra else ""))
+            displayed_explanation = "\n\n".join(str(part) for part in [
+                reading.get("resultado"), *reading.get("observacoes", []),
+                ("Documentos prioritários:\n" + "\n".join(evidence_lines) if evidence_lines else ""),
+                interpretation,
+            ] if part)
             instructions = reading.get("orientacoes") or []
             if instructions:
                 displayed_steps = "\n".join(f"{index}. {step.get('acao', '')} — {step.get('objetivo', '')}" for index,step in enumerate(instructions,1))
