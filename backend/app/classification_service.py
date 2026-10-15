@@ -244,10 +244,18 @@ def classify(company, content, filename, options=None):
             'data_inicial': options.get('data_inicial', ''),
             'data_final': options.get('data_final', ''),
         }
-    from app.classification_coverage import coverage
-    summary = dict(summary)
-    summary['cobertura'] = coverage(content, workbook, slug(company), options)
     return workbook, summary
+
+
+def classify_with_coverage(company, content, filename, options=None):
+    """Acrescenta indicadores apenas à resposta web, preservando o contrato interno."""
+    workbook, summary = classify(company, content, filename, options)
+    resolved = resolve_classification_options(company, options)
+    resolved.setdefault('modo_consolidado', int(company) in {242, 1408})
+    from app.classification_coverage import coverage
+    report = coverage(content, workbook, slug(company), resolved)
+    return workbook, {**summary, 'cobertura': report}
+
 
 def pending(company, content, data_inicial='', data_final=''):
     frame = engine.extrair_pendencias_revisao_inteligente(content, accounts(company))
