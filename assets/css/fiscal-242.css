@@ -2099,3 +2099,46 @@
   #fiscalView .fiscal-ai-document-highlight{padding:10px 11px;}
   #fiscalView .fiscal-ai-impact-details li{flex-direction:column;gap:3px;}
 }
+
+
+/* Verificações por tipo de divergência: vários documentos, uma orientação. */
+#fiscalView .fiscal-ai-checklist > li.fiscal-ai-grouped-step {
+  background:#f8fafc;
+  border:1px solid #e0e8f0;
+  padding:13px 14px;
+}
+#fiscalView .fiscal-ai-step-documents {
+  list-style:none;
+  margin:10px 0;
+  padding:0;
+  display:grid;
+  gap:0;
+}
+#fiscalView .fiscal-ai-step-documents > li {
+  display:grid;
+  gap:3px;
+  padding:9px 0;
+  margin:0;
+  background:transparent;
+  border-radius:0;
+  border-bottom:1px solid #e3eaf1;
+  line-height:1.45;
+}
+#fiscalView .fiscal-ai-step-documents > li:first-child {padding-top:0;}
+#fiscalView .fiscal-ai-step-documents > li:last-child {border-bottom:0;padding-bottom:0;}
+#fiscalView .fiscal-ai-step-documents strong {
+  color:#294761;
+  font-size:12px;
+  font-weight:650;
+}
+#fiscalView .fiscal-ai-step-documents span {
+  color:#566d83;
+  font-size:11.5px;
+  overflow-wrap:anywhere;
+  font-variant-numeric:tabular-nums;
+}
+#fiscalView .fiscal-ai-step-sample {
+  margin:7px 0;
+  font-size:11px;
+  color:#78889b;
+}
