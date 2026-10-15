@@ -420,14 +420,14 @@ const COMPANY_TOOL_GUIDES = {
   266: {
     organizar: {
       caption: "Empresa 266 · Nova Geração",
-      intro: "A 266 usa uma única planilha consolidada com os movimentos dos três bancos. Você escolhe quais bancos quer processar e o Razync separa os lançamentos automaticamente.",
+      intro: "A 266 usa uma planilha consolidada com os movimentos de Itaú, Bradesco, Fibra e Banco do Brasil. O Razync identifica os lançamentos pela conta bancária na coluna Conta.",
       steps: [
-        ["1", "Selecione os bancos", "Marque Itaú 508, Bradesco 9 e/ou Fibra 506. Se quiser o mês completo, mantenha os três selecionados."],
+        ["1", "Selecione os bancos", "Marque Itaú 508, Bradesco 9, Fibra 506 e/ou Banco do Brasil 8. Para o Banco do Brasil, o relatório precisa trazer a conta bancária 200076-8 na coluna Conta."],
         ["2", "Envie a planilha consolidada", "Anexe a planilha mensal recebida da empresa. Não precisa separar um arquivo para cada banco."],
         ["3", "Informe o período se necessário", "Deixe De/Até em branco para considerar todo o arquivo ou use as datas para limitar os lançamentos."],
         ["4", "Confira antes de baixar", "Revise a prévia gerada. O Modelo Domínio final fica separado por banco em abas próprias."]
       ],
-      note: "Contas da 266: Itaú 508 · Bradesco 9 · Fibra 506."
+      note: "Contas contábeis: Itaú 508 · Bradesco 9 · Fibra 506 · Banco do Brasil 8. Identificação bancária do BB: 200076-8."
     },
     base: {
       caption: "Empresa 266 · Nova Geração",
@@ -443,7 +443,7 @@ const COMPANY_TOOL_GUIDES = {
       caption: "Empresa 266 · Nova Geração",
       intro: "A conferência compara o Modelo Domínio final com os extratos dos bancos selecionados e mostra as diferenças de entradas e saídas por dia.",
       steps: [
-        ["1", "Selecione os bancos", "Escolha somente os bancos que serão conferidos: Itaú 508, Bradesco 9 e/ou Fibra 506."],
+        ["1", "Selecione os bancos", "Escolha somente os bancos que serão conferidos: Itaú 508, Bradesco 9, Fibra 506 e/ou Banco do Brasil 8."],
         ["2", "Envie o Modelo Domínio final", "Use o arquivo já organizado e, se necessário, classificado pela Base Inteligente."],
         ["3", "Anexe os extratos correspondentes", "Envie o extrato de cada banco selecionado no campo que aparece para ele."],
         ["4", "Analise o status diário", "Saldo Entrada = Entrada Modelo − Entrada Extrato e Saldo Saída = Saída Modelo − Saída Extrato. Só fica “Batendo” quando os dois saldos forem zero."]
