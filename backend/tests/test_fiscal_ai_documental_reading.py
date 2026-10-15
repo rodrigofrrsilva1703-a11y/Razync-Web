@@ -55,7 +55,7 @@ def test_1240_linhas_geram_diagnostico_por_tipo_e_nao_resumo_repetitivo():
     assert reading["destaques"][0]["documento"].startswith("NF 93218")
     assert reading["destaques"][0]["diferenca_candidata"] == "-R$ 5,00"
     assert reading["destaques"][1]["conta_candidata"] == "377"
-    assert "E-30" in reading["orientacoes"][0]["acao"]
+    assert reading["orientacoes"][0]["documentos"][0]["referencia"] == "E-30"
     assert reading["orientacoes"][0]["objetivo"].startswith("Compare o total")
     assert reading["impactos"][0]["valor"] == "R$ 760,49"
     assert reading["impactos"][1]["valor"] == "-R$ 9,99"
@@ -111,7 +111,7 @@ def test_sem_docs_individuais_mantem_escopo_e_orienta_busca_local():
     reading = structured_analysis(item, [], documentary=True)["leitura_comparacao"]
     assert reading["destaques"] == []
     assert any("não há documentos individualizados" in x for x in reading["observacoes"])
-    assert "Identifique as notas" in reading["orientacoes"][0]["acao"]
+    assert "Localize os documentos" in reading["orientacoes"][0]["acao"]
 
 
 def test_sem_resumo_documental_preserva_leitura_original():
