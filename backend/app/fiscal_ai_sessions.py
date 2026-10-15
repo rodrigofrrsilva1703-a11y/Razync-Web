@@ -42,7 +42,7 @@ def _scope_report(report, accounts):
                                                if row.get("conta") in codes and
                                                ("_tipo_ia" not in row or (str(row["conta"]), row["_tipo_ia"]) in identities)])
     keys = {f'{row["conta"]}:{row["tipo"]}' for row in accounts}
-    for field in ("documentos_pendentes", "cobertura_documental", "resumo_documental"):
+    for field in ("documentos_pendentes", "cobertura_documental", "resumo_documental", "investigacoes_locais"):
         if field in report:
             scoped[field] = {k: v for k, v in report[field].items() if k in keys}
     return scoped
@@ -177,6 +177,7 @@ def _refresh_cached_review(result, report):
         key = f'{item["conta"]}:{item.get("tipo", "")}'
         item["resumo_documental"] = report.get("resumo_documental", {}).get(key, {})
         item["cobertura_documental"] = report.get("cobertura_documental", {}).get(key, {})
+        item["investigacoes_locais"] = report.get("investigacoes_locais", {}).get(key, [])
         item.setdefault("parecer", {})["comparacoes_documentais"] = report.get("documentos_pendentes", {}).get(key, [])
         # O dossiê e as prioridades permanecem atualizados no reaproveitamento,
         # sem solicitar novas inferências nem confiar em informações antigas.
@@ -194,6 +195,7 @@ def _refresh_cached_review(result, report):
             documentary=bool(item.get("resumo_documental")) or ("resumo_documental" not in report and report.get("documentos_pendentes") is not None), periodo_fiscal=report.get("periodo_fiscal"))
         item["parecer"]["comparacoes_documentais"] = report.get("documentos_pendentes", {}).get(
             f'{item["conta"]}:{item.get("tipo", "")}', [])
+        item.pop("investigacoes_locais", None)
         item["auditoria"] = fiscal_ai.audit_analysis(item)
     return refreshed
 

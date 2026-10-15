@@ -14,6 +14,7 @@ from decimal import Decimal, ROUND_HALF_UP
 import pandas as pd
 
 from app.fiscal_242 import conferencia_fiscal_preview
+from app.fiscal_investigation import build_cases
 from razync.conferencia_fiscal import (
     _chave_empresa, _codigo_dominio, _data_dominio, _empresa_no_cabecalho,
     _excel, _numero, _periodo_relatorio, _rotulo, _texto,
@@ -640,10 +641,12 @@ def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome,
     ledger_to_ai = []
     coverage = {}
     summaries = {}
+    investigations = {}
     resolved = []
     investigated = set(investigation["tipos_investigados"])
     for item in investigation["contas"]:
         account, tipo = item["conta"], item["tipo"]
+        investigations[account + ":" + tipo] = build_cases(item)
         pending_docs = [d for d in item["documentos"] if d["situacao"] != "CONCILIADO"]
         other_ledger = item["razao_pendente"]
         key = account + ":" + tipo
@@ -663,7 +666,9 @@ def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome,
         # econômica é explícita e é escolhida entre TODAS as pendências locais.
         priority = {"VALOR_DIFERENTE": 0, "ESTORNO_EM_ANALISE": 1, "CONTA_DIFERENTE": 2, "DATA_DIFERENTE": 3,
                     "SEM_LANCAMENTO_IDENTIFICADO": 4, "PROVAVEL": 5, "AMBIGUO": 6}
-        pending_docs.sort(key=lambda d: priority.get(d["situacao"], 5))
+        impact = {ref: case["impacto_priorizacao"] for case in investigations[key]
+                  for ref in case["referencias_fiscais"]}
+        pending_docs.sort(key=lambda d: (priority.get(d["situacao"], 5), -impact.get(d["id"], 0), d["id"]))
         # Cobertura de categorias: não deixar 30 diferenças de valor ocultarem
         # todos os casos de conta, data, estorno ou documento não localizado.
         # A seleção não altera os totais da conciliação local.
@@ -718,6 +723,7 @@ def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome,
             {"referencia": d["id"], "razao_id": d.get("razao_id", "").replace("R-", "L", 1),
              "acumulador": d["acumulador"], "nota": d["nota"],
              "serie": d["serie"], "data": d["data"], "cfop": d["cfop"],
+             "parceiro": d.get("parceiro", ""),
              "valor_brl": f"R$ {d['valor']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
              "situacao": d["situacao"], "criterio": d["criterio"], **comparison(d)}
             for d in chosen_docs
@@ -751,6 +757,7 @@ def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome,
     preview["documentos_pendentes"] = docs_to_ai
     preview["cobertura_documental"] = coverage
     preview["resumo_documental"] = summaries
+    preview["investigacoes_locais"] = investigations
     preview["apoio_documental"] = {"tipos": sorted(investigated),
         "documentos_lidos": sum(i["documentos_total"] for i in investigation["contas"]),
         "conciliados": investigation["resumo"]["conciliados"], "contas_resolvidas": resolved}

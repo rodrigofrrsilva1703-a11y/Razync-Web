@@ -29,6 +29,10 @@ REVIEW_PROMPT = (
     "Para divergência documentada com indícios, até 240 palavras no total; "
     "sem evidência suficiente, máximo 150; valores iguais com alertas, máximo 130. "
     "Sem introdução nem repetição dos totais; valores exibidos pelo sistema não devem ser reescritos. "
+    "roteiro_investigacao reúne até três casos com referências disponíveis: explique os campos coincidentes, "
+    "os divergentes e o que falta confirmar; associe cada hipótese à referência E-/S- ou L do caso. "
+    "O grau de evidência é qualitativo, não probabilidade. A composição explica a aritmética, não comprova a causa. "
+    "Não cite valores monetários: eles aparecem nos detalhes locais calculados. "
     "Use apenas até 3 referências L do PRÓPRIO grupo em evidencias; se não houver, []. "
     "Responda somente JSON válido: analises com um item por grupo, contendo "
     "grupo, explicacao, verificar e evidencias."
@@ -43,6 +47,7 @@ def output_budget(groups):
         allowances = sum(200 if group.get("situacao") == "CONFERE" else
                          400 if group.get("situacao") == "CONFERE COM ALERTAS" else 750
                          for group in groups)
+        allowances += sum(min(3, len(group.get("roteiro_investigacao", []))) * 120 for group in groups)
     return min(4096, 400 + max(200, allowances))
 
 

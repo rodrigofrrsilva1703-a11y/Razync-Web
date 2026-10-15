@@ -149,6 +149,11 @@ def documentary_reading(item, docs, old_reading):
         for part in composition.get("itens", [])
         if isinstance(part, dict) and abs(_amount(part.get("valor"))) >= Decimal("0.005")
     ][:5]
+    pieces = [_amount(part.get("valor")) for part in composition.get("itens", []) if isinstance(part, dict)]
+    if pieces and "diferenca" in (item.get("valores") or {}):
+        residue = (_amount(item["valores"]["diferenca"]) - sum(pieces)).quantize(Decimal("0.01"))
+        findings.append("A composição fecha a diferença inicial em centavos; isso explica a aritmética, não comprova a causa contábil."
+                        if residue == 0 else f"Parcela ainda não explicada pela composição: {_brl(residue)}. Confira a cobertura dos relatórios antes de concluir.")
 
     # Uma verificação por TIPO de problema, não uma frase repetida
     # para cada nota. Os exemplos são evidências reais, não novas hipóteses.

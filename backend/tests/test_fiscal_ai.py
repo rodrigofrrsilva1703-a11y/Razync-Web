@@ -328,7 +328,7 @@ def test_exportar_analise_gemini_em_excel_sem_nova_chamada(monkeypatch):
     )
     assert response.content[:2] == b"PK"
     workbook = load_workbook(io.BytesIO(response.content), data_only=False)
-    assert workbook.sheetnames == ["Análises IA", "Acumuladores", "Lançamentos citados", "Fatos e hipóteses"]
+    assert workbook.sheetnames == ["Análises IA", "Acumuladores", "Lançamentos citados", "Fatos e hipóteses", "Pendências explicadas", "Evidências por pendência"]
     main = workbook["Análises IA"]
     assert main["A2"].value == "Empresa: EMPRESA EXEMPLO LTDA"
     assert main["A6"].value == "22643"
@@ -977,7 +977,7 @@ def test_openrouter_formatos_normalizados_para_tela_sem_perder_validacao():
     normalized = fiscal_ai._validar_resposta_ia(raw, source, mapping, references)
     assert normalized[0]["conta"] == "22643"
     assert normalized[0]["evidencias"] == []
-    assert normalized[0]["explicacao"] == "Conferência fiscal e contábil."
+    assert normalized[0]["explicacao"] == "Hipóteses: Conferência fiscal e contábil."
 
 
 def test_openrouter_nao_normaliza_evidencia_inventada():

@@ -152,6 +152,9 @@ def _compact_group(group):
         "pendencias_documentais": group.get("pendencias_documentais", [])[:30],
         "cobertura_documental": group.get("cobertura_documental", {}),
         "resumo_documental_local": group.get("resumo_documental_local", {}),
+        "roteiro_investigacao": [case for case in group.get("roteiro_investigacao", [])
+            if all(c["referencia"] in used or c["conta"] != str(group.get("resumo", {}).get("conta"))
+                   for c in case.get("candidatos", []))],
     }
 
 

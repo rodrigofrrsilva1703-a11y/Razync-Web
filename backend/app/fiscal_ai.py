@@ -19,6 +19,7 @@ from app.ai_budget import request_slot, daily_report
 from app.fiscal_ai_audit import audit_analysis, structured_analysis, link_text_evidence, protect_publication, local_review_sufficient
 from app.fiscal_ai_strategy import REVIEW_PROMPT, output_budget, compact_summary
 from app.fiscal_ai_dossier import build_dossier
+from app.fiscal_investigation import case_context
 from app.groq_fiscal import complete as _groq_completion, is_enabled as _groq_enabled, selected_model as _groq_model
 
 logger = logging.getLogger(__name__)
@@ -136,6 +137,8 @@ def detailed_context(report):
             group["pendencias_documentais"] = pendentes.get(key, [])
             group["cobertura_documental"] = report.get("cobertura_documental", {}).get(key, {})
             group["resumo_documental_local"] = report.get("resumo_documental", {}).get(key, {})
+            group["roteiro_investigacao"] = case_context(report.get("investigacoes_locais", {}).get(key, []),
+                group["pendencias_documentais"], group["lancamentos"], account["conta"])
         key = f'{account["conta"]}:{account["tipo"]}'
         group["dossie_contabil"] = build_dossier(
             summary, [row for _, row in selected],
@@ -741,6 +744,7 @@ def _validar_resposta_ia(result, report, mapping, references, *, groq=False, pro
         )
         output[-1]["resumo_documental"] = report.get("resumo_documental", {}).get(key, {})
         output[-1]["cobertura_documental"] = report.get("cobertura_documental", {}).get(f'{mapping[ident]["conta"]}:{mapping[ident]["tipo"]}', {})
+        output[-1]["investigacoes_locais"] = report.get("investigacoes_locais", {}).get(f'{mapping[ident]["conta"]}:{mapping[ident]["tipo"]}', [])
         output[-1]["parecer"] = {"comparacoes_documentais": docs}
         link_text_evidence(output[-1], source_rows)
         protect_publication(output[-1], source_rows, docs)
@@ -749,6 +753,7 @@ def _validar_resposta_ia(result, report, mapping, references, *, groq=False, pro
             shortened=groq and any(len(str(row.get("historico") or "")) > 180 for row in rows),
             documentary=bool(output[-1].get("resumo_documental")) or ("resumo_documental" not in report and report.get("documentos_pendentes") is not None), periodo_fiscal=report.get("periodo_fiscal"))
         output[-1]["parecer"]["comparacoes_documentais"] = docs
+        output[-1].pop("investigacoes_locais", None)
         output[-1]["auditoria"] = audit_analysis(output[-1])
         output[-1].update(provedor=provider, modelo_usado=model)
     if seen != set(mapping):
@@ -1105,6 +1110,11 @@ def gerar_excel_analise(payload: dict) -> bytes:
     codes = book.create_sheet("Acumuladores")
     evidences = book.create_sheet("Lançamentos citados")
     grounded = book.create_sheet("Fatos e hipóteses")
+    case_sheet = book.create_sheet("Pendências explicadas")
+    case_sources = book.create_sheet("Evidências por pendência")
+    case_sources.append(["Conta", "Tipo", "Caso", "Referência", "Conta candidata", "Data", "Histórico", "Contrapartida", "Valor"])
+    case_sheet.append(["Conta", "Tipo", "Caso", "Nota", "Evidência", "Leitura local", "Fiscal", "Razão candidato",
+                       "Diferença", "Referências", "Interpretação da IA", "Falta confirmar", "Próxima ação"])
     grounded.append(["Conta", "Tipo", "Origem dos fatos", "Hipóteses da IA", "Informações faltantes", "Cobertura dos lançamentos", "IA e modelo"])
     cor_titulo, cor_cabecalho, cor_texto = "203B59", "EAF0F7", "30485F"
     main.merge_cells("A1:L1")
@@ -1192,6 +1202,26 @@ def gerar_excel_analise(payload: dict) -> bytes:
             texto(", ".join(str(e.get("referencia", "")) for e in fatos if isinstance(e, dict)), 600)
         ])
         parecer = item.get("parecer") or {}
+        cases = parecer.get("pendencias_explicadas", []) if isinstance(parecer, dict) else []
+        if not isinstance(cases, list) or len(cases) > 20000:
+            raise ValueError("Pendências explicadas inválidas.")
+        for case in cases:
+            if not isinstance(case, dict):
+                raise ValueError("Pendência explicada inválida.")
+            fiscal_refs, candidates, interpretations = (case.get("referencias_fiscais", []), case.get("candidatos", []), case.get("interpretacao_ia", []))
+            if not (isinstance(fiscal_refs, list) and isinstance(candidates, list) and isinstance(interpretations, list)
+                    and all(isinstance(c, dict) for c in candidates) and all(isinstance(s, str) for s in interpretations)):
+                raise ValueError("Evidências da pendência inválidas.")
+            refs = fiscal_refs + [c.get("referencia", "") for c in candidates]
+            case_sheet.append([conta, tipo, texto(case.get("id"), 80), texto(case.get("nota"), 80),
+                texto(case.get("grau_evidencia"), 80), texto(case.get("explicacao_local")),
+                numero(case.get("valor_fiscal")), numero(case.get("valor_razao")), numero(case.get("diferenca")),
+                texto(", ".join(str(ref) for ref in refs)), texto("\n".join(interpretations)),
+                texto(case.get("falta_confirmar")), texto(case.get("acao"))])
+            for candidate in candidates:
+                case_sources.append([conta, tipo, texto(case.get("id"), 80), texto(candidate.get("referencia"), 80),
+                    texto(candidate.get("conta"), 80), texto(candidate.get("data"), 40), texto(candidate.get("historico")),
+                    texto(candidate.get("contrapartida"), 80), numero(candidate.get("valor"))])
         if isinstance(parecer, dict) and parecer.get("versao"):
             coverage = parecer.get("cobertura") or {}
             missing = parecer.get("informacoes_faltantes") or []
@@ -1242,6 +1272,8 @@ def gerar_excel_analise(payload: dict) -> bytes:
     formato(codes, 1, {5}, [17, 17, 17, 55, 21])
     formato(evidences, 1, {6, 7}, [17, 18, 18, 95, 22, 22, 22, 16])
     formato(grounded, 1, set(), [17, 17, 60, 82, 82, 48, 42])
+    formato(case_sheet, 1, {7, 8, 9}, [17, 17, 20, 20, 25, 80, 20, 20, 20, 40, 80, 80, 80])
+    formato(case_sources, 1, {9}, [17, 17, 20, 20, 20, 20, 100, 20, 20])
     out = io.BytesIO()
     book.save(out)
     return out.getvalue()

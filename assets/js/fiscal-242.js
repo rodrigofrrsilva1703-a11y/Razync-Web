@@ -499,6 +499,61 @@
     return section;
   }
 
+  function renderAICases(item) {
+    const cases = item.parecer?.pendencias_explicadas || [];
+    if (!cases.length) return null;
+    const section = node("details", "fiscal-ai-cases");
+    section.appendChild(node("summary", "fiscal-ai-cases-heading", "Ver todas as pendências e evidências (" + cases.length + ")"));
+    section.appendChild(node("p", "fiscal-ai-cases-intro",
+      cases.length + " caso(s), em ordem de valor envolvido. Os detalhes vêm do cruzamento local; a interpretação da IA é identificada quando disponível."));
+    const list = node("div", "fiscal-ai-case-list");
+    const caption = node("p", "fiscal-ai-cases-caption");
+    const more = node("button", "fiscal-ai-cases-more", "Mostrar mais pendências"); more.type = "button";
+    let visible = 0;
+    const addPage = () => {
+      for (const entry of cases.slice(visible, visible + 20)) {
+        const detail = node("details", "fiscal-ai-case");
+        const summary = node("summary", "fiscal-ai-case-summary");
+        const title = entry.nota ? "Nota " + entry.nota + " · " + entry.titulo : entry.titulo;
+        summary.append(node("strong", "", title), node("span", "fiscal-ai-case-strength", entry.grau_evidencia));
+        const body = node("div", "fiscal-ai-case-body");
+        let built = false;
+        detail.addEventListener("toggle", () => {
+          if (!detail.open || built) return; built = true;
+          body.appendChild(node("p", "fiscal-ai-case-explanation", entry.explicacao_local));
+          if (entry.data_fiscal || entry.parceiro || entry.serie) body.appendChild(node("p", "fiscal-ai-case-origin",
+            [entry.data_fiscal, entry.serie ? "Série " + entry.serie : "", entry.parceiro].filter(Boolean).join(" · ")));
+          const amount = value => value === null || value === undefined ? "Não identificado" : money.format(Number(value));
+          body.appendChild(renderAIDataTable("Comparação calculada", ["Fiscal", "Razão candidato", "Diferença (Razão − fiscal)"],
+            [[amount(entry.valor_fiscal), amount(entry.valor_razao), amount(entry.diferenca)]], "fiscal-ai-case-values"));
+          const candidates = entry.candidatos || [];
+          if (candidates.length) body.appendChild(renderAIDataTable("Lançamentos candidatos — vínculo a confirmar",
+            ["Referência", "Conta", "Data", "Histórico", "Contrapartida", "Valor"],
+            candidates.map(c => [c.referencia,c.conta,c.data,c.historico,c.contrapartida,amount(c.valor)]), "fiscal-ai-case-candidates"));
+          if (entry.criterio) body.append(node("h6", "", "Por que este caso foi separado"), node("p", "", entry.criterio));
+          for (const [label, values] of [["Campos coincidentes", entry.campos_coincidentes],
+            ["Campos divergentes", entry.campos_divergentes], ["Campos a confirmar", entry.campos_a_confirmar]]) {
+            if (values?.length) body.append(node("h6", "", label), node("p", "", values.join(" · ")));
+          }
+          if (entry.interpretacao_ia?.length) {
+            body.appendChild(node("h6", "", "Interpretação da IA para este caso"));
+            for (const text of entry.interpretacao_ia) body.appendChild(node("p", "", text));
+          }
+          body.append(node("h6", "", "O que falta confirmar"), node("p", "", entry.falta_confirmar),
+            node("h6", "", "Próxima ação"), node("p", "fiscal-ai-case-action", entry.acao));
+          for (const step of entry.verificacoes_ia || []) body.appendChild(node("p", "fiscal-ai-case-ai-step", step));
+        });
+        detail.append(summary, body); list.appendChild(detail);
+      }
+      visible = Math.min(visible + 20, cases.length);
+      caption.textContent = "Mostrando " + visible + " de " + cases.length + " pendências. Abra um caso para ver as evidências.";
+      more.hidden = visible >= cases.length;
+    };
+    more.addEventListener("click", addPage);
+    section.addEventListener("toggle", () => { if (section.open && visible === 0) addPage(); });
+    section.append(list, caption, more); return section;
+  }
+
   function renderAIEntries(entries) {
       for (const item of entries) {
         if (aiCards.some(entry => keyOf(entry.item) === keyOf(item))) continue;
@@ -544,6 +599,8 @@
         const reading = node("div", "fiscal-ai-reading");
         reading.appendChild(review);
         content.appendChild(reading);
+        const cases = renderAICases(item);
+        if (cases) content.appendChild(cases);
         if (item.auditoria && item.parecer?.analise_exibicao === undefined) {
           const alerts = Array.isArray(item.auditoria.alertas) ? item.auditoria.alertas : [];
           const audit = node("section", "fiscal-ai-audit" + (alerts.length ? " has-alerts" : ""));

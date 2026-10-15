@@ -72,8 +72,8 @@ def test_detailed_reading_survives_validation_and_local_envelope():
     result = fiscal_ai._validar_resposta_ia(answer, report, {"G1":{"conta":"1", "tipo":"ENTRADAS"}}, {"L1":record})[0]
     assert result["parecer"]["observacoes"] == ""
     assert "Fatos:" not in result["explicacao"]
-    assert "não está comprovada" in result["parecer"]["hipoteses"]
-    assert "confirme os documentos" in " ".join(result["parecer"]["informacoes_faltantes"])
+    assert "A causa está indeterminada" in result["parecer"]["hipoteses"]
+    assert "Falta o detalhamento fiscal por nota" in " ".join(result["parecer"]["informacoes_faltantes"])
     assert result["valores"]["diferenca"] == -20
     assert result["evidencias"][0]["referencia"] == "L1"
 

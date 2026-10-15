@@ -9,6 +9,7 @@ import re
 import unicodedata
 from collections import Counter
 from datetime import datetime
+from app.fiscal_investigation import explain_cases
 
 _MONEY = re.compile(r"R\$\s*(-?\s*\d(?:[\d.,]*\d)?)", flags=re.IGNORECASE)
 
@@ -115,7 +116,7 @@ def local_review_sufficient(report):
             and values.get("fora_inicial") == -values["razao_sem_vinculo"])
 
 
-def protect_publication(item, rows, documents):
+def _protect_fragment(item, rows, documents):
     """Remove alegações inseguras localmente, sem repetir chamadas externas.
 
     Fatos escritos pelo modelo não são publicados nem persistidos: a interface
@@ -179,6 +180,43 @@ def protect_publication(item, rows, documents):
     elif sections.get("fatos"):
         item["explicacao"] = "Hipóteses: A resposta não forneceu uma interpretação separada dos fatos. Limitações: confira as evidências calculadas pelo sistema."
     item["checagem_semantica"] = {"interpretacao_retirada": bool(reasons), "motivos": list(dict.fromkeys(reasons))}
+    return item
+
+
+def protect_publication(item, rows, documents):
+    """Valida cada afirmação separadamente e conserva os trechos sustentados."""
+    _, sections = narrative_sections(item.get("explicacao"))
+    prior = item.get("checagem_semantica") or {}
+    reasons = list(prior.get("motivos", []))
+    retained = {}
+    removed = int(prior.get("trechos_retirados", 0))
+    parts = {"hipoteses": sections.get("hipoteses") or ("" if sections.get("fatos") else item.get("explicacao", "")),
+             "limitacoes": sections.get("limitacoes", ""), "verificar": item.get("verificar", ""),
+             "fatos": sections.get("fatos", "")}
+    for section, value in parts.items():
+        safe = []
+        # Ponto decimal e abreviações sem espaço não separam afirmações.
+        pattern = r"\n+" if section == "verificar" else r"\n+|(?<=[.!?])\s+(?=[A-ZÀ-Ý0-9])"
+        for fragment in re.split(pattern, str(value or "")):
+            if not fragment.strip():
+                continue
+            probe = {**item, "explicacao": "Hipóteses: " + fragment, "verificar": ""}
+            probe.pop("checagem_semantica", None)
+            _protect_fragment(probe, rows, documents)
+            flags = probe["checagem_semantica"]["motivos"]
+            if flags:
+                reasons.extend(flags)
+                removed += 1
+            elif section != "fatos":
+                safe.append(fragment.strip())
+        retained[section] = safe
+    hypotheses = " ".join(retained["hipoteses"])
+    item["explicacao"] = "Hipóteses: " + (hypotheses or "A causa ainda não está comprovada pelas evidências desta conta.")
+    if retained["limitacoes"]:
+        item["explicacao"] += "\n\nLimitações: " + " ".join(retained["limitacoes"])
+    item["verificar"] = "\n".join(retained["verificar"]) or grounded_review_steps(item)
+    item["checagem_semantica"] = {"interpretacao_retirada": bool(reasons),
+        "motivos": list(dict.fromkeys(reasons)), "trechos_retirados": removed}
     return item
 
 
@@ -306,7 +344,7 @@ def audit_analysis(item):
     }
 
 
-ANALYSIS_VERSION = "grouped-documentary-v11"
+ANALYSIS_VERSION = "documentary-evidence-v12"
 
 
 def narrative_sections(value):
@@ -559,7 +597,12 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
     for limit in (dossier.get("limites_das_fontes") or [])[:2]:
         if isinstance(limit, str) and limit and limit not in missing:
             missing.append(limit)
+    cases = explain_cases(item.get("investigacoes_locais", []), display_text, item.get("verificar"))
+    if cases:
+        reading["orientacoes_ia"] = str(item.get("verificar") or "")
     return {"versao": ANALYSIS_VERSION, "fatos": facts,
+            "pendencias_explicadas": cases,
+            "composicao": (local.get("composicao") or {}),
             "analise_exibicao": display_text, "sugestoes_retiradas": scenario_issues,
             "leitura_comparacao": reading,
             "observacoes": "",

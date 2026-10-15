@@ -80,3 +80,29 @@ As regressões incluem notas cruzadas entre contas, somas incorretas, documentos
 conciliados e pagamentos iguais em datas diferentes. Respostas reais previamente
 gravadas da empresa 242 também podem ser revalidadas localmente, sem reenviar os
 arquivos nem consumir novas chamadas dos provedores.
+
+## Investigação explicativa por pendência
+
+A versão `documentary-evidence-v12` acrescenta um roteiro local para cada
+comparação pendente e cada movimento sem vínculo, preservando os documentos
+agrupados como um único caso. Cada roteiro traz candidatos, valores calculados,
+campos coincidentes/divergentes/a confirmar, leitura dos indícios, informação
+faltante e ação de conferência específica. As categorias de evidência são
+qualitativas; não são probabilidades nem confirmação da causa contábil.
+
+O contexto externo recebe até três roteiros prioritários cujas referências estão
+disponíveis na seleção enviada. Groq remove um roteiro se o candidato da própria
+conta não couber nos seus dez históricos. Os detalhes completos permanecem locais,
+em uma seção recolhida, com paginação visual de vinte casos e montagem das
+evidências ao abrir cada caso. As orientações agrupadas por tipo de divergência
+continuam sendo a leitura principal, sem repetir o mesmo roteiro para cada nota.
+Não há nova chamada por expansão nem por exportação. Aumenta-se a reserva de saída
+somente quando existem roteiros para explicar; o detalhamento numérico fica local.
+
+As interpretações são filtradas por afirmação: trechos válidos permanecem mesmo
+quando outro trecho é retirado. Somente trechos validados que citam referências do
+próprio caso são associados como interpretação da IA nesse detalhe. O roteiro
+local é identificado separadamente e não é apresentado como leitura integral da IA.
+As verificações específicas validadas aparecem na tela e no Excel, que passa a
+incluir as abas `Pendências explicadas` e `Evidências por pendência`, com históricos
+e contrapartidas dos candidatos. O cache anterior é invalidado pela versão.
