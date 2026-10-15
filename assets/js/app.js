@@ -101,19 +101,9 @@ function enhanceFileInput(input) {
   input.parentNode.insertBefore(shell, input);
   shell.appendChild(input);
 
-  const picker = document.createElement("span");
-  picker.className = "file-picker";
-  picker.setAttribute("aria-hidden", "true");
-  const pickerIcon = document.createElement("i");
-  const pickerText = document.createElement("strong");
-  pickerText.className = "file-picker-label";
-  pickerText.textContent = input.multiple ? "Selecionar arquivos" : "Selecionar arquivo";
-  picker.append(pickerIcon, pickerText);
-  shell.appendChild(picker);
-
   const hint = document.createElement("span");
   hint.className = "file-drop-hint";
-  hint.textContent = input.multiple ? "ou arraste os arquivos aqui" : "ou arraste o arquivo aqui";
+  hint.innerHTML = '<i aria-hidden="true"></i><span>Arraste o arquivo aqui ou clique para selecionar</span>';
   shell.appendChild(hint);
 
   const activate = event => {
@@ -1692,7 +1682,7 @@ async function checkApi() {
 
 loadCompanies();
 checkApi();
-enhanceFileInputs(document);
+enhanceFileInputs(panel);
 
 
 function showGlobalView(name) {
@@ -1747,10 +1737,6 @@ function updateFileSelection(input) {
 
   const shell = input.closest(".file-drop-shell");
   shell?.classList.toggle("has-selection", files.length > 0);
-  const pickerLabel = shell?.querySelector(".file-picker-label");
-  if (pickerLabel) pickerLabel.textContent = files.length
-    ? (input.multiple ? "Trocar arquivos" : "Trocar arquivo")
-    : (input.multiple ? "Selecionar arquivos" : "Selecionar arquivo");
   let selection = shell?.querySelector(":scope > .file-selection");
   if (!selection) {
     selection = document.createElement("div");
@@ -1809,16 +1795,10 @@ function updateFileSelection(input) {
   }
 }
 
-document.addEventListener("change", event => {
+panel.addEventListener("change", event => {
   const input = event.target;
   if (!(input instanceof HTMLInputElement) || input.type !== "file") return;
   updateFileSelection(input);
-});
-
-document.addEventListener("reset", event => {
-  requestAnimationFrame(() => {
-    event.target.querySelectorAll('input[type="file"]').forEach(updateFileSelection);
-  });
 });
 
 let ledgerPreviewTimer;

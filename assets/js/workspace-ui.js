@@ -11,7 +11,6 @@ function previewRowIssues(headers, row) {
 }
 
 function selectedFileBankLabel(input) {
-  if (input.closest?.("#fiscalView, #ledgerView")) return "Selecionado para conferência";
   const banks = selected?.capabilities?.banks || {};
   const bank = input.dataset.bank || input.dataset.reconcileBank
     || (banks[input.dataset.role] ? input.dataset.role : "")
