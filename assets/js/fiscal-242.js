@@ -1423,7 +1423,6 @@
       balance.append(totals, node("small", "", acc ? "Razão identificado − fiscal deste acumulador." : "Razão − fiscal · Entradas: débitos · Saídas: créditos."));
       if (acc) {
         balance.appendChild(node("small", "fiscal-doc-scope-note", acc.note));
-        balance.appendChild(node("small", "fiscal-doc-account-context", "Conta " + group.conta + " completa: diferença de " + money.format(group.diferenca || 0) + "."));
       } else if (group.composicao) {
         balance.appendChild(node("h5", "", "Composição da diferença"));
         const lines = node("div", "fiscal-doc-balance-lines");
@@ -1546,6 +1545,7 @@
           " registros" : "Nenhum registro neste filtro.";
         pageLabel.textContent = "Página " + (page + 1) + " de " + pages;
         previous.disabled = page === 0; next.disabled = page + 1 >= pages;
+        pagination.hidden = rows.length <= 25;
         rowsArea.replaceChildren();
         if (!rows.length) { rowsArea.appendChild(node("p", "fiscal-doc-empty", "Nenhum resultado. Consulte os conciliados ou altere a busca.")); return; }
         if (select.value === "ledger") {

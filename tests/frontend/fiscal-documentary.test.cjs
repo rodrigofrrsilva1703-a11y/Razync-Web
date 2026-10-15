@@ -38,6 +38,7 @@ test('investigação mantém todos os resultados navegáveis sem renderizar milh
   const {all,byClass}=setup();
   const body=()=>all(byClass('fiscal-doc-rows')).find(el=>el.tag==='tbody');
   assert.equal(body().children.length,25);
+  assert.equal(byClass('fiscal-doc-pagination').hidden,false);
   assert.match(byClass('fiscal-doc-caption').textContent,/1–25 de 100 registros/);
   byClass('fiscal-doc-pagination').children.find(el=>el.textContent==='Próxima').click();
   assert.match(byClass('fiscal-doc-caption').textContent,/26–50 de 100/);
@@ -45,6 +46,7 @@ test('investigação mantém todos os resultados navegáveis sem renderizar milh
   assert.match(byClass('fiscal-doc-caption').textContent,/1–25 de 1100/);
   const search=byClass('fiscal-doc-search'); search.value='1100'; search.events.input();
   assert.equal(body().children.length,1);
+  assert.equal(byClass('fiscal-doc-pagination').hidden,true);
   assert.match(byClass('fiscal-doc-caption').textContent,/de 1 registros/);
   assert.equal(all().filter(el=>el.tag==='details').length,0);
 });
