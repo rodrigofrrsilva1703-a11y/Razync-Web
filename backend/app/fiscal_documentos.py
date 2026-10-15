@@ -664,7 +664,22 @@ def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome,
         priority = {"VALOR_DIFERENTE": 0, "ESTORNO_EM_ANALISE": 1, "CONTA_DIFERENTE": 2, "DATA_DIFERENTE": 3,
                     "SEM_LANCAMENTO_IDENTIFICADO": 4, "PROVAVEL": 5, "AMBIGUO": 6}
         pending_docs.sort(key=lambda d: priority.get(d["situacao"], 5))
-        chosen_docs = pending_docs[:30]
+        # Cobertura de categorias: não deixar 30 diferenças de valor ocultarem
+        # todos os casos de conta, data, estorno ou documento não localizado.
+        # A seleção não altera os totais da conciliação local.
+        chosen_docs = []
+        chosen_ids = set()
+        for status in priority:
+            first = next((d for d in pending_docs if d["situacao"] == status), None)
+            if first is not None and len(chosen_docs) < 30:
+                chosen_docs.append(first)
+                chosen_ids.add(id(first))
+        for doc in pending_docs:
+            if len(chosen_docs) >= 30:
+                break
+            if id(doc) not in chosen_ids:
+                chosen_docs.append(doc)
+                chosen_ids.add(id(doc))
         related = {ref for d in chosen_docs for ref in (d.get("razao_ids") or ([d["razao_id"]] if d.get("razao_id") else []))}
         other_ledger = sorted(other_ledger, key=lambda m: (m["id"] not in related,
                               m["situacao"] != "SEM_DOCUMENTO_IDENTIFICADO"))
