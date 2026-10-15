@@ -328,7 +328,7 @@
         for (const observation of reading.observacoes) facts.appendChild(node("li", "", observation));
         analysis.appendChild(facts);
       }
-      if (documentary && reading.destaques?.length) {
+      if (documentary && reading.destaques?.length && !(reading.orientacoes || []).some(step => step.documentos?.length)) {
         analysis.appendChild(node("h5", "", "Documentos para investigar primeiro"));
         const examples = node("div", "fiscal-ai-document-highlights");
         for (const entry of reading.destaques) {
@@ -400,9 +400,23 @@
     if (!instructions?.length) return renderChecklist(item.parecer?.verificacoes || item.verificar);
     const list = node("ol", "fiscal-ai-checklist fiscal-ai-explained-checklist");
     for (const instruction of instructions) {
-      const step = node("li", "");
+      const step = node("li", "", "");
+      if (instruction.categoria) step.classList.add("fiscal-ai-grouped-step");
       const body = node("div", "");
-      body.append(node("strong", "", instruction.acao), node("p", "fiscal-ai-step-purpose", instruction.objetivo));
+      body.appendChild(node("strong", "", instruction.acao));
+      if (instruction.documentos?.length) {
+        const docs = node("ul", "fiscal-ai-step-documents");
+        for (const document of instruction.documentos) {
+          const example = node("li", "");
+          example.appendChild(node("strong", "", document.titulo || document.referencia));
+          if (document.detalhes) example.appendChild(node("span", "", document.detalhes));
+          docs.appendChild(example);
+        }
+        body.appendChild(docs);
+        if (instruction.amostra) body.appendChild(node("p", "fiscal-ai-step-sample",
+          "Exemplos da seleção; os demais documentos desta situação permanecem no cruzamento completo."));
+      }
+      if (instruction.objetivo) body.appendChild(node("p", "fiscal-ai-step-purpose", instruction.objetivo));
       step.appendChild(body); list.appendChild(step);
     }
     return list;
