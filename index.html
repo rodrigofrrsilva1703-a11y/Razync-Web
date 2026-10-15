@@ -468,6 +468,21 @@
                 </div>
                 <button type="submit">Classificar Modelo Domínio</button>
                 <p id="classifyMessage" class="helper"></p>
+                <section id="classificationCoverage" class="classification-coverage" aria-label="Resultado da classificação das linhas" hidden>
+                  <div class="classification-coverage-heading">
+                    <div><strong id="classificationCoveragePercent">—</strong><span>da planilha classificada</span></div>
+                    <span id="classificationCoverageFraction" class="classification-coverage-fraction"></span>
+                  </div>
+                  <div id="classificationCoverageProgress" class="classification-coverage-track" role="progressbar" aria-label="Porcentagem de linhas classificadas" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                    <span id="classificationCoverageFill"></span>
+                  </div>
+                  <div class="classification-coverage-details">
+                    <span><strong id="classificationCoverageNew">0</strong> novas</span>
+                    <span><strong id="classificationCoveragePrevious">0</strong> já classificadas</span>
+                    <span><strong id="classificationCoveragePending">0</strong> pendentes</span>
+                  </div>
+                  <p>Considera as linhas com histórico das abas processadas. Não contabiliza linhas vazias nem abas de lançamentos retirados.</p>
+                </section>
               </form>
               <div class="base-management">
                 <button id="exportBase" type="button" class="secondary-action">Exportar Base Inteligente</button>
