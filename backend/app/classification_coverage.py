@@ -18,10 +18,10 @@ def _cell_text(value):
 
 
 def _normalized_header(ws):
-    for row in range(1, min(ws.max_row, 30) + 1):
+    for row, values in enumerate(ws.iter_rows(max_row=30, values_only=True), start=1):
         columns = {
-            engine.normalizar_texto(_cell_text(ws.cell(row, col).value)).strip(): col
-            for col in range(1, ws.max_column + 1)
+            engine.normalizar_texto(_cell_text(value)).strip(): col
+            for col, value in enumerate(values, start=1)
         }
         if all(key in columns for key in ("historico", "debito", "credito")):
             return row, columns
@@ -36,7 +36,7 @@ def _needs_replacement(row, cols, company_slug, options):
     if bool(options.get("modo_consolidado", False)) and company_slug.startswith("eletro_forte"):
         value_col = cols.get("valor")
         value = (
-            engine.limpar_valor_monetario(row[value_col - 1].value)
+            engine.limpar_valor_monetario(row[value_col - 1])
             if value_col is not None else 0.0
         )
         if value < 0:
@@ -57,8 +57,8 @@ def _needs_replacement(row, cols, company_slug, options):
 
 
 def _classified(row, cols, company_slug, options):
-    debit = _cell_text(row[cols["debito"] - 1].value)
-    credit = _cell_text(row[cols["credito"] - 1].value)
+    debit = _cell_text(row[cols["debito"] - 1])
+    credit = _cell_text(row[cols["credito"] - 1])
     if debit in {"", "0"} or credit in {"", "0"}:
         return False
     column, invalid = _needs_replacement(row, cols, company_slug, options)
@@ -92,15 +92,13 @@ def coverage(original_bytes: bytes, classified_bytes: bytes, company_slug: str,
             original_header, source_columns = _normalized_header(source)
             if original_header is None:
                 continue
-            for n in range(header + 1, ws.max_row + 1):
-                row = [ws.cell(n, c) for c in range(1, ws.max_column + 1)]
-                if not _cell_text(row[columns["historico"] - 1].value):
+            results = ws.iter_rows(min_row=header + 1, values_only=True)
+            originals = source.iter_rows(min_row=original_header + 1, values_only=True)
+            for row, source_row in zip(results, originals):
+                if not _cell_text(row[columns["historico"] - 1]):
                     continue
                 total += 1
                 complete = _classified(row, columns, company_slug, options)
-                source_row = [
-                    source.cell(n, c) for c in range(1, source.max_column + 1)
-                ]
                 was_complete = _classified(source_row, source_columns, company_slug, options)
                 if complete:
                     classified += 1
