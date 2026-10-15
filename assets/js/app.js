@@ -1186,13 +1186,55 @@ function setEletro242ClassificationMode(mode) {
 }
 
 document.querySelectorAll("#eletro242Modes [data-eletro242-mode]").forEach(button => {
-  button.addEventListener("click", () => setEletro242ClassificationMode(button.dataset.eletro242Mode));
+  button.addEventListener("click", () => {
+    if (eletro242ClassificationMode !== button.dataset.eletro242Mode) {
+      cancelClassificationPreview();
+      $("#classifyMessage").textContent = "";
+    }
+    setEletro242ClassificationMode(button.dataset.eletro242Mode);
+  });
 });
 
 let classificationController;
+
+function renderClassificationCoverage(coverage) {
+  const panel = $("#classificationCoverage");
+  if (!panel) return;
+  const total = Number(coverage?.total);
+  if (!coverage || !Number.isInteger(total) || total < 0) {
+    panel.hidden = true;
+    return;
+  }
+  const count = name => {
+    const value = Number(coverage[name]);
+    return Number.isInteger(value) ? Math.max(0, Math.min(total, value)) : 0;
+  };
+  const done = count("classificadas");
+  const pending = total - done;
+  const percent = total ? Math.round(done / total * 1000) / 10 : 0;
+  const formatNumber = value => value.toLocaleString("pt-BR");
+  const formatPercent = value => value.toLocaleString("pt-BR", {
+    minimumFractionDigits: 1, maximumFractionDigits: 1
+  });
+  $("#classificationCoveragePercent").textContent = total ? `${formatPercent(percent)}%` : "—";
+  $("#classificationCoverageFraction").textContent = `${formatNumber(done)} de ${formatNumber(total)} linhas`;
+  $("#classificationCoverageNew").textContent = formatNumber(count("novas_classificadas"));
+  $("#classificationCoveragePrevious").textContent = formatNumber(count("ja_classificadas"));
+  $("#classificationCoveragePending").textContent = formatNumber(pending);
+  $("#classificationCoverageFill").style.width = `${percent}%`;
+  const bar = $("#classificationCoverageProgress");
+  if (total) {
+    bar.setAttribute("aria-valuenow", String(percent));
+  } else {
+    bar.removeAttribute("aria-valuenow");
+  }
+  panel.hidden = false;
+}
+
 function cancelClassificationPreview() {
   classificationController?.abort();
   $("#classificationPreview").replaceChildren();
+  $("#classificationCoverage").hidden = true;
   classifyForm.querySelector('button[type="submit"]').disabled = false;
 }
 classifyForm.addEventListener("change", () => {
@@ -1233,12 +1275,13 @@ classifyForm.addEventListener("submit", async (event) => {
     const result = await preview.json();
     if (controller.signal.aborted || selected?.codigo !== companyCode) return;
     showWorkflowPreview(result,target);
+    renderClassificationCoverage(summary.cobertura);
     const download = document.createElement("button");download.type="button";download.className="preview-download";
     download.textContent="Baixar Excel classificado";
     const disposition=response.headers.get("content-disposition");
     download.addEventListener("click",()=>downloadBlob(new Response(workbook,{headers:disposition ? {"Content-Disposition":disposition} : {}}),`RAZYNC_${companyCode}_CLASSIFICADO.xlsx`));
     target.querySelector(".preview-primary-actions").append(download);
-    $("#classifyMessage").textContent = `Classificação concluída: ${summary.automaticos || 0} automáticos. Confira a prévia antes de baixar.`;
+    $("#classifyMessage").textContent = "Classificação concluída. Confira as linhas classificadas, as pendências e a prévia antes de baixar.";
     if ([242, 1408].includes(Number(companyCode)) && typeof window.prepareIntelligentReview === "function") {
       const reviewFile = new File([workbook], `RAZYNC_${companyCode}_CLASSIFICADO.xlsx`, {
         type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
