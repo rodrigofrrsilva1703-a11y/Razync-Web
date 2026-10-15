@@ -7,12 +7,12 @@ from app import fiscal_ai, groq_fiscal
 def test_adaptive_plan_shared_by_all_free_providers():
     assert len(REVIEW_PROMPT.split()) < 650
     assert "máximo 150" in REVIEW_PROMPT
-    assert "máximo 90" in REVIEW_PROMPT
+    assert "máximo 130" in REVIEW_PROMPT
     assert "não preencha com hipóteses genéricas" in REVIEW_PROMPT
     assert "2 ou 3 passos" in REVIEW_PROMPT
-    assert "sem introdução nem repetição dos totais" in REVIEW_PROMPT
+    assert "Sem introdução nem repetição dos totais" in REVIEW_PROMPT
     assert "a causa está indeterminada" in REVIEW_PROMPT
-    assert "não no Razão" in REVIEW_PROMPT
+    assert "Acumulador fiscal, conta contábil e contrapartida" in REVIEW_PROMPT
     assert output_budget(2) == 1900
     assert output_budget([{"situacao":"REVISAR"}, {"situacao":"CONFERE COM ALERTAS"}]) == 1550
     assert output_budget([{"situacao":"CONFERE"}]) < output_budget([{"situacao":"CONFERE COM ALERTAS"}]) < output_budget([{"situacao":"REVISAR"}])
