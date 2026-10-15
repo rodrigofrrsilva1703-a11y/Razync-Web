@@ -306,7 +306,7 @@ def audit_analysis(item):
     }
 
 
-ANALYSIS_VERSION = "evidence-specific-v10"
+ANALYSIS_VERSION = "grouped-documentary-v11"
 
 
 def narrative_sections(value):
