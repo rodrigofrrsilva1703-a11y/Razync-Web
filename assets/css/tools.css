@@ -1186,3 +1186,81 @@
     font-size:12px !important;
   }
 }
+
+
+/* Base Inteligente: cobertura real de linhas, sem alterar a prévia da planilha. */
+#companyPanel .classification-coverage {
+  display:grid;
+  gap:11px;
+  min-width:0;
+  margin-top:14px;
+  padding:14px 0 0;
+  border-top:1px solid #e2e9f1;
+}
+#companyPanel .classification-coverage[hidden] { display:none !important; }
+#companyPanel .classification-coverage-heading {
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:10px;
+  flex-wrap:wrap;
+}
+#companyPanel .classification-coverage-heading > div {
+  display:flex;
+  gap:9px;
+  align-items:baseline;
+  min-width:0;
+  flex-wrap:wrap;
+}
+#companyPanel .classification-coverage-heading strong {
+  font-size:clamp(22px,3vw,28px);
+  letter-spacing:-.04em;
+  font-weight:740;
+  color:#254e80;
+  line-height:1.1;
+  font-variant-numeric:tabular-nums;
+}
+#companyPanel .classification-coverage-heading span {
+  font-size:12px;
+  color:#66778a;
+}
+#companyPanel .classification-coverage-fraction {
+  font-variant-numeric:tabular-nums;
+}
+#companyPanel .classification-coverage-track {
+  width:100%;
+  height:8px;
+  overflow:hidden;
+  border-radius:99px;
+  background:#e6edf5;
+}
+#companyPanel .classification-coverage-track span {
+  display:block;
+  height:100%;
+  width:0;
+  border-radius:inherit;
+  background:#4774b4;
+  transition:width 230ms ease;
+}
+#companyPanel .classification-coverage-details {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px 20px;
+  font-size:12px;
+  color:#64758b;
+}
+#companyPanel .classification-coverage-details strong {
+  color:#253e5c;
+  font-weight:740;
+  font-variant-numeric:tabular-nums;
+}
+#companyPanel .classification-coverage > p {
+  margin:0;
+  color:#758599;
+  font-size:11px;
+  line-height:1.5;
+}
+@media(prefers-reduced-motion:reduce) {
+  #companyPanel .classification-coverage-track span { transition:none; }
+}
