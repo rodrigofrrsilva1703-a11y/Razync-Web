@@ -922,47 +922,6 @@
 #fiscalView .fiscal-table-note {padding:8px 20px 17px;font-size:11px;max-width:960px;}
 #fiscalView .fiscal-detail-metric strong {font-size:20px;overflow-wrap:anywhere;}
 
-/* Resultado documental: números alinhados, lista lateral discreta e menos caixas. */
-#fiscalView #fiscal242InvestigarResultado > .fiscal-investigation-summary {display:flex;flex-wrap:wrap;align-items:center;gap:12px 28px;padding:10px 0;margin:0 0 10px;border-bottom:1px solid #e0e7ef;}
-#fiscalView #fiscal242InvestigarResultado .fiscal-investigation-metric {display:flex;align-items:baseline;gap:8px;padding:0;border:0;border-radius:0;background:none;box-shadow:none;}
-#fiscalView #fiscal242InvestigarResultado .fiscal-investigation-metric strong {order:-1;font-size:17px;font-variant-numeric:tabular-nums;}
-#fiscalView #fiscal242InvestigarResultado .fiscal-investigation-metric small {font-size:11px;color:#5e7389;}
-#fiscalView #fiscal242InvestigarResultado > .fiscal-warnings {padding:3px 0 3px 10px;border-left:2px solid #c8d6e7;margin:8px 0 12px;gap:3px;}
-#fiscalView #fiscal242InvestigarResultado > .fiscal-warnings:empty {display:none;}
-#fiscalView #fiscal242InvestigarResultado > .fiscal-warnings p {margin:0;padding:0;border:0;border-radius:0;background:none;font-size:10.5px;color:#67798d;line-height:1.5;}
-#fiscalView .fiscal-doc-lookup {margin:10px 0;padding:8px 0;}
-#fiscalView .fiscal-doc-lookup-input {background:#fff;padding:10px 12px;border-color:#bfcfdf;}
-#fiscalView .fiscal-doc-lookup-results .fiscal-investigation-table {border:1px solid #dce5ee;border-radius:8px;overflow:hidden;}
-#fiscalView .fiscal-doc-lookup-results th:not(:first-child),#fiscalView .fiscal-doc-search-totals th:not(:first-child) {text-align:right;}
-#fiscalView .fiscal-doc-lookup-results .fiscal-money,#fiscalView .fiscal-doc-search-totals .fiscal-money {text-align:right;font-size:13px;white-space:nowrap;color:#304b67;}
-#fiscalView .fiscal-doc-lookup-results .fiscal-doc-lookup-difference,#fiscalView .fiscal-doc-search-totals .fiscal-doc-lookup-difference {color:#1f4875;font-size:15px;}
-#fiscalView .fiscal-doc-workspace {grid-template-columns:220px minmax(0,1fr);gap:14px;margin-top:14px;}
-#fiscalView .fiscal-doc-accounts {gap:0;background:#f8fafc;border:1px solid #e1e8ef;border-radius:9px;}
-#fiscalView .fiscal-doc-account {gap:5px;padding:12px;border:0;border-bottom:1px solid #e3eaf1;border-radius:0;background:transparent;box-shadow:none;}
-#fiscalView .fiscal-doc-account:last-child {border-bottom:0;}
-#fiscalView .fiscal-doc-account:hover {background:#eef3f9;}
-#fiscalView .fiscal-doc-account[aria-current="true"] {background:#eaf2fc;box-shadow:inset 3px 0 #426e9e;}
-#fiscalView .fiscal-doc-account span {font-size:11px;color:#587089;}
-#fiscalView .fiscal-doc-reader {padding:16px 18px;border-radius:9px;}
-#fiscalView .fiscal-doc-reader h4 {font-size:16px;line-height:1.4;margin:6px 0 12px;color:#263f5a;}
-#fiscalView .fiscal-doc-balance {padding:0;background:none;border:0;margin:12px 0 18px;}
-#fiscalView .fiscal-doc-balance-caption {display:block;font-size:9px;letter-spacing:.06em;color:#71849a;}
-#fiscalView .fiscal-doc-comparison-totals {grid-template-columns:repeat(3,minmax(0,1fr));gap:0;align-items:stretch;padding:0;margin:8px 0 9px;border:1px solid #dfe7f0;border-radius:8px;overflow:hidden;}
-#fiscalView .fiscal-doc-comparison-totals > div {padding:11px 12px;border-right:1px solid #e0e8f1;}
-#fiscalView .fiscal-doc-comparison-totals > div:last-child {border:0;}
-#fiscalView .fiscal-doc-comparison-totals small {font-size:10px;color:#5e748d;margin:0 0 7px;}
-#fiscalView .fiscal-doc-comparison-totals strong {font-size:clamp(13px,1.3vw,18px);font-variant-numeric:tabular-nums;letter-spacing:-.025em;white-space:nowrap;color:#2e4966;}
-#fiscalView .fiscal-doc-total-difference {background:#edf4fc;}
-#fiscalView .fiscal-doc-total-difference strong {color:#234e7c;}
-#fiscalView .fiscal-doc-comparison-totals .fiscal-doc-difference-direction {font-size:9px;margin:5px 0 0;color:#527496;}
-#fiscalView .fiscal-doc-balance h5 {margin-top:14px;font-size:11px;font-weight:650;}
-#fiscalView .fiscal-doc-balance-lines > div {padding:7px 0;border-bottom:1px solid #edf1f6;}
-#fiscalView .fiscal-doc-balance-lines strong {font-size:12px;font-variant-numeric:tabular-nums;color:#2e4e70;}
-#fiscalView .fiscal-doc-controls {margin-top:16px;}
-#fiscalView .fiscal-doc-rows .fiscal-investigation-table td {padding:13px 12px;}
-#fiscalView .fiscal-doc-rows .fiscal-doc-value {font-variant-numeric:tabular-nums;font-size:16px;color:#2d4967;}
-@media(max-width:1000px) {#fiscalView .fiscal-doc-workspace {grid-template-columns:180px minmax(0,1fr);}#fiscalView .fiscal-doc-reader {padding:13px;}#fiscalView .fiscal-doc-comparison-totals > div {padding:9px 8px;}}
-@media(max-width:680px) {#fiscalView .fiscal-doc-workspace {grid-template-columns:1fr;}#fiscalView .fiscal-doc-accounts {flex-direction:row;}#fiscalView .fiscal-doc-account {flex:0 0 170px;border-right:1px solid #e1e8ef;border-bottom:0;}#fiscalView .fiscal-doc-comparison-totals {grid-template-columns:1fr 1fr;}#fiscalView .fiscal-doc-total-difference {grid-column:1/-1;border-top:1px solid #dfe7f0!important;}#fiscalView .fiscal-doc-comparison-totals strong {font-size:15px;}#fiscalView #fiscal242InvestigarResultado > .fiscal-investigation-summary {gap:8px 15px;}}
 #fiscalView .fiscal-ai {padding:22px;background:#fff;}
 #fiscalView .fiscal-ai-heading h3 {font-size:19px;letter-spacing:-.02em;}
 #fiscalView .fiscal-ai-heading p {font-size:12px;max-width:620px;line-height:1.65;}
@@ -1389,6 +1348,23 @@
 #fiscalView .fiscal-doc-rows .fiscal-doc-value {font-variant-numeric:tabular-nums;font-size:16px;color:#2d4967;}
 @media(max-width:1000px) {#fiscalView .fiscal-doc-workspace {grid-template-columns:180px minmax(0,1fr);}#fiscalView .fiscal-doc-reader {padding:13px;}#fiscalView .fiscal-doc-comparison-totals > div {padding:9px 8px;}}
 @media(max-width:680px) {#fiscalView .fiscal-doc-workspace {grid-template-columns:1fr;}#fiscalView .fiscal-doc-accounts {flex-direction:row;}#fiscalView .fiscal-doc-account {flex:0 0 170px;border-right:1px solid #e1e8ef;border-bottom:0;}#fiscalView .fiscal-doc-comparison-totals {grid-template-columns:1fr 1fr;}#fiscalView .fiscal-doc-total-difference {grid-column:1/-1;border-top:1px solid #dfe7f0!important;}#fiscalView .fiscal-doc-comparison-totals strong {font-size:15px;}#fiscalView #fiscal242InvestigarResultado > .fiscal-investigation-summary {gap:8px 15px;}}
+/* A seleção, seus totais e os lançamentos formam uma única superfície. */
+#fiscalView .fiscal-doc-stage {padding:12px 14px 14px;border:1px solid #dce5ef;border-radius:10px;background:#fff;margin-top:12px;}
+#fiscalView .fiscal-doc-stage .fiscal-doc-lookup {margin:0;padding:0 0 11px;border-bottom:1px solid #e2e9f1;}
+#fiscalView .fiscal-doc-stage .fiscal-doc-lookup-results:empty {display:none;}
+#fiscalView .fiscal-doc-query-status {margin:0;font-size:11px;color:#647a90;}
+#fiscalView .fiscal-doc-stage .fiscal-doc-workspace {margin-top:12px;gap:14px;}
+#fiscalView .fiscal-doc-stage .fiscal-doc-accounts {border:0;border-right:1px solid #e3eaf2;border-radius:0;}
+#fiscalView .fiscal-doc-stage .fiscal-doc-reader {padding:2px 6px 0 2px;border:0;border-radius:0;}
+#fiscalView .fiscal-doc-stage .fiscal-doc-reader h4 {margin-bottom:8px;}
+#fiscalView .fiscal-doc-stage .fiscal-doc-balance {margin:10px 0 12px;}
+#fiscalView .fiscal-doc-scope-note {display:block;margin-top:7px;line-height:1.6;}
+#fiscalView .fiscal-doc-account-context {display:block;margin-top:4px;color:#6b7f94;}
+#fiscalView .fiscal-doc-document-title {font-size:12px;font-weight:650;color:#365775;margin:10px 0 0;padding-top:12px;border-top:1px solid #e1e8f0;}
+#fiscalView .fiscal-doc-stage .fiscal-doc-controls {margin:10px 0 7px;}
+#fiscalView .fiscal-doc-stage .fiscal-doc-caption {margin:6px 0;}
+#fiscalView .fiscal-doc-stage .fiscal-doc-pagination {padding:7px 0;gap:9px;}
+@media(max-width:680px) {#fiscalView .fiscal-doc-stage {padding:10px;}#fiscalView .fiscal-doc-stage .fiscal-doc-accounts {border-right:0;border-bottom:1px solid #e3eaf2;}#fiscalView .fiscal-doc-stage .fiscal-doc-reader {padding-top:5px;}}
 #fiscalView .fiscal-ai {padding:22px;border-radius:15px;background:#fff;border:1px solid #e0e7ef;}
 #fiscalView .fiscal-ai-heading {gap:13px;padding-bottom:16px;border-bottom:1px solid #edf1f5;margin-bottom:16px;}
 #fiscalView .fiscal-ai-heading h3 {font-size:23px;letter-spacing:-.04em;margin:5px 0 7px;color:#233b55;}

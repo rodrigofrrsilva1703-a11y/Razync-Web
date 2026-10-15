@@ -82,10 +82,11 @@ test('composição do total destaca efeitos não nulos e mantém os sinais',()=>
 test('busca por conta exibe fiscal, Razão considerado e diferença sem depender do filtro de pendências',()=>{
   const {byClass,all}=setup();
   const lookup=byClass('fiscal-doc-lookup-input'); lookup.value='508'; lookup.events.input();
-  const cells=all(byClass('fiscal-doc-lookup-results')).filter(el=>el.tag==='td');
-  assert.match(cells[1].textContent,/110\.000,00/);
-  assert.match(cells[2].textContent,/111\.000,00/);
-  assert.match(cells[3].textContent,/1\.000,00/);
+  const values=all(byClass('fiscal-doc-comparison-totals')).filter(el=>el.tag==='strong');
+  assert.match(values[0].textContent,/110\.000,00/);
+  assert.match(values[1].textContent,/111\.000,00/);
+  assert.match(values[2].textContent,/1\.000,00/);
+  assert.equal(all(byClass('fiscal-doc-lookup-results')).filter(el=>el.tag==='table').length,0);
   const search=byClass('fiscal-doc-search'); search.value='508'; search.events.input();
   assert.equal(byClass('fiscal-doc-filter').value,'all');
   assert.match(byClass('fiscal-doc-caption').textContent,/de 1100 registros/);
@@ -95,13 +96,45 @@ test('busca por acumulador mostra o Razão identificado e abre todos os document
   const {byClass,all}=setup();
   const search=byClass('fiscal-doc-search'); search.value='1152'; search.events.input();
   assert.match(byClass('fiscal-doc-caption').textContent,/de 1100 registros/);
-  const cells=all(byClass('fiscal-doc-search-totals')).filter(el=>el.tag==='td');
-  assert.match(cells[2].textContent,/111\.000,00/);
-  assert.match(cells[3].textContent,/1\.000,00/);
+  const values=all(byClass('fiscal-doc-comparison-totals')).filter(el=>el.tag==='strong');
+  assert.match(values[1].textContent,/111\.000,00/);
+  assert.match(values[2].textContent,/1\.000,00/);
+  assert.match(byClass('fiscal-doc-document-title').textContent,/1152/);
   const lookup=byClass('fiscal-doc-lookup-input'); lookup.value='acumulador 1152'; lookup.events.input();
-  assert.equal(all(byClass('fiscal-doc-lookup-results')).filter(el=>el.tag==='tbody')[0].children.length,2);
+  assert.equal(all(byClass('fiscal-doc-lookup-results')).filter(el=>el.tag==='table').length,0);
   assert.equal(byClass('fiscal-doc-search').value,'1152');
-  assert.equal(byClass('fiscal-doc-search-totals').children.length,0);
+  assert.equal(all().filter(el=>el.className==='fiscal-doc-search-totals').length,0);
+});
+
+test('pesquisar uma nota dentro do acumulador mantém os totais e a lista no mesmo escopo',()=>{
+  const {byClass,all}=setup();
+  const lookup=byClass('fiscal-doc-lookup-input'); lookup.value='1152';lookup.events.input();
+  const search=byClass('fiscal-doc-search'); search.value='1100';search.events.input();
+  assert.match(byClass('fiscal-doc-balance-caption').textContent,/ACUMULADOR 1152/);
+  assert.match(byClass('fiscal-doc-document-title').textContent,/1152/);
+  assert.match(byClass('fiscal-doc-caption').textContent,/de 1 registros/);
+  assert.match(all(byClass('fiscal-doc-comparison-totals')).filter(el=>el.tag==='strong')[1].textContent,/111\.000,00/);
+  assert.match(byClass('fiscal-doc-filter').children.find(el=>el.value==='all').textContent,/1100/);
+});
+
+test('totais, contagens, cobertura e exportação usam apenas o acumulador selecionado',async()=>{
+  const {context,byClass,all,exportedBlob}=setup();
+  const document=(code,note,value)=>({id:note,nota:note,data:'03/08/2026',serie:'1',parceiro:'Fornecedor',situacao:'VALOR_DIFERENTE',
+    valor_fiscal:value,valor_razao:value+10,diferenca:10,linhas_fiscais:[{id:note,acumulador:code,cfop:code,valor:value,linha_origem:1}],
+    lancamentos:[{id:'R'+note,conta:'470',data:'03/08/2026',valor:value+10,historico:'COMPRA NF '+note}]});
+  context.renderInvestigation({contas:[{conta:'470',tipo:'ENTRADAS',descricao:'Compras',fiscal:300,contabil:320,diferenca:20,documentos_total:2,
+    acumuladores:[{codigo:'1102',valor_resumo:100,valor_documentos:100,detalhamento_disponivel:true},{codigo:'1403',valor_resumo:200,valor_documentos:200,detalhamento_disponivel:true}],
+    comparacoes:[document('1102','NOTA-A',100),document('1403','NOTA-B',200)],razao_sem_vinculo:[]}]});
+  const lookup=byClass('fiscal-doc-lookup-input');lookup.value='1403';lookup.events.input();
+  const values=all(byClass('fiscal-doc-comparison-totals')).filter(el=>el.tag==='strong').map(el=>el.textContent);
+  assert.match(values[0],/200,00/);assert.match(values[1],/210,00/);assert.match(values[2],/10,00/);
+  assert.match(byClass('fiscal-doc-filter').children.find(el=>el.value==='all').textContent,/\(1\)/);
+  assert.equal(all(byClass('fiscal-doc-coverage')).find(el=>el.tag==='tbody').children.length,1);
+  byClass('fiscal-doc-export').click();const csv=await exportedBlob().text();
+  assert.match(csv,/NOTA-B/);assert.doesNotMatch(csv,/NOTA-A/);
+  const search=byClass('fiscal-doc-search');search.value='NOTA-A';search.events.input();
+  assert.match(byClass('fiscal-doc-caption').textContent,/Nenhum registro/);
+  assert.match(byClass('fiscal-doc-balance-caption').textContent,/1403/);
 });
 
 test('consulta abre a conta encontrada, restringe a lateral e restaura a navegação ao limpar',()=>{
