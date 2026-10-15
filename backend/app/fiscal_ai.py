@@ -18,6 +18,7 @@ from app.fiscal_242 import conferencia_fiscal_preview
 from app.ai_budget import request_slot, daily_report
 from app.fiscal_ai_audit import audit_analysis, structured_analysis, link_text_evidence, protect_publication, local_review_sufficient
 from app.fiscal_ai_strategy import REVIEW_PROMPT, output_budget, compact_summary
+from app.fiscal_ai_dossier import build_dossier
 from app.groq_fiscal import complete as _groq_completion, is_enabled as _groq_enabled, selected_model as _groq_model
 
 logger = logging.getLogger(__name__)
@@ -135,6 +136,13 @@ def detailed_context(report):
             group["pendencias_documentais"] = pendentes.get(key, [])
             group["cobertura_documental"] = report.get("cobertura_documental", {}).get(key, {})
             group["resumo_documental_local"] = report.get("resumo_documental", {}).get(key, {})
+        key = f'{account["conta"]}:{account["tipo"]}'
+        group["dossie_contabil"] = build_dossier(
+            summary, [row for _, row in selected],
+            report.get("documentos_pendentes", {}).get(key, []),
+            report.get("resumo_documental", {}).get(key, {}),
+            report.get("cobertura_documental", {}).get(key, {}),
+        )
     context = {
         "periodo_fiscal": report.get("periodo_fiscal", {}),
         "periodo_razao": report.get("periodo_razao", {}),
@@ -725,7 +733,13 @@ def _validar_resposta_ia(result, report, mapping, references, *, groq=False, pro
         rows = [row for row in report.get("lancamentos", []) if row.get("conta") == mapping[ident]["conta"]
                 and row.get("_tipo_ia", mapping[ident]["tipo"]) == mapping[ident]["tipo"]]
         source_rows = [dict(row, referencia=ref) for ref,row in references.items() if str(row.get("conta")) == str(mapping[ident]["conta"])]
-        output[-1]["resumo_documental"] = report.get("resumo_documental", {}).get(f'{mapping[ident]["conta"]}:{mapping[ident]["tipo"]}', {})
+        key = f'{mapping[ident]["conta"]}:{mapping[ident]["tipo"]}'
+        output[-1]["dossie_contabil"] = build_dossier(
+            conta_atual, rows, docs,
+            report.get("resumo_documental", {}).get(key, {}),
+            report.get("cobertura_documental", {}).get(key, {}),
+        )
+        output[-1]["resumo_documental"] = report.get("resumo_documental", {}).get(key, {})
         output[-1]["cobertura_documental"] = report.get("cobertura_documental", {}).get(f'{mapping[ident]["conta"]}:{mapping[ident]["tipo"]}', {})
         output[-1]["parecer"] = {"comparacoes_documentais": docs}
         link_text_evidence(output[-1], source_rows)
