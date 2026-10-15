@@ -142,6 +142,7 @@ def _compact_group(group):
         "situacao": group.get("situacao"),
         "resumo": compact_summary(group.get("resumo")),
         "valores_brl": group.get("valores_brl"),
+        "dossie_contabil": group.get("dossie_contabil", {}),
         "indicadores_locais": _record_indicators(rows),
         "amostra_enviada": len(reduced),
         "registros_do_grupo": group.get("cobertura", {}).get("existentes", len(rows)),
