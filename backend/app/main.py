@@ -25,7 +25,7 @@ from app.registry import CAPABILITIES, COMMON_TOOLS
 from app.company_service import catalog as company_catalog
 from app.advanced import workflow_modelo, processar_itau_generico, processar_daycoval_generico
 from app.conferencia import ler_modelo_excel, conciliar
-from app.classification_service import learn as base_learn, status as base_status, classify as base_classify
+from app.classification_service import learn as base_learn, status as base_status, classify as base_classify, classify_with_coverage as base_classify_with_coverage
 from app.migration_services import workflow as migrated_workflow, statement as migrated_statement
 from app.global_tools import processar_arquivo, processar_razao, conciliar_razao
 from app.tasks import dashboard as task_dashboard, set_company_status, create_task, update_task, delete_task
@@ -380,7 +380,7 @@ async def intelligent_base_classify(company_code: int, file: UploadFile = File(.
         options = json.loads(options_json)
         if not isinstance(options, dict):
             raise ValueError('Opções de classificação inválidas.')
-        workbook, summary = await run_in_threadpool(base_classify, company_code, await file.read(), file.filename or "modelo.xlsx", options)
+        workbook, summary = await run_in_threadpool(base_classify_with_coverage, company_code, await file.read(), file.filename or "modelo.xlsx", options)
         headers = {"X-Razync-Summary": json.dumps(summary, ensure_ascii=False)}
         response = _download(workbook, f"RAZYNC_{company_code}_CLASSIFICADO.xlsx")
         response.headers.update(headers)
