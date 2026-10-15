@@ -244,6 +244,9 @@ def classify(company, content, filename, options=None):
             'data_inicial': options.get('data_inicial', ''),
             'data_final': options.get('data_final', ''),
         }
+    from app.classification_coverage import coverage
+    summary = dict(summary)
+    summary['cobertura'] = coverage(content, workbook, slug(company), options)
     return workbook, summary
 
 def pending(company, content, data_inicial='', data_final=''):
