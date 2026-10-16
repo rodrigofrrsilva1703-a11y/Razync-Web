@@ -52,10 +52,13 @@ CAPABILITIES = {
         "status": "api_ready",
         "workflow": "advanced",
         "roles": [
-            {"name": "btg", "label": "Extrato BTG", "accept": ".pdf", "multiple": True, "optional": True},
-            {"name": "bradesco", "label": "Extrato Bradesco", "accept": ".pdf", "multiple": True, "optional": True},
+            {"name": "btg", "label": "Extrato BTG", "accept": ".pdf", "multiple": True},
         ],
-        "banks": {"btg": "510", "bradesco": "2721"},
+        "banks": {"btg": "510"},
+        "options": [
+            {"name": "data_inicial", "label": "Data inicial (opcional)", "type": "date"},
+            {"name": "data_final", "label": "Data final (opcional)", "type": "date"},
+        ],
     },
     841: {"status": "api_ready", "workflow": "standard", "banks": {"inter": "506"}},
     912: {"status": "api_ready", "workflow": "standard", "banks": {"sicredi": "515"}},
