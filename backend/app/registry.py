@@ -48,6 +48,15 @@ CAPABILITIES = {
     },
     625: {"status": "api_ready", "workflow": "standard_multi_bank", "banks": {"banco_brasil": "8", "caixa": "508", "sicredi": "3999"}},
     626: {"status": "api_ready", "workflow": "standard_multi_bank", "banks": {"banco_brasil": "", "sicredi": ""}},
+    734: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [
+            {"name": "btg", "label": "Extrato BTG", "accept": ".pdf", "multiple": True, "optional": True},
+            {"name": "bradesco", "label": "Extrato Bradesco", "accept": ".pdf", "multiple": True, "optional": True},
+        ],
+        "banks": {"btg": "510", "bradesco": "2721"},
+    },
     841: {"status": "api_ready", "workflow": "standard", "banks": {"inter": "506"}},
     912: {"status": "api_ready", "workflow": "standard", "banks": {"sicredi": "515"}},
     964: {"status": "api_ready", "workflow": "standard", "banks": {"bradesco": "9"}},
