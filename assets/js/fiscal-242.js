@@ -320,8 +320,24 @@
     if (reading?.resultado) {
       analysis.classList.add("fiscal-ai-organized-analysis");
       const documentary = reading.documental_especifico === true;
-      analysis.append(node("h5", "", documentary ? "Diagnóstico desta conta" : "Resultado da conta"),
-        node("p", "fiscal-ai-conclusion", reading.resultado));
+      const executive = item.parecer?.resumo_executivo;
+      if (executive?.conclusao) {
+        const overview = node("section", "fiscal-ai-executive");
+        const top = node("div", "fiscal-ai-executive-top");
+        top.append(node("span", "fiscal-ai-executive-kicker", "LEITURA DA CONTA"),
+          node("span", "fiscal-ai-executive-coverage", executive.cobertura));
+        overview.append(top, node("h5", "fiscal-ai-executive-title", executive.titulo),
+          node("p", "fiscal-ai-executive-conclusion", executive.conclusao));
+        const next = node("div", "fiscal-ai-executive-next");
+        next.append(node("span", "fiscal-ai-executive-next-label", "COMECE POR AQUI"),
+          node("strong", "", executive.foco), node("p", "", executive.primeiro_passo));
+        if (executive.exemplos?.length) next.appendChild(node("small", "", executive.exemplos.join(" · ")));
+        overview.appendChild(next); analysis.appendChild(overview);
+        analysis.appendChild(node("p", "fiscal-ai-diagnostic-caption", reading.resultado));
+      } else {
+        analysis.append(node("h5", "", documentary ? "Diagnóstico desta conta" : "Resultado da conta"),
+          node("p", "fiscal-ai-conclusion", reading.resultado));
+      }
       if (reading.observacoes?.length) {
         analysis.appendChild(node("h5", "", documentary ? "Tipos de pendência encontrados" : "O que os lançamentos mostram"));
         const facts = node("ul", "fiscal-ai-finding-list");
@@ -417,6 +433,13 @@
           "Exemplos da seleção; os demais documentos desta situação permanecem no cruzamento completo."));
       }
       if (instruction.objetivo) body.appendChild(node("p", "fiscal-ai-step-purpose", instruction.objetivo));
+      if (instruction.para_concluir || instruction.quando_reavaliar) {
+        const criteria = node("details", "fiscal-ai-decision");
+        criteria.appendChild(node("summary", "", "Como saber se posso concluir?"));
+        if (instruction.para_concluir) criteria.append(node("strong", "", "Para concluir"), node("p", "", instruction.para_concluir));
+        if (instruction.quando_reavaliar) criteria.append(node("strong", "", "Quando reavaliar a hipótese"), node("p", "", instruction.quando_reavaliar));
+        body.appendChild(criteria);
+      }
       step.appendChild(body); list.appendChild(step);
     }
     return list;
@@ -541,6 +564,8 @@
           }
           body.append(node("h6", "", "O que falta confirmar"), node("p", "", entry.falta_confirmar),
             node("h6", "", "Próxima ação"), node("p", "fiscal-ai-case-action", entry.acao));
+          if (entry.para_concluir) body.append(node("h6", "", "Para concluir"), node("p", "", entry.para_concluir));
+          if (entry.quando_reavaliar) body.append(node("h6", "", "Quando reavaliar a hipótese"), node("p", "", entry.quando_reavaliar));
           for (const step of entry.verificacoes_ia || []) body.appendChild(node("p", "fiscal-ai-case-ai-step", step));
         });
         detail.append(summary, body); list.appendChild(detail);

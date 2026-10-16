@@ -1114,7 +1114,7 @@ def gerar_excel_analise(payload: dict) -> bytes:
     case_sources = book.create_sheet("Evidências por pendência")
     case_sources.append(["Conta", "Tipo", "Caso", "Referência", "Conta candidata", "Data", "Histórico", "Contrapartida", "Valor"])
     case_sheet.append(["Conta", "Tipo", "Caso", "Nota", "Evidência", "Leitura local", "Fiscal", "Razão candidato",
-                       "Diferença", "Referências", "Interpretação da IA", "Falta confirmar", "Próxima ação"])
+                       "Diferença", "Referências", "Interpretação da IA", "Falta confirmar", "Próxima ação", "Para concluir", "Quando reavaliar"])
     grounded.append(["Conta", "Tipo", "Origem dos fatos", "Hipóteses da IA", "Informações faltantes", "Cobertura dos lançamentos", "IA e modelo"])
     cor_titulo, cor_cabecalho, cor_texto = "203B59", "EAF0F7", "30485F"
     main.merge_cells("A1:L1")
@@ -1189,6 +1189,10 @@ def gerar_excel_analise(payload: dict) -> bytes:
                                      + (": " + str(doc["detalhes"]) if doc.get("detalhes") else ""))
                     if step.get("objetivo"):
                         parts.append("   Conferência: " + str(step["objetivo"]))
+                    if step.get("para_concluir"):
+                        parts.append("   Para concluir: " + str(step["para_concluir"]))
+                    if step.get("quando_reavaliar"):
+                        parts.append("   Quando reavaliar: " + str(step["quando_reavaliar"]))
                     blocks.append("\n".join(parts))
                 displayed_steps = "\n\n".join(blocks)
             else:
@@ -1217,7 +1221,7 @@ def gerar_excel_analise(payload: dict) -> bytes:
                 texto(case.get("grau_evidencia"), 80), texto(case.get("explicacao_local")),
                 numero(case.get("valor_fiscal")), numero(case.get("valor_razao")), numero(case.get("diferenca")),
                 texto(", ".join(str(ref) for ref in refs)), texto("\n".join(interpretations)),
-                texto(case.get("falta_confirmar")), texto(case.get("acao"))])
+                texto(case.get("falta_confirmar")), texto(case.get("acao")), texto(case.get("para_concluir")), texto(case.get("quando_reavaliar"))])
             for candidate in candidates:
                 case_sources.append([conta, tipo, texto(case.get("id"), 80), texto(candidate.get("referencia"), 80),
                     texto(candidate.get("conta"), 80), texto(candidate.get("data"), 40), texto(candidate.get("historico")),
@@ -1272,7 +1276,7 @@ def gerar_excel_analise(payload: dict) -> bytes:
     formato(codes, 1, {5}, [17, 17, 17, 55, 21])
     formato(evidences, 1, {6, 7}, [17, 18, 18, 95, 22, 22, 22, 16])
     formato(grounded, 1, set(), [17, 17, 60, 82, 82, 48, 42])
-    formato(case_sheet, 1, {7, 8, 9}, [17, 17, 20, 20, 25, 80, 20, 20, 20, 40, 80, 80, 80])
+    formato(case_sheet, 1, {7, 8, 9}, [17, 17, 20, 20, 25, 80, 20, 20, 20, 40, 80, 80, 80, 80, 80])
     formato(case_sources, 1, {9}, [17, 17, 20, 20, 20, 20, 100, 20, 20])
     out = io.BytesIO()
     book.save(out)

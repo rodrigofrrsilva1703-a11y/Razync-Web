@@ -1,6 +1,7 @@
 """Roteiros documentais locais: evidências e ações sem inferir causa contábil."""
 from decimal import Decimal, ROUND_HALF_UP
 import re
+from app.fiscal_review_outcomes import review_outcome
 
 
 def cents(value):
@@ -125,6 +126,7 @@ def case_context(cases, docs, rows, account):
                 candidate["referencia"] = ""  # No contexto externo, cite o documento fiscal da própria conta.
         for field in ("campos_coincidentes", "campos_divergentes", "campos_a_confirmar"):
             selected[-1][field] = case.get(field, [])
+        selected[-1]["criterios_de_revisao"] = review_outcome(case["situacao"])
     return selected
 
 
@@ -138,6 +140,6 @@ def explain_cases(cases, text, steps):
         def belongs(fragment):
             refs = set(re.findall(r"\b(?:[ES]-\d+|L\d+)\b", fragment.upper()))
             return bool(refs) and refs.issubset(allowed)
-        output.append({**case, "interpretacao_ia": [s for s in fragments if belongs(s)],
+        output.append({**case, **review_outcome(case["situacao"]), "interpretacao_ia": [s for s in fragments if belongs(s)],
                        "verificacoes_ia": [s for s in instructions if belongs(s)]})
     return output

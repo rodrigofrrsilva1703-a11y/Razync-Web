@@ -10,6 +10,7 @@ import unicodedata
 from collections import Counter
 from datetime import datetime
 from app.fiscal_investigation import explain_cases
+from app.fiscal_review_outcomes import executive_summary
 
 _MONEY = re.compile(r"R\$\s*(-?\s*\d(?:[\d.,]*\d)?)", flags=re.IGNORECASE)
 
@@ -344,7 +345,7 @@ def audit_analysis(item):
     }
 
 
-ANALYSIS_VERSION = "documentary-evidence-v12"
+ANALYSIS_VERSION = "explanatory-review-v13"
 
 
 def narrative_sections(value):
@@ -601,6 +602,7 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
     if cases:
         reading["orientacoes_ia"] = str(item.get("verificar") or "")
     return {"versao": ANALYSIS_VERSION, "fatos": facts,
+            "resumo_executivo": executive_summary(item, reading, partial=sent < total),
             "pendencias_explicadas": cases,
             "composicao": (local.get("composicao") or {}),
             "analise_exibicao": display_text, "sugestoes_retiradas": scenario_issues,

@@ -133,7 +133,7 @@ def test_versao_do_cache_invalida_pareceres_antigos(monkeypatch):
     current = sessions._cache_digest({"contas":[]})
     monkeypatch.setattr(sessions,"ANALYSIS_VERSION","grounded-depth-v7")
     assert sessions._cache_digest({"contas":[]}) != current
-    assert ANALYSIS_VERSION == "documentary-evidence-v12"
+    assert ANALYSIS_VERSION == "explanatory-review-v13"
 
 
 def test_endpoint_direto_tambem_isola_os_contextos(monkeypatch):

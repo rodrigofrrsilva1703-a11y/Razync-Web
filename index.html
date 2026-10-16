@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=investigacao-grupos-20261015-1">
   <link rel="stylesheet" href="./assets/css/fiscal-results.css?v=investigacao-evidencias-20261015-24">
   <link rel="stylesheet" href="./assets/css/fiscal-studio.css?v=ia-documentos-20261014-15">
+  <link rel="stylesheet" href="./assets/css/fiscal-ai-reader.css?v=review-20261015-25">
 </head>
 <body>
   <div class="app-shell">
@@ -273,7 +274,7 @@
             <section class="fiscal-ai">
               <div class="fiscal-ai-heading" id="fiscal242AISection">
                 <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
-                <div><span class="fiscal-ai-eyebrow">REVISÃO DAS CONTAS · IA GRATUITA</span><h3>Análise inteligente</h3><p>Das diferenças às evidências, com um caminho claro para conferir cada conta.</p><p id="fiscal242AIContext" class="fiscal-ai-context"></p></div>
+                <div><span class="fiscal-ai-eyebrow">CONFERÊNCIA ASSISTIDA</span><h3>Análise inteligente</h3><p>Entenda a diferença. Encontre a evidência. Saiba o que conferir.</p><p id="fiscal242AIContext" class="fiscal-ai-context"></p></div>
                 <div class="fiscal-ai-heading-tools">
                   <span class="fiscal-ai-provider" id="fiscal242AIProvider">IA</span>
                   <button type="button" class="fiscal-usage-trigger" id="fiscal242UsageButton" aria-haspopup="dialog" aria-controls="fiscal242UsageDialog" aria-expanded="false" title="Ver uso e limites das IAs gratuitas">
@@ -304,7 +305,7 @@
               </dialog>
               <div class="fiscal-ai-source-panel"><span class="fiscal-ai-source-title">Base da análise</span><div id="fiscal242AISources" class="fiscal-ai-sources"></div><p id="fiscal242AISourceNote">Resumo e Razão formam a base da análise. Entradas e Saídas complementam as evidências quando anexadas.</p></div>
               <div class="fiscal-ai-actions">
-                <button type="button" class="secondary-action" id="fiscal242AI" disabled>Analisar diferenças com IA</button>
+                <button type="button" class="secondary-action fiscal-ai-primary" id="fiscal242AI" disabled>Analisar diferenças com IA</button>
                 <button type="button" class="secondary-action" id="fiscal242AIExport" disabled>Exportar análise Excel (.xlsx)</button>
               </div>
               <section id="fiscal242AILoading" class="fiscal-ai-loading" data-phase="preparing" aria-label="Progresso da análise com IA" hidden>
@@ -600,7 +601,7 @@
   <script src="./assets/js/company-guides.js?v=1001-santander-pdf"></script>
   <script src="./assets/js/app.js?v=base-coverage-20261015-1"></script>
   <script src="./assets/js/migration.js?v=fiscal-modern-20261013-5"></script>
-  <script src="./assets/js/fiscal-242.js?v=investigacao-evidencias-20261015-24"></script>
+  <script src="./assets/js/fiscal-242.js?v=review-20261015-25"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>

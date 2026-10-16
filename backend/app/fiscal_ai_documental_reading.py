@@ -6,6 +6,7 @@ vínculos não confirmados. Os totais completos são os calculados pelo Razync.
 """
 from collections import Counter
 from decimal import Decimal, InvalidOperation
+from app.fiscal_review_outcomes import review_outcome
 
 PRIORITY = (
     "VALOR_DIFERENTE", "CONTA_DIFERENTE", "ESTORNO_EM_ANALISE",
@@ -213,6 +214,7 @@ def documentary_reading(item, docs, old_reading):
             "objetivo": advice,
             "documentos": examples,
             "amostra": count > len(selected) or bool(coverage.get("amostra")),
+            **review_outcome(status),
         })
     if not actions and pending:
         actions.append({
@@ -222,6 +224,7 @@ def documentary_reading(item, docs, old_reading):
     if ledger and len(actions) < 3:
         actions.append({
             "acao": f"Analise os {ledger} movimentos do Razão sem vínculo confirmado",
+            **review_outcome("MOVIMENTO_SEM_VINCULO"),
             "objetivo": ("Separe reconhecimento, liquidação e eventuais estornos pelos históricos e contrapartidas. "
                          "A falta de correspondência nesta amostra não demonstra ausência de nota fiscal."),
         })

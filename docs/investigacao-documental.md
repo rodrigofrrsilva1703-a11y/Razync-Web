@@ -106,3 +106,18 @@ local é identificado separadamente e não é apresentado como leitura integral 
 As verificações específicas validadas aparecem na tela e no Excel, que passa a
 incluir as abas `Pendências explicadas` e `Evidências por pendência`, com históricos
 e contrapartidas dos candidatos. O cache anterior é invalidado pela versão.
+
+## Resumo e critérios de conclusão
+
+`explanatory-review-v13` apresenta uma leitura numérica da diferença e a primeira
+ação baseada nas prioridades locais, sem pedir uma segunda resposta à IA. Totais
+iguais não são apresentados como confirmação de vínculos. Contextos parciais,
+inclusive compactação de históricos, mantêm a identificação da cobertura.
+
+Cada tipo de pendência tem critérios para concluir a conferência e situações em
+que o candidato ou hipótese deve ser reavaliado. São instruções condicionais,
+nunca fatos presumidos. Esses critérios acompanham os casos prioritários enviados
+às IAs gratuitas e as orientações exibidas e exportadas. O prompt solicita indícios
+contrários à hipótese e proíbe tratar campos desconhecidos como coincidências.
+O novo leitor separa conclusão, prioridade, interpretação e evidências; os critérios
+ficam recolhidos para manter uma leitura curta, também no celular.
