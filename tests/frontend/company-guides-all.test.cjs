@@ -28,8 +28,8 @@ const demo=(code,extra={})=>({
 test('cobre exatamente todas as empresas com ferramenta, além da 266 existente',()=>{
   const expected=apiCodes.filter(code=>code!==266);
   assert.deepEqual([...knownCodes].sort((a,b)=>a-b),expected);
-  assert.equal(apiCodes.length,29);
-  assert.equal(expected.length,28);
+  assert.equal(apiCodes.length,30);
+  assert.equal(expected.length,29);
   for(const code of expected){
     assert.ok(catalog.some(company=>company.codigo===code),String(code));
     for(const tool of ['organizar','base','extrato']){
