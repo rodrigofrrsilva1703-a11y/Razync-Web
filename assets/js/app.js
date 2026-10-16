@@ -48,16 +48,25 @@ function renderPortfolios() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "portfolio-entry";
+    const avatar = document.createElement("span");
+    avatar.className = "portfolio-avatar";
+    avatar.setAttribute("aria-hidden", "true");
+    avatar.textContent = portfolio.name.trim().slice(0, 1).toUpperCase();
+    const info = document.createElement("span");
+    info.className = "portfolio-entry-info";
     const name = document.createElement("strong");
     name.textContent = portfolio.name;
     const details = document.createElement("span");
     const quantity = companies.filter(company =>
       portfolio.companyCodes === null || portfolio.companyCodes.includes(Number(company.codigo))).length;
-    details.textContent = quantity.toLocaleString("pt-BR") + " empresas";
+    details.textContent = quantity.toLocaleString("pt-BR") + " empresas na carteira";
+    info.append(name, details);
     const arrow = document.createElement("span");
     arrow.className = "portfolio-entry-arrow";
+    arrow.setAttribute("aria-hidden", "true");
     arrow.textContent = "→";
-    btn.append(name, details, arrow);
+    btn.setAttribute("aria-label", "Abrir carteira de " + portfolio.name);
+    btn.append(avatar, info, arrow);
     btn.addEventListener("click", () => selectPortfolio(portfolio.id));
     portfolioList.appendChild(btn);
   }
