@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import fitz
 import pytest
+import pandas as pd
 from openpyxl import load_workbook
 
 from app.bank_734 import read_bank_pdf, workflow_734, _clean_history
@@ -138,3 +139,31 @@ def test_historico_do_excel_734_nao_contem_cpf():
     history = _clean_history("Pix recebido de CLIENTE Banco 341 | CPF ***.558.948-** | Mensagem - julho")
     assert "CPF" not in history
     assert "Mensagem - julho" in history
+
+
+def test_btg_descarta_debito_e_credito_na_conta_corrente_sem_descartar_outros():
+    from app.bank_734 import _skip_current_account_transfer
+    assert _skip_current_account_transfer("Débito na conta corrente")
+    assert _skip_current_account_transfer("Credito na conta corrente")
+    assert _skip_current_account_transfer("Crédito na conta corrente - movimento BTG")
+    assert _skip_current_account_transfer("  DEBITO  NA CONTA CORRENTE ")
+    assert not _skip_current_account_transfer("Pix recebido na conta corrente")
+    assert not _skip_current_account_transfer("Pagamento de Conta / Tributo")
+    assert not _skip_current_account_transfer("Rendimento Remunera+")
+
+
+def test_btg_exclui_movimentos_somente_depois_de_validar_saldo(monkeypatch):
+    from app import bank_734
+    base = [
+        {"DESCRIÇÃO": "BANCO BTG", "DATA": pd.Timestamp("2026-07-03"), "VALOR": 200,
+         "DÉBITO": "510", "CRÉDITO": "", "HISTÓRICO": "Credito na conta corrente"},
+        {"DESCRIÇÃO": "BANCO BTG", "DATA": pd.Timestamp("2026-07-03"), "VALOR": -100,
+         "DÉBITO": "", "CRÉDITO": "510", "HISTÓRICO": "Débito na conta corrente"},
+        {"DESCRIÇÃO": "BANCO BTG", "DATA": pd.Timestamp("2026-07-04"), "VALOR": -50,
+         "DÉBITO": "", "CRÉDITO": "510", "HISTÓRICO": "Pix enviado"},
+    ]
+    monkeypatch.setattr(bank_734, "_parse_pdf", lambda pdf: base)
+    result = read_bank_pdf("btg", btg_pdf(), "extrato.pdf")
+    assert len(result) == 1
+    assert result.iloc[0]["HISTÓRICO"] == "Pix enviado"
+    assert result.iloc[0]["CRÉDITO"] == "510"
