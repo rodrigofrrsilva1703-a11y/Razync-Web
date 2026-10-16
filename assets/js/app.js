@@ -551,13 +551,28 @@ function closeCompanyToolHelp(restoreFocus = false) {
   if (wasOpen && restoreFocus) trigger.focus();
 }
 
+const FISCAL_TOOL_GUIDE = {
+  caption: "Conferência Fiscal × Contábil",
+  intro: "Compare o Resumo por Acumulador com o Razão do mesmo período para identificar diferenças por conta contábil, filial e acumulador. Os arquivos originais não são alterados.",
+  steps: [
+    ["1", "Prepare os relatórios", "No Domínio, exporte o Resumo por Acumulador e o Razão contábil da mesma empresa e do mesmo período."],
+    ["2", "Informe a filial, se necessário", "Se o Razão possuir várias filiais, informe a que deseja conferir. Com uma só filial, a identificação é automática."],
+    ["3", "Envie e confira", "Anexe as duas planilhas e clique em Conferir contas. Compare os valores fiscais com os débitos de entradas ou os créditos de saídas no Razão."],
+    ["4", "Investigue as diferenças", "Pesquise por conta ou acumulador e abra os lançamentos correspondentes. Para aprofundar, envie também os relatórios de Entradas e Saídas, quando disponíveis."],
+    ["5", "Revise a análise com IA", "As sugestões da IA são auxiliares: confirme notas, históricos e contrapartidas antes de realizar ajustes."]
+  ],
+  note: "Confira se os relatórios possuem períodos compatíveis. Diferença encontrada não comprova lançamento incorreto sem verificar os documentos."
+};
+
 function renderCompanyToolGuide(toolName) {
   const guide = $("#companyToolGuide");
   const wrapper = $("#companyToolHelp");
   if (!guide || !wrapper) return;
   closeCompanyToolHelp();
-  const content = COMPANY_TOOL_GUIDES[Number(selected?.codigo)]?.[toolName]
-    || window.RAZYNC_COMPANY_HELP?.resolve(selected, toolName);
+  const content = toolName === "fiscal-global"
+    ? FISCAL_TOOL_GUIDE
+    : (COMPANY_TOOL_GUIDES[Number(selected?.codigo)]?.[toolName]
+       || window.RAZYNC_COMPANY_HELP?.resolve(selected, toolName));
   wrapper.hidden = !content;
   if (!content) return;
 
@@ -1824,6 +1839,9 @@ function showGlobalView(name) {
   document.querySelectorAll(".main-nav-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.view === name);
   });
+  if (name === "fiscal") {
+    renderCompanyToolGuide("fiscal-global");
+  }
   window.scrollTo({top:0, behavior:"smooth"});
 }
 
