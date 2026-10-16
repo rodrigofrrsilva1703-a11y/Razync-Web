@@ -12,12 +12,13 @@ from app.migration_services import _workflow
 
 
 def fake_pdf() -> bytes:
-    from reportlab.pdfgen import canvas
-    buff = io.BytesIO()
-    pdf = canvas.Canvas(buff)
-    pdf.drawString(40, 700, "Extrato bancario de teste")
-    pdf.save()
-    return buff.getvalue()
+    import fitz
+    doc = fitz.open()
+    page = doc.new_page()
+    page.insert_text((40, 60), "Extrato bancario de teste")
+    content = doc.tobytes()
+    doc.close()
+    return content
 
 
 def records():
