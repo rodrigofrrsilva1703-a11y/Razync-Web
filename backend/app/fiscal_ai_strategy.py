@@ -30,6 +30,7 @@ REVIEW_PROMPT = (
     "sem evidência suficiente, máximo 150; valores iguais com alertas, máximo 130. "
     "Sem introdução nem repetição dos totais; valores exibidos pelo sistema não devem ser reescritos. "
     "Use linguagem de conferência, sem nomes de campos ou códigos internos. "
+    "Não invente definições de CFOP, não determine contrapartidas obrigatórias e não trate menção a uma nota como prova do documento original. "
     "Hipóteses em até três frases curtas; limitações em uma frase específica, sem repetir a lista de documentos. "
     "roteiro_investigacao reúne até três casos com referências disponíveis: explique os campos coincidentes, "
     "os divergentes e o que falta confirmar; associe cada hipótese à referência E-/S- ou L do caso. "

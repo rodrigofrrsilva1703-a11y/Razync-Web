@@ -22,6 +22,18 @@ def test_candidato_em_outra_conta_impede_generalizar_ausencia_na_escrituracao():
     assert answer["checagem_semantica"]["interpretacao_retirada"]
 
 
+@pytest.mark.parametrize("text", [
+    "O CFOP 5411 (devolução de vendas) sugere erro de classificação.",
+    "O registro contábil deve ter contrapartida no ativo imobilizado ou estoque.",
+    "Os lançamentos são devoluções comprovadas por notas fiscais.",
+])
+def test_relatorios_nao_autorizam_definicao_normativa_ou_contrapartida_obrigatoria(text):
+    answer = item("Hipóteses: " + text)
+    protect_publication(answer, [], [])
+    assert text not in answer["explicacao"]
+    assert answer["checagem_semantica"]["interpretacao_retirada"]
+
+
 def item(text, **kwargs):
     return dict(conta="361", tipo="ENTRADAS", explicacao=text, verificar="1. Confira os documentos.",
                 evidencias=[], **kwargs)

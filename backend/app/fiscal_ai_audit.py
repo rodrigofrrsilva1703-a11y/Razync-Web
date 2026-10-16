@@ -153,6 +153,12 @@ def _protect_fragment(item, rows, documents):
     if invalid_accumulator_lookup(item):
         reasons.append("A instrução confunde acumulador fiscal com conta do Razão.")
     hypothesis = sections.get("hipoteses") or raw
+    if re.search(r"\bCFOP\s+\d{4}\s*[(—–]", hypothesis, re.I):
+        reasons.append("A definição normativa de um CFOP não está comprovada pelos relatórios desta conferência.")
+    if re.search(r"\b(?:deve[m]?|deveria[m]?)\s+(?:ter\s+(?:a\s+)?contrapartida|ser\s+(?:contabilizad|lan[çc]ad))", hypothesis, re.I):
+        reasons.append("Uma contrapartida ou lançamento obrigatório não pode ser determinado apenas por estes indícios.")
+    if re.search(r"comprovad[oa]s?\s+por\s+(?:notas|documentos)\s+fiscais", hypothesis, re.I) and not re.search(r"n[aã]o[^.]{0,25}comprovad", hypothesis, re.I):
+        reasons.append("A referência à nota no relatório não comprova o documento original nem sua natureza contábil.")
     if any(d.get("conta_razao_candidato") for d in documents) and re.search(
         r"documentos fiscais n[aã]o foram contabilizados|aus[eê]ncia de correspond[eê]ncia (?:direta )?(?:entre|por)", hypothesis, re.I
     ) and not re.search(r"nesta conta|desta conta|amostra|sele[çc][aã]o|n[aã]o (?:comprova|demonstra|confirma|significa)", hypothesis, re.I):
