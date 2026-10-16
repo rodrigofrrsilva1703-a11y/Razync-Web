@@ -15,6 +15,13 @@ def test_codigos_internos_sao_traduzidos_depois_de_validar_a_interpretacao():
     assert "CORRESPONDENCIA_EM_ANALISE" not in answer["explicacao"]
 
 
+def test_candidato_em_outra_conta_impede_generalizar_ausencia_na_escrituracao():
+    answer = item("Hipóteses: A discrepância decorre da ausência de correspondência entre os documentos fiscais e os lançamentos do Razão, sugerindo que os documentos fiscais não foram contabilizados.")
+    protect_publication(answer, [], [{"referencia":"S-1","nota":"150302","conta_razao_candidato":"22517"}])
+    assert "não foram contabilizados" not in answer["explicacao"]
+    assert answer["checagem_semantica"]["interpretacao_retirada"]
+
+
 def item(text, **kwargs):
     return dict(conta="361", tipo="ENTRADAS", explicacao=text, verificar="1. Confira os documentos.",
                 evidencias=[], **kwargs)
@@ -183,6 +190,9 @@ def test_conferencia_objetiva_nao_consulta_provedores(monkeypatch):
     assert result["analises"][0]["provedor"] == "local"
     assert result["analises"][0]["valores"]["diferenca"] == 0
     assert not result["analises"][0]["checagem_semantica"]["interpretacao_retirada"]
+    reading = result["analises"][0]["parecer"]
+    assert reading["resumo_executivo"]["cobertura"] == "Conferência local"
+    assert not any("indicada pela IA" in text for text in reading["informacoes_faltantes"])
 
 
 @pytest.mark.parametrize("change", ["amostra","pendente","diferenca","movimento","cobertura","composicao"])

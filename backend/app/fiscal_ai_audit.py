@@ -153,6 +153,10 @@ def _protect_fragment(item, rows, documents):
     if invalid_accumulator_lookup(item):
         reasons.append("A instrução confunde acumulador fiscal com conta do Razão.")
     hypothesis = sections.get("hipoteses") or raw
+    if any(d.get("conta_razao_candidato") for d in documents) and re.search(
+        r"documentos fiscais n[aã]o foram contabilizados|aus[eê]ncia de correspond[eê]ncia (?:direta )?(?:entre|por)", hypothesis, re.I
+    ) and not re.search(r"nesta conta|desta conta|amostra|sele[çc][aã]o|n[aã]o (?:comprova|demonstra|confirma|significa)", hypothesis, re.I):
+        reasons.append("Há candidatos documentais em outras contas; a falta de vínculo nesta conta não pode ser generalizada à escrituração.")
     histories = " ".join(str(row.get("historico") or "") for row in rows)
     for cause, evidence in (
         (r"fretes?|encargos|despesas acess[oó]rias", r"frete|encargo|despesa acess[oó]ria"),

@@ -746,6 +746,7 @@ def _validar_resposta_ia(result, report, mapping, references, *, groq=False, pro
         output[-1]["cobertura_documental"] = report.get("cobertura_documental", {}).get(f'{mapping[ident]["conta"]}:{mapping[ident]["tipo"]}', {})
         output[-1]["investigacoes_locais"] = report.get("investigacoes_locais", {}).get(f'{mapping[ident]["conta"]}:{mapping[ident]["tipo"]}', [])
         output[-1]["parecer"] = {"comparacoes_documentais": docs}
+        output[-1].update(provedor=provider, modelo_usado=model)
         link_text_evidence(output[-1], source_rows)
         protect_publication(output[-1], source_rows, docs)
         output[-1]["parecer"] = structured_analysis(output[-1], source_rows,
@@ -755,7 +756,6 @@ def _validar_resposta_ia(result, report, mapping, references, *, groq=False, pro
         output[-1]["parecer"]["comparacoes_documentais"] = docs
         output[-1].pop("investigacoes_locais", None)
         output[-1]["auditoria"] = audit_analysis(output[-1])
-        output[-1].update(provedor=provider, modelo_usado=model)
     if seen != set(mapping):
         raise ValueError("Empty answer")
     return output
