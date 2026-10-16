@@ -24,6 +24,20 @@ _DATE = re.compile(r"^\d{2}/\d{2}/\d{4}$")
 _MONEY = re.compile(r"^-?\d{1,3}(?:\.\d{3})*,\d{2}$")
 
 
+_CPF_LINE = re.compile(r"\s*\|?\s*CPF\s*[:\-]?\s*\*{0,3}[\d.*\- ]{5,20}", re.I)
+_CPF_NUMBER = re.compile(r"(?<!\d)\d{3}\.\d{3}\.\d{3}-\d{2}(?!\d)|(?<!\d)\d{11}(?!\d)")
+
+
+def _clean_history(history: str) -> str:
+    """Remove CPF completo ou mascarado sem apagar pessoa, banco ou mensagem."""
+    history = _CPF_LINE.sub(" ", history)
+    history = _CPF_NUMBER.sub(" ", history)
+    history = re.sub(r"\s*\|\s*\|\s*", " | ", history)
+    history = re.sub(r"\s*\|\s*$", "", history)
+    return re.sub(r"\s+", " ", history).strip()
+
+
+
 def _cents(value: str) -> int:
     amount = Decimal(value.replace(".", "").replace(",", "."))
     if not amount.is_finite():
@@ -77,7 +91,7 @@ def _parse_pdf(data: bytes):
             saldo_index, _ = money[1]
             if saldo_index <= value_index:
                 raise ValueError("BTG 510: colunas Valor e Saldo invertidas.")
-            history = " ".join(parts[:value_index]).strip()
+            history = _clean_history(" ".join(parts[:value_index]).strip())
             if not history:
                 raise ValueError("BTG 510: histórico vazio em lançamento.")
             value_cents = _cents(value_text)
