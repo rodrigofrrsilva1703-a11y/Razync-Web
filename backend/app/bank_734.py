@@ -293,6 +293,10 @@ def workflow_734(roles: dict, options: dict):
                          if re.fullmatch(r"-?\s*R\$\s*[\d.,]+", value)]
             else:
                 money = [(i, value) for i, value in enumerate(parts) if _MONEY.fullmatch(value)]
+            # The first page also contains graph axis labels after the table.
+            # Only the first two money values belong to the transaction.
+            if modern and len(money) > 2:
+                money = money[:2]
             if len(money) != 2:
                 raise ValueError(f"BTG 510: lançamento incompleto em {item['date']}.")
             value_index, value_text = money[0]
