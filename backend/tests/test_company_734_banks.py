@@ -203,3 +203,21 @@ def test_novo_layout_btg_extrato_conta_corrente_com_valores_r_ou_sinal():
     assert all("CPF" not in history for history in output["HISTÓRICO"])
     assert output["DÉBITO"].tolist() == ["510", ""]
     assert output["CRÉDITO"].tolist() == ["", "510"]
+
+
+def test_btg_inverte_aplicacao_resgate_e_remove_rendimento(monkeypatch):
+    from app import bank_734
+    def transaction(history, amount):
+        return {"DESCRIÇÃO":"BANCO BTG","DATA":pd.Timestamp("2026-09-01"),
+                "VALOR":amount,"DÉBITO":"510" if amount > 0 else "",
+                "CRÉDITO":"510" if amount < 0 else "","HISTÓRICO":history}
+    rows = [transaction("Valor de Rendimento Remunera+", 0.27),
+            transaction("Aplicação Conta Remunerada", 200),
+            transaction("Resgate Conta Remunerada", -75),
+            transaction("Pix enviado", -120),
+            transaction("Débito na Conta Corrente", -200)]
+    monkeypatch.setattr(bank_734, "_parse_pdf", lambda _: rows)
+    result = read_bank_pdf("btg", btg_pdf(), "extrato.pdf")
+    assert result["VALOR"].tolist() == [-200, 75, -120]
+    assert result["DÉBITO"].tolist() == ["", "510", ""]
+    assert result["CRÉDITO"].tolist() == ["510", "", "510"]
