@@ -1,76 +1,153 @@
-"""Empresa 734 — extratos bancários PDF do BTG 510 e Bradesco 2721.
+"""BTG Pactual PJ da empresa 734: extrato Conta Corrente + Remunera+.
 
-Não assume conta bancária/agência sem um extrato real; as contas 510 e 2721
-são contas contábeis do Modelo Domínio, informadas pelo usuário.
+Extrai as linhas da coluna Entradas/Saídas, preserva o histórico multiline,
+ignora somente os saldos e valida totais e saldo de abertura/fechamento.
+A conta 510 é contábil; a agência e conta bancária não são presumidas.
 """
 from __future__ import annotations
 
+import hashlib
 import io
+import re
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
+
+import fitz
 import pandas as pd
-from pypdf import PdfReader
 
 from app import engine
 
 COLUNAS = ["DESCRIÇÃO", "DATA", "VALOR", "DÉBITO", "CRÉDITO", "HISTÓRICO"]
-BANKS = {"btg": ("BTG 510", "BANCO BTG", "510"),
-         "bradesco": ("Bradesco 2721", "BANCO BRADESCO", "2721")}
+ACCOUNT = "510"
+SHEET = "BTG 510"
+_DATE = re.compile(r"^\d{2}/\d{2}/\d{4}$")
+_MONEY = re.compile(r"^-?\d{1,3}(?:\.\d{3})*,\d{2}$")
 
 
-def read_bank_pdf(bank: str, data: bytes, filename: str) -> pd.DataFrame:
-    if bank not in BANKS:
-        raise ValueError("Banco não configurado para a empresa 734.")
-    if not str(filename).lower().endswith(".pdf") or not data.startswith(b"%PDF"):
-        raise ValueError(f"{BANKS[bank][0]}: envie o extrato original em PDF.")
-    if len(data) > 25 * 1024 * 1024:
-        raise ValueError("Extrato PDF excede 25 MB.")
+def _cents(value: str) -> int:
+    amount = Decimal(value.replace(".", "").replace(",", "."))
+    if not amount.is_finite():
+        raise ValueError("BTG: valor monetário inválido.")
+    return int(amount * 100)
+
+
+def _parse_pdf(data: bytes):
+    if not data.startswith(b"%PDF") or len(data) > 25 * 1024 * 1024:
+        raise ValueError("BTG 510: envie o PDF original válido de até 25 MB.")
     try:
-        pdf = PdfReader(io.BytesIO(data), strict=False)
-        if not 0 < len(pdf.pages) <= 80 or not any((page.extract_text() or "").strip() for page in pdf.pages):
-            raise ValueError("Extrato PDF não contém texto legível; envie a versão original do banco.")
+        document = fitz.open(stream=data, filetype="pdf")
+        if not 0 < document.page_count <= 80:
+            raise ValueError("BTG 510: extrato PDF vazio ou muito extenso.")
+        pages = [page.get_text("text") for page in document]
+        document.close()
     except ValueError:
         raise
     except Exception as exc:
-        raise ValueError("Extrato bancário PDF inválido ou protegido.") from exc
+        raise ValueError("BTG 510: não foi possível abrir o extrato PDF.") from exc
 
-    # O BTG usa o leitor de PDF já presente no Razync; o Bradesco usa o
-    # leitor bancário genérico. Não alteramos as regras das demais empresas.
-    rows = engine.processar_extrato_conferencia_empresa(data, filename, bank)
-    if not rows:
+    first = pages[0]
+    if "Conta corrente - PJ" not in first or "Período do extrato:" not in first:
+        raise ValueError("BTG 510: layout não reconhecido. Envie o extrato Conta corrente - PJ original.")
+    begin = re.search(r"Saldo de abertura em \d{2}/\d{2}/\d{4}:\s*R\$\s*([\d.,]+)", first)
+    end = re.search(r"Saldo de fechamento em \d{2}/\d{2}/\d{4}:\s*R\$\s*([\d.,]+)", first)
+    entries = re.search(r"Total de entradas\s*R\$\s*([\d.,]+)", first)
+    exits = re.search(r"Total de saídas\s*R\$\s*([\d.,]+)", first)
+    if any(match is None for match in (begin, end, entries, exits)):
+        raise ValueError("BTG 510: saldos ou totais do cabeçalho não foram identificados.")
+
+    movements = []
+    for page in pages:
+        table = page.split("Data lançamento", 1)
+        if len(table) != 2:
+            raise ValueError("BTG 510: página sem a tabela de lançamentos.")
+        body = table[1].split("Fale com nossa central", 1)[0]
+        # As datas iniciam cada linha; descrição multiline fica dentro do grupo.
+        current = None
+
+        def consume(item):
+            if item is None:
+                return
+            parts = item["parts"]
+            if parts and parts[0].casefold().startswith(("saldo de abertura", "saldo de fechamento")):
+                return
+            money = [(i, value) for i, value in enumerate(parts) if _MONEY.fullmatch(value)]
+            if len(money) != 2:
+                raise ValueError(f"BTG 510: lançamento incompleto em {item['date']}.")
+            value_index, value_text = money[0]
+            saldo_index, _ = money[1]
+            if saldo_index <= value_index:
+                raise ValueError("BTG 510: colunas Valor e Saldo invertidas.")
+            history = " ".join(parts[:value_index]).strip()
+            if not history:
+                raise ValueError("BTG 510: histórico vazio em lançamento.")
+            value_cents = _cents(value_text)
+            if not value_cents:
+                return
+            movements.append({
+                "DESCRIÇÃO": "BANCO BTG",
+                "DATA": datetime.strptime(item["date"], "%d/%m/%Y"),
+                "VALOR": value_cents / 100,
+                "DÉBITO": ACCOUNT if value_cents > 0 else "",
+                "CRÉDITO": ACCOUNT if value_cents < 0 else "",
+                "HISTÓRICO": history,
+            })
+
+        for raw in body.splitlines():
+            line = raw.strip()
+            if not line:
+                continue
+            if _DATE.fullmatch(line):
+                consume(current)
+                current = {"date": line, "parts": []}
+            elif current is not None:
+                current["parts"].append(line)
+        consume(current)
+
+    if not movements:
+        raise ValueError("BTG 510: nenhum lançamento encontrado.")
+    total_in = sum(round(row["VALOR"] * 100) for row in movements if row["VALOR"] > 0)
+    total_out = -sum(round(row["VALOR"] * 100) for row in movements if row["VALOR"] < 0)
+    opening, closing = _cents(begin.group(1)), _cents(end.group(1))
+    if (total_in != _cents(entries.group(1))
+            or total_out != _cents(exits.group(1))
+            or opening + total_in - total_out != closing):
         raise ValueError(
-            f"{BANKS[bank][0]}: nenhum lançamento identificado. "
-            "O layout do extrato pode exigir adaptação com um PDF de exemplo."
+            "BTG 510: movimentos não conferem com entradas, saídas ou saldos do extrato. "
+            "O arquivo pode estar incompleto ou ter outro layout."
         )
-    frame = pd.DataFrame(rows)
-    if any(field not in frame.columns for field in ("DATA", "VALOR", "HISTÓRICO")):
-        raise ValueError("Extrato incompleto: data, valor ou histórico ausente.")
-    frame["DATA"] = pd.to_datetime(frame["DATA"], dayfirst=True, errors="coerce")
-    frame["VALOR"] = pd.to_numeric(frame["VALOR"], errors="coerce")
-    frame = frame.dropna(subset=["DATA", "VALOR"]).copy()
-    frame = frame.loc[frame["VALOR"].abs() >= 0.005].copy()
-    if frame.empty:
-        raise ValueError("Nenhuma movimentação válida identificada no extrato.")
-    _, description, account = BANKS[bank]
-    frame["DESCRIÇÃO"] = description
-    frame["DÉBITO"] = frame["VALOR"].apply(lambda value: account if value > 0 else "")
-    frame["CRÉDITO"] = frame["VALOR"].apply(lambda value: account if value < 0 else "")
-    return frame[COLUNAS]
+    return movements
+
+
+def read_bank_pdf(bank: str, data: bytes, filename: str) -> pd.DataFrame:
+    if bank != "btg":
+        raise ValueError("Na empresa 734, por enquanto somente o BTG 510 está habilitado.")
+    if not str(filename).lower().endswith(".pdf"):
+        raise ValueError("BTG 510: envie o extrato original em PDF.")
+    return pd.DataFrame(_parse_pdf(data), columns=COLUNAS)
 
 
 def workflow_734(roles: dict, options: dict):
     from app.migration_services import filter_frame
-    sheets = {}
-    for bank, (sheet, _, _) in BANKS.items():
-        files = roles.get(bank) or []
-        if not files:
-            continue
-        parts = [read_bank_pdf(bank, data, filename) for filename, data in files]
-        frame = filter_frame(pd.concat(parts, ignore_index=True), options)
-        if not frame.empty:
-            sheets[sheet] = frame.sort_values("DATA", kind="stable").reset_index(drop=True)
-    if not sheets:
-        raise ValueError("Envie extrato BTG e/ou Bradesco em PDF com movimentações no período.")
-    # Abas separadas e contas bancárias do Domínio preservadas.
-    return engine.gerar_excel_nova_geracao(
-        {sheet: {"principal": frame, "retirados": pd.DataFrame()} for sheet, frame in sheets.items()},
-        prefixar_historicos=True,
-    ), "RAZYNC_734_MODELO_DOMINIO.xlsx"
+
+    if any(name != "btg" and files for name, files in roles.items()):
+        raise ValueError("A empresa 734 está configurada somente para o BTG neste momento.")
+    files = roles.get("btg") or []
+    if not files:
+        raise ValueError("Envie ao menos um extrato BTG em PDF.")
+    hashes = set()
+    parts = []
+    for filename, data in files:
+        digest = hashlib.sha256(data).digest()
+        if digest in hashes:
+            raise ValueError("BTG 510: mesmo extrato enviado mais de uma vez.")
+        hashes.add(digest)
+        parts.append(read_bank_pdf("btg", data, filename))
+
+    frame = filter_frame(pd.concat(parts, ignore_index=True), options)
+    if frame.empty:
+        raise ValueError("BTG 510: nenhum lançamento no período selecionado.")
+    frame = frame.sort_values("DATA", kind="stable").reset_index(drop=True)
+    book = engine.gerar_excel_nova_geracao({
+        SHEET: {"principal": frame, "retirados": pd.DataFrame()}
+    }, prefixar_historicos=True)
+    return book, "RAZYNC_734_BTG_510_MODELO_DOMINIO.xlsx"
