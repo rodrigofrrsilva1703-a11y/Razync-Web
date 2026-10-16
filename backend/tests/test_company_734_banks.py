@@ -167,3 +167,39 @@ def test_btg_exclui_movimentos_somente_depois_de_validar_saldo(monkeypatch):
     assert len(result) == 1
     assert result.iloc[0]["HISTÓRICO"] == "Pix enviado"
     assert result.iloc[0]["CRÉDITO"] == "510"
+
+
+def modern_btg_pdf():
+    """Fixture sem dados bancários pessoais do novo layout BTG."""
+    doc = fitz.open()
+    page = doc.new_page()
+    lines = [
+        "Resumo do saldo", "Saldo total", "Saldo de abertura", "01/09/2026",
+        "R$ 1.000,00", "Saldo de fechamento", "30/09/2026", "R$ 1.030,00",
+        "Total de entradas", "R$ 150,00", "Total de saídas", "R$ 120,00",
+        "Lançamentos", "Data de", "lançamento", "Descrição do lançamento",
+        "Entradas/Saídas", "Saldo", "30/09/2026", "Saldo de fechamento", "R$ 1.030,00",
+        "30/09/2026", "Pix recebido de CLIENTE EXEMPLO", "CPF ***.123.456-**",
+        "R$ 150,00", "R$ 1.030,00", "29/09/2026", "Débito na Conta Corrente",
+        "- R$ 100,00", "R$ 880,00", "29/09/2026", "Pagamento de Tributo",
+        "- R$ 20,00", "R$ 980,00", "R$ 0", "R$ 50.000",
+        "Extrato conta corrente", "Período de 01/09/2026 a 30/09/2026",
+    ]
+    for index, line in enumerate(lines):
+        page.insert_text((25, 30 + 13 * index), line, fontsize=8)
+    result = doc.tobytes()
+    doc.close()
+    return result
+
+
+def test_novo_layout_btg_extrato_conta_corrente_com_valores_r_ou_sinal():
+    from app.bank_734 import _parse_pdf
+    raw = _parse_pdf(modern_btg_pdf())
+    assert len(raw) == 3
+    assert sum(round(row["VALOR"] * 100) for row in raw) == 3000
+    output = read_bank_pdf("btg", modern_btg_pdf(), "EXTRATOS.pdf")
+    assert len(output) == 2
+    assert output["VALOR"].tolist() == [150.0, -20.0]
+    assert all("CPF" not in history for history in output["HISTÓRICO"])
+    assert output["DÉBITO"].tolist() == ["510", ""]
+    assert output["CRÉDITO"].tolist() == ["", "510"]
