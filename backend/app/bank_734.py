@@ -132,12 +132,29 @@ def _parse_pdf(data: bytes):
     return movements
 
 
+_EXCLUDED_MOVEMENT = re.compile(
+    r"^\\s*(?:d[eé]bito|cr[eé]dito)\\s+na\\s+conta\\s+corrente\\b",
+    re.IGNORECASE,
+)
+
+
+def _skip_current_account_transfer(history: str) -> bool:
+    """Ignora as duas naturezas solicitadas sem afetar outros movimentos."""
+    return bool(_EXCLUDED_MOVEMENT.match(history or ""))
+
+
 def read_bank_pdf(bank: str, data: bytes, filename: str) -> pd.DataFrame:
     if bank != "btg":
         raise ValueError("Na empresa 734, por enquanto somente o BTG 510 está habilitado.")
     if not str(filename).lower().endswith(".pdf"):
         raise ValueError("BTG 510: envie o extrato original em PDF.")
-    return pd.DataFrame(_parse_pdf(data), columns=COLUNAS)
+    # O leitor valida TODOS os lançamentos contra os saldos do PDF antes de
+    # retirar as naturezas que não devem ir para o Modelo Domínio.
+    frame = pd.DataFrame(_parse_pdf(data), columns=COLUNAS)
+    frame = frame.loc[~frame["HISTÓRICO"].map(_skip_current_account_transfer)].copy()
+    if frame.empty:
+        raise ValueError("BTG 510: apenas movimentos de débito/crédito na conta corrente encontrados; nenhum lançamento para importar.")
+    return frame.reset_index(drop=True)
 
 
 def workflow_734(roles: dict, options: dict):
