@@ -221,3 +221,22 @@ def test_btg_inverte_aplicacao_resgate_e_remove_rendimento(monkeypatch):
     assert result["VALOR"].tolist() == [-200, 75, -120]
     assert result["DÉBITO"].tolist() == ["", "510", ""]
     assert result["CRÉDITO"].tolist() == ["510", "", "510"]
+
+
+def test_modelo_btg_734_nao_prefixa_aplicacao_resgate(monkeypatch):
+    from app import bank_734
+    def movement(history, amount):
+        return {"DESCRIÇÃO":"BANCO BTG","DATA":pd.Timestamp("2026-09-01"),
+                "VALOR":amount,"DÉBITO":"510" if amount > 0 else "",
+                "CRÉDITO":"510" if amount < 0 else "", "HISTÓRICO":history}
+    rows = [movement("Aplicação Conta Remunerada", -100),
+            movement("Resgate Conta Remunerada", 50),
+            movement("Pix recebido", 35),
+            movement("Pagamento de conta", -15)]
+    monkeypatch.setattr(bank_734, "_parse_pdf", lambda _: rows)
+    data, _ = workflow_734({"btg":[("extrato.pdf",btg_pdf())]}, {})
+    wb = load_workbook(io.BytesIO(data))
+    histories = [row[5] for row in list(wb.active.values)[1:]]
+    assert histories[:2] == ["Aplicação Conta Remunerada", "Resgate Conta Remunerada"]
+    assert histories[2].startswith("Recebido:")
+    assert histories[3].startswith("Pago:")
