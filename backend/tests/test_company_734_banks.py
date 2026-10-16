@@ -6,7 +6,7 @@ import fitz
 import pytest
 from openpyxl import load_workbook
 
-from app.bank_734 import read_bank_pdf, workflow_734
+from app.bank_734 import read_bank_pdf, workflow_734, _clean_history
 from app.registry import CAPABILITIES
 from app.migration_services import _workflow
 
@@ -114,3 +114,27 @@ def test_upload_repetido_recusado_e_bradesco_adiado():
         workflow_734({"btg": [("a.pdf", file), ("b.pdf", file)]}, {})
     with pytest.raises(ValueError, match="somente para o BTG"):
         workflow_734({"bradesco": [("bradesco.pdf", file)]}, {})
+
+
+def test_remove_cpf_mascarado_mantendo_nome_banco_e_mensagem():
+    source = "Pix recebido de CLIENTE TESTE Banco 341 | CPF ***.558.948-** | Mensagem - consulta julho"
+    cleaned = _clean_history(source)
+    assert "CPF" not in cleaned
+    assert "558.948" not in cleaned
+    assert "CLIENTE TESTE" in cleaned
+    assert "Banco 341" in cleaned
+    assert "Mensagem - consulta julho" in cleaned
+
+
+def test_remove_cpf_completo_e_sem_pontuacao():
+    assert "123.456.789-09" not in _clean_history("Pagamento CPF 123.456.789-09 referente junho")
+    assert "12345678909" not in _clean_history("CPF 12345678909 Pix recebido")
+    assert _clean_history("Rendimento Remunera+") == "Rendimento Remunera+"
+
+
+def test_historico_do_excel_734_nao_contem_cpf():
+    # Usa o mesmo formato de PIX e CPF mascarado presente no extrato real.
+    from app.bank_734 import _clean_history
+    history = _clean_history("Pix recebido de CLIENTE Banco 341 | CPF ***.558.948-** | Mensagem - julho")
+    assert "CPF" not in history
+    assert "Mensagem - julho" in history
