@@ -239,6 +239,11 @@ def protect_publication(item, rows, documents):
             elif section != "fatos":
                 safe.append(readable_analysis(fragment.strip()))
         retained[section] = safe
+    # Se a hipótese foi retirada, não deixe apenas frases que dependem dela
+    # ("a evidência que enfraquece essa hipótese...") como interpretação solta.
+    dependent = re.compile(r"^(?:A evid[eê]ncia que enfraquece|O resultado que (?:descartaria|confirmaria)|Essa hip[oó]tese|Esta hip[oó]tese)", re.I)
+    if removed and retained["hipoteses"] and all(dependent.search(s) for s in retained["hipoteses"]):
+        retained["hipoteses"] = []
     hypotheses = " ".join(retained["hipoteses"])
     item["explicacao"] = "Hipóteses: " + (hypotheses or "A causa ainda não está comprovada pelas evidências desta conta.")
     if retained["limitacoes"]:

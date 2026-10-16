@@ -34,6 +34,13 @@ def test_relatorios_nao_autorizam_definicao_normativa_ou_contrapartida_obrigator
     assert answer["checagem_semantica"]["interpretacao_retirada"]
 
 
+def test_hipotese_retirada_nao_deixa_apenas_frase_sem_antecedente():
+    answer = item("Hipóteses: O registro deve ter contrapartida no estoque. A evidência que enfraquece essa hipótese é a ausência de contrapartida definida em L7.")
+    protect_publication(answer, [{"conta":"361","referencia":"L7","historico":"DEVOLUÇÃO CF NF 100"}], [])
+    assert "essa hipótese" not in answer["explicacao"]
+    assert "ainda não está comprovada" in answer["explicacao"]
+
+
 def item(text, **kwargs):
     return dict(conta="361", tipo="ENTRADAS", explicacao=text, verificar="1. Confira os documentos.",
                 evidencias=[], **kwargs)
