@@ -133,7 +133,7 @@ def _parse_pdf(data: bytes):
 
 
 _EXCLUDED_MOVEMENT = re.compile(
-    r"^\\s*(?:d[eé]bito|cr[eé]dito)\\s+na\\s+conta\\s+corrente\\b",
+    r"^\s*(?:d[eé]bito|cr[eé]dito)\s+na\s+conta\s+corrente\b",
     re.IGNORECASE,
 )
 
