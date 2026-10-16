@@ -17,7 +17,7 @@ SLUGS = {1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos',
          266: 'nova_geracao_matriz', 1396: 'nova_geracao_filial',
          285: 'lcarlos', 968: 'radani', 1000: 'accede_automacao',
          1001: 'accede_equipamentos', 1096: 'up_pack', 1211: 'gz_1211',
-         1402: 'vgv_1402', 1529: 'dias_pereira', 47: 'crj_47',
+         1402: 'vgv_1402', 734: 'empresa_734', 1529: 'dias_pereira', 47: 'crj_47',
          154: 'rm_postais_154', 625: 'valean_625', 626: 'valean_626',
          841: 'lucrativite_841', 912: 'vital_safety_912', 964: 'willians_964',
          88: 'hw_88', 969: 'engekraft_969', 1208: 'kairos_1208',
@@ -278,6 +278,9 @@ def _workflow_1408(roles):
 def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
+        if code == 734:
+            from app.bank_734 import workflow_734
+            return workflow_734(roles, options)
         if code == 1408:
             book, filename, _ = _workflow_1408(roles)
             return book, filename
