@@ -184,6 +184,24 @@ def _protect_fragment(item, rows, documents):
     return item
 
 
+def readable_analysis(text):
+    """Traduz nomes internos sem alterar referências ou fatos validados."""
+    labels = {
+        "CORRESPONDENCIA_EM_ANALISE": "vínculo em análise",
+        "CONTA_DIFERENTE": "possível lançamento em outra conta",
+        "VALOR_DIFERENTE": "valor diferente entre documento e candidato",
+        "SEM_LANCAMENTO_IDENTIFICADO": "documento sem correspondência identificada",
+        "SEM_DOCUMENTO_IDENTIFICADO": "movimento sem documento identificado",
+        "DOCUMENTOS_NAO_IDENTIFICAVEIS": "documentos não identificáveis no relatório",
+        "ESTORNO_EM_ANALISE": "possível estorno a conferir",
+        "vinculos_incertos": "vínculos a confirmar",
+        "DATA_DIFERENTE": "datas diferentes",
+    }
+    for code, label in labels.items():
+        text = re.sub(r"\b" + code + r"\b", label, str(text), flags=re.I)
+    return text
+
+
 def protect_publication(item, rows, documents):
     """Valida cada afirmação separadamente e conserva os trechos sustentados."""
     _, sections = narrative_sections(item.get("explicacao"))
@@ -209,7 +227,7 @@ def protect_publication(item, rows, documents):
                 reasons.extend(flags)
                 removed += 1
             elif section != "fatos":
-                safe.append(fragment.strip())
+                safe.append(readable_analysis(fragment.strip()))
         retained[section] = safe
     hypotheses = " ".join(retained["hipoteses"])
     item["explicacao"] = "Hipóteses: " + (hypotheses or "A causa ainda não está comprovada pelas evidências desta conta.")
@@ -345,7 +363,7 @@ def audit_analysis(item):
     }
 
 
-ANALYSIS_VERSION = "explanatory-review-v13"
+ANALYSIS_VERSION = "clear-documentary-review-v14"
 
 
 def narrative_sections(value):
@@ -558,7 +576,7 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
     scenario_issues = unsupported_scenarios(item, rows)
     unsafe_narrative = ungrounded_tax_explanation(item) or contradicts_existing_entries(item) or bool(scenario_issues)
     if sections.get("limitacoes") and not unsafe_narrative:
-        missing.append("Limitação indicada pela IA: " + sections["limitacoes"])
+        missing.append(("Para confirmar: " if item.get("provedor") == "local" else "Limitação indicada pela IA: ") + sections["limitacoes"])
     hypothesis = sections.get("hipoteses")
     tax_without_source = ungrounded_tax_explanation(item)
     if tax_without_source:

@@ -29,6 +29,8 @@ REVIEW_PROMPT = (
     "Para divergência documentada com indícios, até 240 palavras no total; "
     "sem evidência suficiente, máximo 150; valores iguais com alertas, máximo 130. "
     "Sem introdução nem repetição dos totais; valores exibidos pelo sistema não devem ser reescritos. "
+    "Use linguagem de conferência, sem nomes de campos ou códigos internos. "
+    "Hipóteses em até três frases curtas; limitações em uma frase específica, sem repetir a lista de documentos. "
     "roteiro_investigacao reúne até três casos com referências disponíveis: explique os campos coincidentes, "
     "os divergentes e o que falta confirmar; associe cada hipótese à referência E-/S- ou L do caso. "
     "O grau de evidência é qualitativo, não probabilidade. A composição explica a aritmética, não comprova a causa. "

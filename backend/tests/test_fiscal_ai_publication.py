@@ -7,6 +7,14 @@ from app import fiscal_ai, fiscal_ai_sessions as sessions
 from app.fiscal_ai_audit import protect_publication, note_numbers, local_review_sufficient, ANALYSIS_VERSION
 
 
+def test_codigos_internos_sao_traduzidos_depois_de_validar_a_interpretacao():
+    answer = item("Hipóteses: L1 tem CORRESPONDENCIA_EM_ANALISE; os vinculos_incertos exigem confirmar o documento.")
+    protect_publication(answer, [{"conta":"361","referencia":"L1","historico":"COMPRA CF NF 100"}], [])
+    assert "vínculo em análise" in answer["explicacao"]
+    assert "vínculos a confirmar" in answer["explicacao"]
+    assert "CORRESPONDENCIA_EM_ANALISE" not in answer["explicacao"]
+
+
 def item(text, **kwargs):
     return dict(conta="361", tipo="ENTRADAS", explicacao=text, verificar="1. Confira os documentos.",
                 evidencias=[], **kwargs)
@@ -133,7 +141,7 @@ def test_versao_do_cache_invalida_pareceres_antigos(monkeypatch):
     current = sessions._cache_digest({"contas":[]})
     monkeypatch.setattr(sessions,"ANALYSIS_VERSION","grounded-depth-v7")
     assert sessions._cache_digest({"contas":[]}) != current
-    assert ANALYSIS_VERSION == "explanatory-review-v13"
+    assert ANALYSIS_VERSION == "clear-documentary-review-v14"
 
 
 def test_endpoint_direto_tambem_isola_os_contextos(monkeypatch):

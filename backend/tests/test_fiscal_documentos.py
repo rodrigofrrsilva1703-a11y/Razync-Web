@@ -2,6 +2,7 @@
 import io
 
 import pandas as pd
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -388,6 +389,32 @@ def test_parcelas_da_mesma_nf_sao_somadas_sem_falsa_divergencia():
     assert pair["diferenca"] == 0
     assert len(pair["lancamentos"]) == 2
     assert not any(m["nota"] == "100" for m in group["razao_sem_vinculo"])
+
+
+def test_complemento_cref_com_separador_antes_da_nota_compoe_documento():
+    _, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table[4][2] = "FRETE CONTRATADO CF CTRC 100 - Fornecedor Teste"
+    table[4][5] = 900
+    table.insert(5, ["03/08/2026", 5, "VALOR REF FRETES E CARRETOS - #CREF. NF 100 - Fornecedor Teste", 800, 242, 100, 0])
+    group = post(saida=False, razao=book(table)).json()["contas"][0]
+    pair = next(c for c in group["comparacoes"] if c["nota"] == "100")
+    assert pair["situacao"] == "CONCILIADO"
+    assert pair["valor_razao"] == pair["valor_fiscal"] == 1000
+    assert len(pair["lancamentos"]) == 2
+
+
+@pytest.mark.parametrize("partner,day", [("Outro Fornecedor", "03/08/2026"), ("Fornecedor Teste", "04/08/2026")])
+def test_cref_nao_soma_complemento_de_outro_parceiro_ou_data(partner, day):
+    _, r = initial()
+    table = pd.read_excel(io.BytesIO(r), header=None).values.tolist()
+    table[4][2] = "FRETE CONTRATADO CF CTRC 100 - Fornecedor Teste"
+    table[4][5] = 900
+    table.insert(5, [day, 5, f"FRETES - #CREF. NF 100 - {partner}", 800, 242, 100, 0])
+    group = post(saida=False, razao=book(table)).json()["contas"][0]
+    pair = next(c for c in group["comparacoes"] if c["nota"] == "100")
+    assert pair["situacao"] != "CONCILIADO"
+    assert len(pair["lancamentos"]) <= 1
 
 
 def test_mesma_nf_dividida_por_cfop_e_parcelas_preserva_linhas_de_origem():

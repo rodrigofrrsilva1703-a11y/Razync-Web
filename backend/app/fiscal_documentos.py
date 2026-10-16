@@ -206,7 +206,12 @@ def _parceiro_chave(texto):
 
 def _parceiro_historico(texto):
     # Somente o parceiro exposto depois do separador, sem aproximação de nomes.
-    parts = re.split(r"\s+-\s+", str(texto or ""), maxsplit=1)
+    # O Domínio também exporta "FRETES - #CREF. NF 123 - PARCEIRO".
+    # O separador anterior à NF faz parte do histórico, não do nome.
+    text = str(texto or "")
+    note = NOTE_RE.search(text)
+    tail = text[note.end():] if note else text
+    parts = re.split(r"\s+-\s+", tail, maxsplit=1)
     return _parceiro_chave(parts[1]) if len(parts) == 2 else ""
 
 

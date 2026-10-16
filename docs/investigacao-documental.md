@@ -10,9 +10,8 @@ diferentes continuam pendentes. Números inferidos, duplicidades possíveis e
 valores diferentes exigem revisão. Linhas auxiliares de impostos e totais são
 excluídas da leitura documental.
 
-O cruzamento local considera todos os registros. A resposta para a tela mostra
-até 300 registros por conta, priorizando documentos pendentes. Esse limite de
-visualização não é usado para selecionar o contexto da IA.
+O cruzamento local considera todos os registros. A tela mantém todos os registros e pagina a leitura, priorizando documentos
+pendentes. A paginação não limita a seleção de contexto da IA.
 
 A IA recebe até 30 documentos pendentes e 30 movimentos por conta/tipo,
 priorizando diferenças de valor/data e seus movimentos relacionados. Históricos
@@ -121,3 +120,23 @@ nunca fatos presumidos. Esses critérios acompanham os casos prioritários envia
 contrários à hipótese e proíbe tratar campos desconhecidos como coincidências.
 O novo leitor separa conclusão, prioridade, interpretação e evidências; os critérios
 ficam recolhidos para manter uma leitura curta, também no celular.
+
+
+## Leitura e parcelas complementares
+
+`clear-documentary-review-v14` reconhece o parceiro depois da referência explícita
+à NF/CTRC, inclusive em históricos `FRETES - #CREF. NF ... - PARCEIRO`. O agrupamento
+continua exigindo mesma nota, conta, data, parceiro e série compatível; repetições
+indistinguíveis permanecem pendentes.
+
+Os indicadores documentais contam linhas fiscais conciliadas e para revisar,
+separando os movimentos sem vínculo. Assim usam a mesma unidade dos totais locais
+exibidos na IA. Pesquisas por acumulador priorizam pendências e mostram a diferença
+da conta inteira como contexto; documentos conciliados continuam disponíveis no filtro.
+
+A conclusão, composição da diferença e critérios de revisão ficam visíveis.
+As notas e valores selecionados aparecem em uma tabela principal, sem repetição
+no resumo e no roteiro. Evidências individuais continuam opcionais e paginadas.
+Pareceres locais identificam a leitura como gerada pelo sistema. Códigos internos
+são traduzidos após a validação das afirmações e o prompt pede frases mais curtas,
+sem novas chamadas nem aumento dos limites dos provedores gratuitos.

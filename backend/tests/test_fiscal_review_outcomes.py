@@ -29,6 +29,14 @@ def test_amostragem_documental_e_groq_sao_indicadas_no_resumo():
     assert executive_summary(item,{},partial=True)["cobertura"] == "Contexto parcial da IA"
 
 
+def test_conferencia_local_identifica_a_origem_sem_atribuir_limitacoes_a_ia():
+    item = {"provedor":"local", "valores":{"diferenca":0},
+            "explicacao":"Hipóteses: confirme a origem. Limitações: confira o comprovante."}
+    result = structured_analysis(item, [])
+    assert result["resumo_executivo"]["cobertura"] == "Conferência local"
+    assert not any("indicada pela IA" in text for text in result["informacoes_faltantes"])
+
+
 @pytest.mark.parametrize("status", ["VALOR_DIFERENTE","CONTA_DIFERENTE","DATA_DIFERENTE","ESTORNO_EM_ANALISE","AMBIGUO","PROVAVEL","SEM_LANCAMENTO_IDENTIFICADO","MOVIMENTO_SEM_VINCULO"])
 def test_criterios_trazem_confirmacao_e_reavaliacao_sem_declarar_erro(status):
     result = review_outcome(status)

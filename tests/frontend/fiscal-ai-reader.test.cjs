@@ -24,13 +24,19 @@ test('resumo destaca conclusão e próximo passo preservando a interpretação s
   assert.ok(all(root).some(el=>el.textContent==='Confira NF 100'));
   assert.ok(all(root).some(el=>el.className==='fiscal-ai-open-question' && el.textContent.includes('E-1')));
 });
-test('critérios são opcionais e ficam em detalhe recolhido por orientação',()=>{
+test('critérios de conclusão ficam visíveis junto à orientação',()=>{
   const {context,all}=setup();
   const root=context.renderAIReviewSteps({parecer:{leitura_comparacao:{orientacoes:[
     {acao:'Confira a nota',objetivo:'Compare os campos.',para_concluir:'Confirme a origem.',quando_reavaliar:'Se for outra operação, descarte.'},
     {acao:'Confira a cobertura',objetivo:'Busque o documento original.'}]}}});
-  const details=all(root).filter(el=>el.tag==='details');assert.equal(details.length,1);
-  assert.equal(details[0].open,undefined);
-  assert.ok(all(details[0]).some(el=>el.textContent==='Quando reavaliar a hipótese'));
-  assert.ok(all(details[0]).some(el=>el.textContent==='Se for outra operação, descarte.'));
+  assert.equal(all(root).filter(el=>el.tag==='details').length,0);
+  assert.ok(all(root).some(el=>el.textContent==='Quando reavaliar a hipótese'));
+  assert.ok(all(root).some(el=>el.textContent==='Se for outra operação, descarte.'));
+});
+
+test('parecer local não atribui a leitura do sistema à IA',()=>{
+  const {context,all}=setup();
+  const root=context.renderAIFindings({provedor:'local',parecer:{leitura_comparacao:{resultado:'Totais iguais.',documental_especifico:true},analise_exibicao:'Os documentos têm correspondência.'}});
+  assert.ok(all(root).some(el=>el.textContent==='Leitura do sistema'));
+  assert.ok(!all(root).some(el=>el.textContent==='Interpretação da IA'));
 });

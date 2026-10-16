@@ -16,7 +16,7 @@
 
   const money = new Intl.NumberFormat("pt-BR", {style:"currency", currency:"BRL"});
   const statusLabels = {
-    "CONFERE": "Bate",
+    "CONFERE": "Totais iguais",
     "CONFERE COM ALERTAS": "Com alertas",
     "REVISAR": "Divergência",
     "AUSENTE NO CONTÁBIL": "Sem razão"
@@ -331,14 +331,14 @@
         const next = node("div", "fiscal-ai-executive-next");
         next.append(node("span", "fiscal-ai-executive-next-label", "COMECE POR AQUI"),
           node("strong", "", executive.foco), node("p", "", executive.primeiro_passo));
-        if (executive.exemplos?.length) next.appendChild(node("small", "", executive.exemplos.join(" · ")));
+        // As notas e valores aparecem uma única vez na tabela de documentos.
         overview.appendChild(next); analysis.appendChild(overview);
-        analysis.appendChild(node("p", "fiscal-ai-diagnostic-caption", reading.resultado));
+        if (!documentary) analysis.appendChild(node("p", "fiscal-ai-diagnostic-caption", reading.resultado));
       } else {
         analysis.append(node("h5", "", documentary ? "Diagnóstico desta conta" : "Resultado da conta"),
           node("p", "fiscal-ai-conclusion", reading.resultado));
       }
-      if (reading.observacoes?.length) {
+      if (reading.observacoes?.length && !documentary) {
         analysis.appendChild(node("h5", "", documentary ? "Tipos de pendência encontrados" : "O que os lançamentos mostram"));
         const facts = node("ul", "fiscal-ai-finding-list");
         for (const observation of reading.observacoes) facts.appendChild(node("li", "", observation));
@@ -367,8 +367,8 @@
         analysis.appendChild(examples);
       }
       if (documentary && reading.impactos?.length) {
-        const impacts = node("details", "fiscal-ai-impact-details");
-        impacts.appendChild(node("summary", "", "Ver composição da diferença calculada"));
+        const impacts = node("section", "fiscal-ai-impact-details");
+        impacts.appendChild(node("h5", "", "Como a diferença se forma"));
         const list = node("ul", "");
         for (const effect of reading.impactos) {
           const li = node("li", "");
@@ -381,7 +381,7 @@
       const interpretation = String(item.parecer?.analise_exibicao || "").trim();
       const standardAnswer = /^(?:A causa ainda não está comprovada pelas evidências desta conta\.|Os dados disponíveis não sustentam uma causa específica\.|A causa está indeterminada: os lançamentos disponíveis não sustentam uma explicação)/i.test(interpretation);
       if (interpretation && !(documentary && standardAnswer)) {
-        analysis.append(node("h5", "", documentary ? "Interpretação da IA" : "O que permanece em aberto"),
+        analysis.append(node("h5", "", item.provedor === "local" ? "Leitura do sistema" : documentary ? "Interpretação da IA · hipótese a confirmar" : "O que permanece em aberto"),
           node("p", "fiscal-ai-open-question", interpretation));
       }
       if (reading.criterio) analysis.appendChild(node("p", "fiscal-ai-comparison-rule", reading.criterio));
@@ -415,12 +415,12 @@
     const instructions = item.parecer?.leitura_comparacao?.orientacoes;
     if (!instructions?.length) return renderChecklist(item.parecer?.verificacoes || item.verificar);
     const list = node("ol", "fiscal-ai-checklist fiscal-ai-explained-checklist");
-    for (const instruction of instructions) {
+    for (const [index, instruction] of instructions.entries()) {
       const step = node("li", "", "");
       if (instruction.categoria) step.classList.add("fiscal-ai-grouped-step");
       const body = node("div", "");
       body.appendChild(node("strong", "", instruction.acao));
-      if (instruction.documentos?.length) {
+      if (instruction.documentos?.length && !item.parecer?.leitura_comparacao?.documental_especifico) {
         const docs = node("ul", "fiscal-ai-step-documents");
         for (const document of instruction.documentos) {
           const example = node("li", "");
@@ -432,10 +432,9 @@
         if (instruction.amostra) body.appendChild(node("p", "fiscal-ai-step-sample",
           "Exemplos da seleção; os demais documentos desta situação permanecem no cruzamento completo."));
       }
-      if (instruction.objetivo) body.appendChild(node("p", "fiscal-ai-step-purpose", instruction.objetivo));
+      if (instruction.objetivo && !(index === 0 && item.parecer?.resumo_executivo?.primeiro_passo === instruction.objetivo)) body.appendChild(node("p", "fiscal-ai-step-purpose", instruction.objetivo));
       if (instruction.para_concluir || instruction.quando_reavaliar) {
-        const criteria = node("details", "fiscal-ai-decision");
-        criteria.appendChild(node("summary", "", "Como saber se posso concluir?"));
+        const criteria = node("div", "fiscal-ai-decision");
         if (instruction.para_concluir) criteria.append(node("strong", "", "Para concluir"), node("p", "", instruction.para_concluir));
         if (instruction.quando_reavaliar) criteria.append(node("strong", "", "Quando reavaliar a hipótese"), node("p", "", instruction.quando_reavaliar));
         body.appendChild(criteria);
@@ -459,7 +458,7 @@
     const limitations = item.parecer?.informacoes_faltantes || [];
     for (const text of limitations) {
       if (item.parecer?.leitura_comparacao?.resultado && text === "A causa do alerta ou da diferença exige conferir os documentos e a natureza dos lançamentos.") continue;
-      missing.appendChild(node("li", "", text));
+      missing.appendChild(node("li", "", item.provedor === "local" ? text.replace(/^Limitação indicada pela IA:\s*/, "Para confirmar: ") : text));
     }
     if (missing.children.length) body.appendChild(missing);
     const coverage = item.parecer?.cobertura;
@@ -468,6 +467,7 @@
     if (revised && item.parecer?.analise_exibicao !== undefined) {
       body.appendChild(node("p", "fiscal-ai-quality-note", "Resposta revisada: sugestões sem apoio suficiente nas fontes foram desconsideradas na interpretação exibida. Os valores da conferência foram preservados."));
     }
+    if (!body.children.length) return null;
     limits.appendChild(body);
     return limits;
   }
@@ -511,7 +511,7 @@
         ? summary.conciliados + " de " + summary.documentos_lidos + " linhas conciliadas no cruzamento local."
         : summary.conciliados + " de " + summary.documentos_lidos +
           " linhas fiscais conciliadas no cruzamento local · " + summary.documentos_pendentes + " para conferir."));
-    if (evidence && docs.length) section.appendChild(renderAIDataTable("Documentos selecionados para a IA", ["Nota / acumulador", "Fiscal", "Razão candidato", "Diferença", "Leitura"],
+    if (evidence && docs.length) section.appendChild(renderAIDataTable("Documentos e valores para conferir", ["Nota / acumulador", "Fiscal", "Razão candidato", "Diferença", "Leitura"],
       docs.map(d => [d.nota + " · " + d.acumulador, d.valor_fiscal_grupo_brl || d.valor_brl,
         (d.valor_razao_candidato_brl || "Não identificado") + (d.conta_razao_candidato ? " · conta " + d.conta_razao_candidato : ""),
         d.diferenca_candidato_brl || "—", investigationStatus(d.situacao)]), "fiscal-ai-documents"));
@@ -617,11 +617,13 @@
           });
           content.appendChild(metrics);
         }
+        content.appendChild(analysis);
         const documentary = renderAIDocumentary(item);
         if (documentary) content.appendChild(documentary);
-        content.appendChild(analysis);
         const composition = renderAIComposition(officialRow);
         const reading = node("div", "fiscal-ai-reading");
+        const documentaryEvidence = renderAIDocumentary(item, true);
+        if (documentaryEvidence) reading.appendChild(documentaryEvidence);
         reading.appendChild(review);
         content.appendChild(reading);
         const cases = renderAICases(item);
@@ -635,15 +637,15 @@
         }
         const evidence = node("section", "fiscal-ai-evidence-group");
         evidence.appendChild(node("h5", "", "Base da análise"));
-        const documentaryEvidence = renderAIDocumentary(item, true);
-        if (documentaryEvidence) evidence.appendChild(documentaryEvidence);
         const considered = renderAIConsidered(item);
         if (considered) evidence.appendChild(considered);
         else if (item.evidencias?.length) evidence.appendChild(renderAIEvidence(item));
         const excluded = renderAIExcluded(item);
         if (excluded) evidence.appendChild(excluded);
         evidence.appendChild(composition);
-        content.append(evidence, renderAILimits(item));
+        content.appendChild(evidence);
+        const limits = renderAILimits(item);
+        if (limits) content.appendChild(limits);
         card.append(heading, content);
         aiCards.push({item, card});
         aiResult.append(card);
@@ -957,7 +959,7 @@
       aiMessage.textContent = (result.aviso || "Parecer recebido e validado pelo Razync.") +
         (result.limite ? " " + result.limite : "") +
         (result.modelo_usado ? " Modelo utilizado: " + result.modelo_usado + "." : "") +
-        (result.fallback_usado ? " A análise foi concluída pelo provedor de reserva." : "");
+        (result.fallback_usado ? " Houve uso de provedor de reserva nos pareceres recebidos." : "");
     } catch (error) {
       if (!controller.signal.aborted && selectedAIRequest() === snapshot) {
         aiMessage.textContent = error.message || "Não foi possível gerar a análise.";
@@ -1274,7 +1276,7 @@
     const rows = sortFiscalRows(filteredRows(), tableSort.key, tableSort.descending);
     tableBody.replaceChildren();
     const total = (data?.contas || []).length;
-    resultsCount.textContent = `Exibindo ${rows.length} de ${total} contas. Abra uma conta para consultar os valores detalhados e os lançamentos.`;
+    resultsCount.textContent = `Exibindo ${rows.length} de ${total} contas. Os valores desta tabela são da conta inteira; consulte um acumulador específico na investigação documental.`;
     byId("fiscal242Empty").hidden = rows.length > 0;
     if (!rows.some(row => keyOf(row) === selectedKey)) selectedKey = "";
     rows.forEach(row => {
@@ -1345,7 +1347,7 @@
     byId("fiscal242Pending").textContent = report.resumo.revisar;
     const totalContas = Math.max(1, Number(report.resumo.total || 0));
     [
-      ["fiscal242ProgressMatches", report.resumo.conferem, "Batendo"],
+      ["fiscal242ProgressMatches", report.resumo.conferem, "Totais iguais"],
       ["fiscal242ProgressAlerts", report.resumo.com_alertas, "Com alertas"],
       ["fiscal242ProgressPending", report.resumo.revisar, "Para revisar"]
     ].forEach(([id, count, label]) => {
@@ -1513,15 +1515,16 @@
     const groups = report.contas || [];
     const header = node("div", "fiscal-investigation-summary");
     const allComparisons = groups.flatMap(g => g.comparacoes || g.documentos || []);
-    const pendingRecords = allComparisons.filter(d => d.situacao !== "CONCILIADO").length +
-      groups.reduce((sum, g) => sum + (g.razao_sem_vinculo || g.razao_pendente || []).length, 0);
-    [["Contas investigadas", groups.length], ["Correspondências conciliadas", allComparisons.filter(d => d.situacao === "CONCILIADO").length],
-      ["Registros para revisar", pendingRecords]]
+    const lines = allComparisons.flatMap(c => (c.linhas_fiscais?.length ? c.linhas_fiscais : [c]).map(() => c));
+    const pendingMovements = groups.reduce((sum, g) => sum + (g.razao_sem_vinculo || g.razao_pendente || []).length, 0);
+    [["Contas investigadas", groups.length], ["Linhas fiscais conciliadas", lines.filter(d => d.situacao === "CONCILIADO").length],
+      ["Linhas fiscais para revisar", lines.filter(d => d.situacao !== "CONCILIADO").length], ["Movimentos sem vínculo", pendingMovements]]
       .forEach(([label, value]) => {
         const metric = node("div", "fiscal-investigation-metric");
         metric.append(node("small", "", label), node("strong", "", value)); header.appendChild(metric);
       });
     investigationResults.appendChild(header);
+    investigationResults.appendChild(node("p", "fiscal-doc-count-note", "Contagem do cruzamento completo. Uma nota pode ocupar várias linhas fiscais e ter mais de uma parcela no Razão. Movimentos sem vínculo são contados separadamente."));
     const warnings = node("div", "fiscal-warnings");
     (report.avisos || []).forEach(text => warnings.appendChild(node("p", "", text)));
     investigationResults.appendChild(warnings);
@@ -1562,6 +1565,9 @@
       balance.append(totals, node("small", "", acc ? "Razão identificado − fiscal deste acumulador." : "Razão − fiscal · Entradas: débitos · Saídas: créditos."));
       if (acc) {
         balance.appendChild(node("small", "fiscal-doc-scope-note", acc.note));
+        balance.appendChild(node("p", "fiscal-doc-scope-context", "Recorte do acumulador " + acc.acc.codigo +
+          ". A diferença inicial da conta " + group.conta + " inteira é " + money.format(group.diferenca) +
+          "; inclui os demais acumuladores e movimentos da comparação inicial."));
       } else if (group.composicao) {
         balance.appendChild(node("h5", "", "Composição da diferença"));
         const lines = node("div", "fiscal-doc-balance-lines");
@@ -1682,6 +1688,7 @@
         page = Math.min(page, pages - 1); const start = page * size;
         caption.textContent = rows.length ? (start + 1) + "–" + Math.min(start + size, rows.length) + " de " + rows.length +
           " registros" : "Nenhum registro neste filtro.";
+        if (select.value === "review") caption.textContent += " · Pendências fiscais primeiro; movimentos sem vínculo estão no filtro próprio.";
         pageLabel.textContent = "Página " + (page + 1) + " de " + pages;
         previous.disabled = page === 0; next.disabled = page + 1 >= pages;
         pagination.hidden = rows.length <= 25;
@@ -1726,7 +1733,7 @@
       }
       select.addEventListener("change", () => { page = 0; paint(); });
       input.addEventListener("input", () => {
-        if (lookupQuery(input.value) === String(group.conta) || (group.acumuladores || []).some(a => String(a.codigo) === lookupQuery(input.value))) select.value = "all";
+        if (lookupQuery(input.value) === String(group.conta) || (group.acumuladores || []).some(a => String(a.codigo) === lookupQuery(input.value))) select.value = "review";
         page = 0; paint();
       });
       pageSize.addEventListener("change", () => { page = 0; paint(); });
@@ -1744,7 +1751,8 @@
         link.download = "investigacao-conta-" + group.conta + "-" + group.tipo.toLowerCase() + ".csv";
         link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
       });
-      if (accumulatorCode) select.value = "all";
+      if (accumulatorCode) select.value = comparisons.some(d => d.situacao !== "CONCILIADO" &&
+        (d.linhas_fiscais || []).some(p => String(p.acumulador) === accumulatorCode)) ? "review" : "all";
       paint();
     }
     lookupInput.addEventListener("input", () => {

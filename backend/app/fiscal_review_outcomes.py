@@ -63,5 +63,5 @@ def executive_summary(item, reading, *, partial=False):
         "foco": first.get("acao") or "Identifique os documentos e movimentos que compõem a comparação",
         "primeiro_passo": first.get("objetivo") or "Compare a origem dos registros antes de propor ajuste.",
         "exemplos": [str(d.get("titulo") or d.get("referencia")) for d in documents[:2] if d.get("titulo") or d.get("referencia")],
-        "cobertura": "Contexto parcial da IA" if is_partial else "Contexto selecionado disponível",
+        "cobertura": "Conferência local" if item.get("provedor") == "local" else "Contexto parcial da IA" if is_partial else "Contexto selecionado disponível",
         "parcial": is_partial, "origem": "Calculado pelo Razync a partir dos relatórios"}

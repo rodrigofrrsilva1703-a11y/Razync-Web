@@ -17,9 +17,9 @@
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=1">
   <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=investigacao-grupos-20261015-1">
-  <link rel="stylesheet" href="./assets/css/fiscal-results.css?v=investigacao-evidencias-20261015-24">
+  <link rel="stylesheet" href="./assets/css/fiscal-results.css?v=clarity-20261016-26">
   <link rel="stylesheet" href="./assets/css/fiscal-studio.css?v=ia-documentos-20261014-15">
-  <link rel="stylesheet" href="./assets/css/fiscal-ai-reader.css?v=review-20261015-25">
+  <link rel="stylesheet" href="./assets/css/fiscal-ai-reader.css?v=clarity-20261016-26">
 </head>
 <body>
   <div class="app-shell">
@@ -189,9 +189,9 @@
                 <button type="button" class="fiscal-summary-action" data-fiscal-filter="todas">Ver todas as contas <span aria-hidden="true">↗</span></button>
               </div>
               <div class="fiscal-summary-card fiscal-summary-matches">
-                <span class="fiscal-summary-top"><span>Conferidas</span><span class="fiscal-summary-icon" aria-hidden="true">✓</span></span>
+                <span class="fiscal-summary-top"><span>Totais iguais</span><span class="fiscal-summary-icon" aria-hidden="true">✓</span></span>
                 <strong id="fiscal242Matches">—</strong>
-                <button type="button" class="fiscal-summary-action" data-fiscal-filter="bate">Ver contas conferidas <span aria-hidden="true">↗</span></button>
+                <button type="button" class="fiscal-summary-action" data-fiscal-filter="bate">Ver totais iguais <span aria-hidden="true">↗</span></button>
               </div>
               <div class="fiscal-summary-card fiscal-summary-alerts">
                 <span class="fiscal-summary-top"><span>Com alertas</span><span class="fiscal-summary-icon" aria-hidden="true">!</span></span>
@@ -199,16 +199,17 @@
                 <button type="button" class="fiscal-summary-action" data-fiscal-filter="alertas">Ver alertas <span aria-hidden="true">↗</span></button>
               </div>
               <div class="fiscal-summary-card fiscal-summary-pending">
-                <span class="fiscal-summary-top"><span>Para revisar</span><span class="fiscal-summary-icon" aria-hidden="true">↗</span></span>
+                <span class="fiscal-summary-top"><span>Divergências</span><span class="fiscal-summary-icon" aria-hidden="true">↗</span></span>
                 <strong id="fiscal242Pending">—</strong>
                 <button type="button" class="fiscal-summary-action" data-fiscal-filter="revisar">Ver divergências <span aria-hidden="true">↗</span></button>
               </div>
             </div>
             <div class="fiscal-progress" aria-label="Distribuição das contas por situação">
-              <span id="fiscal242ProgressMatches" class="fiscal-progress-matches" title="Batendo"></span>
+              <span id="fiscal242ProgressMatches" class="fiscal-progress-matches" title="Totais iguais"></span>
               <span id="fiscal242ProgressAlerts" class="fiscal-progress-alerts" title="Com alertas"></span>
               <span id="fiscal242ProgressPending" class="fiscal-progress-pending" title="Para revisar"></span>
             </div>
+            <p class="fiscal-status-guide">Totais iguais: comparação inicial sem diferença. Com alertas: totais iguais com movimentos a conferir. Divergência: diferença nos valores comparados. A confirmação por documento aparece na investigação.</p>
             <details class="fiscal-result-notes"><summary>Avisos da conferência <span id="fiscal242WarningCount"></span></summary><div id="fiscal242Warnings" class="fiscal-warnings"></div></details>
             <div id="fiscal242NextStep" class="fiscal-next-step" hidden>
               <div>
@@ -228,7 +229,7 @@
                     <option value="todas">Todas as situações</option>
                     <option value="revisar">Divergências</option>
                     <option value="alertas">Com alertas</option>
-                    <option value="bate">Batendo</option>
+                    <option value="bate">Totais iguais</option>
                   </select>
                 </div>
               </div>
@@ -349,7 +350,7 @@
                       <option value="todas">Todas as situações</option>
                       <option value="revisar">Divergências</option>
                       <option value="alertas">Com alertas</option>
-                      <option value="bate">Conferidas</option>
+                      <option value="bate">Totais iguais</option>
                     </select>
                   </label>
                 </div>
@@ -610,7 +611,7 @@
   <script src="./assets/js/company-guides.js?v=1001-santander-pdf"></script>
   <script src="./assets/js/app.js?v=fiscal-floating-help-1"></script>
   <script src="./assets/js/migration.js?v=fiscal-modern-20261013-5"></script>
-  <script src="./assets/js/fiscal-242.js?v=review-20261015-25"></script>
+  <script src="./assets/js/fiscal-242.js?v=clarity-20261016-26"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>

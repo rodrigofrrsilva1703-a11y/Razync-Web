@@ -101,3 +101,38 @@
   #fiscalView .fiscal-ai-checklist > li {padding:12px;gap:9px;}
 }
 @media(prefers-reduced-motion:reduce) {#fiscalView .fiscal-ai * {transition:none!important;}}
+
+/* Conferência: menos preparação repetida, mais espaço para a leitura. */
+#fiscalView .fiscal-ai {padding:20px;}
+#fiscalView .fiscal-ai-heading {gap:12px;padding-bottom:14px;margin-bottom:14px;}
+#fiscalView .fiscal-ai-heading h3 {font-size:23px;}
+#fiscalView .fiscal-ai-heading-tools .fiscal-ai-provider {max-width:none;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.5;}
+#fiscalView .fiscal-ai-source-panel {gap:9px;padding:11px 13px;margin-bottom:12px;}
+#fiscalView .fiscal-ai-source {padding:4px 7px;}
+#fiscalView .fiscal-ai-actions {margin:12px 0;}
+#fiscalView .fiscal-ai-toolbar {margin-top:16px;padding:14px 0;}
+#fiscalView .fiscal-ai-reader {margin-top:14px;gap:16px;}
+#fiscalView .fiscal-ai-account {padding:18px;}
+#fiscalView .fiscal-ai-executive {padding:16px;margin-top:6px;}
+#fiscalView .fiscal-ai-executive-next {margin-top:12px;padding-top:11px;}
+#fiscalView .fiscal-ai-impact-details {padding:12px 0;border-top:1px solid #e3eaf2;}
+#fiscalView .fiscal-ai-impact-details h5 {margin:0 0 8px;font-size:13px;color:#31526f;}
+#fiscalView .fiscal-ai-impact-details ul {margin:0;padding:0;list-style:none;display:grid;gap:7px;}
+#fiscalView .fiscal-ai-impact-details li {display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.6;}
+#fiscalView .fiscal-ai-impact-details strong {white-space:nowrap;font-variant-numeric:tabular-nums;}
+#fiscalView .fiscal-ai-decision {margin-top:10px;line-height:1.65;font-size:12px;}
+#fiscalView .fiscal-ai-decision > strong {font-size:11px;color:#486680;}
+#fiscalView .fiscal-ai-decision p {margin:3px 0 9px;color:#50677e;}
+#fiscalView .fiscal-ai-documentary {padding:12px 14px;margin:12px 0;}
+#fiscalView .fiscal-ai-data-table td {font-size:12px;line-height:1.6;}
+#fiscalView .fiscal-ai-data-table th {font-size:11px;}
+#fiscalView .fiscal-ai-documentary-coverage,#fiscalView #fiscal242AISourceNote {font-size:12px;color:#526b82;}
+#fiscalView .fiscal-ai-open-question {line-height:1.75;}
+#fiscalView .fiscal-ai-checklist > li {padding:13px;}
+@media(max-width:680px) {
+  #fiscalView .fiscal-ai {padding:14px;}
+  #fiscalView .fiscal-ai-heading h3 {font-size:20px;}
+  #fiscalView .fiscal-ai-account {padding:13px;}
+  #fiscalView .fiscal-ai-executive {padding:13px;}
+  #fiscalView .fiscal-ai-impact-details li {flex-wrap:wrap;gap:3px;}
+}

@@ -1416,3 +1416,12 @@
 #fiscalView .fiscal-ai-cases-more {border:1px solid #ccdaeb;border-radius:9px;background:#fff;color:#365a80;padding:10px 14px;cursor:pointer;}
 @media(max-width:680px) {#fiscalView .fiscal-ai-case-summary {flex-wrap:wrap;padding:12px;}#fiscalView .fiscal-ai-case-summary strong {flex-basis:80%;}#fiscalView .fiscal-ai-case-body {padding:0 12px 12px;}}
 @media(max-width:680px) {#fiscalView .fiscal-ai {padding:14px;}#fiscalView .fiscal-ai-heading h3 {font-size:20px;}#fiscalView .fiscal-ai-source-panel {padding:12px;}#fiscalView .fiscal-ai-actions > button {flex:1 1 auto;}#fiscalView .fiscal-ai-documentary {padding:12px;}#fiscalView .fiscal-ai-loading {padding:12px;}#fiscalView .fiscal-ai-loading-head {gap:10px;}}
+
+/* Explicações de escopo junto aos resultados, sem novos painéis. */
+#fiscalView .fiscal-status-guide,#fiscalView .fiscal-doc-count-note {font-size:12px;line-height:1.7;color:#536b80;margin:9px 0 14px;}
+#fiscalView .fiscal-doc-scope-context {font-size:12px;line-height:1.65;color:#48647d;margin:10px 0 0;padding-top:9px;border-top:1px solid #e3eaf2;}
+#fiscalView .fiscal-doc-balance small {font-size:11px;line-height:1.65;color:#536b80;}
+#fiscalView .fiscal-doc-caption {font-size:12px;line-height:1.6;color:#536b80;}
+#fiscalView .fiscal-doc-rows td small {font-size:11px;line-height:1.6;}
+#fiscalView .fiscal-doc-balance-lines > div {gap:12px;}
+#fiscalView .fiscal-doc-balance-lines strong {white-space:nowrap;}

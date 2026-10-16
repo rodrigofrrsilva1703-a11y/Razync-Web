@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('assets/js/fiscal-242.js','utf8');
-function setup() {
+function setup({grouped=false}={}) {
   class Element {
     constructor(tag, cls='', text='') { this.tag=tag; this.className=cls; this.textContent=String(text); this.children=[]; this.attributes={}; this.events={}; this.value=''; }
     append(...items) {items.forEach(item=>this.appendChild(item));}
@@ -28,12 +28,21 @@ function setup() {
     valor_fiscal:100,valor_razao:i<1000?100:110,diferenca:i<1000?0:10,
     linhas_fiscais:[{id:'E-'+i,acumulador:'1152',cfop:'1102',valor:100,linha_origem:i+1}],
     lancamentos:[{id:'R-'+i,data:'03/08/2026',valor:i<1000?100:110,historico:'COMPRA CF NF '+(i+1),contrapartida:'800'}]}));
+  if(grouped) docs[0].linhas_fiscais.push({...docs[0].linhas_fiscais[0],id:'E-extra',valor:0});
   const group={composicao:{confere_com_inicial:true,itens:[
       {descricao:'Diferenças nos vínculos',valor:1009.99},{descricao:'Fora da conferência inicial',valor:-9.99},{descricao:'Cobertura',valor:0}]},conta:'508',tipo:'ENTRADAS',descricao:'Compras',fiscal:110000,contabil:111000,diferenca:1000,
     documentos_total:1100,comparacoes:docs,acumuladores:[{codigo:'1152',descricao:'Compras',valor_resumo:110000,valor_documentos:110000,detalhamento_disponivel:true}],razao_sem_vinculo:[]};
   context.renderInvestigation({resumo:{contas:2,conciliados:1000,pendentes:100},contas:[group,{...group,conta:'509',comparacoes:[],documentos_total:0}]});
   return {root,all,byClass,context,exportedBlob:()=>exported};
 }
+test('contador fiscal usa linhas de origem e não quantidade de grupos de notas',()=>{
+  const {all,byClass}=setup({grouped:true});
+  const metrics=byClass('fiscal-investigation-summary').children;
+  assert.equal(metrics[1].children[0].textContent,'Linhas fiscais conciliadas');
+  assert.equal(metrics[1].children[1].textContent,'1001');
+  assert.equal(metrics[2].children[1].textContent,'100');
+  assert.equal(metrics[3].children[1].textContent,'0');
+});
 test('investigação mantém todos os resultados navegáveis sem renderizar milhares de linhas',()=>{
   const {all,byClass}=setup();
   const body=()=>all(byClass('fiscal-doc-rows')).find(el=>el.tag==='tbody');
@@ -90,14 +99,14 @@ test('busca por conta exibe fiscal, Razão considerado e diferença sem depender
   assert.match(values[2].textContent,/1\.000,00/);
   assert.equal(all(byClass('fiscal-doc-lookup-results')).filter(el=>el.tag==='table').length,0);
   const search=byClass('fiscal-doc-search'); search.value='508'; search.events.input();
-  assert.equal(byClass('fiscal-doc-filter').value,'all');
-  assert.match(byClass('fiscal-doc-caption').textContent,/de 1100 registros/);
+  assert.equal(byClass('fiscal-doc-filter').value,'review');
+  assert.match(byClass('fiscal-doc-caption').textContent,/de 100 registros/);
 });
 
-test('busca por acumulador mostra o Razão identificado e abre todos os documentos do recorte',()=>{
+test('busca por acumulador mantém os totais completos e prioriza pendências',()=>{
   const {byClass,all}=setup();
   const search=byClass('fiscal-doc-search'); search.value='1152'; search.events.input();
-  assert.match(byClass('fiscal-doc-caption').textContent,/de 1100 registros/);
+  assert.match(byClass('fiscal-doc-caption').textContent,/de 100 registros/);
   const values=all(byClass('fiscal-doc-comparison-totals')).filter(el=>el.tag==='strong');
   assert.match(values[1].textContent,/111\.000,00/);
   assert.match(values[2].textContent,/1\.000,00/);
