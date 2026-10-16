@@ -220,7 +220,7 @@ def workflow_734(roles: dict, options: dict):
         axis=1,
     )
     frame.loc[special, "HISTÓRICO"] = frame.loc[special, "HISTÓRICO"].str.replace(
-        r"^\\s*(?:Pago|Recebido):\\s*", "", regex=True, case=False
+        r"^\s*(?:Pago|Recebido):\s*", "", regex=True, case=False
     )
     book = engine.gerar_excel_nova_geracao({
         SHEET: {"principal": frame, "retirados": pd.DataFrame()}
