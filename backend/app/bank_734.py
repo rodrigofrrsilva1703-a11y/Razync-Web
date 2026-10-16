@@ -173,7 +173,16 @@ def read_bank_pdf(bank: str, data: bytes, filename: str) -> pd.DataFrame:
     # O leitor valida TODOS os lançamentos contra os saldos do PDF antes de
     # retirar as naturezas que não devem ir para o Modelo Domínio.
     frame = pd.DataFrame(_parse_pdf(data), columns=COLUNAS)
-    frame = frame.loc[~frame["HISTÓRICO"].map(_skip_current_account_transfer)].copy()
+    history = frame["HISTÓRICO"].fillna("").str.lower()
+    skip = frame["HISTÓRICO"].map(_skip_current_account_transfer)
+    skip |= history.str.contains("rendimento remunera", regex=False)
+    skip |= history.str.contains("rendimentos remunerados", regex=False)
+    frame = frame.loc[~skip].copy()
+    history = frame["HISTÓRICO"].fillna("").str.lower()
+    invert = history.str.startswith("aplicação conta remunerada") | history.str.startswith("resgate conta remunerada")
+    frame.loc[invert, "VALOR"] = -frame.loc[invert, "VALOR"]
+    frame["DÉBITO"] = frame["VALOR"].apply(lambda value: ACCOUNT if value > 0 else "")
+    frame["CRÉDITO"] = frame["VALOR"].apply(lambda value: ACCOUNT if value < 0 else "")
     if frame.empty:
         raise ValueError("BTG 510: apenas movimentos de débito/crédito na conta corrente encontrados; nenhum lançamento para importar.")
     return frame.reset_index(drop=True)
