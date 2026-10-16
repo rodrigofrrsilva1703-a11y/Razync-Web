@@ -6,6 +6,18 @@
   };
   try {
     const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+    // A página inicia na seleção de colaborador; o teste deve abrir a
+    // carteira antes de conferir linhas e ferramentas das empresas.
+    for (let i = 0; i < 30 && !document.querySelector(".portfolio-entry"); i++) {
+      await pause(70);
+    }
+    const portfolio = document.querySelector(".portfolio-entry");
+    if (!portfolio) throw Error("Carteira inicial não foi renderizada.");
+    portfolio.click();
+    await pause(100);
+    if (!document.querySelector(".company-row")) {
+      throw Error("Pesquisa de empresas não abriu após selecionar a carteira.");
+    }
     const company = {
       codigo:266, nome:"NOVA GERACAO COMERCIAL ELETRICA LTDA",
       regime:"LUCRO PRESUMIDO",
