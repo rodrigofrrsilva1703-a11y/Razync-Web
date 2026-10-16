@@ -97,7 +97,18 @@ def _parse_pdf(data: bytes):
             if parts and parts[0].casefold().startswith(("saldo de abertura", "saldo de fechamento")):
                 return
             if modern:
-                # Novo PDF: as colunas trazem 'R
+                # Modern PDF includes currency symbol and negative amounts.
+                money = [(i, re.sub(r"\s*R\x24\s*", "", value).replace(" ", ""))
+                         for i, value in enumerate(parts)
+                         if re.fullmatch(r"-?\s*R\x24\s*[\d.,]+", value)]
+                if len(money) > 2:
+                    money = money[:2]
+            else:
+                money = [(i, value) for i, value in enumerate(parts) if _MONEY.fullmatch(value)]
+            if len(money) != 2:
+                raise ValueError(f"BTG 510: lançamento incompleto em {item['date']}.")
+            value_index, value_text = money[0]
+            saldo_index, _ = money[1]
             if saldo_index <= value_index:
                 raise ValueError("BTG 510: colunas Valor e Saldo invertidas.")
             history = _clean_history(" ".join(parts[:value_index]).strip())
