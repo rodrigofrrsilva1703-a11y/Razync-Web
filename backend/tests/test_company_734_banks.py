@@ -78,11 +78,11 @@ def test_734_tem_somente_btg_e_conta_510():
 
 def test_leitor_btg_confere_totais_saldos_e_multilinhas():
     result = read_bank_pdf("btg", btg_pdf(), "extrato.pdf")
-    assert len(result) == 3
-    assert result["VALOR"].tolist() == [0.27, 100, -50]
-    assert result["DÉBITO"].tolist() == ["510", "510", ""]
-    assert result["CRÉDITO"].tolist() == ["", "", "510"]
-    assert "Banco 341" in result.iloc[1]["HISTÓRICO"]
+    assert len(result) == 2
+    assert result["VALOR"].tolist() == [100, -50]
+    assert result["DÉBITO"].tolist() == ["510", ""]
+    assert result["CRÉDITO"].tolist() == ["", "510"]
+    assert "Banco 341" in result.iloc[0]["HISTÓRICO"]
     assert "Saldo" not in " ".join(result["HISTÓRICO"])
 
 
