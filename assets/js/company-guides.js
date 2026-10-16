@@ -48,6 +48,11 @@
       note:"Contas configuradas: Banco do Brasil 8 e Sicredi 1155. Confira cuidadosamente as entradas, saídas e diferenças de saldo.",
       extrato:"Observe divergências por dia e por banco; um saldo correto de um banco não substitui a conferência do outro."
     },
+    734: {
+      intro:"A empresa 734 utiliza o extrato PDF do BTG Pactual para montar o Modelo Domínio.",
+      note:"Conta contábil BTG 510. Rendimentos e movimentos internos são excluídos; aplicações e resgates recebem a inversão contábil configurada.",
+      extrato:"Use o PDF original do BTG e confira se a conta e o período pertencem à empresa."
+    },
     841: {
       intro:"A empresa 841 utiliza o extrato do Banco Inter para montar o Modelo Domínio.",
       note:"Conta configurada do Banco Inter: 506."
