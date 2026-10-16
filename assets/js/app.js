@@ -26,6 +26,71 @@ let companies = [];
 let selected = null;
 let companyFilter = 'all';
 
+// Carteiras: enquanto somente a primeira estiver cadastrada, ela reúne todas
+// as empresas existentes. Para os próximos colaboradores, usar códigos
+// explícitos em companyCodes, sem modificar ferramentas nem dados contábeis.
+const portfolios = [
+  {id: "rodrigo", name: "Rodrigo", companyCodes: null},
+];
+let activePortfolio = null;
+const portfolioPicker = $("#portfolioPicker");
+const portfolioList = $("#portfolioList");
+
+function companyBelongsToPortfolio(company) {
+  if (!activePortfolio) return false;
+  return activePortfolio.companyCodes === null ||
+    activePortfolio.companyCodes.includes(Number(company.codigo));
+}
+
+function renderPortfolios() {
+  portfolioList.replaceChildren();
+  for (const portfolio of portfolios) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "portfolio-entry";
+    const name = document.createElement("strong");
+    name.textContent = portfolio.name;
+    const details = document.createElement("span");
+    const quantity = companies.filter(company =>
+      portfolio.companyCodes === null || portfolio.companyCodes.includes(Number(company.codigo))).length;
+    details.textContent = quantity.toLocaleString("pt-BR") + " empresas";
+    const arrow = document.createElement("span");
+    arrow.className = "portfolio-entry-arrow";
+    arrow.textContent = "→";
+    btn.append(name, details, arrow);
+    btn.addEventListener("click", () => selectPortfolio(portfolio.id));
+    portfolioList.appendChild(btn);
+  }
+}
+
+function selectPortfolio(id) {
+  const portfolio = portfolios.find(item => item.id === id);
+  if (!portfolio) return;
+  activePortfolio = portfolio;
+  portfolioPicker.hidden = true;
+  workspace.hidden = false;
+  $(".hero").hidden = false;
+  $("#portfolioActiveName").textContent = "Carteira de " + portfolio.name;
+  $(".hero h1").textContent = "Empresas de " + portfolio.name;
+  $(".hero p").textContent = "Pesquise uma empresa e acesse suas ferramentas.";
+  search.value = "";
+  $('#regimeFilter').value = "";
+  filterCompanies();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function showPortfolioPicker() {
+  activePortfolio = null;
+  selected = null;
+  panel.hidden = true;
+  portfolioPicker.hidden = false;
+  workspace.hidden = true;
+  $(".hero").hidden = true;
+  renderPortfolios();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+$("#backToPortfolios").addEventListener("click", showPortfolioPicker);
+
 const API = () => String(window.RAZYNC_CONFIG?.apiBase || "").replace(/\/$/, "");
 
 function dateApiValue(input) {
@@ -189,9 +254,10 @@ function bankLabel(bank, account) {
 function render(items) {
   grid.innerHTML = "";
   count.textContent = `${items.length} empresa(s)`;
-  $('#totalCompanies').textContent = companies.length || '—';
-  $('#organizerCompanies').textContent = companies.filter(hasCompanyTools).length;
-  $('#multiBankCompanies').textContent = companies.filter(c=>Object.keys(c.capabilities?.banks || {}).length > 1).length;
+  const current = companies.filter(companyBelongsToPortfolio);
+  $('#totalCompanies').textContent = current.length || '—';
+  $('#organizerCompanies').textContent = current.filter(hasCompanyTools).length;
+  $('#multiBankCompanies').textContent = current.filter(c=>Object.keys(c.capabilities?.banks || {}).length > 1).length;
   if (!items.length) {
     grid.innerHTML = '<div class="empty-state">Nenhuma empresa encontrada.</div>';
     return;
@@ -902,8 +968,8 @@ function closeCompany() {
   cancelAutomaticPreview();
   cancelClassificationPreview();
   panel.hidden = true;
-  workspace.hidden = false;
-  $(".hero").hidden = false;
+  workspace.hidden = !activePortfolio;
+  $(".hero").hidden = !activePortfolio;
   selected = null;
   showGlobalView("companies");
 }
@@ -1665,6 +1731,7 @@ function filterCompanies() {
   const query = normalize(search.value.trim());
   const regime = $('#regimeFilter').value;
   render(companies.filter(company =>
+    companyBelongsToPortfolio(company) &&
     (!regime || company.regime === regime) &&
     (companyFilter==='all' ||
       (companyFilter==='organizer' && hasCompanyTools(company)) ||
@@ -1708,7 +1775,8 @@ async function loadCompanies() {
     const response = await fetch("./assets/data/companies.json");
     companies = await response.json();
   }
-  filterCompanies();
+  renderPortfolios();
+  if (activePortfolio) filterCompanies();
 }
 
 async function checkApi() {
@@ -1736,8 +1804,10 @@ function showGlobalView(name) {
   panel.hidden = true;
   selected = null;
   if (name === "companies") {
-    workspace.hidden = false;
-    $(".hero").hidden = false;
+    portfolioPicker.hidden = Boolean(activePortfolio);
+    workspace.hidden = !activePortfolio;
+    $(".hero").hidden = !activePortfolio;
+    if (!activePortfolio) renderPortfolios();
   }
   document.querySelectorAll(".global-view").forEach(view => {
     view.classList.toggle("active", view.id === `${name}View`);
