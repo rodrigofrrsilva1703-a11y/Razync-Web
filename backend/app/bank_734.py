@@ -209,7 +209,20 @@ def workflow_734(roles: dict, options: dict):
     if frame.empty:
         raise ValueError("BTG 510: nenhum lançamento no período selecionado.")
     frame = frame.sort_values("DATA", kind="stable").reset_index(drop=True)
+    # Apenas aplicações e resgates mantêm o histórico sem Pago:/Recebido:.
+    # Outros movimentos recebem os mesmos prefixos do gerador Domínio.
+    from razync.history import prefixar_historico_movimento
+    special = frame["HISTÓRICO"].fillna("").str.lower().str.startswith(
+        ("aplicação conta remunerada", "resgate conta remunerada")
+    )
+    frame.loc[~special, "HISTÓRICO"] = frame.loc[~special].apply(
+        lambda row: prefixar_historico_movimento(row["HISTÓRICO"], row["VALOR"]),
+        axis=1,
+    )
+    frame.loc[special, "HISTÓRICO"] = frame.loc[special, "HISTÓRICO"].str.replace(
+        r"^\\s*(?:Pago|Recebido):\\s*", "", regex=True, case=False
+    )
     book = engine.gerar_excel_nova_geracao({
         SHEET: {"principal": frame, "retirados": pd.DataFrame()}
-    }, prefixar_historicos=True)
+    }, prefixar_historicos=False)
     return book, "RAZYNC_734_BTG_510_MODELO_DOMINIO.xlsx"
