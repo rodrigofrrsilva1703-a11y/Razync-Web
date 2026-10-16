@@ -1,95 +1,116 @@
-"""Empresa 734: duas contas bancárias independentes e PDFs."""
+"""734 BTG: apenas PDF, leitura de todas as linhas e reconciliação de saldos."""
 import io
 from unittest.mock import patch
 
-import pandas as pd
+import fitz
 import pytest
 from openpyxl import load_workbook
 
-from app.bank_734 import BANKS, read_bank_pdf, workflow_734
+from app.bank_734 import read_bank_pdf, workflow_734
 from app.registry import CAPABILITIES
 from app.migration_services import _workflow
 
 
-def fake_pdf() -> bytes:
-    import fitz
+def btg_pdf(with_bad_total=False):
     doc = fitz.open()
     page = doc.new_page()
-    page.insert_text((40, 60), "Extrato bancario de teste")
+    first = [
+        "Conta corrente - PJ",
+        "Razao social",
+        "EMPRESA DE EXEMPLO LTDA",
+        "Periodo do extrato: 01/07/2026 - 31/07/2026",
+        "Período do extrato: 01/07/2026 - 31/07/2026",
+        "Saldo de abertura em 01/07/2026:",
+        "R$ 100,00",
+        "Saldo de fechamento em 31/07/2026:",
+        "R$ 150,27",
+        "Total de entradas",
+        "R$ 100,27",
+        "Total de saídas",
+        ("R$ 50,01" if with_bad_total else "R$ 50,00"),
+        "Data lançamento",
+        "Descrição do lançamento",
+        "31/07/2026",
+        "Saldo de fechamento",
+        "150,27",
+        "31/07/2026",
+        "Valor de Rendimento Remunera+",
+        "0,27",
+        "150,27",
+        "30/07/2026",
+        "Pix recebido de CLIENTE TESTE",
+        "Banco 341 | CPF ***.123.456-**",
+        "100,00",
+        "150,00",
+        "30/07/2026",
+        "Pagamento de Conta / Tributo - TESTE",
+        "-50,00",
+        "50,00",
+        "Fale com nossa central",
+    ]
+    for i, line in enumerate(first):
+        page.insert_text((28, 36 + 18 * i), line, fontsize=8)
+    page = doc.new_page()
+    second = [
+        "Data lançamento",
+        "Descrição do lançamento",
+        "01/07/2026",
+        "Saldo de abertura",
+        "100,00",
+        "Fale com nossa central",
+    ]
+    for i, line in enumerate(second):
+        page.insert_text((28, 36 + 18 * i), line, fontsize=8)
     content = doc.tobytes()
     doc.close()
     return content
 
 
-def records():
-    return [
-        {"DESCRIÇÃO": "BANCO", "DATA": "02/09/2026", "VALOR": 100.25,
-         "DÉBITO": "", "CRÉDITO": "", "HISTÓRICO": "Recebimento teste"},
-        {"DESCRIÇÃO": "BANCO", "DATA": "03/09/2026", "VALOR": -45.50,
-         "DÉBITO": "", "CRÉDITO": "", "HISTÓRICO": "Pagamento teste"},
-    ]
-
-
-def test_capabilities_for_734_and_no_cross_company_change():
+def test_734_tem_somente_btg_e_conta_510():
     cap = CAPABILITIES[734]
-    assert cap["workflow"] == "advanced"
-    assert cap["banks"] == {"btg": "510", "bradesco": "2721"}
-    assert [role["name"] for role in cap["roles"]] == ["btg", "bradesco"]
-    assert all(role["accept"] == ".pdf" and role["multiple"]
-               and role["optional"] for role in cap["roles"])
+    assert cap["banks"] == {"btg": "510"}
+    assert [role["name"] for role in cap["roles"]] == ["btg"]
+    assert cap["roles"][0]["accept"] == ".pdf"
+    assert cap["roles"][0]["multiple"] is True
     assert CAPABILITIES[1402]["banks"]["btg"] == "510"
-    assert CAPABILITIES[266]["banks"]["bradesco"] == "9"
 
 
-@pytest.mark.parametrize("bank,account,description", [
-    ("btg", "510", "BANCO BTG"),
-    ("bradesco", "2721", "BANCO BRADESCO"),
-])
-def test_pdf_mapping_and_account_sign(bank, account, description):
-    with patch("app.bank_734.engine.processar_extrato_conferencia_empresa",
-               return_value=records()) as parser:
-        df = read_bank_pdf(bank, fake_pdf(), "extrato.pdf")
-    assert parser.call_args.args[2] == bank
-    assert df["DESCRIÇÃO"].tolist() == [description, description]
-    assert df["VALOR"].tolist() == [100.25, -45.50]
-    assert df["DÉBITO"].tolist() == [account, ""]
-    assert df["CRÉDITO"].tolist() == ["", account]
-    assert list(df.columns) == ["DESCRIÇÃO", "DATA", "VALOR", "DÉBITO", "CRÉDITO", "HISTÓRICO"]
+def test_leitor_btg_confere_totais_saldos_e_multilinhas():
+    result = read_bank_pdf("btg", btg_pdf(), "extrato.pdf")
+    assert len(result) == 3
+    assert result["VALOR"].tolist() == [0.27, 100, -50]
+    assert result["DÉBITO"].tolist() == ["510", "510", ""]
+    assert result["CRÉDITO"].tolist() == ["", "", "510"]
+    assert "Banco 341" in result.iloc[1]["HISTÓRICO"]
+    assert "Saldo" not in " ".join(result["HISTÓRICO"])
 
 
-def test_invalid_pdf_or_unreadable_layout_does_not_succeed_silently():
+def test_btg_recusa_saldo_que_nao_fecha_e_arquivo_invalido():
+    with pytest.raises(ValueError, match="não conferem"):
+        read_bank_pdf("btg", btg_pdf(with_bad_total=True), "extrato.pdf")
     with pytest.raises(ValueError, match="PDF"):
-        read_bank_pdf("btg", b"bad", "extrato.xlsx")
-    with patch("app.bank_734.engine.processar_extrato_conferencia_empresa", return_value=[]):
-        with pytest.raises(ValueError, match="layout"):
-            read_bank_pdf("bradesco", fake_pdf(), "extrato.pdf")
+        read_bank_pdf("btg", b"not pdf", "extrato.xlsx")
+    with pytest.raises(ValueError, match="somente o BTG"):
+        read_bank_pdf("bradesco", btg_pdf(), "extrato.pdf")
 
 
-def test_two_banks_create_separate_sheets_and_period():
-    pdf = fake_pdf()
-    with patch("app.bank_734.engine.processar_extrato_conferencia_empresa",
-               return_value=records()):
-        content, filename = _workflow(734, {
-            "btg": [("btg.pdf", pdf)],
-            "bradesco": [("bradesco.pdf", pdf)],
-        }, {"data_inicial": "2026-09-01", "data_final": "2026-09-30"})
-    assert filename == "RAZYNC_734_MODELO_DOMINIO.xlsx"
-    wb = load_workbook(io.BytesIO(content), data_only=True)
-    assert any("BTG 510" in name for name in wb.sheetnames)
-    assert any("Bradesco 2721" in name for name in wb.sheetnames)
-
-
-def test_only_one_bank_is_enough_and_period_without_movements_fails():
-    pdf = fake_pdf()
-    with patch("app.bank_734.engine.processar_extrato_conferencia_empresa",
-               return_value=records()):
-        result, _ = workflow_734({"btg": [("btg.pdf", pdf)]}, {})
+def test_modelo_734_tem_uma_aba_btg_e_respeita_periodo():
+    result, filename = _workflow(734, {"btg": [("extrato.pdf", btg_pdf())]}, {
+        "data_inicial": "2026-07-01", "data_final": "2026-07-31",
+    })
+    assert filename == "RAZYNC_734_BTG_510_MODELO_DOMINIO.xlsx"
     wb = load_workbook(io.BytesIO(result))
-    assert any("BTG" in sheet for sheet in wb.sheetnames)
-    assert not any("Bradesco" in sheet for sheet in wb.sheetnames)
-    with patch("app.bank_734.engine.processar_extrato_conferencia_empresa",
-               return_value=records()):
-        with pytest.raises(ValueError, match="período"):
-            workflow_734({"btg": [("btg.pdf", pdf)]}, {
-                "data_inicial": "2026-08-01", "data_final": "2026-08-31"
-            })
+    assert any("BTG 510" in name for name in wb.sheetnames)
+    assert not any("Bradesco" in name for name in wb.sheetnames)
+    with pytest.raises(ValueError, match="período"):
+        workflow_734({"btg": [("extrato.pdf", btg_pdf())]}, {
+            "data_inicial": "2026-08-01", "data_final": "2026-08-31",
+        })
+
+
+def test_upload_repetido_recusado_e_bradesco_adiado():
+    file = btg_pdf()
+    with pytest.raises(ValueError, match="mais de uma vez"):
+        workflow_734({"btg": [("a.pdf", file), ("b.pdf", file)]}, {})
+    with pytest.raises(ValueError, match="somente para o BTG"):
+        workflow_734({"bradesco": [("bradesco.pdf", file)]}, {})
