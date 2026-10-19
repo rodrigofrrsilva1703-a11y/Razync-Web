@@ -10,16 +10,16 @@ import os
 import time
 import sys
 from pathlib import Path
-import urllib.error
-import urllib.request
+from unittest.mock import patch
+from fastapi import HTTPException
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "legacy"))
 
-from app.fiscal_ai import detailed_context, _validar_resposta_ia
+from app import fiscal_ai
 from app.fiscal_ai_strategy import REVIEW_PROMPT
 
-MODELS = ["dots-studio/dots-3-note-preview:free", "liquid/lfm-2.5-2.6b:free",
-          "minimax/minimax-m3.1-flash:free", "google/gemma-4-31b-it:free"]
+MODELS = ["dots-studio/dots-3-note-preview:free", "nvidia/nemotron-3.5-lightning:free",
+          "google/gemma-4-31b-it:free"]
 
 
 def cases():
@@ -54,35 +54,22 @@ def cases():
 
 
 def evaluate(model, name, report, key):
-    context, mapping, references, _ = detailed_context(report)
-    allowed = {g["grupo"]: [r["referencia"] for r in g["lancamentos"]] for g in context["grupos"]}
-    body = {"model": model, "messages": [
-        {"role": "system", "content": REVIEW_PROMPT + " Referências permitidas: " + json.dumps(allowed)},
-        {"role": "user", "content": json.dumps(context, ensure_ascii=False)}],
-        "temperature": 0.2, "max_tokens": 1600, "reasoning": {"enabled": False},
-        "provider": {"allow_fallbacks": False, "data_collection": "deny", "max_price": {"prompt": 0, "completion": 0}}}
     start = time.monotonic()
-    outcome = {"model": model, "case": name}
+    outcome = {"protocol": "production", "model": model, "case": name}
+    validator = fiscal_ai._validar_resposta_ia
+    def record(raw, *args, **kwargs):
+        outcome["raw"] = json.dumps(raw, ensure_ascii=False)
+        return validator(raw, *args, **kwargs)
     try:
-        request = urllib.request.Request("https://openrouter.ai/api/v1/chat/completions",
-            data=json.dumps(body).encode(), headers={"Authorization": "Bearer " + key,
-            "Content-Type": "application/json", "X-Title": "Razync Synthetic Evaluation"})
-        with urllib.request.urlopen(request, timeout=30) as response:
-            answer = json.load(response)
-        choice = answer["choices"][0]
-        raw = choice["message"]["content"] or ""
-        outcome.update(actual_model=answer.get("model"), finish=choice.get("finish_reason"), raw=raw)
-        clean = raw.strip()
-        if clean.startswith("```"):
-            clean = clean.split('\n', 1)[1].rsplit('```', 1)[0]
-        parsed = json.loads(clean)
-        verified = _validar_resposta_ia(parsed, report, mapping, references, provider="openrouter", model=model)
-        outcome.update(contract_valid=True, audit=verified[0]["auditoria"],
-                       published_explanation=verified[0]["explicacao"])
-    except urllib.error.HTTPError as exc:
-        outcome.update(error="http", status=exc.code)
-    except (TimeoutError, urllib.error.URLError):
-        outcome.update(error="timeout_or_network")
+        with patch.dict(os.environ, {"OPENROUTER_API_KEY": key}), \
+             patch.object(fiscal_ai, "_openrouter_models", return_value=[model]), \
+             patch.object(fiscal_ai, "_validar_resposta_ia", side_effect=record):
+            result = fiscal_ai.explain(report, only_openrouter=True)
+        verified = result["analises"][0]
+        outcome.update(actual_model=result.get("modelo_usado"), contract_valid=True,
+                       audit=verified["auditoria"], published_explanation=verified["explicacao"])
+    except HTTPException as exc:
+        outcome.update(error="provider_or_validation", status=exc.status_code, detail=exc.detail)
     except Exception as exc:
         outcome.update(error=type(exc).__name__)
     outcome["seconds"] = round(time.monotonic()-start, 2)
@@ -99,7 +86,10 @@ def main():
         return
     for model in MODELS:
         for name, report in cases():
-            print("RZ_EVAL " + json.dumps(evaluate(model, name, report, key), ensure_ascii=False), flush=True)
+            result = evaluate(model, name, report, key)
+            print("RZ_EVAL " + json.dumps(result, ensure_ascii=False), flush=True)
+            if result.get("status") in (429, 503):
+                break
     print('RZ_EVAL_DONE', flush=True)
 
 
