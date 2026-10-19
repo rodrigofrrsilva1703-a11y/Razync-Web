@@ -62,3 +62,42 @@ html.fiscal-account-dialog-open {overflow:hidden;scrollbar-gutter:stable;}
   #fiscalView .fiscal-account-dialog-footer button {flex:1;min-height:44px;}
 }
 @media(prefers-reduced-motion:reduce) {#fiscalView .fiscal-account-dialog[open] {animation:none;}}
+
+/* Situação sempre visível, com cor e texto independentes dos totais. */
+#fiscalView .fiscal-account-dialog {border-color:#cfdeed;border-radius:18px;}
+#fiscalView .fiscal-account-dialog-header {padding:22px 26px 0;background:linear-gradient(120deg,#f4f8fd,#fff 70%);}
+#fiscalView .fiscal-account-dialog-header h3 {font-size:28px;line-height:1.2;margin:8px 0 6px;}
+#fiscalView .fiscal-account-dialog-header .fiscal-detail-title p {font-size:12px;line-height:1.5;max-height:3em;overflow:auto;}
+#fiscalView .fiscal-account-dialog-header .fiscal-detail-heading-actions {margin-left:auto;}
+#fiscalView .fiscal-account-dialog-header .fiscal-detail-close {border-radius:50px;min-height:38px;padding:8px 14px;}
+#fiscalView .fiscal-account-situation {display:flex;align-items:center;gap:12px;margin-top:18px;padding:13px 0 15px;border-top:1px solid #dce6f1;}
+#fiscalView .fiscal-account-situation-symbol {display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:10px;background:#e7effa;color:#305b89;font-size:24px;font-weight:600;}
+#fiscalView .fiscal-account-situation-copy {min-width:0;}
+#fiscalView .fiscal-account-situation-copy strong {display:block;color:#254f7b;font-size:14px;line-height:1.5;}
+#fiscalView .fiscal-account-situation-copy p {margin:2px 0 0;font-size:12px;line-height:1.6;color:#4c647c;}
+#fiscalView .fiscal-account-dialog[data-situation="divergence"] .fiscal-account-situation-symbol,
+#fiscalView .fiscal-account-dialog[data-situation="review"] .fiscal-account-situation-symbol {background:#fff0d7;color:#83540e;}
+#fiscalView .fiscal-account-dialog[data-situation="divergence"] .fiscal-account-situation-copy strong,
+#fiscalView .fiscal-account-dialog[data-situation="review"] .fiscal-account-situation-copy strong {color:#795015;}
+#fiscalView .fiscal-account-dialog-body .fiscal-comparison-metrics {align-items:stretch;gap:0;padding-bottom:18px;border-bottom:1px solid #e3eaf2;}
+#fiscalView .fiscal-account-dialog-body .fiscal-detail-metric {display:flex;flex-direction:column;justify-content:center;gap:5px;padding:12px 20px;min-width:0;}
+#fiscalView .fiscal-account-dialog-body .fiscal-detail-metric strong {letter-spacing:-.025em;overflow-wrap:anywhere;}
+#fiscalView .fiscal-account-dialog-body .fiscal-detail-metric-difference {margin-left:18px;border:1px solid #d7e4f3;background:#edf4fc;border-radius:12px;}
+#fiscalView .fiscal-account-dialog-body .fiscal-comparison-bridge {border:0;border-bottom:1px solid #e3eaf2;border-radius:0;background:none;padding:4px 0 18px;}
+#fiscalView .fiscal-account-dialog-body .fiscal-comparison-bridge h4 {font-size:13px;color:#31516f;}
+#fiscalView .fiscal-account-dialog-body .fiscal-comparison-bridge-values {gap:16px;}
+#fiscalView .fiscal-account-dialog-body .fiscal-comparison-bridge-values > div {background:none;border:0;padding:0;}
+#fiscalView .fiscal-account-dialog-body .fiscal-comparison-bridge-values dt {font-size:12px;color:#526b82;}
+#fiscalView .fiscal-account-dialog-body .fiscal-comparison-bridge-values dd {margin:6px 0 0;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;}
+#fiscalView .fiscal-account-dialog-footer {background:#f5f8fc;}
+@media(max-width:760px) {
+  #fiscalView .fiscal-account-dialog-header {padding:16px 16px 0;}
+  #fiscalView .fiscal-account-dialog-header .fiscal-detail-title {flex:1 1 140px;}
+  #fiscalView .fiscal-account-dialog-header .fiscal-detail-heading-actions {flex:0 0 auto;}
+  #fiscalView .fiscal-account-dialog-header h3 {font-size:24px;}
+  #fiscalView .fiscal-account-dialog-header .fiscal-section-eyebrow {font-size:9px;}
+  #fiscalView .fiscal-account-situation {margin-top:14px;gap:10px;}
+  #fiscalView .fiscal-account-dialog-body .fiscal-comparison-metrics {gap:14px;}
+  #fiscalView .fiscal-account-dialog-body .fiscal-detail-metric {padding:0;}
+  #fiscalView .fiscal-account-dialog-body .fiscal-detail-metric-difference {margin-left:0;padding:12px;}
+}

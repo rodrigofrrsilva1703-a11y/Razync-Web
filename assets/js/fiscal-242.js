@@ -1119,6 +1119,21 @@
     return {side, noneSelected, separated, reason:reasons.join(" · ")};
   }
 
+  function fiscalAccountSituation(row, reading) {
+    if (reading.noneSelected) return {tone:"review", symbol:"!", title:"Seleção a revisar",
+      explanation:"Há movimentos no Razão, mas nenhum entrou na comparação pelo histórico."};
+    if (row.situacao === "AUSENTE NO CONTÁBIL") return {tone:"review", symbol:"!", title:"Sem movimentos no Razão",
+      explanation:"Não foram encontrados " + reading.side + " desta conta no relatório enviado."};
+    const difference = Number(row.diferenca || 0);
+    if (Math.abs(difference) > 0.01) return {tone:"divergence", symbol:"≠", title:"Conta com divergência",
+      explanation:"Razão na comparação " + money.format(Math.abs(difference)) +
+        (difference < 0 ? " abaixo do fiscal." : " acima do fiscal.") +
+        (row.extras || row.sem_evidencia ? " Há movimentos a revisar." : "")};
+    if (row.extras || row.sem_evidencia || row.situacao === "CONFERE COM ALERTAS") return {
+      tone:"review", symbol:"!", title:"Totais iguais · com alertas", explanation:reading.reason + ". Revise antes de concluir."};
+    return {tone:"equal", symbol:"=", title:"Totais iguais", explanation:"Sem diferença nos valores comparados. A igualdade dos totais não confirma cada documento."};
+  }
+
   function renderDetails(row) {
     details.replaceChildren();
     if (!row) { details.hidden = true; return; }
@@ -1127,25 +1142,31 @@
     details.setAttribute("aria-label", "Detalhes da conta " + row.conta);
     const reading = fiscalComparisonReading(row, data.lancamentos || []);
 
+    const situation = fiscalAccountSituation(row, reading);
+    detailDialog.dataset.situation = situation.tone;
     const heading = node("div", "fiscal-detail-heading");
     const summary = node("div", "fiscal-detail-title");
-    summary.appendChild(node("span", "fiscal-section-eyebrow", "DETALHAMENTO CONTÁBIL"));
+    summary.appendChild(node("span", "fiscal-section-eyebrow", "ACUMULADORES × RAZÃO · " + row.tipo));
     const title = node("h3", "", "Conta " + row.conta);
     title.id = "fiscal242DetailTitle";
     summary.appendChild(title);
-    const description = node("p", "", (row.descricao || "Sem descrição") + " · " + row.tipo);
+    const description = node("p", "", "Acumuladores: " + (row.descricao || "Sem descrição"));
     description.id = "fiscal242DetailDescription";
     summary.appendChild(description);
     const headingActions = node("div", "fiscal-detail-heading-actions");
-    headingActions.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(row.situacao),
-      reading.noneSelected ? "Revisar seleção" : statusLabels[row.situacao] || row.situacao));
     const close = node("button", "fiscal-detail-close", "Fechar ×");
     close.type = "button";
     close.setAttribute("aria-label", "Fechar detalhes da conta");
     close.addEventListener("click", () => detailDialog.close());
     headingActions.appendChild(close);
     heading.append(summary, headingActions);
-    byId("fiscal242DetailHeading").replaceChildren(heading);
+    const state = node("div", "fiscal-account-situation");
+    const symbol = node("span", "fiscal-account-situation-symbol", situation.symbol);
+    symbol.setAttribute("aria-hidden", "true");
+    const stateText = node("div", "fiscal-account-situation-copy");
+    stateText.append(node("strong", "", situation.title), node("p", "", situation.explanation));
+    state.append(symbol, stateText);
+    byId("fiscal242DetailHeading").replaceChildren(heading, state);
 
     const metrics = node("div", "fiscal-detail-metrics fiscal-comparison-metrics");
     [
