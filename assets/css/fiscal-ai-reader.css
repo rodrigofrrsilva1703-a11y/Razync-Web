@@ -66,7 +66,7 @@
 #fiscalView .fiscal-ai-checklist > li {counter-increment:review-step;display:flex;align-items:flex-start;gap:12px;padding:16px 0;border:0;border-bottom:1px solid #e7edf4;border-radius:0;background:none;margin:0;}
 #fiscalView .fiscal-ai-checklist > li::before {content:counter(review-step,decimal-leading-zero);position:static;display:grid;place-items:center;flex:0 0 29px;height:29px;background:#edf3fa;border:1px solid #dce7f4;border-radius:9px;color:#547aa2;font-size:10px;font-weight:700;}
 #fiscalView .fiscal-ai-checklist > li > div {min-width:0;flex:1;}
-#fiscalView .fiscal-ai-checklist > .fiscal-ai-grouped-step {background:none;border:0;border-bottom:1px solid #e7edf4;padding:16px 0;}
+#fiscalView .fiscal-ai-checklist > li.fiscal-ai-grouped-step {background:none;border:0;border-bottom:1px solid #e7edf4;padding:16px 0;}
 #fiscalView .fiscal-ai-checklist strong {font-size:13px;line-height:1.75;color:#31526f;}
 #fiscalView .fiscal-ai-step-documents {margin:12px 0;padding:0;list-style:none;}
 #fiscalView .fiscal-ai-step-documents > li {display:flex;flex-direction:column;gap:4px;padding:10px 12px;background:#f7f9fc;border-left:2px solid #c9d9ec;border-radius:0 7px 7px 0;margin:6px 0;font-size:11px;line-height:1.7;}
