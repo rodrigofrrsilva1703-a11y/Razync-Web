@@ -155,3 +155,26 @@
   #fiscalView .fiscal-ai-value small {font-size:11px;}
   #fiscalView .fiscal-ai-account-compact strong {font-size:22px;}
 }
+
+/* Primeira conferência: base comparada, seleção e motivo junto aos valores. */
+#fiscalView #fiscal242Rows .fiscal-comparison-total,
+#fiscalView #fiscal242Rows .fiscal-comparison-selection,
+#fiscalView #fiscal242Rows .fiscal-comparison-reason {display:block;white-space:normal;font-size:11px;font-weight:400;line-height:1.5;color:#526b82;margin-top:6px;}
+#fiscalView #fiscal242Rows .fiscal-comparison-selection {color:#315777;font-weight:600;}
+#fiscalView #fiscal242Rows .fiscal-situation-cell {min-width:140px;white-space:normal;}
+#fiscalView #fiscal242Rows .fiscal-money-accounting {min-width:170px;}
+#fiscalView .fiscal-detail-metrics.fiscal-comparison-metrics {grid-template-columns:repeat(3,minmax(0,1fr));}
+#fiscalView .fiscal-comparison-metrics .fiscal-detail-metric-difference strong {font-size:23px;color:#234e7c;}
+#fiscalView .fiscal-comparison-bridge {padding:18px 0;border-bottom:1px solid #e3eaf2;}
+#fiscalView .fiscal-comparison-bridge h4 {margin:0 0 14px;font-size:14px;color:#31526f;}
+#fiscalView .fiscal-comparison-bridge-values {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:0;}
+#fiscalView .fiscal-comparison-bridge-values > div {padding-left:14px;border-left:2px solid #e0e8f1;min-width:0;}
+#fiscalView .fiscal-comparison-bridge-values > div:last-child {border-color:#7b9fc5;}
+#fiscalView .fiscal-comparison-bridge dt {font-size:12px;line-height:1.5;color:#526b82;}
+#fiscalView .fiscal-comparison-bridge dd {margin:6px 0 0;font-size:16px;font-weight:650;font-variant-numeric:tabular-nums;color:#284866;}
+#fiscalView .fiscal-comparison-bridge p {font-size:12px;line-height:1.6;color:#526b82;margin:14px 0 0;}
+#fiscalView .fiscal-detail-explanation {font-size:12px;line-height:1.7;color:#526b82;}
+@media(max-width:680px) {
+  #fiscalView .fiscal-comparison-bridge-values {grid-template-columns:1fr;gap:14px;}
+  #fiscalView .fiscal-detail-metrics.fiscal-comparison-metrics {grid-template-columns:1fr;}
+}

@@ -112,7 +112,7 @@ test('tabela compacta preserva acumuladores e reserva totais técnicos para deta
   assert.ok(match);
   const headings = [...match[1].matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/g)].map(x=>x[1].replace(/<span\b[^>]*>[\s\S]*?<\/span>/g,'').replace(/<[^>]+>/g,'').trim());
   assert.deepEqual(headings,[
-    'Conta / descrição','Acumuladores','Fiscal','Contábil considerado','Diferença','Situação'
+    'Conta / operação','Acumuladores','Fiscal','Razão na comparação','Diferença','Situação'
   ]);
   assert.ok(html.includes('id="fiscal242Search"'));
   assert.ok(html.includes('id="fiscal242Detail"'));

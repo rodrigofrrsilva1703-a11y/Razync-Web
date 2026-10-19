@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="./assets/css/fiscal-242.css?v=investigacao-grupos-20261015-1">
   <link rel="stylesheet" href="./assets/css/fiscal-results.css?v=visual-20261019-1">
   <link rel="stylesheet" href="./assets/css/fiscal-studio.css?v=ia-documentos-20261014-15">
-  <link rel="stylesheet" href="./assets/css/fiscal-ai-reader.css?v=visual-20261019-2">
+  <link rel="stylesheet" href="./assets/css/fiscal-ai-reader.css?v=comparison-20261019-1">
 </head>
 <body>
   <div class="app-shell">
@@ -220,7 +220,7 @@
             </div>
             <div class="fiscal-results-card" id="fiscal242ResultsCard">
               <div class="fiscal-results-heading">
-                <div><span class="fiscal-section-eyebrow">COMPARATIVO</span><h3>Contas e acumuladores</h3><p>Selecione uma conta para ver acumuladores, valores e lançamentos.</p></div>
+                <div><span class="fiscal-section-eyebrow">COMPARATIVO</span><h3>Contas e acumuladores</h3><p>Uma linha por conta e tipo de operação. As descrições são dos acumuladores fiscais.</p></div>
                 <div class="fiscal-results-controls">
                   <label for="fiscal242Search" class="visually-hidden">Buscar por conta ou acumulador</label>
                   <input id="fiscal242Search" type="search" placeholder="Buscar conta ou acumulador" autocomplete="off" aria-label="Buscar conta, descrição ou acumulador">
@@ -235,13 +235,13 @@
               </div>
               <div class="fiscal-table-scroll">
                 <table class="fiscal-table">
-                  <thead><tr><th scope="col" aria-sort="none"><button type="button" class="fiscal-sort" data-fiscal-sort="conta">Conta / descrição <span aria-hidden="true">↕</span></button></th><th scope="col">Acumuladores</th><th scope="col" class="fiscal-head-money" aria-sort="none"><button type="button" class="fiscal-sort" data-fiscal-sort="fiscal">Fiscal <span aria-hidden="true">↕</span></button></th><th scope="col" class="fiscal-head-money" aria-sort="none"><button type="button" class="fiscal-sort" data-fiscal-sort="contabil">Contábil considerado <span aria-hidden="true">↕</span></button></th><th scope="col" class="fiscal-head-money" aria-sort="none"><button type="button" class="fiscal-sort" data-fiscal-sort="diferenca">Diferença <span aria-hidden="true">↕</span></button></th><th scope="col">Situação</th></tr></thead>
+                  <thead><tr><th scope="col" aria-sort="none"><button type="button" class="fiscal-sort" data-fiscal-sort="conta">Conta / operação <span aria-hidden="true">↕</span></button></th><th scope="col">Acumuladores</th><th scope="col" class="fiscal-head-money" aria-sort="none"><button type="button" class="fiscal-sort" data-fiscal-sort="fiscal">Fiscal <span aria-hidden="true">↕</span></button></th><th scope="col" class="fiscal-head-money" aria-sort="none"><button type="button" class="fiscal-sort" data-fiscal-sort="contabil">Razão na comparação <span aria-hidden="true">↕</span></button></th><th scope="col" class="fiscal-head-money" aria-sort="none"><button type="button" class="fiscal-sort" data-fiscal-sort="diferenca">Diferença <span aria-hidden="true">↕</span></button></th><th scope="col">Situação</th></tr></thead>
                   <tbody id="fiscal242Rows"></tbody>
                 </table>
               </div>
               <p class="fiscal-empty" id="fiscal242Empty" hidden>Nenhuma conta encontrada. Tente outra busca ou situação.</p>
               <p class="fiscal-table-count" id="fiscal242Count" aria-live="polite"></p>
-              <details class="fiscal-reading-guide"><summary>Como interpretar os valores</summary><p class="fiscal-disclaimer fiscal-table-note">Contábil considerado: lançamentos do Razão classificados como compatíveis com o fiscal. Diferença = contábil considerado − fiscal. A composição e o total do Razão aparecem no detalhe da conta.</p></details>
+              <details class="fiscal-reading-guide"><summary>Como interpretar os valores</summary><p class="fiscal-disclaimer fiscal-table-note">Fiscal: soma dos acumuladores listados. Razão na comparação: movimentos selecionados pelos históricos, usando débitos nas entradas e créditos nas saídas. Diferença = razão na comparação − fiscal. O total examinado pode incluir valores separados para revisão; abra a conta para ver a composição.</p></details>
             </div>
             <div id="fiscal242DetailDock"><div id="fiscal242Detail" class="fiscal-detail" hidden></div></div>
             <details class="fiscal-unmapped" id="fiscal242Unmapped" hidden>
@@ -611,7 +611,7 @@
   <script src="./assets/js/company-guides.js?v=1001-santander-pdf"></script>
   <script src="./assets/js/app.js?v=fiscal-floating-help-1"></script>
   <script src="./assets/js/migration.js?v=fiscal-modern-20261013-5"></script>
-  <script src="./assets/js/fiscal-242.js?v=clarity-20261016-26"></script>
+  <script src="./assets/js/fiscal-242.js?v=comparison-20261019-1"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>

@@ -1102,12 +1102,30 @@
       return normalizeSearch(key).includes(term);
     });
   }
+  function fiscalComparisonReading(row, entries = []) {
+    const credit = row.tipo === "SAÍDAS";
+    const side = credit ? "créditos" : "débitos";
+    const movements = Math.abs(Number(row.contabil || 0)) <= 0.01 && row.extras > 0
+      ? entries.filter(item => String(item.conta) === String(row.conta) &&
+      String(item.natureza).includes(credit ? "CRÉDITO" : "DÉBITO")) : [];
+    const noneSelected = movements.length > 0 && movements.every(item => item.classificacao === "ALERTA - NÃO FISCAL");
+    const separated = Math.round((Number(row.total_conta || 0) - Number(row.contabil || 0)) * 100) / 100 || 0;
+    const reasons = [];
+    if (row.situacao === "AUSENTE NO CONTÁBIL") reasons.push("Sem " + side + " no relatório");
+    if (row.extras) reasons.push(row.extras + " mov. fora da seleção");
+    if (row.sem_evidencia) reasons.push(row.sem_evidencia + " histórico(s) a validar");
+    if (!reasons.length) reasons.push(Math.abs(Number(row.diferenca || 0)) <= 0.01
+      ? "Sem diferença nos totais comparados" : "Valores comparados diferentes");
+    return {side, noneSelected, separated, reason:reasons.join(" · ")};
+  }
+
   function renderDetails(row) {
     details.replaceChildren();
     if (!row) { details.hidden = true; return; }
     details.hidden = false;
     details.setAttribute("role", "region");
     details.setAttribute("aria-label", "Detalhes da conta " + row.conta);
+    const reading = fiscalComparisonReading(row, data.lancamentos || []);
 
     const heading = node("div", "fiscal-detail-heading");
     const summary = node("div", "fiscal-detail-title");
@@ -1116,7 +1134,7 @@
     summary.appendChild(node("p", "", (row.descricao || "Sem descrição") + " · " + row.tipo));
     const headingActions = node("div", "fiscal-detail-heading-actions");
     headingActions.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(row.situacao),
-      statusLabels[row.situacao] || row.situacao));
+      reading.noneSelected ? "Revisar seleção" : statusLabels[row.situacao] || row.situacao));
     const close = node("button", "fiscal-detail-close", "Fechar painel");
     close.type = "button";
     close.addEventListener("click", () => { selectedKey = ""; renderTable(); });
@@ -1124,11 +1142,10 @@
     heading.append(summary, headingActions);
     details.appendChild(heading);
 
-    const metrics = node("div", "fiscal-detail-metrics");
+    const metrics = node("div", "fiscal-detail-metrics fiscal-comparison-metrics");
     [
       ["Valor fiscal", row.fiscal, "fiscal"],
-      ["Contábil considerado", row.contabil, "accounting"],
-      ["Total do Razão", row.total_conta, "ledger"],
+      ["Razão na comparação", row.contabil, "accounting"],
       ["Diferença", row.diferenca, "difference"]
     ].forEach(([label, amount, style]) => {
       const card = node("div", "fiscal-detail-metric fiscal-detail-metric-" + style);
@@ -1136,22 +1153,37 @@
       card.appendChild(node("strong", "", money.format(Number(amount || 0))));
       if (style === "difference") {
         card.appendChild(node("span", "fiscal-detail-metric-hint",
-          Math.abs(Number(amount || 0)) <= 0.01 ? "Sem diferença aritmética" : "Contábil considerado − fiscal"));
+          Math.abs(Number(amount || 0)) <= 0.01 ? "Sem diferença aritmética" : "Razão na comparação − fiscal"));
       }
       metrics.appendChild(card);
     });
     details.appendChild(metrics);
-    details.appendChild(node("p", "fiscal-difference-reading", differenceMeaning(row.diferenca)));
+    details.appendChild(node("p", "fiscal-difference-reading", reading.noneSelected
+      ? "Há movimentos no Razão, mas nenhum foi selecionado pelo histórico. Revise a seleção antes de concluir que existe uma diferença fiscal."
+      : differenceMeaning(row.diferenca).replace("Contábil considerado", "Razão na comparação")));
+
+    const bridge = node("section", "fiscal-comparison-bridge");
+    bridge.appendChild(node("h4", "", "Do total do Razão ao valor comparado"));
+    const bridgeValues = node("dl", "fiscal-comparison-bridge-values");
+    [["Total examinado · " + reading.side, row.total_conta],
+      ["Valor separado para revisão", reading.separated],
+      ["Razão na comparação", row.contabil]].forEach(([label, value]) => {
+      const part = node("div");
+      part.append(node("dt", "", label), node("dd", "", money.format(Number(value || 0))));
+      bridgeValues.appendChild(part);
+    });
+    bridge.append(bridgeValues, node("p", "", "Total examinado − valor separado = razão na comparação. Valores negativos preservam o efeito de estornos e redutores."));
+    details.appendChild(bridge);
 
     const explanation = node("p", "fiscal-disclaimer fiscal-detail-explanation",
-      "Valor contábil considerado: lançamentos classificados pelo sistema como compatíveis com o fiscal. " +
-      "O total do Razão pode incluir outros movimentos. O fechamento dos valores não comprova sozinho a origem fiscal.");
+      "A comparação soma os acumuladores desta conta e deste tipo de operação. Entradas usam débitos; saídas usam créditos. " +
+      "A seleção se baseia nos históricos. Movimentos separados precisam de revisão; isso não comprova que sejam não fiscais.");
     details.appendChild(explanation);
     details.appendChild(accumulatorBreakdown(row));
 
     if (row.extras || row.sem_evidencia) {
       const notices = node("div", "fiscal-detail-notices");
-      if (row.extras) notices.appendChild(node("p", "", row.extras + " lançamento(s) com indício de movimento não fiscal. Confira o histórico e a contrapartida."));
+      if (row.extras) notices.appendChild(node("p", "", row.extras + " movimento(s) fora da seleção pelo histórico. Confira documentos, histórico e contrapartida antes de incluir ou excluir valores."));
       if (row.sem_evidencia) notices.appendChild(node("p", "", row.sem_evidencia + " lançamento(s) fecham somente pelo valor, sem evidência fiscal suficiente no histórico."));
       details.appendChild(notices);
     }
@@ -1188,7 +1220,7 @@
         cell(tr, mov.contrapartida);
         cell(tr, money.format(mov.debito), "fiscal-money");
         cell(tr, money.format(mov.credito), "fiscal-money");
-        const classification = mov.classificacao === "ALERTA - NÃO FISCAL" ? "Possível movimento não fiscal"
+        const classification = mov.classificacao === "ALERTA - NÃO FISCAL" ? "Fora da seleção · revisar histórico"
           : mov.classificacao === "FECHAMENTO POR VALOR - VALIDAR" ? "Fecha por valor · validar" : "Fiscal provável";
         cell(tr, classification);
         body.appendChild(tr);
@@ -1276,10 +1308,11 @@
     const rows = sortFiscalRows(filteredRows(), tableSort.key, tableSort.descending);
     tableBody.replaceChildren();
     const total = (data?.contas || []).length;
-    resultsCount.textContent = `Exibindo ${rows.length} de ${total} contas. Os valores desta tabela são da conta inteira; consulte um acumulador específico na investigação documental.`;
+    resultsCount.textContent = `Exibindo ${rows.length} de ${total} contas. Cada linha reúne uma conta e um tipo de operação. O fiscal soma os acumuladores listados; a diferença usa o razão na comparação.`;
     byId("fiscal242Empty").hidden = rows.length > 0;
     if (!rows.some(row => keyOf(row) === selectedKey)) selectedKey = "";
     rows.forEach(row => {
+      const reading = fiscalComparisonReading(row, data.lancamentos || []);
       const tr = node("tr", "fiscal-result-row fiscal-result-row-" + statusClass(row.situacao));
       const id = keyOf(row);
       if (id === selectedKey) tr.classList.add("selected");
@@ -1309,15 +1342,20 @@
       const fiscalValue = cell(tr, money.format(row.fiscal), "fiscal-money fiscal-money-fiscal");
       fiscalValue.dataset.label = "Fiscal";
       const accountingValue = cell(tr, money.format(row.contabil), "fiscal-money fiscal-money-accounting");
-      accountingValue.dataset.label = "Contábil";
+      accountingValue.dataset.label = "Razão na comparação";
+      if (reading.noneSelected) accountingValue.appendChild(node("small", "fiscal-comparison-selection", "Nenhum selecionado pelo histórico"));
+      if (row.extras || Math.abs(reading.separated) > 0.01) {
+        accountingValue.appendChild(node("small", "fiscal-comparison-total", "Total examinado: " + money.format(Number(row.total_conta || 0))));
+      }
       const diferenca = cell(tr, "", "fiscal-money fiscal-difference");
       diferenca.appendChild(node("span", "fiscal-difference-number", money.format(row.diferenca)));
       diferenca.dataset.label = "Diferença";
-      diferenca.appendChild(node("small", "fiscal-table-secondary", Math.abs(Number(row.diferenca || 0)) <= 0.01 ? "Sem diferença" : row.diferenca < 0 ? "Abaixo do fiscal" : "Acima do fiscal"));
+      diferenca.appendChild(node("small", "fiscal-table-secondary", Math.abs(Number(row.diferenca || 0)) <= 0.01 ? "Sem diferença" : row.diferenca < 0 ? "Razão abaixo do fiscal" : "Razão acima do fiscal"));
       if (Math.abs(Number(row.diferenca || 0)) <= 0.01) diferenca.classList.add("fiscal-difference-zero");
       const td = cell(tr, "", "fiscal-situation-cell");
       td.dataset.label = "Situação";
-      td.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(row.situacao), statusLabels[row.situacao] || row.situacao));
+      td.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(row.situacao), reading.noneSelected ? "Revisar seleção" : statusLabels[row.situacao] || row.situacao));
+      if (row.situacao !== "CONFERE") td.appendChild(node("small", "fiscal-comparison-reason", reading.reason));
       tableBody.appendChild(tr);
     });
     renderDetails(rows.find(row => keyOf(row) === selectedKey) || null);
