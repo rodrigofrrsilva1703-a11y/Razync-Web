@@ -1,4 +1,7 @@
 """Análise solicitada explicitamente para uma única conta/natureza."""
+import hashlib
+import json
+
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from app import fiscal_ai_sessions as sessions
@@ -17,6 +20,11 @@ def scope_account(report, account, tipo):
     scoped["lancamentos"] = [m for m in scoped["lancamentos"]
         if m.get("_tipo_ia") == tipo or (not m.get("_tipo_ia") and side in str(m.get("natureza", "")))]
     return scoped
+
+
+def review_context(report, scope, filial, empresa_codigo):
+    source = {"escopo": scope, "filial": filial, "empresa_codigo": empresa_codigo, "relatorio": report}
+    return hashlib.sha256(json.dumps(source, ensure_ascii=False, sort_keys=True, default=str).encode()).hexdigest()
 
 
 @router.post("")
@@ -51,14 +59,15 @@ async def analyze_account(acumuladores: UploadFile = File(...), razao: UploadFil
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     scope = {"conta": conta, "tipo": tipo, "acumulador": acumulador, "origem": origem}
+    context_id = review_context(report, scope, filial, empresa_codigo)
     if not report["contas"] or all(r["situacao"] == "CONFERE" for r in report["contas"]):
-        return {"analises": [], "provedor": "local", "gratuito": True, "escopo": scope,
+        return {"analises": [], "provedor": "local", "gratuito": True, "escopo": scope, "contexto_revisao": context_id,
                 "aviso": "Não há pendências nesta seleção para enviar à IA. A igualdade dos totais não substitui a conferência dos documentos."}
     manifest = await run_in_threadpool(sessions.prepare, report)
     try:
         results = [await run_in_threadpool(sessions.process, manifest["sessao"], lot["id"]) for lot in manifest["lotes"]]
         if len(results) != 1 or len(results[0].get("analises", [])) != 1:
             raise HTTPException(502, "A análise não retornou exclusivamente a conta selecionada.")
-        return dict(results[0], escopo=scope)
+        return dict(results[0], escopo=scope, contexto_revisao=context_id)
     finally:
         sessions.discard(manifest["sessao"])

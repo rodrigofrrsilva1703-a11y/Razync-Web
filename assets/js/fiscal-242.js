@@ -1125,6 +1125,61 @@
     for (const state of accountAnalysisCache.values()) { state.controller?.abort(); clearInterval(state.timer); }
     accountAnalysisCache.clear();
   }
+  function accountReviewLog(contextId) {
+    const valid = /^[a-f0-9]{64}$/.test(contextId || "");
+    const storageKey = "razync:fiscal:review:v1:" + contextId;
+    function read() {
+      try {
+        const parsed = JSON.parse(globalThis.localStorage?.getItem(storageKey) || "{}");
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+      } catch (_) { return {}; }
+    }
+    return {
+      available: valid,
+      entries: () => valid ? read() : {},
+      get: key => {
+        const saved = valid ? read()[key] : null;
+        return saved && typeof saved.note === "string" && saved.note.length <= 1200 && ["resolved","pending"].includes(saved.status) ? saved : null;
+      },
+      save(key, note, title, resolved = true) {
+        if (!valid || !globalThis.localStorage) throw new Error("O navegador não permite salvar este registro.");
+        const entries = read();
+        entries[key] = {status:resolved ? "resolved" : "pending", note:note.trim().slice(0,1200), title:String(title).slice(0,240), updatedAt:new Date().toISOString()};
+        globalThis.localStorage.setItem(storageKey, JSON.stringify(entries));
+      }
+    };
+  }
+  function accountResolutionControl(log, key, title, onChange) {
+    const host = node("div", "fiscal-account-resolution");
+    function paint() {
+      host.replaceChildren();
+      const saved = log.get(key), resolved = saved?.status === "resolved";
+      if (resolved) {
+        host.append(node("strong", "fiscal-account-resolution-status", "Resolvido manualmente"), node("p", "", saved.note));
+        const reopen = node("button", "fiscal-account-resolution-link", "Reabrir item"); reopen.type = "button";
+        reopen.addEventListener("click", () => {
+          try { log.save(key, saved.note, title, false); paint(); onChange(); }
+          catch (_) { host.appendChild(node("p", "fiscal-account-resolution-error", "Não foi possível reabrir o item. O registro anterior foi preservado.")); }
+        }); host.appendChild(reopen); return;
+      }
+      const editor = node("details", "fiscal-account-resolution-editor");
+      editor.appendChild(node("summary", "", "Registrar resolução"));
+      const label = node("label", "", "O que foi confirmado ou corrigido?");
+      const input = node("textarea"); input.rows = 2; input.maxLength = 1200; input.value = saved?.note || "";
+      input.setAttribute("aria-label", "Justificativa para " + title); label.appendChild(input);
+      const save = node("button", "fiscal-account-resolution-save", "Salvar resolução"); save.type = "button";
+      const error = node("p", "fiscal-account-resolution-error"); error.setAttribute("role", "status");
+      save.addEventListener("click", () => {
+        const note = input.value.trim();
+        if (!note) { error.textContent = "Informe a confirmação ou correção realizada."; input.focus(); return; }
+        try { log.save(key, note, title); paint(); onChange(); }
+        catch (_) { error.textContent = "Não foi possível salvar neste navegador. O item continua pendente."; }
+      });
+      editor.append(label, save, error); host.appendChild(editor);
+    }
+    paint(); return host;
+  }
+
   function renderAccountOpinion(result, scope) {
     const content = node("div", "fiscal-account-opinion");
     const item = result.analises?.[0];
@@ -1155,22 +1210,42 @@
     const grid = node("div", "fiscal-account-opinion-grid");
     const evidence = node("section", "fiscal-account-opinion-reading");
     const review = node("section", "fiscal-account-opinion-review");
-    const interpretation = item.parecer?.analise_exibicao;
-    if (interpretation && interpretation !== executive.conclusao && interpretation !== reading.resultado) {
-      evidence.append(node("h5", "", item.provedor === "local" ? "O que o sistema identificou" : "O que a análise indica"));
-      if (item.provedor !== "local") evidence.appendChild(node("span", "fiscal-account-opinion-hypothesis", "Hipótese a confirmar"));
-      evidence.appendChild(node("p", "fiscal-account-opinion-interpretation", interpretation));
-    }
     if (reading.observacoes?.length) {
       const facts = node("ul", "fiscal-account-opinion-facts");
       reading.observacoes.slice(0, 3).forEach(text => facts.appendChild(node("li", "", text)));
-      evidence.append(node("h5", "", "Evidências principais"), facts);
+      evidence.append(node("h5", "", "O que os relatórios mostram"),
+        node("small", "fiscal-account-opinion-origin", "Cruzamento calculado pelo Razync · não comprova a causa"), facts);
     }
+    const interpretation = item.parecer?.analise_exibicao;
+    if (interpretation && interpretation !== executive.conclusao && interpretation !== reading.resultado) {
+      evidence.append(node("h5", "", item.provedor === "local" ? "O que ainda precisa de confirmação" : "Hipótese da IA · a confirmar"));
+      evidence.appendChild(node("p", "fiscal-account-opinion-interpretation", interpretation));
+    }
+    const log = accountReviewLog(result.contexto_revisao);
+    const reviewItems = [], reviewGroups = [];
+    let pendingOnly = false;
+    const progress = node("p", "fiscal-account-review-progress"); progress.setAttribute("role", "status");
+    const filter = node("button", "fiscal-account-review-filter", "Só pendentes"); filter.type = "button"; filter.setAttribute("aria-pressed", "false");
+    function updateReview() {
+      const resolved = reviewItems.filter(entry => log.get(entry.key)?.status === "resolved").length;
+      const pending = reviewItems.length - resolved;
+      progress.textContent = "Itens exibidos: " + pending + (pending === 1 ? " pendente" : " pendentes") + " · " + resolved + (resolved === 1 ? " resolvido manualmente" : " resolvidos manualmente");
+      reviewItems.forEach(entry => { entry.host.hidden = pendingOnly && log.get(entry.key)?.status === "resolved"; });
+      reviewGroups.forEach(group => { group.host.hidden = pendingOnly && group.keys.length > 0 && group.keys.every(key => log.get(key)?.status === "resolved"); });
+    }
+    function track(host, key, title) {
+      if (!log.available) return;
+      reviewItems.push({host,key}); host.appendChild(accountResolutionControl(log,key,title,updateReview));
+    }
+    filter.addEventListener("click", () => { pendingOnly = !pendingOnly; filter.setAttribute("aria-pressed", String(pendingOnly)); updateReview(); });
     const steps = reading.orientacoes || [];
     if (steps.length) {
       const checklist = node("ol", "fiscal-account-opinion-steps");
       steps.forEach(step => {
-        const li = node("li"); li.appendChild(node("strong", "", step.acao));
+        const li = node("li"), trackedKeys = [];
+        if (step.ordem_revisao) li.appendChild(node("small", "fiscal-account-priority", "Prioridade " + step.ordem_revisao));
+        li.appendChild(node("strong", "", step.acao));
+        if (step.prioridade_motivo) li.appendChild(node("p", "fiscal-account-priority-reason", step.prioridade_motivo));
         if (step.explicacao_simples || step.objetivo) li.appendChild(node("p", "", step.explicacao_simples || step.objetivo));
         if (step.documentos?.length) {
           const references = node("div", "fiscal-account-opinion-refs");
@@ -1188,11 +1263,18 @@
               }
               reference.appendChild(fields);
             }
+            if (doc.onde_conferir) reference.append(node("small", "fiscal-account-opinion-origin", "Onde conferir"), node("p", "", doc.onde_conferir));
+            if (doc.historico_candidato) reference.appendChild(node("p", "", "Histórico do candidato: " + doc.historico_candidato));
+            if (doc.campos_a_confirmar) reference.appendChild(node("p", "", doc.campos_a_confirmar));
+            if (doc.vinculo) reference.appendChild(node("small", "fiscal-account-opinion-origin", doc.vinculo));
+            const reviewKey = JSON.stringify([step.categoria || step.acao, doc.referencia || doc.titulo]);
+            trackedKeys.push(reviewKey); track(reference, reviewKey, doc.titulo || doc.referencia || step.acao);
             references.appendChild(reference);
           }
           li.appendChild(references);
         }
         for (const [label, text] of [
+          ["Onde conferir", step.onde_conferir],
           ["Confirme primeiro", [step.explicacao_simples ? step.objetivo : "", step.para_concluir].filter(Boolean).join(" ")],
           ["Solução após confirmar", step.solucao_condicional],
           ["Como validar", step.resultado_esperado]
@@ -1205,9 +1287,24 @@
           const reconsider = node("p", "fiscal-account-opinion-reconsider");
           reconsider.append(node("strong", "", "Quando reavaliar: "), node("span", "", step.quando_reavaliar)); li.appendChild(reconsider);
         }
+        if (!step.documentos?.length) {
+          const reviewKey = JSON.stringify(["orientacao",step.categoria || step.acao]);
+          trackedKeys.push(reviewKey); track(li,reviewKey,step.acao);
+        }
+        reviewGroups.push({host:li,keys:trackedKeys});
         checklist.appendChild(li);
       });
-      review.append(node("h5", "", "O que conferir agora"), checklist);
+      review.append(node("h5", "", "Plano de revisão"));
+      if (reading.criterio_prioridade) {
+        const criterion = node("details", "fiscal-account-review-order");
+        criterion.append(node("summary", "", "Por que esta ordem?"), node("p", "", reading.criterio_prioridade)); review.appendChild(criterion);
+      }
+      if (log.available) {
+        const tracking = node("div", "fiscal-account-review-tracking");
+        tracking.append(progress, filter, node("small", "", "Anotações salvas neste navegador para estas evidências. O registro manual não altera totais ou conciliação. O acompanhamento cobre os itens exibidos, não todas as pendências dos arquivos."));
+        review.appendChild(tracking); updateReview();
+      }
+      review.appendChild(checklist);
     } else if (executive.primeiro_passo) review.append(node("h5", "", "O que conferir agora"), node("p", "", executive.primeiro_passo));
     if (evidence.children.length) grid.appendChild(evidence);
     if (review.children.length) grid.appendChild(review);
@@ -1374,7 +1471,7 @@
       try {
         const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/exportar", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({empresa_nome:data?.empresa_nome || "GERAL", filial:data?.filial_aplicada || "", analises:state.result.analises})
+          body:JSON.stringify({empresa_nome:data?.empresa_nome || "GERAL", filial:data?.filial_aplicada || "", analises:state.result.analises, acompanhamento_manual:Object.values(accountReviewLog(state.result.contexto_revisao).entries())})
         });
         if (!response.ok) throw new Error(await responseError(response));
         if (state.source !== previewBody || accountAnalysisCache.get(key) !== state) return;

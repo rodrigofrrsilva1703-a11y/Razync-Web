@@ -7,6 +7,7 @@ vínculos não confirmados. Os totais completos são os calculados pelo Razync.
 from collections import Counter
 from decimal import Decimal, InvalidOperation
 from app.fiscal_review_outcomes import review_outcome
+from app.fiscal_review_presentation import impact
 
 PRIORITY = (
     "VALOR_DIFERENTE", "CONTA_DIFERENTE", "ESTORNO_EM_ANALISE",
@@ -176,6 +177,7 @@ def documentary_reading(item, docs, old_reading):
         count = max(len(selected), total_for_status)
         label = LABELS[status]
         title = f"{label} — {count} {'documento' if count == 1 else 'documentos'}"
+        selected = sorted(selected, key=lambda doc: -impact(doc))
         examples = []
         for doc in selected[:4]:
             note = _text(doc.get("nota"), 48)
@@ -186,6 +188,8 @@ def documentary_reading(item, docs, old_reading):
                 heading += " · série " + serie
             heading += " (" + ref + ")"
             parts = []
+            if doc.get("parceiro"):
+                parts.append("Parceiro informado: " + _text(doc["parceiro"], 120))
             if doc.get("valor_brl"):
                 parts.append("Fiscal: " + _text(doc["valor_brl"], 48))
             if doc.get("valor_razao_candidato_brl"):
@@ -213,7 +217,7 @@ def documentary_reading(item, docs, old_reading):
             "acao": title,
             "objetivo": advice,
             "documentos": examples,
-            "amostra": count > len(selected) or bool(coverage.get("amostra")),
+            "amostra": count > len(examples) or bool(coverage.get("amostra")),
             **review_outcome(status),
         })
     if not actions and pending:

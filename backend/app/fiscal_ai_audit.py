@@ -640,6 +640,8 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
     # Regera orientações práticas também ao reabrir um parecer cacheado.
     reading["orientacoes"] = [dict(step, **review_outcome(step.get("categoria", "")))
                               for step in reading.get("orientacoes", [])]
+    from app.fiscal_review_presentation import enrich_review
+    reading = enrich_review(reading, item, rows)
     for limit in (dossier.get("limites_das_fontes") or [])[:2]:
         if isinstance(limit, str) and limit and limit not in missing:
             missing.append(limit)

@@ -1181,11 +1181,15 @@ def gerar_excel_analise(payload: dict) -> bytes:
                 blocks = []
                 for index, step in enumerate(instructions, 1):
                     parts = [f"{index}. {step.get('acao', '')}"]
+                    if step.get("prioridade_motivo"):
+                        parts.append("   Por que priorizar: " + str(step["prioridade_motivo"]))
                     for doc in (step.get("documentos") or [])[:4]:
                         if not isinstance(doc, dict):
                             continue
                         parts.append("   • " + str(doc.get("titulo") or doc.get("referencia") or "Documento")
                                      + (": " + str(doc["detalhes"]) if doc.get("detalhes") else ""))
+                        if doc.get("onde_conferir"):
+                            parts.append("     Onde conferir: " + str(doc["onde_conferir"]))
                     if step.get("explicacao_simples"):
                         parts.append("   O que significa: " + str(step["explicacao_simples"]))
                     if step.get("objetivo"):
@@ -1283,6 +1287,22 @@ def gerar_excel_analise(payload: dict) -> bytes:
     formato(grounded, 1, set(), [17, 17, 60, 82, 82, 48, 42])
     formato(case_sheet, 1, {7, 8, 9}, [17, 17, 20, 20, 25, 80, 20, 20, 20, 40, 80, 80, 80, 80, 80])
     formato(case_sources, 1, {9}, [17, 17, 20, 20, 20, 20, 100, 20, 20])
+    manual = payload.get("acompanhamento_manual") or []
+    if not isinstance(manual, list) or len(manual) > 1000:
+        raise ValueError("Acompanhamento manual inválido.")
+    if manual:
+        tracking = book.create_sheet("Revisão manual")
+        tracking.append(["Item exibido", "Situação manual", "Justificativa informada", "Última atualização", "Limite do registro"])
+        for entry in manual:
+            if (not isinstance(entry, dict) or entry.get("status") not in {"resolved", "pending"}
+                    or not isinstance(entry.get("note"), str) or not entry["note"].strip()):
+                raise ValueError("Registro de revisão manual inválido.")
+            tracking.append([texto(entry.get("title"),240), "Resolvido manualmente" if entry["status"] == "resolved" else "Reaberto",
+                texto(entry["note"],1200), texto(entry.get("updatedAt"),80),
+                "Anotação do usuário. Não altera totais ou comprova conciliação; refere-se somente ao item exibido."])
+        formato(tracking,1,set(),[48,26,85,30,75])
+        for index, entry in enumerate(manual, 2):
+            tracking.row_dimensions[index].height = min(270, max(65, 15 * (3 + len(entry["note"]) // 80 + entry["note"].count("\n"))))
     out = io.BytesIO()
     book.save(out)
     return out.getvalue()

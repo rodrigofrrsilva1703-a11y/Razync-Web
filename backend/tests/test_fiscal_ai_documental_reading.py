@@ -164,7 +164,8 @@ def test_tres_nfs_do_mesmo_problema_viram_uma_verificacao_com_dados_individuais(
     assert len(value_steps) == 1
     assert value_steps[0]["quantidade"] == 11
     examples = value_steps[0]["documentos"]
-    assert [doc["referencia"] for doc in examples] == ["E-13", "E-122", "E-129"]
+    assert [doc["referencia"] for doc in examples] == ["E-129", "E-13", "E-122"]
+    examples = sorted(examples, key=lambda doc: ["E-13", "E-122", "E-129"].index(doc["referencia"]))
     assert "NF 9080" in examples[0]["titulo"]
     assert "Fiscal: R$ 860,00" in examples[0]["detalhes"]
     assert "Razão candidato: R$ 850,00" in examples[0]["detalhes"]

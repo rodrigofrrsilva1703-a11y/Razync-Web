@@ -59,6 +59,8 @@ def test_endpoint_so_prepara_uma_conta_e_reaproveita_cache(monkeypatch):
     again=post(data);assert again.status_code==200,again.text
     assert len(calls)==1 and len(calls[0]["contas"])==len(calls[0]["lancamentos"])==1
     assert first.json()["escopo"]==dict(data,origem="resumo",acumulador="")
+    assert len(first.json()["contexto_revisao"]) == 64
+    assert first.json()["contexto_revisao"] == again.json()["contexto_revisao"]
 
 
 def test_totais_iguais_sem_pendencias_nao_gastam_ia(monkeypatch):

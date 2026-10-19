@@ -117,3 +117,45 @@ test('parecer apresenta explicação, confirmação, solução condicional e val
   assert.ok(text.includes('Os valores diferem; a causa ainda não foi comprovada.'));
   assert.ok(text.includes('Se o documento comprovar erro, corrija a origem.'));
 });
+
+function reviewFixture(contextId='a'.repeat(64)) {
+  return {contexto_revisao:contextId,analises:[{provedor:'groq',parecer:{analise_exibicao:'Há um candidato a confirmar.',leitura_comparacao:{observacoes:['A nota aparece no relatório.'],orientacoes:[{
+    categoria:'VALOR_DIFERENTE',ordem_revisao:1,acao:'Confira NF 100',prioridade_motivo:'Diferença de valor identificada.',
+    documentos:[{referencia:'E-1',titulo:'NF 100',onde_conferir:'Acumulador 1152; conta candidata 508; L1.',vinculo:'Candidato a confirmar.'}],
+    solucao_condicional:'Somente após conferir a operação.',resultado_esperado:'Refaça a conferência.'
+  }]}}}]};
+}
+
+test('registro exige justificativa, persiste por evidências, filtra e permite reabrir sem chamar IA',async()=>{
+  const {context,find,all}=setup();const storage=new Map();
+  context.localStorage={getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)};
+  let root=context.renderAccountOpinion(reviewFixture(),{});
+  const text=all(root).map(el=>el.textContent);
+  assert.ok(text.indexOf('O que os relatórios mostram')<text.indexOf('Hipótese da IA · a confirmar'));
+  assert.ok(text.includes('Acumulador 1152; conta candidata 508; L1.'));
+  await find(root,'fiscal-account-resolution-save').click();assert.equal(storage.size,0);
+  assert.match(find(root,'fiscal-account-resolution-error').textContent,/Informe/);
+  const input=all(root).find(el=>el.tag==='textarea');input.value='Conferi a NF e corrigi o vínculo. <script>texto</script>';
+  await find(root,'fiscal-account-resolution-save').click();
+  assert.equal(find(root,'fiscal-account-resolution-status').textContent,'Resolvido manualmente');
+  assert.match(find(root,'fiscal-account-review-progress').textContent,/0 pendentes · 1 resolvido manualmente/);
+  root=context.renderAccountOpinion(reviewFixture(),{});
+  assert.ok(find(root,'fiscal-account-resolution-status'));
+  await find(root,'fiscal-account-review-filter').click();assert.equal(find(root,'fiscal-account-opinion-reference').hidden,true);
+  await find(root,'fiscal-account-review-filter').click();assert.equal(find(root,'fiscal-account-opinion-reference').hidden,false);
+  await find(root,'fiscal-account-resolution-link').click();assert.equal(find(root,'fiscal-account-resolution-status'),undefined);
+  assert.match(find(root,'fiscal-account-review-progress').textContent,/1 pendente · 0 resolvidos/);
+  assert.ok(all(root).find(el=>el.tag==='textarea').value.includes('corrigi o vínculo'));
+  root=context.renderAccountOpinion(reviewFixture('b'.repeat(64)),{});
+  assert.equal(all(root).find(el=>el.tag==='textarea').value,'');
+});
+
+test('falha no armazenamento mantém item pendente e avisa sem registrar sucesso',async()=>{
+  const {context,find,all}=setup();context.localStorage={getItem:()=>null,setItem:()=>{throw new Error('quota');}};
+  const root=context.renderAccountOpinion(reviewFixture(),{});
+  all(root).find(el=>el.tag==='textarea').value='Conferi o documento.';
+  await find(root,'fiscal-account-resolution-save').click();
+  assert.equal(find(root,'fiscal-account-resolution-status'),undefined);
+  assert.match(find(root,'fiscal-account-resolution-error').textContent,/Não foi possível salvar/);
+  assert.match(find(root,'fiscal-account-review-progress').textContent,/1 pendente/);
+});
