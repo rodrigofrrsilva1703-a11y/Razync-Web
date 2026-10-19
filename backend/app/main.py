@@ -918,3 +918,6 @@ app.include_router(fiscal_ai_legacy_router)
 
 from app.fiscal_ai_sessions import router as fiscal_ai_sessions_router
 app.include_router(fiscal_ai_sessions_router)
+
+from app.fiscal_account_ai import router as fiscal_account_ai_router
+app.include_router(fiscal_account_ai_router)

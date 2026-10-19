@@ -629,9 +629,44 @@ def investigar_documentos(acumuladores_bytes, acumuladores_nome, razao_bytes,
 
 
 
+def recortar_acumulador_ia(item, row, code):
+    """Não rateia candidatos ambíguos ou compartilhados entre acumuladores."""
+    acc = next((a for a in item["acumuladores"] if str(a["codigo"]) == code), None)
+    if not acc or not acc.get("detalhamento_disponivel"):
+        raise ValueError("Não há detalhamento suficiente para analisar este acumulador separadamente.")
+    comparisons = [c for c in item["comparacoes"] if any(str(p["acumulador"]) == code for p in c["linhas_fiscais"])]
+    owners = defaultdict(set)
+    for c in item["comparacoes"]:
+        for m in c.get("lancamentos", []):
+            if str(m.get("conta", item["conta"])) == str(item["conta"]):
+                owners[m.get("id")].update(str(p["acumulador"]) for p in c["linhas_fiscais"])
+    refs = {}
+    for c in comparisons:
+        own = [m for m in c.get("lancamentos", []) if str(m.get("conta", item["conta"])) == str(item["conta"])]
+        if (len({str(p["acumulador"]) for p in c["linhas_fiscais"]}) > 1 or
+            own and (c["situacao"] == "AMBIGUO" or any(not m.get("id") or len(owners[m["id"]]) > 1 for m in own))):
+            raise ValueError("Há vínculos ambíguos ou compartilhados neste acumulador. Limpe a consulta e analise a conta inteira, sem ratear esses valores.")
+        refs.update({m["id"]: m for m in own})
+    docs = [d for d in item["documentos"] if str(d["acumulador"]) == code]
+    pending = [m for m in item["razao_pendente"] if m["id"] in refs]
+    counts = Counter(d["situacao"] for d in docs)
+    fiscal = _centavos(acc["valor_resumo"])
+    ledger = sum(_centavos(m["valor"]) for m in refs.values())
+    row = dict(row, fiscal=fiscal / 100, contabil=ledger / 100, total_conta=ledger / 100,
+        diferenca=(ledger - fiscal) / 100, extras=0, sem_evidencia=0,
+        descricao="Acumulador " + code + " · " + acc.get("descricao", ""), acumuladores=code,
+        detalhes_fiscais=[{"codigo":code, "descricao":acc.get("descricao", ""), "valor":fiscal / 100}],
+        situacao="REVISAR" if abs(ledger - fiscal) > 1 else "CONFERE COM ALERTAS" if any(d["situacao"] != "CONCILIADO" for d in docs) else "CONFERE")
+    item = dict(item, documentos=docs, comparacoes=comparisons, acumuladores=[acc],
+        documentos_total=len(docs), razao_pendente=pending, razao_pendente_total=len(pending),
+        razao_sem_vinculo=[], composicao={}, fiscal=row["fiscal"], contabil=row["contabil"], diferenca=row["diferenca"],
+        resumo={"conciliados":counts["CONCILIADO"], "ambiguos":counts["AMBIGUO"], "pendentes":len(docs)-counts["CONCILIADO"]})
+    return item, row
+
+
 def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome, razao_bytes,
                                         razao_nome, entradas=None, saidas=None, filial="", *,
-                                        manter_outros_tipos=False):
+                                        manter_outros_tipos=False, conta_alvo="", tipo_alvo="", acumulador_alvo=""):
     """Monta somente pendências e lançamentos não conciliados para provedores gratuitos."""
     preview = conferencia_fiscal_preview(
         acumuladores_bytes, acumuladores_nome, razao_bytes, razao_nome,
@@ -641,6 +676,17 @@ def preparar_relatorio_pendencias_para_ia(acumuladores_bytes, acumuladores_nome,
         acumuladores_bytes, acumuladores_nome, razao_bytes, razao_nome, entradas, saidas, filial,
         completo=True, preview=preview,
     )
+    if conta_alvo:
+        rows = [r for r in preview["contas"] if str(r["conta"]) == conta_alvo and r["tipo"] == tipo_alvo]
+        items = [i for i in investigation["contas"] if str(i["conta"]) == conta_alvo and i["tipo"] == tipo_alvo]
+        if len(rows) != 1 or len(items) != 1:
+            raise ValueError("A conta e o tipo selecionados não foram encontrados na investigação.")
+        if acumulador_alvo:
+            item, row = recortar_acumulador_ia(items[0], rows[0], acumulador_alvo)
+            items, rows = [item], [row]
+        preview["contas"] = rows
+        investigation["contas"] = items
+        investigation["resumo"]["conciliados"] = sum(i["resumo"]["conciliados"] for i in items)
     selected = {}
     docs_to_ai = {}
     ledger_to_ai = []
