@@ -12,3 +12,17 @@
 .bank-investments-message {font-size:12px;line-height:1.6;margin:9px 0 0;}
 .bank-investments input:focus-visible,.bank-investments button:focus-visible {outline:2px solid #7097c1;outline-offset:2px;}
 @media(max-width:700px) {.bank-investments-bank {grid-template-columns:1fr;gap:9px;}}
+.bank-investments .bank-investments-preview-button {width:auto;margin:4px 8px 0 0;padding:9px 13px;font-size:12px;border:1px solid #bfcee0;border-radius:7px;background:#f5f8fc;color:#345f8d;cursor:pointer;}
+.bank-investments-preview {margin-top:17px;border-top:1px solid #e0e8f1;padding-top:14px;}
+.bank-investments-preview h4 {font-size:13px;margin:0 0 7px;color:#375b7d;}
+.bank-investments-preview-totals {font-size:12px;line-height:1.7;margin:0 0 10px;color:#526c86;}
+.bank-investments-preview-scroll {overflow:auto;max-height:390px;border:1px solid #e0e8f1;border-radius:8px;}
+.bank-investments-preview table {width:100%;min-width:1100px;border-collapse:collapse;font-size:11px;}
+.bank-investments-preview th {position:sticky;top:0;background:#f0f5fa;color:#426380;font-weight:600;text-align:left;white-space:nowrap;z-index:1;}
+.bank-investments-preview td,.bank-investments-preview th {padding:9px 10px;border-bottom:1px solid #e6edf4;vertical-align:top;line-height:1.6;}
+.bank-investments-preview td.is-money {white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;}
+.bank-investments-preview td.is-history {min-width:230px;overflow-wrap:anywhere;}
+.bank-investments-caption {text-align:left;padding:8px 10px;font-size:10px;line-height:1.6;color:#6b8094;background:#fff;}
+.bank-investments-pagination {display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:10px;font-size:11px;}
+.bank-investments .bank-investments-pagination button {width:auto;padding:5px 9px;font-size:11px;border:1px solid #d5e0ec;border-radius:6px;background:#fff;color:#42678e;cursor:pointer;}
+.bank-investments-pagination button:disabled,.bank-investments-preview-button:disabled {opacity:.5;cursor:default;}
