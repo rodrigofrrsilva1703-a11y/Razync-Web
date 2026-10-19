@@ -1,0 +1,14 @@
+.bank-investments {margin-top:18px;border:1px solid #dce5ef;border-radius:10px;background:#fff;padding:13px 15px;color:#3d5772;}
+.bank-investments > summary {cursor:pointer;font-size:13px;font-weight:600;}
+.bank-investments-rule {font-size:12px;line-height:1.7;margin:12px 0;}
+.bank-investments-bank {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;border:1px solid #e2e9f1;border-radius:8px;padding:12px;margin:12px 0;min-width:0;}
+.bank-investments-bank legend {font-size:12px;font-weight:600;padding:0 5px;}
+.bank-investments-bank label {font-size:11px;line-height:1.5;display:block;min-width:0;}
+.bank-investments-bank input {box-sizing:border-box;width:100%;padding:8px 9px;margin-top:5px;border:1px solid #ccd9e7;border-radius:6px;font:inherit;color:#334f6a;background:#fff;}
+.bank-investments-bank input:read-only {background:#f3f6fa;color:#5b7187;}
+.bank-investments-note {display:block;font-size:11px;line-height:1.6;color:#677d92;margin:10px 0;}
+.bank-investments .bank-investments-download {width:auto;margin:4px 0 0;padding:9px 13px;font-size:12px;border:0;border-radius:7px;background:#345f8d;color:#fff;cursor:pointer;}
+.bank-investments-download:disabled {opacity:.6;cursor:wait;}
+.bank-investments-message {font-size:12px;line-height:1.6;margin:9px 0 0;}
+.bank-investments input:focus-visible,.bank-investments button:focus-visible {outline:2px solid #7097c1;outline-offset:2px;}
+@media(max-width:700px) {.bank-investments-bank {grid-template-columns:1fr;gap:9px;}}

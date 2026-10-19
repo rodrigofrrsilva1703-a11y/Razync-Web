@@ -921,3 +921,6 @@ app.include_router(fiscal_ai_sessions_router)
 
 from app.fiscal_account_ai import router as fiscal_account_ai_router
 app.include_router(fiscal_account_ai_router)
+
+from app.bank_investments import router as bank_investments_router
+app.include_router(bank_investments_router)

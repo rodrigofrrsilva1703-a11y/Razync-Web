@@ -1732,6 +1732,14 @@ reconcileForm.addEventListener("submit",async event => {
       }
     });
 
+    globalThis.RazyncInvestments?.mount({
+      target:$("#reconcileResult"),company:companyCode,
+      banks:state.banks.map(bank=>({code:bank,label:bankName(bank),account:selected?.capabilities?.banks?.[bank] || ""})),
+      snapshot:buildReconcileData(),summary:result.summary,rows:result.rows || [],
+      balances:row=>reconciliationBalances(row,"modelo"),isCurrent,signal:controller.signal,
+      api:API(),download:downloadBlob,responseError
+    });
+
     const errors = result.summary?.errors || [];
     const divergent = (result.rows || []).filter(row => !reconciliationBalances(row,"modelo").ok).length;
     if (errors.length) {
