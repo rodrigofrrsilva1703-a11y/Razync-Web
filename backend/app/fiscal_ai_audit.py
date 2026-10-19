@@ -163,6 +163,15 @@ def _protect_fragment(item, rows, documents):
         r"documentos fiscais n[aã]o foram contabilizados|aus[eê]ncia de correspond[eê]ncia (?:direta )?(?:entre|por)", hypothesis, re.I
     ) and not re.search(r"nesta conta|desta conta|amostra|sele[çc][aã]o|n[aã]o (?:comprova|demonstra|confirma|significa)", hypothesis, re.I):
         reasons.append("Há candidatos documentais em outras contas; a falta de vínculo nesta conta não pode ser generalizada à escrituração.")
+    # Candidato não é confirmação de que a nota foi escriturada nessa conta.
+    candidate_accounts = {str(d["conta_razao_candidato"]) for d in documents if d.get("conta_razao_candidato")}
+    if candidate_accounts and any(re.search(r"\b" + re.escape(account) + r"\b", hypothesis) for account in candidate_accounts):
+        if (re.search(r"(?:foi|est[aá])\s+(?:classificad|registrad|contabilizad|lan[çc]ad)|consta\s+(?:na|em)", hypothesis, re.I)
+                and not re.search(r"candidat|poss[ií]vel|pode|confirm|verifi|\bse\b|n[aã]o", hypothesis, re.I)):
+            reasons.append("Um candidato em outra conta não confirma onde a operação foi escriturada.")
+    if any(d.get("situacao") == "AMBIGUO" for d in documents) and re.search(
+        r"se[^.]{0,90}(?:[uú]nica|uma s[oó])[^.]{0,90}(?:duplic|exclu|estorn)", hypothesis, re.I):
+        reasons.append("Uma única nota pode ter desdobramentos; o vínculo ambíguo não autoriza corrigir uma suposta duplicação.")
     histories = " ".join(str(row.get("historico") or "") for row in rows)
     for cause, evidence in (
         (r"fretes?|encargos|despesas acess[oó]rias", r"frete|encargo|despesa acess[oó]ria"),

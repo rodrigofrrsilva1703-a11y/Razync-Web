@@ -28,11 +28,10 @@ legacy_router = APIRouter(prefix="/api/v1/conferencia-fiscal/242/ia")
 lock = threading.Lock()
 last_request = 0.0
 model_rotation_index = 0
-# Catálogo público verificado em 10/10/2026. Dots validado no Railway com
-# lançamentos fictícios e evidências; reservas continuam sujeitas à validação.
+# Catálogo público conferido em 19/10/2026. Apodex saiu da oferta gratuita.
+# Dots respondeu ao ensaio sintético; disponibilidade não aprova o mérito contábil.
 FREE_FISCAL_MODELS = [
     "dots-studio/dots-3-note-preview:free",
-    "apodex/apodex-1.1-mini:free",
     "liquid/lfm-2.5-2.6b:free",
     "openrouter/free",
 ]

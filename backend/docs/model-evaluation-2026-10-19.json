@@ -1,0 +1,288 @@
+{
+  "date": "2026-10-19",
+  "synthetic_only": true,
+  "initial_probe": [
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "valor_diferente",
+      "actual_model": "dots-studio/dots-3-note-preview:free",
+      "finish": "stop",
+      "raw": "{\"analises\": [{\"grupo\": \"G1\", \"explicacao\": \"Hipóteses: O documento E-1 (nota 101) indica valor de R$ 200,00, enquanto o lançamento L1 no Razão registra R$ 250,00, sugerindo possível erro de transcrição ou inclusão de valor adicional não respaldado pela nota. A diferença de R$ 50,00 pode decorrer de ajuste indevido ou inclusão de custo não comprovado. A ausência de acumuladores fiscais associados reforça a necessidade de verificação do vínculo entre documento e lançamento. Limitações: É necessário o documento original da nota fiscal 101, série e data exata, bem como o histórico completo do acumulador 1152 para confirmar se há outros lançamentos ou estornos não considerados. Verificar: 1) Compare o valor da nota 101 (E-1) com o débito de L1 (conta 508, data 04/08/2026) — confirme se R$ 200,00 é o valor real da nota; se for, revise o lançamento L1 para corrigir o valor para R$ 200,00. 2) Consulte o acumulador fiscal 1152 para identificar se há outros documentos ou ajustes que possam justificar a diferença de R$ 50,00; se nenhum for encontrado, o excesso é indevido. 3) Valide se o histórico \\\"COMPRA FICTICIA NF 101\\\" corresponde integralmente ao conteúdo da nota 101, incluindo valor, emitente e produtos; discrepâncias indicam erro de classificação ou digitação. Evidencias: {\"G1\": [\"L1\", \"E-1\"]}}]}",
+      "error": "JSONDecodeError",
+      "seconds": 5.53
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "outra_conta",
+      "actual_model": "dots-studio/dots-3-note-preview:free",
+      "finish": "stop",
+      "raw": "{\"G1\": {\"explicacao\": \"Hipóteses: Nota 202 (E-1) registra R$ 300,00 no acumulador fiscal 1152, mas a conta contábil associada é 509, enquanto a análise foca na conta 508. Isso sugere possível erro de vínculo ou classificação contábil. A diferença de -R$ 300,00 indica que o valor fiscal não foi reconhecido na conta 508. Limitações: Confirmar se a nota 202 foi de fato lançada na conta 509 e se há vínculo correto entre a nota e a conta 508. Verificar: 1) Confirme a nota 202, parceiro e contrapartida no Razão; se correta, revise o mapeamento da conta 508. 2) Valide se a conta 509 é a correta para o tipo de operação; se sim, transfira o valor para 508. 3) Reavalie a classificação da nota se houver discordância entre fiscal e contábil.\", \"verificar\": \"1. Confirme a nota 202, parceiro e contrapartida no Razão; se correta, revise o mapeamento da conta 508. 2. Valide se a conta 509 é a correta para o tipo de operação; se sim, transfira o valor para 508. 3. Reavalie a classificação da nota se houver discordância entre fiscal e contábil.\", \"evidencias\": [\"E-1\"]}}",
+      "error": "KeyError",
+      "seconds": 5.45
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "sem_documentos",
+      "actual_model": "dots-studio/dots-3-note-preview:free",
+      "finish": "stop",
+      "raw": "{\"analises\":[{\"grupo\":\"G1\",\"explicacao\":\"Hipóteses: O valor fiscal informado (R$ 500,00) é superior ao contábil (R$ 400,00), com diferença de -R$ 100,00. O histórico do lançamento L1 indica 'COMPRA FICTICIA SEM NUMERO DE NOTA', o que sugere ausência de documento fiscal, mas o resumo fiscal indica acumulador 1152 com valor de R$ 500,00. A falta de detalhamento do acumulador 1152 impede a confirmação de vínculo entre o documento fiscal e o lançamento contábil. A diferença pode decorrer de nota fiscal registrada no acumulador mas não contabilizada na conta 508, ou de valor divergente entre documento e escrituração. Limitações: É necessário obter o número, série, competência e valor da nota fiscal associada ao acumulador 1152 para comparar com o lançamento L1 de 04/08/2026, conta 508, débito R$ 400,00. Sem esses dados, não é possível confirmar se a diferença se deve a omissão, valor incorreto ou vínculo indevido. A causa está indeterminada.\",\"verificar\":\"1. Confirme o número, série, competência e valor da nota fiscal do acumulador 1152; se for comprovado que o valor é R$ 500,00 e a nota se refere à conta 508, revise o valor do lançamento L1 para R$ 500,00. 2. Valide se o documento fiscal 1152 foi de fato vinculado à conta 508 e à operação de compra fictícia; se não houver vínculo, investigue se outro documento ou acumulador está associado. 3. Verifique se há outro lançamento contábil que complemente os R$ 100,00 faltantes; se nenhum existir, confirme a omissão contábil.\",\"evidencias\":{\"G1\":[\"L1\"]}}]}",
+      "error": "ValueError",
+      "seconds": 7.16
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "totais_iguais_vinculo_ambiguo",
+      "actual_model": "dots-studio/dots-3-note-preview:free",
+      "finish": "stop",
+      "raw": "{\"analises\":[{\"grupo\":\"G1\",\"explicacao\":\"Hipóteses: Dois lançamentos idênticos em 04/08/2026, ambos com histórico 'COMPRA FICTICIA NF 303', contrapartida 800 e valor de R$ 100,00 cada, somam R$ 200,00 e coincidem com o valor fiscal do documento E-1 (nota 303). A repetição de assinaturas e a ausência de série e emitente no documento geram ambiguidade. A diferença é zero, mas a duplicidade de lançamentos com mesmo histórico e valor sugere possível erro de digitação ou cópia indevida. A referência L1 e L2 são distintas, mas os dados são idênticos. O indício de 'assinaturas_repetidas' no Razão reforça a necessidade de verificação. A falta de detalhamento de série e parceiro no documento impede a distinção entre os dois lançamentos. A causa da possível duplicidade não está determinada, mas a coincidência de dados é evidente.\",\"verificar\":\"1. Verifique no Razão se os lançamentos L1 e L2 possuem identificadores únicos ou se são cópias exatas, comparando campos ocultos como ID, hash ou sequencial. 2. Consulte o documento E-1 para obter série, emitente e valor exato da nota 303, comparando com cada lançamento. 3. Se os lançamentos forem idênticos em todos os campos visíveis, confirme se ambos foram registrados intencionalmente ou se há erro de sistema.\",\"evidencias\":{\"G1\":[\"L1\",\"L2\",\"E-1\"]}}]}",
+      "error": "ValueError",
+      "seconds": 6.69
+    },
+    {
+      "model": "liquid/lfm-2.5-2.6b:free",
+      "case": "valor_diferente",
+      "error": "http",
+      "status": 404,
+      "seconds": 0.04
+    },
+    {
+      "model": "liquid/lfm-2.5-2.6b:free",
+      "case": "outra_conta",
+      "error": "http",
+      "status": 404,
+      "seconds": 0.05
+    },
+    {
+      "model": "liquid/lfm-2.5-2.6b:free",
+      "case": "sem_documentos",
+      "error": "http",
+      "status": 404,
+      "seconds": 0.06
+    },
+    {
+      "model": "liquid/lfm-2.5-2.6b:free",
+      "case": "totais_iguais_vinculo_ambiguo",
+      "error": "http",
+      "status": 404,
+      "seconds": 0.05
+    },
+    {
+      "model": "minimax/minimax-m3.1-flash:free",
+      "case": "valor_diferente",
+      "error": "http",
+      "status": 400,
+      "seconds": 0.03
+    },
+    {
+      "model": "minimax/minimax-m3.1-flash:free",
+      "case": "outra_conta",
+      "error": "http",
+      "status": 400,
+      "seconds": 1.33
+    },
+    {
+      "model": "minimax/minimax-m3.1-flash:free",
+      "case": "sem_documentos",
+      "error": "http",
+      "status": 400,
+      "seconds": 0.1
+    },
+    {
+      "model": "minimax/minimax-m3.1-flash:free",
+      "case": "totais_iguais_vinculo_ambiguo",
+      "error": "http",
+      "status": 400,
+      "seconds": 0.05
+    },
+    {
+      "model": "google/gemma-4-31b-it:free",
+      "case": "valor_diferente",
+      "error": "http",
+      "status": 429,
+      "seconds": 0.19
+    },
+    {
+      "model": "google/gemma-4-31b-it:free",
+      "case": "outra_conta",
+      "error": "http",
+      "status": 429,
+      "seconds": 0.18
+    },
+    {
+      "model": "google/gemma-4-31b-it:free",
+      "case": "sem_documentos",
+      "error": "http",
+      "status": 429,
+      "seconds": 0.17
+    },
+    {
+      "model": "google/gemma-4-31b-it:free",
+      "case": "totais_iguais_vinculo_ambiguo",
+      "error": "http",
+      "status": 429,
+      "seconds": 0.14
+    }
+  ],
+  "production_protocol": [
+    {
+      "protocol": "production",
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "valor_diferente",
+      "raw": "{\"analises\": [{\"evidencias\": [\"L1\"], \"explicacao\": \"Hipóteses: O documento E-1, nota 101, apresenta valor de R$ 200,00 enquanto o lançamento L1 no Razão registra R$ 250,00, sugerindo possível erro de digitação ou inclusão de valor adicional não comprovado pela nota fiscal. A diferença de R$ 50,00 pode decorrer de atualização de valor, acréscimo não documentado ou incorreção na transcrição do valor fiscal. A ausência de estornos ou desdobramentos indicados reforça a possibilidade de disparidade direta entre o valor fiscal e o contábil. Limitações: É necessário o documento original da nota fiscal 101 para confirmar o valor real e verificar se há anotações complementares, descontos ou acréscimos legítimos que justifiquem a diferença. Verificar: 1) Confirme o valor exato da nota 101 no documento fiscal original; se for R$ 200,00, revise o lançamento L1 para corrigir o valor contábil. 2) Valide se há alguma adição de custos ou taxas não registradas na nota, mas justificadas por outros documentos. 3) Reavalie o lançamento L1 após qualquer ajuste para confirmar a conciliação.\", \"grupo\": \"G1\", \"verificar\": \"Compare o valor da nota 101 com o lançamento L1, verificando se há justificativa para a diferença de R$ 50,00; confirme o valor fiscal original e revise o lançamento contábil se necessário.\"}]}",
+      "actual_model": "dots-studio/dots-3-note-preview:free",
+      "contract_valid": true,
+      "audit": {
+        "referencias_sem_evidencia": [],
+        "situacao": "revisao_necessaria",
+        "valores_citados": 0,
+        "valores_sem_comprovacao": 0,
+        "lancamentos_citados": 1,
+        "alertas": [
+          "Valores monetários da narrativa foram retirados; consulte as diferenças e evidências calculadas pelo sistema.",
+          "A hipótese inclui uma causa sem registro correspondente nas fontes desta conta."
+        ],
+        "aviso": "Parecer automatizado: não substitui a revisão contábil humana."
+      },
+      "published_explanation": "Hipóteses: A causa ainda não está comprovada pelas evidências desta conta.\n\nLimitações: 2) Valide se há alguma adição de custos ou taxas não registradas na nota, mas justificadas por outros documentos. 3) Reavalie o lançamento L1 após qualquer ajuste para confirmar a conciliação.",
+      "seconds": 6.41
+    },
+    {
+      "protocol": "production",
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "outra_conta",
+      "raw": "{\"analises\": [{\"evidencias\": [], \"explicacao\": \"Hipóteses: A nota 202 do acumulador 1152 foi classificada na conta 509 no Razão, enquanto o sistema esperava a conta 508. Isso indica possível erro de mapeamento da conta contábil. A diferença de R$ 300,00 é inteiramente explicada por essa divergência de conta. Limitações: É necessário confirmar se a conta 509 é a correta para o tipo de operação da nota 202, verificando a documentação de apoio e a estrutura de contas da empresa.\", \"grupo\": \"G1\", \"verificar\": \"1. Confirme a nota 202 no Razão: localize o registro de débito de R$ 300,00 na conta 509. 2. Verifique a documentação de apoio da nota 202 (nota fiscal, pedido de compra, etc.) para identificar a natureza da operação. 3. Compare a natureza da operação com a estrutura de contas da empresa para determinar se a conta 509 ou 508 é a mais adequada.\"}]}",
+      "actual_model": "dots-studio/dots-3-note-preview:free",
+      "contract_valid": true,
+      "audit": {
+        "referencias_sem_evidencia": [],
+        "situacao": "revisao_necessaria",
+        "valores_citados": 0,
+        "valores_sem_comprovacao": 0,
+        "lancamentos_citados": 0,
+        "alertas": [
+          "Sem lançamentos referenciados na resposta; conferir no Razão antes de concluir.",
+          "Valores monetários da narrativa foram retirados; consulte as diferenças e evidências calculadas pelo sistema."
+        ],
+        "aviso": "Parecer automatizado: não substitui a revisão contábil humana."
+      },
+      "published_explanation": "Hipóteses: A nota 202 do acumulador 1152 foi classificada na conta 509 no Razão, enquanto o sistema esperava a conta 508. Isso indica possível erro de mapeamento da conta contábil.\n\nLimitações: É necessário confirmar se a conta 509 é a correta para o tipo de operação da nota 202, verificando a documentação de apoio e a estrutura de contas da empresa.",
+      "seconds": 3.75
+    },
+    {
+      "protocol": "production",
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "sem_documentos",
+      "raw": "{\"analises\": [{\"evidencias\": [\"L1\"], \"explicacao\": \"Hipóteses: O valor fiscal de R$ 500,00 do acumulador 1152 não foi totalmente atendido pelo lançamento L1 (R$ 400,00), sugerindo ausência de documento complementar ou valor divergente. A ausência de notas fiscais individuais impede a verificação direta do vínculo. A diferença de -R$ 100,00 indica que o Razão não registrou o valor total considerado pelo fiscal. Limitações: É necessário o número, série, competência e valor do documento fiscal correspondente ao acumulador 1152 para confirmar a origem da diferença. Verificar: 1) Confirme a existência de nota fiscal com valor de R$ 500,00 vinculada ao acumulador 1152; se confirmado, revise o lançamento contábil para incluir os R$ 100,00 faltantes; valide novamente o vínculo entre o documento e a conta 508.\", \"grupo\": \"G1\", \"verificar\": \"1) Confirme a existência de nota fiscal com valor de R$ 500,00 vinculada ao acumulador 1152; se confirmado, revise o lançamento contábil para incluir os R$ 100,00 faltantes; valide novamente o vínculo entre o documento e a conta 508.\"}]}",
+      "actual_model": "dots-studio/dots-3-note-preview:free",
+      "contract_valid": true,
+      "audit": {
+        "referencias_sem_evidencia": [],
+        "situacao": "revisao_necessaria",
+        "valores_citados": 0,
+        "valores_sem_comprovacao": 0,
+        "lancamentos_citados": 1,
+        "alertas": [
+          "Valores monetários da narrativa foram retirados; consulte as diferenças e evidências calculadas pelo sistema."
+        ],
+        "aviso": "Parecer automatizado: não substitui a revisão contábil humana."
+      },
+      "published_explanation": "Hipóteses: A ausência de notas fiscais individuais impede a verificação direta do vínculo.\n\nLimitações: É necessário o número, série, competência e valor do documento fiscal correspondente ao acumulador 1152 para confirmar a origem da diferença.",
+      "seconds": 7.57
+    },
+    {
+      "protocol": "production",
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "totais_iguais_vinculo_ambiguo",
+      "raw": "{\"analises\": [{\"evidencias\": [\"L1\", \"L2\"], \"explicacao\": \"Hipóteses: Dois lançamentos idênticos em 04/08/2026, mesmo histórico, contrapartida 800 e valor de R$ 100,00 cada, sugerem duplicidade de registro ou uso de mesmo documento para dois débitos. A repetição de assinaturas no Razão reforça a possibilidade de cópia indevida. A nota fiscal 303 está classificada como AMBIGUO, com dois candidatos sem série ou emitente definido, o que impede a confirmação de vínculo único. Limitações: É necessário o documento fiscal original (nota 303), série, emitente e valor exato para confirmar se há um ou dois documentos distintos. A ausência de dados de parceria impede a distinção entre candidatos. Verificar: 1) Confirme se a nota 303 é única ou existem duas versões; se única, revise a duplicação de lançamento. 2) Compare os metadados fiscais (série, emitente, valor) com os lançamentos; se coincidirem todos, descarte duplicidade. 3) Valide se o Razão permite dois débitos para o mesmo documento; se não, corrigir o vínculo. O indício de duplicidade é enfraquecido pela falta de evidência de dois documentos distintos e pela classificação AMBIGUO, que não confirma nem nega a existência de dois arquivos.\", \"grupo\": \"G1\", \"verificar\": \"1) Confirme se a nota 303 é única ou existem duas versões; se única, revise a duplicação de lançamento. 2) Compare os metadados fiscais (série, emitente, valor) com os lançamentos; se coincidirem todos, descarte duplicidade. 3) Valide se o Razão permite dois débitos para o mesmo documento; se não, corrigir o vínculo.\"}]}",
+      "actual_model": "dots-studio/dots-3-note-preview:free",
+      "contract_valid": true,
+      "audit": {
+        "referencias_sem_evidencia": [],
+        "situacao": "revisao_necessaria",
+        "valores_citados": 0,
+        "valores_sem_comprovacao": 0,
+        "lancamentos_citados": 2,
+        "alertas": [
+          "Valores monetários da narrativa foram retirados; consulte as diferenças e evidências calculadas pelo sistema."
+        ],
+        "aviso": "Parecer automatizado: não substitui a revisão contábil humana."
+      },
+      "published_explanation": "Hipóteses: A repetição de assinaturas no Razão reforça a possibilidade de cópia indevida. A nota fiscal 303 está classificada como AMBIGUO, com dois candidatos sem série ou emitente definido, o que impede a confirmação de vínculo único.\n\nLimitações: É necessário o documento fiscal original (nota 303), série, emitente e valor exato para confirmar se há um ou dois documentos distintos. A ausência de dados de parceria impede a distinção entre candidatos. Verificar: 1) Confirme se a nota 303 é única ou existem duas versões; se única, revise a duplicação de lançamento. 2) Compare os metadados fiscais (série, emitente, valor) com os lançamentos; se coincidirem todos, descarte duplicidade. 3) Valide se o Razão permite dois débitos para o mesmo documento; se não, corrigir o vínculo. O indício de duplicidade é enfraquecido pela falta de evidência de dois documentos distintos e pela classificação AMBIGUO, que não confirma nem nega a existência de dois arquivos.",
+      "seconds": 7.35
+    },
+    {
+      "protocol": "production",
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "case": "valor_diferente",
+      "error": "provider_or_validation",
+      "status": 502,
+      "detail": "O OpenRouter rejeitou a análise gratuita (404): política de privacidade dos endpoints. A conferência permanece disponível.",
+      "seconds": 0.06
+    },
+    {
+      "protocol": "production",
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "case": "outra_conta",
+      "error": "provider_or_validation",
+      "status": 502,
+      "detail": "O OpenRouter rejeitou a análise gratuita (404): política de privacidade dos endpoints. A conferência permanece disponível.",
+      "seconds": 0.05
+    },
+    {
+      "protocol": "production",
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "case": "sem_documentos",
+      "error": "provider_or_validation",
+      "status": 502,
+      "detail": "O OpenRouter rejeitou a análise gratuita (404): política de privacidade dos endpoints. A conferência permanece disponível.",
+      "seconds": 0.04
+    },
+    {
+      "protocol": "production",
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "case": "totais_iguais_vinculo_ambiguo",
+      "error": "provider_or_validation",
+      "status": 502,
+      "detail": "O OpenRouter rejeitou a análise gratuita (404): política de privacidade dos endpoints. A conferência permanece disponível.",
+      "seconds": 0.05
+    },
+    {
+      "protocol": "production",
+      "model": "google/gemma-4-31b-it:free",
+      "case": "valor_diferente",
+      "error": "provider_or_validation",
+      "status": 502,
+      "detail": "O OpenRouter rejeitou a análise gratuita (404): seleção de endpoints. A conferência permanece disponível.",
+      "seconds": 0.06
+    },
+    {
+      "protocol": "production",
+      "model": "google/gemma-4-31b-it:free",
+      "case": "outra_conta",
+      "error": "provider_or_validation",
+      "status": 502,
+      "detail": "O OpenRouter rejeitou a análise gratuita (404): seleção de endpoints. A conferência permanece disponível.",
+      "seconds": 0.05
+    },
+    {
+      "protocol": "production",
+      "model": "google/gemma-4-31b-it:free",
+      "case": "sem_documentos",
+      "error": "provider_or_validation",
+      "status": 502,
+      "detail": "O OpenRouter rejeitou a análise gratuita (404): seleção de endpoints. A conferência permanece disponível.",
+      "seconds": 0.12
+    },
+    {
+      "protocol": "production",
+      "model": "google/gemma-4-31b-it:free",
+      "case": "totais_iguais_vinculo_ambiguo",
+      "error": "provider_or_validation",
+      "status": 502,
+      "detail": "O OpenRouter rejeitou a análise gratuita (404): seleção de endpoints. A conferência permanece disponível.",
+      "seconds": 0.06
+    }
+  ],
+  "production_deployment": "d4c24421-765f-4d97-8db4-806471a7b7d1",
+  "decision": "Não há vencedor de qualidade demonstrado. Manter o modelo principal; remover a alternativa que saiu do catálogo e reforçar verificações locais para as falhas observadas. Formato válido não comprova mérito contábil."
+}

@@ -230,3 +230,25 @@ def test_conferencia_incerta_ainda_precisa_de_revisao(change):
     else:
         report["resumo_documental"]["359:ENTRADAS"]["composicao"]["itens"][-1]["valor"] = -19
     assert not local_review_sufficient(report)
+
+
+def test_candidato_nao_vira_afirmacao_de_classificacao_na_conta():
+    answer = item("Hipóteses: A nota 202 foi classificada na conta 509 no Razão.")
+    protect_publication(answer, [], [{"referencia":"E-1", "nota":"202", "conta_razao_candidato":"509"}])
+    assert "foi classificada" not in answer["explicacao"]
+    assert answer["checagem_semantica"]["interpretacao_retirada"]
+
+
+def test_candidato_pode_ser_proposto_como_possibilidade_a_confirmar():
+    answer = item("Hipóteses: A nota 202 pode estar registrada na conta 509; confirme a operação.")
+    protect_publication(answer, [], [{"referencia":"E-1", "nota":"202", "conta_razao_candidato":"509"}])
+    assert "pode estar registrada" in answer["explicacao"]
+    assert not answer["checagem_semantica"]["interpretacao_retirada"]
+
+
+def test_nota_unica_ambiguamente_pareada_nao_autoriza_corrigir_duplicacao():
+    answer = item("Hipóteses: confirme o vínculo.")
+    answer["verificar"] = "1) Confirme se a nota 303 é única; se única, revise a duplicação de lançamento."
+    protect_publication(answer, [], [{"referencia":"E-1", "nota":"303", "situacao":"AMBIGUO"}])
+    assert "revise a duplicação" not in answer["verificar"]
+    assert answer["checagem_semantica"]["interpretacao_retirada"]
