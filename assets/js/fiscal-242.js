@@ -1198,31 +1198,84 @@
     const status = node("p", "fiscal-account-analysis-status"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite");
     const exportButton = node("button", "fiscal-account-analysis-export", "Exportar parecer"); exportButton.type = "button";
     const body = node("div", "fiscal-account-analysis-body");
-    bar.append(button, cancel, exportButton, note); area.append(bar, status, body);
+    const panelHeading = node("div", "fiscal-account-analysis-heading");
+    const panelTitle = node("h4", "", "Parecer da IA");
+    panelHeading.append(panelTitle, exportButton);
+    const context = node("p", "fiscal-account-analysis-context", "Conta " + scope.conta + " · " + scope.tipo + (scope.acumulador ? " · Acumulador " + scope.acumulador : ""));
+    const tabs = node("div", "fiscal-account-analysis-tabs"); tabs.setAttribute("role", "tablist"); tabs.setAttribute("aria-label", "Visualização da conta");
+    const conferenceTab = node("button", "", "Conferência"), opinionTab = node("button", "", "Parecer da IA");
+    const panelId = "fiscal-opinion-" + [scope.origem,scope.conta,scope.tipo === "SAÍDAS" ? "saidas" : "entradas",scope.acumulador || "conta"].join("-");
+    area.id = panelId; area.setAttribute("role", "tabpanel"); area.tabIndex = 0;
+    for (const [tab, suffix] of [[conferenceTab,"comparison"],[opinionTab,"opinion"]]) {
+      tab.type = "button"; tab.id = panelId + "-" + suffix; tab.setAttribute("role", "tab");
+    }
+    opinionTab.setAttribute("aria-controls", panelId); area.setAttribute("aria-labelledby", opinionTab.id);
+    button.setAttribute("aria-controls", panelId);
+    tabs.append(conferenceTab, opinionTab);
+    bar.append(button, cancel); area.append(tabs, bar, panelHeading, context, note, status, body);
+    let layout = null, renderedResult = null;
+    function switchView(opinion, focus = false) {
+      state.expanded = opinion; state.paint();
+      if (focus) (opinion ? opinionTab : conferenceTab).focus({preventScroll:true});
+    }
+    conferenceTab.addEventListener("click", () => switchView(false));
+    opinionTab.addEventListener("click", () => switchView(true));
+    tabs.addEventListener("keydown", event => {
+      if (!["ArrowLeft","ArrowRight","Home","End"].includes(event.key)) return;
+      event.preventDefault();
+      switchView(event.key === "Home" ? false : event.key === "End" ? true : !state.expanded, true);
+    });
+    area.mount = target => {
+      layout = target;
+      area.className = "fiscal-account-analysis fiscal-detail fiscal-account-dialog-body is-docked";
+      target.header.appendChild(tabs);
+      target.footer.insertBefore(bar, target.navigation);
+      target.shell.insertBefore(area, target.footer);
+      target.comparison.id ||= panelId + "-comparison-panel";
+      target.comparison.setAttribute("role", "tabpanel"); target.comparison.setAttribute("tabindex", "0"); target.comparison.setAttribute("aria-labelledby", conferenceTab.id);
+      conferenceTab.setAttribute("aria-controls", target.comparison.id);
+      paint();
+    };
+    area.destroy = () => {
+      if (layout) layout.comparison.hidden = false;
+      layout = null; area.remove(); tabs.remove(); bar.remove();
+    };
     function paint() {
       button.disabled = state.pending || !state.source;
-      button.textContent = state.pending ? "Analisando esta seleção…" : state.result ? (state.expanded ? "Ocultar análise" : "Ver análise salva") : state.error ? "Tentar novamente" : scope.acumulador ? "Analisar este acumulador com IA" : "Analisar esta conta com IA";
+      button.textContent = state.pending ? "Analisando…" : state.result ? "Ver parecer salvo" : state.error ? "Tentar análise novamente" : scope.acumulador ? "Analisar acumulador com IA" : "Analisar esta conta com IA";
       button.setAttribute("aria-expanded", String(state.expanded));
       cancel.hidden = !state.pending;
       exportButton.hidden = !state.result?.analises?.length;
-      status.textContent = state.pending ? "Preparando somente esta seleção e consultando o parecer salvo antes de chamar a IA…" : state.error || "";
+      const local = state.result && (state.result.provedor === "local" || state.result.analises?.[0]?.provedor === "local");
+      panelTitle.textContent = local ? "Leitura da conferência" : "Parecer da IA";
+      opinionTab.textContent = local ? "Análise local" : "Parecer da IA";
+      status.textContent = state.pending ? "Analisando somente esta seleção. Você pode voltar à conferência durante a espera." : state.error || (state.result ? "Parecer pronto para esta seleção." : "");
+      status.className = "fiscal-account-analysis-status" + (!state.pending && !state.error && state.result ? " visually-hidden" : "");
       status.hidden = !status.textContent;
-      body.hidden = !state.result || !state.expanded;
+      body.hidden = !state.result;
       body.setAttribute("aria-busy", String(state.pending));
-      body.replaceChildren();
-      if (state.result && state.expanded) body.appendChild(renderAccountOpinion(state.result, scope));
+      note.hidden = Boolean(state.result);
+      context.hidden = false;
+      for (const [tab, selected] of [[conferenceTab,!state.expanded],[opinionTab,state.expanded]]) {
+        tab.setAttribute("aria-selected", String(selected)); tab.tabIndex = selected ? 0 : -1;
+      }
+      if (layout) { layout.comparison.hidden = state.expanded; area.hidden = !state.expanded; }
+      if (state.result && renderedResult !== state.result) {
+        body.replaceChildren(renderAccountOpinion(state.result, scope)); renderedResult = state.result;
+      }
     }
     state.paint = paint;
     button.addEventListener("click", async () => {
       if (state.pending) return;
-      if (state.result) { state.expanded = !state.expanded; state.paint(); return; }
+      if (state.result) { switchView(true); opinionTab.focus({preventScroll:true}); return; }
       if (!state.source || state.source !== previewBody) return;
       const body = new FormData();
       for (const [name, value] of state.source.entries()) if (!["entradas", "saidas", "conta", "tipo", "origem", "acumulador"].includes(name)) body.append(name, value);
       for (const name of ["conta", "tipo", "origem", "acumulador"]) body.append(name, scope[name] || "");
       if (file) body.append(scope.tipo === "SAÍDAS" ? "saidas" : "entradas", file);
       const controller = new AbortController(); state.controller = controller;
-      state.pending = true; state.error = ""; state.paint();
+      state.pending = true; state.expanded = true; state.error = ""; state.paint();
+      opinionTab.focus({preventScroll:true});
       try {
         const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/conta", {method:"POST", body, signal:controller.signal});
         if (!response.ok) throw new Error(await responseError(response));
@@ -1274,6 +1327,7 @@
   }
 
   function renderDetails(row) {
+    detailDialog.accountAnalysis?.destroy(); detailDialog.accountAnalysis = null;
     details.replaceChildren();
     if (!row) { details.hidden = true; return; }
     details.hidden = false;
@@ -1327,7 +1381,6 @@
       ? "Há movimentos no Razão, mas nenhum foi selecionado pelo histórico. Revise a seleção antes de concluir que existe uma diferença fiscal."
       : differenceMeaning(row.diferenca).replace("Contábil considerado", "Razão na comparação")));
 
-    details.appendChild(createAccountAnalysis({origem:"resumo", conta:String(row.conta), tipo:row.tipo}));
     const bridge = node("section", "fiscal-comparison-bridge");
     bridge.appendChild(node("h4", "", "Do total do Razão ao valor comparado"));
     const bridgeValues = node("dl", "fiscal-comparison-bridge-values");
@@ -1400,6 +1453,11 @@
       }
     }
     details.appendChild(ledger);
+    const panel = createAccountAnalysis({origem:"resumo", conta:String(row.conta), tipo:row.tipo});
+    const navigation = byId("fiscal242DetailPrevious").parentElement;
+    panel.mount({header:byId("fiscal242DetailHeading"), comparison:details, footer:navigation.parentElement,
+      navigation, shell:details.parentElement});
+    detailDialog.accountAnalysis = panel;
   }
 
   const detailDialog = byId("fiscal242DetailDialog");
@@ -1834,7 +1892,7 @@
     shell.append(dialogHeader, dialogBody, footer); dialog.appendChild(shell);
     workspace.appendChild(accounts); stage.appendChild(workspace); investigationResults.appendChild(dialog);
     stage.insertBefore(node("p", "fiscal-doc-open-hint", "Selecione uma conta para abrir os valores e documentos na janela de resultados."), workspace);
-    let active = groups[0], returnButton = null;
+    let active = groups[0], returnButton = null, mountedAnalysis = null;
     const buttons = new Map();
     const visibleGroups = () => groups.filter(group => !buttons.get(group)?.hidden);
     function syncDocumentNavigation() {
@@ -1918,6 +1976,7 @@
       } else balance.appendChild(node("small", "", "Diferença = Razão considerado − resumo fiscal."));
     }
     function selectAccount(group, accumulatorCode = "") {
+      mountedAnalysis?.destroy(); mountedAnalysis = null;
       active = group;
       buttons.forEach((button, item) => button.setAttribute("aria-current", item === active ? "true" : "false"));
       reader.replaceChildren(); reader.scrollTop = 0; dialogBody.scrollTop = 0;
@@ -1926,7 +1985,6 @@
       reader.append(node("small", "fiscal-doc-eyebrow", group.tipo + " · CONTA " + group.conta), scopeTitle);
       const balance = node("div", "fiscal-doc-balance");
       reader.appendChild(balance);
-      const analysisArea = node("div", "fiscal-document-analysis-slot"); reader.appendChild(analysisArea);
       let analysisScope = null;
       const coverageArea = node("div", "fiscal-doc-coverage");
       const comparisons = group.comparacoes || (group.documentos || []).map(d => ({...d,
@@ -1995,7 +2053,9 @@
         const scopeCode = acc ? String(acc.acc.codigo) : "";
         if (scopeCode !== analysisScope) {
           analysisScope = scopeCode;
-          analysisArea.replaceChildren(createAccountAnalysis({origem:"documentos", conta:String(group.conta), tipo:group.tipo, acumulador:scopeCode}));
+          mountedAnalysis?.destroy();
+          mountedAnalysis = createAccountAnalysis({origem:"documentos", conta:String(group.conta), tipo:group.tipo, acumulador:scopeCode});
+          mountedAnalysis.mount({header:dialogHeader, comparison:dialogBody, footer, navigation, shell});
         }
         documentTitle.textContent = acc ? "Documentos e lançamentos · acumulador " + acc.acc.codigo : "Documentos e lançamentos desta conta";
         const scoped = comparisons.filter(d => scopedComparison(d, acc));
