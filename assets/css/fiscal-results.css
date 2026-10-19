@@ -1425,3 +1425,13 @@
 #fiscalView .fiscal-doc-rows td small {font-size:11px;line-height:1.6;}
 #fiscalView .fiscal-doc-balance-lines > div {gap:12px;}
 #fiscalView .fiscal-doc-balance-lines strong {white-space:nowrap;}
+
+/* Hierarquia da investigação: diferença em destaque e apoio legível. */
+#fiscalView .fiscal-doc-comparison-totals small {font-size:12px;line-height:1.5;}
+#fiscalView .fiscal-doc-comparison-totals .fiscal-doc-difference-direction {font-size:11px;line-height:1.5;}
+#fiscalView .fiscal-doc-total-difference strong {font-size:clamp(18px,1.5vw,22px);}
+#fiscalView .fiscal-doc-account-head strong {font-size:14px;}
+#fiscalView .fiscal-doc-account-head small {font-size:11px;}
+#fiscalView .fiscal-doc-account span {font-size:12px;line-height:1.5;}
+#fiscalView .fiscal-doc-account:focus-visible {outline:2px solid #426e9e;outline-offset:-3px;}
+@media(max-width:680px) {#fiscalView .fiscal-doc-total-difference strong {font-size:20px;}}
