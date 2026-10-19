@@ -1,5 +1,6 @@
 import json
 import os
+import sqlite3
 import pytest
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
@@ -17,7 +18,12 @@ def test_cache_criptografado_no_volume_existente(monkeypatch, tmp_path):
     assert ai_result_cache.read(digest) == result
     raw = (tmp_path / "razync_ai_cache.sqlite3").read_bytes()
     assert b"Sigilo empresarial" not in raw
-    assert b"501" not in raw
+    # Dígitos curtos podem ocorrer por acaso no HMAC ou no ciphertext.
+    # Verifica o campo completo e comprova que o payload é um token Fernet.
+    assert b'"conta": "501"' not in raw
+    with sqlite3.connect(tmp_path / "razync_ai_cache.sqlite3") as connection:
+        ciphertext = connection.execute("SELECT ciphertext FROM encrypted_ai_cache WHERE id=?", (digest,)).fetchone()[0]
+    assert json.loads(Fernet(os.environ["RAZYNC_AI_CACHE_KEY"].encode("ascii")).decrypt(ciphertext)) == result
     assert ai_result_cache.stable_digest(json.dumps({"empresa": "XYZ", "conta": "501"})) == digest
 
 
