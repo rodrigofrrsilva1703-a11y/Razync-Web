@@ -1250,7 +1250,7 @@
     const loadingCopy = node("div", "fiscal-account-loading-copy");
     loadingCopy.append(node("small", "", "ANÁLISE POR SELEÇÃO"), node("h5", "", "Preparando seu parecer"),
       node("p", "", "Consultando as evidências da seleção e verificando se já existe uma análise salva."));
-    const elapsed = node("span", "fiscal-account-loading-time");
+    const elapsed = node("span", "fiscal-account-loading-time"); elapsed.setAttribute("aria-hidden", "true");
     loadingHead.append(orbit, loadingCopy, elapsed);
     const meter = node("div", "fiscal-account-loading-meter");
     meter.setAttribute("role", "progressbar"); meter.setAttribute("aria-label", "Aguardando retorno da análise");
@@ -1318,9 +1318,7 @@
       note.hidden = state.pending || Boolean(state.result);
       loading.hidden = !state.pending;
       loading.setAttribute("aria-busy", String(state.pending));
-      const seconds = state.pending ? Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000)) : 0;
-      elapsed.textContent = seconds < 60 ? seconds + " s" : Math.floor(seconds / 60) + " min " + seconds % 60 + " s";
-      loadingHint.textContent = seconds >= 45 ? "O servidor ainda não respondeu. Você pode voltar à conferência enquanto aguarda." : "Aguardando retorno do servidor. Você pode consultar a conferência durante a espera.";
+      updateLoadingTime();
       context.hidden = false;
       for (const [tab, selected] of [[conferenceTab,!state.expanded],[opinionTab,state.expanded]]) {
         tab.setAttribute("aria-selected", String(selected)); tab.tabIndex = selected ? 0 : -1;
@@ -1330,7 +1328,13 @@
         body.replaceChildren(renderAccountOpinion(state.result, scope)); renderedResult = state.result;
       }
     }
-    state.paint = paint;
+    function updateLoadingTime() {
+      const seconds = state.pending ? Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000)) : 0;
+      elapsed.textContent = seconds < 60 ? seconds + " s" : Math.floor(seconds / 60) + " min " + seconds % 60 + " s";
+      const hint = seconds >= 45 ? "O servidor ainda não respondeu. Você pode voltar à conferência enquanto aguarda." : "Aguardando retorno do servidor. Você pode consultar a conferência durante a espera.";
+      if (loadingHint.textContent !== hint) loadingHint.textContent = hint;
+    }
+    state.paint = paint; state.tick = updateLoadingTime;
     button.addEventListener("click", async () => {
       if (state.pending) return;
       if (state.result) { switchView(true); opinionTab.focus({preventScroll:true}); return; }
@@ -1341,7 +1345,7 @@
       if (file) body.append(scope.tipo === "SAÍDAS" ? "saidas" : "entradas", file);
       const controller = new AbortController(); state.controller = controller;
       state.pending = true; state.expanded = true; state.error = ""; state.startedAt = Date.now(); state.paint();
-      state.timer = setInterval(() => { if (state.pending) state.paint(); }, 1000);
+      state.timer = setInterval(() => { if (state.pending) state.tick(); }, 1000);
       opinionTab.focus({preventScroll:true});
       try {
         const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/conta", {method:"POST", body, signal:controller.signal});
