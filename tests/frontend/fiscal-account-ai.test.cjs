@@ -102,3 +102,18 @@ test('carregamento usa tempo real, encerra o timer e não muda a vista escolhida
   assert.equal(loading.hidden,true);assert.ok(cleared.includes(123));assert.equal(comparison.hidden,false);
   await button.click();assert.equal(calls,1);assert.equal(panel.hidden,false);assert.equal(loading.hidden,true);
 });
+
+
+test('parecer apresenta explicação, confirmação, solução condicional e validação em sequência',()=>{
+  const {context,all}=setup();
+  const root=context.renderAccountOpinion({analises:[{parecer:{leitura_comparacao:{orientacoes:[{
+    acao:'Compare a nota',explicacao_simples:'Os valores diferem; a causa ainda não foi comprovada.',
+    objetivo:'Confira a origem',para_concluir:'Confirme a mesma operação',
+    solucao_condicional:'Se o documento comprovar erro, corrija a origem.',resultado_esperado:'Refaça a conferência da nota.'
+  }]}}}]},{});
+  const text=all(root).map(el=>el.textContent);
+  const labels=['Confirme primeiro','Solução após confirmar','Como validar'].map(value=>text.indexOf(value));
+  assert.ok(labels[0]>0 && labels[0]<labels[1] && labels[1]<labels[2]);
+  assert.ok(text.includes('Os valores diferem; a causa ainda não foi comprovada.'));
+  assert.ok(text.includes('Se o documento comprovar erro, corrija a origem.'));
+});

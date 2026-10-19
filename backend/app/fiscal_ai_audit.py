@@ -10,7 +10,7 @@ import unicodedata
 from collections import Counter
 from datetime import datetime
 from app.fiscal_investigation import explain_cases
-from app.fiscal_review_outcomes import executive_summary
+from app.fiscal_review_outcomes import executive_summary, review_outcome
 
 _MONEY = re.compile(r"R\$\s*(-?\s*\d(?:[\d.,]*\d)?)", flags=re.IGNORECASE)
 
@@ -485,9 +485,9 @@ def comparison_reading(item, rows, periodo_fiscal=None):
                           "motivo": "Histórico de pagamento/recebimento/baixa" if payment else "Sem indício fiscal reconhecido no histórico"})
     steps = []
     if excluded or value_only:
-        steps.append({"acao": f"Revise os {len(excluded)} movimentos fora da comparação" if excluded else "Revise os movimentos incluídos apenas pelo valor",
+        steps.append({"categoria": "SELECAO_HISTORICO" if excluded else "VINCULO_POR_VALOR", "acao": f"Revise os {len(excluded)} movimentos fora da comparação" if excluded else "Revise os movimentos incluídos apenas pelo valor",
                       "objetivo": "Compare o comprovante com o documento de origem e com o reconhecimento na conta. Isso esclarece se o movimento pertence à operação fiscal ou à sua liquidação; o alerta não confirma duplicidade."})
-    steps.append({"acao": f"Abra o detalhamento dos acumuladores {codes} e identifique as notas que compõem o fiscal",
+    steps.append({"categoria":"DETALHAMENTO_NECESSARIO", "acao": f"Abra o detalhamento dos acumuladores {codes} e identifique as notas que compõem o fiscal",
                   "objetivo": "Separe número da nota, data e valor. Assim você transforma o total fiscal em documentos que podem ser comparados individualmente, em vez de procurar o código do acumulador no Razão."})
     steps.append({"acao": f"Compare essas notas com os lançamentos da conta {account}",
                   "objetivo": "Use histórico, data, valor e contrapartida para confirmar o vínculo. Se uma nota não for localizada, confira período, filial e conta usada antes de concluir ausência; valores parecidos, sozinhos, não provam correspondência."})
@@ -625,9 +625,12 @@ def structured_analysis(item, rows, *, sent=None, shortened=False, documentary=F
             goal = str(step.get("como_verificar") or "").strip()
             if action and goal:
                 specific_steps.append({"acao": action + (f" ({ref})" if ref else ""),
-                                       "objetivo": goal})
+                                       "objetivo": goal, "categoria": step.get("categoria", "")})
         if specific_steps:
             reading["orientacoes"] = (specific_steps + list(reading.get("orientacoes") or []))[:3]
+    # Regera orientações práticas também ao reabrir um parecer cacheado.
+    reading["orientacoes"] = [dict(step, **review_outcome(step.get("categoria", "")))
+                              for step in reading.get("orientacoes", [])]
     for limit in (dossier.get("limites_das_fontes") or [])[:2]:
         if isinstance(limit, str) and limit and limit not in missing:
             missing.append(limit)

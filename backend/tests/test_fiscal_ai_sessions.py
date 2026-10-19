@@ -374,3 +374,16 @@ def test_seis_pessoas_podem_manter_as_duas_etapas_abertas():
     finally:
         for token in tokens:
             sessions.discard(token)
+
+
+def test_cache_atualiza_solucoes_locais_sem_nova_inferencia(monkeypatch):
+    monkeypatch.setattr(fiscal_ai, "explain", lambda *a, **k: pytest.fail("Não deve chamar IA"))
+    source = report(1)
+    source["resumo_documental"] = {"0:ENTRADAS": {"documentos_lidos": 1, "documentos_pendentes": 1, "situacoes": {"VALOR_DIFERENTE": 1}}}
+    source["documentos_pendentes"] = {"0:ENTRADAS": [{"referencia": "E-1", "situacao": "VALOR_DIFERENTE", "nota": "100", "valor_brl": "R$ 10,00", "valor_razao_candidato_brl": "R$ 8,00"}]}
+    old = {"analises": [{"conta": "0", "tipo": "ENTRADAS", "valores": {"fiscal": 10, "contabil": 8, "diferenca": -2}, "explicacao": "Hipóteses: causa a confirmar.", "parecer": {}}]}
+    refreshed = sessions._refresh_cached_review(old, source)
+    guide = refreshed["analises"][0]["parecer"]["leitura_comparacao"]["orientacoes"][0]
+    assert guide["explicacao_simples"] and guide["resultado_esperado"]
+    assert "Não crie um ajuste" in guide["solucao_condicional"]
+    assert old["analises"][0]["parecer"] == {}

@@ -90,7 +90,7 @@ def build_dossier(account, records, documents=None, documentary=None, coverage=N
             candidate["razao_id"] = _text(selected["razao_id"])
         candidates.append(candidate)
         _unique_append(priorities, {
-            "origem": "documento_pendente", "referencia": reference,
+            "origem": "documento_pendente", "referencia": reference, "categoria": status,
             "acao": title, "como_verificar": target,
         }, 3)
 
@@ -106,12 +106,13 @@ def build_dossier(account, records, documents=None, documentary=None, coverage=N
                           or (observed == "incluidos_so_por_valor" and "valor" in item["indicio"])
                           or (observed == "historicos_de_estorno_cancelamento" and "estorno" in item["indicio"])), "")
             _unique_append(priorities, {"origem": "razao", "referencia": refer,
+                                        "categoria": {"separados_na_comparacao":"SELECAO_HISTORICO", "incluidos_so_por_valor":"VINCULO_POR_VALOR", "historicos_de_estorno_cancelamento":"ESTORNO_EM_ANALISE", "assinaturas_repetidas":"REGISTROS_SEMELHANTES"}[observed],
                                         "acao": title, "como_verificar": action}, 3)
 
     if not priorities:
         # Direção útil mesmo quando a origem ainda não está demonstrada.
         acc = _text(account.get("acumuladores")) or "vinculados"
-        priorities.append({"origem": "resumo_fiscal", "referencia": "",
+        priorities.append({"origem": "resumo_fiscal", "referencia": "", "categoria": "DETALHAMENTO_NECESSARIO",
             "acao": f"Identifique os documentos dos acumuladores {acc}",
             "como_verificar": "Obtenha número, série, competência e valor e compare com os registros da conta. O resumo por acumulador não comprova vínculo individual."})
 

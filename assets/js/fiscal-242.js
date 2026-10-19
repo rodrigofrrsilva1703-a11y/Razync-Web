@@ -1171,7 +1171,7 @@
       const checklist = node("ol", "fiscal-account-opinion-steps");
       steps.forEach(step => {
         const li = node("li"); li.appendChild(node("strong", "", step.acao));
-        if (step.objetivo) li.appendChild(node("p", "", step.objetivo));
+        if (step.explicacao_simples || step.objetivo) li.appendChild(node("p", "", step.explicacao_simples || step.objetivo));
         if (step.documentos?.length) {
           const references = node("div", "fiscal-account-opinion-refs");
           for (const doc of step.documentos) {
@@ -1192,9 +1192,14 @@
           }
           li.appendChild(references);
         }
-        if (step.para_concluir) {
+        for (const [label, text] of [
+          ["Confirme primeiro", [step.explicacao_simples ? step.objetivo : "", step.para_concluir].filter(Boolean).join(" ")],
+          ["Solução após confirmar", step.solucao_condicional],
+          ["Como validar", step.resultado_esperado]
+        ]) {
+          if (!text) continue;
           const criterion = node("div", "fiscal-account-opinion-criterion");
-          criterion.append(node("small", "", "Para concluir"), node("p", "", step.para_concluir)); li.appendChild(criterion);
+          criterion.append(node("small", "", label), node("p", "", text)); li.appendChild(criterion);
         }
         if (step.quando_reavaliar) {
           const reconsider = node("p", "fiscal-account-opinion-reconsider");

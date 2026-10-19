@@ -1187,8 +1187,14 @@ def gerar_excel_analise(payload: dict) -> bytes:
                             continue
                         parts.append("   • " + str(doc.get("titulo") or doc.get("referencia") or "Documento")
                                      + (": " + str(doc["detalhes"]) if doc.get("detalhes") else ""))
+                    if step.get("explicacao_simples"):
+                        parts.append("   O que significa: " + str(step["explicacao_simples"]))
                     if step.get("objetivo"):
                         parts.append("   Conferência: " + str(step["objetivo"]))
+                    if step.get("solucao_condicional"):
+                        parts.append("   Correção possível após confirmar: " + str(step["solucao_condicional"]))
+                    if step.get("resultado_esperado"):
+                        parts.append("   Como validar: " + str(step["resultado_esperado"]))
                     if step.get("para_concluir"):
                         parts.append("   Para concluir: " + str(step["para_concluir"]))
                     if step.get("quando_reavaliar"):

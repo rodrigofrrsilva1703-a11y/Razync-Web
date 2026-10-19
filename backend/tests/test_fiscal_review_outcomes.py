@@ -41,6 +41,7 @@ def test_conferencia_local_identifica_a_origem_sem_atribuir_limitacoes_a_ia():
 def test_criterios_trazem_confirmacao_e_reavaliacao_sem_declarar_erro(status):
     result = review_outcome(status)
     assert result["para_concluir"] and result["quando_reavaliar"]
+    assert result["explicacao_simples"] and result["solucao_condicional"] and result["resultado_esperado"]
     assert not review_outcome("CONCILIADO")
 
 
@@ -53,3 +54,18 @@ def test_criterios_e_resumo_chegam_a_apresentacao_sem_nova_chamada():
     step = result["leitura_comparacao"]["orientacoes"][0]
     assert "mesma operação" in step["para_concluir"]
     assert "descarte" in step["quando_reavaliar"]
+    assert step["solucao_condicional"] == review_outcome("VALOR_DIFERENTE")["solucao_condicional"]
+    assert step["resultado_esperado"]
+
+
+def test_orientacao_nao_confunde_falta_de_vinculo_com_falta_de_escrituracao():
+    guide = review_outcome("SEM_LANCAMENTO_IDENTIFICADO")
+    assert "ainda não significa" in guide["explicacao_simples"]
+    assert "escrituração completa" in guide["solucao_condicional"]
+    assert "sem lançar a operação outra vez" in guide["solucao_condicional"]
+
+
+def test_resumo_sem_documentos_nao_sugere_lancamento_corretivo():
+    guide = review_outcome("DETALHAMENTO_NECESSARIO")
+    assert "ainda não há base" in guide["solucao_condicional"]
+    assert review_outcome("DESCONHECIDO") == {}
