@@ -94,7 +94,7 @@ test('carregamento usa tempo real, encerra o timer e não muda a vista escolhida
   shell.append(header,comparison,footer);footer.append(navigation);panel.mount({shell,header,comparison,footer,navigation});
   const button=find(footer,'fiscal-account-analysis-button'),pending=button.click();
   const loading=find(panel,'fiscal-account-loading');assert.equal(loading.hidden,false);
-  assert.equal(find(panel,'fiscal-account-loading-meter').attributes['aria-valuenow'],undefined);
+  assert.equal(find(panel,'fiscal-account-loading-meter visually-hidden').attributes['aria-valuenow'],undefined);
   clock=65000;tick();assert.equal(find(panel,'fiscal-account-loading-time').textContent,'1 min 5 s');
   await find(header,'fiscal-account-analysis-tabs').children[0].click();assert.equal(comparison.hidden,false);
   finish({ok:true,json:async()=>({escopo:{conta:'470',tipo:'ENTRADAS',origem:'resumo',acumulador:''},analises:[]})});

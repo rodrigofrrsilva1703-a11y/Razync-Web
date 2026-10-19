@@ -1246,19 +1246,15 @@
     loading.setAttribute("aria-label", "Análise desta seleção em andamento");
     const loadingHead = node("div", "fiscal-account-loading-heading");
     const orbit = node("span", "fiscal-account-loading-orbit"); orbit.setAttribute("aria-hidden", "true");
-    orbit.appendChild(node("span", "", "✦"));
+
     const loadingCopy = node("div", "fiscal-account-loading-copy");
-    loadingCopy.append(node("small", "", "ANÁLISE POR SELEÇÃO"), node("h5", "", "Preparando seu parecer"),
-      node("p", "", "Consultando as evidências da seleção e verificando se já existe uma análise salva."));
+    loadingCopy.appendChild(node("h5", "", "Analisando esta seleção…"));
     const elapsed = node("span", "fiscal-account-loading-time"); elapsed.setAttribute("aria-hidden", "true");
     loadingHead.append(orbit, loadingCopy, elapsed);
-    const meter = node("div", "fiscal-account-loading-meter");
+    const meter = node("div", "fiscal-account-loading-meter visually-hidden");
     meter.setAttribute("role", "progressbar"); meter.setAttribute("aria-label", "Aguardando retorno da análise");
-    meter.appendChild(node("span"));
     const loadingHint = node("p", "fiscal-account-loading-hint");
-    const skeleton = node("div", "fiscal-account-loading-skeleton"); skeleton.setAttribute("aria-hidden", "true");
-    for (const width of ["wide","medium","short"]) skeleton.appendChild(node("span", width));
-    loading.append(loadingHead, meter, loadingHint, skeleton);
+    loading.append(loadingHead, meter, loadingHint);
     const panelHeading = node("div", "fiscal-account-analysis-heading");
     const panelTitle = node("h4", "", "Parecer da IA");
     panelHeading.append(panelTitle, exportButton);
@@ -1333,6 +1329,7 @@
       elapsed.textContent = seconds < 60 ? seconds + " s" : Math.floor(seconds / 60) + " min " + seconds % 60 + " s";
       const hint = seconds >= 45 ? "O servidor ainda não respondeu. Você pode voltar à conferência enquanto aguarda." : "Aguardando retorno do servidor. Você pode consultar a conferência durante a espera.";
       if (loadingHint.textContent !== hint) loadingHint.textContent = hint;
+      loadingHint.hidden = seconds < 45;
     }
     state.paint = paint; state.tick = updateLoadingTime;
     button.addEventListener("click", async () => {
