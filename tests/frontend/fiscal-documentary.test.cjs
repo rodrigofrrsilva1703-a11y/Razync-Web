@@ -5,17 +5,22 @@ const vm = require('node:vm');
 const source = fs.readFileSync('assets/js/fiscal-242.js','utf8');
 function setup({grouped=false}={}) {
   class Element {
-    constructor(tag, cls='', text='') { this.tag=tag; this.className=cls; this.textContent=String(text); this.children=[]; this.attributes={}; this.events={}; this.value=''; }
+    constructor(tag, cls='', text='') { this.tag=tag; this.className=cls; this.textContent=String(text); this.children=[]; this.attributes={}; this.events={}; this.value=''; this.dataset={}; this.open=false; this.isConnected=true; }
     append(...items) {items.forEach(item=>this.appendChild(item));}
     appendChild(item) {this.children.push(item); if(this.tag==='select' && this.children.length===1) this.value=item.value; return item;}
     replaceChildren(...items) {this.children=[];this.append(...items);}
     setAttribute(k,v) {this.attributes[k]=v;}
     addEventListener(k,fn) {this.events[k]=fn;}
     click() {this.events.click?.();}
+    insertBefore(item,before) {this.children.splice(this.children.indexOf(before),0,item);}
+    showModal() {this.open=true;}
+    close() {if(this.open) {this.open=false;this.events.close?.();}}
+    focus(options) {this.focusOptions=options;}
   }
   const node=(...args)=>new Element(...args); const root=node('div');
   let exported;
-  const context={node,investigationResults:root,money:new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}),
+  const classes=new Set();
+  const context={node,investigationResults:root,document:{documentElement:{classList:{add:c=>classes.add(c),remove:c=>classes.delete(c)}}},money:new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}),
     cell:(tr,text,cls)=>tr.appendChild(node('td',cls,text)),Blob,
     URL:{createObjectURL:blob=>{exported=blob;return 'blob:test';},revokeObjectURL:()=>{}},setTimeout:fn=>fn()};
   vm.createContext(context);
@@ -33,7 +38,7 @@ function setup({grouped=false}={}) {
       {descricao:'Diferenças nos vínculos',valor:1009.99},{descricao:'Fora da conferência inicial',valor:-9.99},{descricao:'Cobertura',valor:0}]},conta:'508',tipo:'ENTRADAS',descricao:'Compras',fiscal:110000,contabil:111000,diferenca:1000,
     documentos_total:1100,comparacoes:docs,acumuladores:[{codigo:'1152',descricao:'Compras',valor_resumo:110000,valor_documentos:110000,detalhamento_disponivel:true}],razao_sem_vinculo:[]};
   context.renderInvestigation({resumo:{contas:2,conciliados:1000,pendentes:100},contas:[group,{...group,conta:'509',comparacoes:[],documentos_total:0}]});
-  return {root,all,byClass,context,exportedBlob:()=>exported};
+  return {root,all,byClass,context,classes,exportedBlob:()=>exported};
 }
 test('contador fiscal usa linhas de origem e não quantidade de grupos de notas',()=>{
   const {all,byClass}=setup({grouped:true});
@@ -182,4 +187,54 @@ test('histórico só é resumido quando nota e parceiro já estão visíveis, pr
   assert.equal(context.compactDocumentHistory('COMPRA CF NF 00100 - Fornecedor Teste',d),'COMPRA');
   assert.equal(context.compactDocumentHistory('COMPRA CF NF 100 CANCELADA - Fornecedor Teste',d),'COMPRA CF NF 100 CANCELADA - Fornecedor Teste');
   assert.equal(context.compactDocumentHistory('COMPRA CF NF 100 - Outro Fornecedor',d),'COMPRA CF NF 100 - Outro Fornecedor');
+});
+
+test('resultados documentais abrem em janela e navegam sem perder a conta de retorno',()=>{
+  const {root,all,byClass,classes}=setup();
+  const dialog=root.documentDialog;
+  assert.equal(dialog.open,false);
+  const buttons=all().filter(el=>el.className==='fiscal-doc-account');
+  buttons[0].click();
+  assert.equal(dialog.open,true);
+  assert.equal(classes.has('fiscal-account-dialog-open'),true);
+  assert.equal(all().find(el=>el.id==='fiscalDocumentDialogTitle').textContent,'Conta 508');
+  assert.equal(byClass('fiscal-account-situation-copy').children[0].textContent,'Resultado com divergência');
+  const footer=byClass('fiscal-account-dialog-footer'),nav=footer.children[1];
+  assert.equal(nav.children[0].disabled,true);
+  assert.equal(nav.children[1].disabled,false);
+  nav.children[1].click();
+  assert.equal(all().find(el=>el.id==='fiscalDocumentDialogTitle').textContent,'Conta 509');
+  assert.equal(nav.children[1].disabled,true);
+  dialog.close();
+  assert.equal(classes.has('fiscal-account-dialog-open'),false);
+  assert.equal(buttons[0].focusOptions.preventScroll,true);
+  assert.equal(buttons[1].focusOptions,undefined);
+});
+
+test('janela respeita a consulta e abre o recorte do acumulador por teclado',()=>{
+  const {root,all,byClass}=setup();
+  const lookup=byClass('fiscal-doc-lookup-input');
+  lookup.value='conta 509';lookup.events.input();
+  let prevented=false;
+  lookup.events.keydown({key:'Enter',preventDefault:()=>{prevented=true;}});
+  assert.equal(prevented,true);assert.equal(root.documentDialog.open,true);
+  const nav=byClass('fiscal-account-dialog-footer').children[1];
+  assert.equal(nav.children[0].disabled,true);assert.equal(nav.children[1].disabled,true);
+  root.documentDialog.close();
+  lookup.value='1152';lookup.events.input();
+  all().find(el=>el.className==='fiscal-doc-account'&&!el.hidden).click();
+  assert.equal(all().find(el=>el.id==='fiscalDocumentDialogTitle').textContent,'Acumulador 1152');
+  assert.match(byClass('fiscal-doc-balance-caption').textContent,/1152/);
+  assert.match(byClass('fiscal-doc-caption').textContent,/de 100 registros/);
+  lookup.value='inexistente';lookup.events.input();
+  assert.equal(root.documentDialog.open,false);
+});
+
+test('substituir a investigação fecha a janela antiga e libera a rolagem',()=>{
+  const {root,all,context,classes}=setup();
+  all().find(el=>el.className==='fiscal-doc-account').click();
+  const old=root.documentDialog;
+  context.renderInvestigation({contas:[]});
+  assert.equal(old.open,false);
+  assert.equal(classes.has('fiscal-account-dialog-open'),false);
 });

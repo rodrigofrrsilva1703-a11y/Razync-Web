@@ -1533,6 +1533,7 @@
     investigationController = null;
     investigation.hidden = true;
     investigationResults.hidden = true;
+    investigationResults.documentDialog?.close();
     investigationResults.replaceChildren();
     investigationMessage.textContent = "";
     investigationButton.disabled = false;
@@ -1621,6 +1622,7 @@
   }
 
   function renderInvestigation(report) {
+    investigationResults.documentDialog?.close();
     investigationResults.replaceChildren();
     const groups = report.contas || [];
     const header = node("div", "fiscal-investigation-summary");
@@ -1655,12 +1657,81 @@
     const workspace = node("div", "fiscal-doc-workspace");
     const accounts = node("nav", "fiscal-doc-accounts");
     accounts.setAttribute("aria-label", "Contas da investigação documental");
+    const dialog = node("dialog", "fiscal-account-dialog fiscal-document-dialog");
+    dialog.setAttribute("aria-labelledby", "fiscalDocumentDialogTitle");
+    dialog.setAttribute("aria-describedby", "fiscalDocumentDialogDescription");
+    investigationResults.documentDialog = dialog;
+    const shell = node("div", "fiscal-account-dialog-shell");
+    const dialogHeader = node("div", "fiscal-account-dialog-header");
+    dialogHeader.setAttribute("tabindex", "-1");
+    const dialogHeading = node("div", "fiscal-detail-heading");
+    const dialogTitleArea = node("div", "fiscal-detail-title");
+    dialogTitleArea.appendChild(node("span", "fiscal-section-eyebrow", "ENTRADAS E SAÍDAS × RAZÃO"));
+    const dialogTitle = node("h3"); dialogTitle.id = "fiscalDocumentDialogTitle";
+    const dialogDescription = node("p"); dialogDescription.id = "fiscalDocumentDialogDescription";
+    dialogTitleArea.append(dialogTitle, dialogDescription);
+    const dialogActions = node("div", "fiscal-detail-heading-actions");
+    const close = node("button", "fiscal-detail-close", "Fechar ×"); close.type = "button";
+    close.setAttribute("aria-label", "Fechar resultados de Entradas e Saídas");
+    close.addEventListener("click", () => dialog.close());
+    dialogActions.appendChild(close); dialogHeading.append(dialogTitleArea, dialogActions);
+    const situation = node("div", "fiscal-account-situation");
+    const situationSymbol = node("span", "fiscal-account-situation-symbol"); situationSymbol.setAttribute("aria-hidden", "true");
+    const situationCopy = node("div", "fiscal-account-situation-copy");
+    const situationTitle = node("strong"), situationText = node("p");
+    situationCopy.append(situationTitle, situationText); situation.append(situationSymbol, situationCopy);
+    dialogHeader.append(dialogHeading, situation);
     const reader = node("section", "fiscal-doc-reader");
     reader.setAttribute("aria-label", "Resultados da investigação documental");
     reader.setAttribute("tabindex", "0");
-    workspace.append(accounts, reader); stage.appendChild(workspace);
-    let active = groups[0];
+    const dialogBody = node("div", "fiscal-detail fiscal-account-dialog-body"); dialogBody.appendChild(reader);
+    const footer = node("footer", "fiscal-account-dialog-footer");
+    const position = node("p"); position.setAttribute("role", "status"); position.setAttribute("aria-live", "polite");
+    const navigation = node("nav"); navigation.setAttribute("aria-label", "Navegar pelas contas investigadas");
+    const previousAccount = node("button", "", "← Anterior"); previousAccount.type = "button";
+    const nextAccount = node("button", "", "Próxima →"); nextAccount.type = "button";
+    navigation.append(previousAccount, nextAccount); footer.append(position, navigation);
+    shell.append(dialogHeader, dialogBody, footer); dialog.appendChild(shell);
+    workspace.appendChild(accounts); stage.appendChild(workspace); investigationResults.appendChild(dialog);
+    stage.insertBefore(node("p", "fiscal-doc-open-hint", "Selecione uma conta para abrir os valores e documentos na janela de resultados."), workspace);
+    let active = groups[0], returnButton = null;
     const buttons = new Map();
+    const visibleGroups = () => groups.filter(group => !buttons.get(group)?.hidden);
+    function syncDocumentNavigation() {
+      const visible = visibleGroups(), index = visible.indexOf(active);
+      previousAccount.disabled = index <= 0; nextAccount.disabled = index < 0 || index >= visible.length - 1;
+      position.textContent = (index + 1) + " de " + visible.length + " na seleção de Entradas e Saídas";
+    }
+    function openDocumentAccount(group) {
+      const query = lookupQuery(lookupInput.value);
+      selectAccount(group, (group.acumuladores || []).some(acc => String(acc.codigo) === query) ? query : "");
+      if (!dialog.open) {
+        returnButton = buttons.get(group);
+        dialog.showModal();
+        document.documentElement.classList.add("fiscal-account-dialog-open");
+      }
+      dialogHeader.focus({preventScroll:true});
+    }
+    function moveDocumentAccount(direction) {
+      const visible = visibleGroups(), index = visible.indexOf(active), target = index + direction;
+      if (index >= 0 && target >= 0 && target < visible.length) openDocumentAccount(visible[target]);
+    }
+    previousAccount.addEventListener("click", () => moveDocumentAccount(-1));
+    nextAccount.addEventListener("click", () => moveDocumentAccount(1));
+    dialog.addEventListener("close", () => {
+      document.documentElement.classList.remove("fiscal-account-dialog-open");
+      (returnButton?.isConnected && !returnButton.hidden ? returnButton : lookupInput).focus({preventScroll:true});
+    });
+    let backdropStart = false;
+    const outside = event => {
+      const bounds = dialog.getBoundingClientRect();
+      return event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
+    };
+    dialog.addEventListener("pointerdown", event => { backdropStart = event.target === dialog && outside(event); });
+    dialog.addEventListener("click", event => {
+      if (backdropStart && event.target === dialog && outside(event)) dialog.close();
+      backdropStart = false;
+    });
     const lookupQuery = value => String(value || "").trim().toLocaleLowerCase("pt-BR").replace(/^(?:conta|acumulador)\s+/, "");
     function fillScopeBalance(group, acc, balance) {
       balance.replaceChildren();
@@ -1709,7 +1780,8 @@
     function selectAccount(group, accumulatorCode = "") {
       active = group;
       buttons.forEach((button, item) => button.setAttribute("aria-current", item === active ? "true" : "false"));
-      reader.replaceChildren(); reader.scrollTop = 0;
+      reader.replaceChildren(); reader.scrollTop = 0; dialogBody.scrollTop = 0;
+      syncDocumentNavigation();
       const scopeTitle = node("h4", "", group.descricao || "Cruzamento documental");
       reader.append(node("small", "fiscal-doc-eyebrow", group.tipo + " · CONTA " + group.conta), scopeTitle);
       const balance = node("div", "fiscal-doc-balance");
@@ -1780,6 +1852,18 @@
         fillScopeBalance(group, acc, balance);
         documentTitle.textContent = acc ? "Documentos e lançamentos · acumulador " + acc.acc.codigo : "Documentos e lançamentos desta conta";
         const scoped = comparisons.filter(d => scopedComparison(d, acc));
+        dialogTitle.textContent = acc ? "Acumulador " + acc.acc.codigo : "Conta " + group.conta;
+        dialogDescription.textContent = group.tipo + " · Conta " + group.conta + " · " + (acc ? acc.acc.descricao || "Documentos fiscais" : group.descricao || "Cruzamento documental");
+        const difference = acc ? acc.difference : group.diferenca;
+        const pending = scoped.filter(d => d.situacao !== "CONCILIADO").length;
+        const unlinked = acc ? 0 : ledger.length;
+        const unknown = difference == null, divergent = !unknown && Math.abs(difference) > .01;
+        dialog.dataset.situation = unknown || pending || unlinked ? "review" : divergent ? "divergence" : "equal";
+        situationSymbol.textContent = divergent ? "≠" : unknown || pending || unlinked ? "!" : "=";
+        situationTitle.textContent = unknown ? "Vínculo a confirmar" : divergent ? "Resultado com divergência" : pending || unlinked ? "Totais iguais · com pendências" : "Totais iguais";
+        situationText.textContent = (unknown ? "Não é possível separar o valor do Razão com segurança." :
+          (acc ? "Diferença do acumulador: " : "Diferença da conferência inicial: ") + money.format(difference) + ".") +
+          " " + pending + " documento(s) para revisar" + (unlinked ? " · " + unlinked + " movimento(s) sem vínculo" : "") + ".";
         for (const option of select.children) {
           const quantity = option.value === "all" ? scoped.length : option.value === "review" ? scoped.filter(d => d.situacao !== "CONCILIADO").length :
             option.value === "ledger" ? (acc ? 0 : ledger.length) : scoped.filter(d => d.situacao === option.value).length;
@@ -1888,19 +1972,28 @@
         button.children[2].textContent = acc ? "Acum. " + query + " · " + (acc.difference == null ? "Sem valor separado" : money.format(acc.difference)) : group.documentos_total + " linhas · " + money.format(group.diferenca || 0);
       });
       workspace.hidden = !matches.length;
+      if (!matches.length && dialog.open) dialog.close();
       if (matches.length) {
-        if (matches.length > 1) lookupResults.appendChild(node("p", "fiscal-doc-query-status", matches.length + " resultados. Selecione a conta e o tipo na lateral."));
+        if (matches.length > 1) lookupResults.appendChild(node("p", "fiscal-doc-query-status", matches.length + " resultados. Clique na conta e no tipo desejados na lista."));
         const selected = matches.find(match => match.group === active) || matches[0];
         // Uma busca exata abre o recorte sem exigir mais um clique, preservando o foco na pesquisa.
         selectAccount(selected.group, selected.acc ? String(selected.acc.codigo) : "");
       } else lookupResults.appendChild(node("p", "fiscal-doc-empty", "Nenhuma conta ou acumulador encontrado entre os investigados. Limpe a consulta para voltar aos documentos."));
+    });
+    lookupInput.addEventListener("keydown", event => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      const visible = visibleGroups();
+      if (visible.length) openDocumentAccount(visible.includes(active) ? active : visible[0]);
     });
     groups.forEach(group => {
       const button = node("button", "fiscal-doc-account"); button.type = "button";
       const name = node("div", "fiscal-doc-account-head"); name.append(node("strong", "", "Conta " + group.conta), node("small", "", group.tipo));
       const description = node("span", "", (group.descricao || "Sem descrição").split(" | ")[0]); description.title = group.descricao || "";
       button.append(name, description, node("small", "", group.documentos_total + " linhas · " + money.format(group.diferenca || 0)));
-      button.addEventListener("click", () => selectAccount(group, (group.acumuladores || []).some(acc => String(acc.codigo) === lookupQuery(lookupInput.value)) ? lookupQuery(lookupInput.value) : "")); accounts.appendChild(button); buttons.set(group, button);
+      button.setAttribute("aria-haspopup", "dialog");
+      button.setAttribute("aria-label", "Abrir resultados da conta " + group.conta + " · " + group.tipo);
+      button.addEventListener("click", () => openDocumentAccount(group)); accounts.appendChild(button); buttons.set(group, button);
     });
     selectAccount(active); investigationResults.hidden = false;
   }
@@ -1938,7 +2031,7 @@
       const result = await response.json();
       if (controller.signal.aborted || snapshot !== data) return;
       renderInvestigation(result);
-      investigationMessage.textContent = "Investigação concluída. Selecione uma conta para comparar os documentos e os lançamentos lado a lado.";
+      investigationMessage.textContent = "Investigação concluída. Clique em uma conta para abrir os resultados e documentos na janela flutuante.";
     } catch (error) {
       if (error.name !== "AbortError" && snapshot === data) {
         investigationMessage.textContent = error.message || "Não foi possível investigar os relatórios.";
@@ -1956,6 +2049,7 @@
   ["fiscal242Entradas", "fiscal242Saidas"].forEach(id => byId(id).addEventListener("change", () => {
     investigationController?.abort(); investigationController = null;
     investigationButton.disabled = false;
+    investigationResults.documentDialog?.close();
     investigationResults.replaceChildren(); investigationResults.hidden = true;
     investigationMessage.textContent = "Arquivos alterados. Investigue novamente para atualizar as pendências.";
     aiController?.abort(); discardPendingAI(); aiInputBody = null; aiReport = null;

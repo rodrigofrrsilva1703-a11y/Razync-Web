@@ -101,3 +101,28 @@ html.fiscal-account-dialog-open {overflow:hidden;scrollbar-gutter:stable;}
   #fiscalView .fiscal-account-dialog-body .fiscal-detail-metric {padding:0;}
   #fiscalView .fiscal-account-dialog-body .fiscal-detail-metric-difference {margin-left:0;padding:12px;}
 }
+
+/* A investigação mantém a lista fora da janela e um único conteúdo com rolagem. */
+#fiscalView .fiscal-doc-stage .fiscal-doc-workspace {grid-template-columns:minmax(0,1fr);}
+#fiscalView .fiscal-doc-stage .fiscal-doc-accounts {max-height:min(60dvh,640px);border:1px solid #e0e7ef;border-radius:10px;flex-direction:column;overflow-x:hidden;overflow-y:auto;}
+#fiscalView .fiscal-doc-stage .fiscal-doc-account {display:grid;grid-template-columns:180px minmax(0,1fr) 200px;align-items:center;gap:16px;flex:none;width:100%;padding:14px 16px;border-right:0;border-bottom:1px solid #e3eaf2;border-radius:0;}
+#fiscalView .fiscal-doc-stage .fiscal-doc-account:last-child {border-bottom:0;}
+#fiscalView .fiscal-doc-stage .fiscal-doc-account > small {text-align:right;font-variant-numeric:tabular-nums;}
+#fiscalView .fiscal-doc-stage .fiscal-doc-account > span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#fiscalView .fiscal-doc-open-hint {margin:12px 0 0;font-size:12px;line-height:1.6;color:#526b82;}
+#fiscalView .fiscal-document-dialog {width:min(1200px,calc(100vw - 64px));}
+#fiscalView .fiscal-document-dialog .fiscal-doc-reader {max-height:none;overflow:visible;scrollbar-gutter:auto;border:0;border-radius:0;padding:0;outline:none;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-reader > .fiscal-doc-eyebrow,
+#fiscalView .fiscal-document-dialog .fiscal-doc-reader > h4 {display:none;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-balance {margin-top:0;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-controls {margin-top:8px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-rows .fiscal-table-scroll {max-height:none;overflow-y:visible;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-document-title {margin-top:18px;}
+@media(max-width:760px) {
+  #fiscalView .fiscal-document-dialog {width:calc(100vw - 16px);}
+  #fiscalView .fiscal-doc-stage .fiscal-doc-account {grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:12px;}
+  #fiscalView .fiscal-doc-stage .fiscal-doc-account > span {grid-column:1/-1;grid-row:2;}
+  #fiscalView .fiscal-doc-stage .fiscal-doc-account > small {grid-column:2;grid-row:1;font-size:11px;}
+  #fiscalView .fiscal-document-dialog .fiscal-doc-comparison-totals {grid-template-columns:1fr 1fr;}
+  #fiscalView .fiscal-document-dialog .fiscal-doc-total-difference {grid-column:1/-1;}
+}
