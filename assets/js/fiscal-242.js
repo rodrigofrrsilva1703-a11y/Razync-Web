@@ -1130,17 +1130,22 @@
     const heading = node("div", "fiscal-detail-heading");
     const summary = node("div", "fiscal-detail-title");
     summary.appendChild(node("span", "fiscal-section-eyebrow", "DETALHAMENTO CONTÁBIL"));
-    summary.appendChild(node("h3", "", "Conta " + row.conta));
-    summary.appendChild(node("p", "", (row.descricao || "Sem descrição") + " · " + row.tipo));
+    const title = node("h3", "", "Conta " + row.conta);
+    title.id = "fiscal242DetailTitle";
+    summary.appendChild(title);
+    const description = node("p", "", (row.descricao || "Sem descrição") + " · " + row.tipo);
+    description.id = "fiscal242DetailDescription";
+    summary.appendChild(description);
     const headingActions = node("div", "fiscal-detail-heading-actions");
     headingActions.appendChild(node("span", "fiscal-status fiscal-status-" + statusClass(row.situacao),
       reading.noneSelected ? "Revisar seleção" : statusLabels[row.situacao] || row.situacao));
-    const close = node("button", "fiscal-detail-close", "Fechar painel");
+    const close = node("button", "fiscal-detail-close", "Fechar ×");
     close.type = "button";
-    close.addEventListener("click", () => { selectedKey = ""; renderTable(); });
+    close.setAttribute("aria-label", "Fechar detalhes da conta");
+    close.addEventListener("click", () => detailDialog.close());
     headingActions.appendChild(close);
     heading.append(summary, headingActions);
-    details.appendChild(heading);
+    byId("fiscal242DetailHeading").replaceChildren(heading);
 
     const metrics = node("div", "fiscal-detail-metrics fiscal-comparison-metrics");
     [
@@ -1236,6 +1241,64 @@
     details.appendChild(ledger);
   }
 
+  const detailDialog = byId("fiscal242DetailDialog");
+  const detailPrevious = byId("fiscal242DetailPrevious");
+  const detailNext = byId("fiscal242DetailNext");
+  let detailRows = [];
+  let detailReturnKey = "";
+  function syncDetailNavigation() {
+    const index = detailRows.findIndex(row => keyOf(row) === selectedKey);
+    detailPrevious.disabled = index <= 0;
+    detailNext.disabled = index < 0 || index >= detailRows.length - 1;
+    byId("fiscal242DetailPosition").textContent = (index + 1) + " de " + detailRows.length +
+      " na seleção da tabela";
+  }
+  function openAccountDetails(key) {
+    detailRows = sortFiscalRows(filteredRows(), tableSort.key, tableSort.descending);
+    if (!detailRows.some(row => keyOf(row) === key)) return;
+    detailReturnKey = key;
+    selectedKey = key;
+    renderTable();
+    syncDetailNavigation();
+    document.documentElement.classList.add("fiscal-account-dialog-open");
+    detailDialog.showModal();
+    details.scrollTop = 0;
+    byId("fiscal242DetailHeading").focus({preventScroll:true});
+  }
+  function moveAccountDetails(direction) {
+    const index = detailRows.findIndex(row => keyOf(row) === selectedKey);
+    const next = index + direction;
+    if (index < 0 || next < 0 || next >= detailRows.length) return;
+    selectedKey = keyOf(detailRows[next]);
+    renderTable();
+    details.scrollTop = 0;
+    syncDetailNavigation();
+  }
+  detailPrevious.addEventListener("click", () => moveAccountDetails(-1));
+  detailNext.addEventListener("click", () => moveAccountDetails(1));
+  detailDialog.addEventListener("close", () => {
+    document.documentElement.classList.remove("fiscal-account-dialog-open");
+    selectedKey = "";
+    detailRows = [];
+    renderTable();
+    const opener = [...tableBody.querySelectorAll(".fiscal-account-link")]
+      .find(button => button.dataset.detailKey === detailReturnKey);
+    (opener || search).focus({preventScroll:true});
+  });
+  let detailBackdropStart = false;
+  function outsideDetailPanel(event) {
+    const bounds = detailDialog.getBoundingClientRect();
+    return event.clientX < bounds.left || event.clientX > bounds.right ||
+      event.clientY < bounds.top || event.clientY > bounds.bottom;
+  }
+  detailDialog.addEventListener("pointerdown", event => {
+    detailBackdropStart = event.target === detailDialog && outsideDetailPanel(event);
+  });
+  detailDialog.addEventListener("click", event => {
+    if (detailBackdropStart && event.target === detailDialog && outsideDetailPanel(event)) detailDialog.close();
+    detailBackdropStart = false;
+  });
+
   function statusClass(status) {
     if (status === "CONFERE") return "ok";
     if (status === "CONFERE COM ALERTAS") return "alert";
@@ -1303,8 +1366,6 @@
   }));
 
   function renderTable() {
-    const dock = byId("fiscal242DetailDock");
-    dock.appendChild(details);
     const rows = sortFiscalRows(filteredRows(), tableSort.key, tableSort.descending);
     tableBody.replaceChildren();
     const total = (data?.contas || []).length;
@@ -1321,14 +1382,11 @@
       const accountGroup = node("div", "fiscal-account-group");
       const button = node("button", "fiscal-account-link", row.conta);
       button.type = "button";
-      button.setAttribute("aria-label", (id === selectedKey ? "Fechar detalhes da conta " : "Ver detalhes da conta ") + row.conta);
-      button.setAttribute("aria-expanded", String(id === selectedKey));
-      button.setAttribute("aria-controls", "fiscal242Detail");
-      button.addEventListener("click", () => {
-        selectedKey = selectedKey === id ? "" : id;
-        renderTable();
-        if (selectedKey) details.scrollIntoView?.({behavior:"smooth", block:"nearest"});
-      });
+      button.dataset.detailKey = id;
+      button.setAttribute("aria-label", "Ver detalhes da conta " + row.conta + " · " + row.tipo);
+      button.setAttribute("aria-haspopup", "dialog");
+      button.setAttribute("aria-controls", "fiscal242DetailDialog");
+      button.addEventListener("click", () => openAccountDetails(id));
       button.appendChild(node("span", "fiscal-account-chevron", "›"));
       accountGroup.appendChild(button);
       accountGroup.appendChild(node("span", "fiscal-account-type", row.tipo || ""));
@@ -1359,14 +1417,7 @@
       tableBody.appendChild(tr);
     });
     renderDetails(rows.find(row => keyOf(row) === selectedKey) || null);
-    if (selectedKey) {
-      const selectedRow = [...tableBody.children].find(row => row.classList.contains("selected"));
-      if (selectedRow) {
-        const expanded = node("tr", "fiscal-inline-row");
-        const host = node("td", "fiscal-inline-host"); host.colSpan = 6;
-        host.appendChild(details); expanded.appendChild(host); selectedRow.after(expanded);
-      }
-    }
+    if (detailDialog.open && !selectedKey) detailDialog.close();
   }
 
   function renderResponse(report) {

@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="./assets/css/fiscal-results.css?v=visual-20261019-1">
   <link rel="stylesheet" href="./assets/css/fiscal-studio.css?v=ia-documentos-20261014-15">
   <link rel="stylesheet" href="./assets/css/fiscal-ai-reader.css?v=comparison-20261019-1">
+  <link rel="stylesheet" href="./assets/css/fiscal-account-dialog.css?v=20261019-1">
 </head>
 <body>
   <div class="app-shell">
@@ -243,7 +244,19 @@
               <p class="fiscal-table-count" id="fiscal242Count" aria-live="polite"></p>
               <details class="fiscal-reading-guide"><summary>Como interpretar os valores</summary><p class="fiscal-disclaimer fiscal-table-note">Fiscal: soma dos acumuladores listados. Razão na comparação: movimentos selecionados pelos históricos, usando débitos nas entradas e créditos nas saídas. Diferença = razão na comparação − fiscal. O total examinado pode incluir valores separados para revisão; abra a conta para ver a composição.</p></details>
             </div>
-            <div id="fiscal242DetailDock"><div id="fiscal242Detail" class="fiscal-detail" hidden></div></div>
+            <dialog id="fiscal242DetailDialog" class="fiscal-account-dialog" aria-labelledby="fiscal242DetailTitle" aria-describedby="fiscal242DetailDescription">
+              <div class="fiscal-account-dialog-shell">
+                <div id="fiscal242DetailHeading" class="fiscal-account-dialog-header" tabindex="-1"></div>
+                <div id="fiscal242Detail" class="fiscal-detail fiscal-account-dialog-body" hidden></div>
+                <footer class="fiscal-account-dialog-footer">
+                  <p id="fiscal242DetailPosition" role="status" aria-live="polite"></p>
+                  <nav aria-label="Navegar pelas contas da tabela">
+                    <button id="fiscal242DetailPrevious" type="button">← Anterior</button>
+                    <button id="fiscal242DetailNext" type="button">Próxima →</button>
+                  </nav>
+                </footer>
+              </div>
+            </dialog>
             <details class="fiscal-unmapped" id="fiscal242Unmapped" hidden>
               <summary>Acumuladores sem conta contábil <span id="fiscal242UnmappedCount"></span></summary>
               <p>Estes acumuladores foram encontrados no relatório, mas não possuem uma conta definida para comparação. Confirme o vínculo antes de conciliar.</p>
@@ -611,7 +624,7 @@
   <script src="./assets/js/company-guides.js?v=1001-santander-pdf"></script>
   <script src="./assets/js/app.js?v=fiscal-floating-help-1"></script>
   <script src="./assets/js/migration.js?v=fiscal-modern-20261013-5"></script>
-  <script src="./assets/js/fiscal-242.js?v=comparison-20261019-1"></script>
+  <script src="./assets/js/fiscal-242.js?v=dialog-20261019-1"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>

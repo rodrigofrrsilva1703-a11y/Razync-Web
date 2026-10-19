@@ -1,0 +1,64 @@
+/* Detalhes da conferência em uma janela com leitura e navegação independentes. */
+html.fiscal-account-dialog-open {overflow:hidden;scrollbar-gutter:stable;}
+#fiscalView .fiscal-account-dialog {
+  width:min(1100px,calc(100vw - 64px));height:min(820px,calc(100dvh - 64px));
+  max-width:none;max-height:calc(100dvh - 64px);margin:auto;padding:0;
+  border:1px solid #dbe5f0;border-radius:20px;background:#fff;color:#19344d;
+  box-shadow:0 30px 100px #142f4f38;overflow:hidden;
+}
+#fiscalView .fiscal-account-dialog::backdrop {background:rgba(14,30,49,.48);backdrop-filter:blur(3px);}
+#fiscalView .fiscal-account-dialog[open] {animation:fiscal-account-appear .18s ease-out;}
+#fiscalView .fiscal-account-dialog-shell {display:flex;flex-direction:column;height:100%;min-height:0;}
+#fiscalView .fiscal-account-dialog-header {flex:none;padding:23px 26px 19px;border-bottom:1px solid #e3eaf2;outline:none;}
+#fiscalView .fiscal-account-dialog-header .fiscal-detail-heading {margin:0;padding:0;border:0;align-items:flex-start;gap:20px;}
+#fiscalView .fiscal-account-dialog-header .fiscal-detail-title {min-width:0;}
+#fiscalView .fiscal-account-dialog-header .fiscal-section-eyebrow {font-size:10px;letter-spacing:.1em;color:#627c97;}
+#fiscalView .fiscal-account-dialog-header h3 {font-size:25px;margin:7px 0 5px;letter-spacing:-.035em;color:#19344d;}
+#fiscalView .fiscal-account-dialog-header .fiscal-detail-title p {font-size:13px;line-height:1.6;margin:0;max-width:680px;color:#526b82;overflow-wrap:anywhere;}
+#fiscalView .fiscal-account-dialog-header .fiscal-detail-heading-actions {display:flex;align-items:center;gap:14px;flex:none;}
+#fiscalView .fiscal-account-dialog-header .fiscal-detail-close {min-height:40px;padding:9px 13px;border:1px solid #dce5ef;border-radius:9px;background:#fff;color:#3c5d7e;font-size:12px;cursor:pointer;white-space:nowrap;}
+#fiscalView .fiscal-account-dialog-body.fiscal-detail {
+  flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;
+  padding:22px 26px;margin:0;border:0;border-radius:0;background:#fff;box-shadow:none;
+}
+#fiscalView .fiscal-account-dialog-body .fiscal-comparison-metrics {margin:0;padding:0 0 18px;}
+#fiscalView .fiscal-account-dialog-body .fiscal-detail-metric {padding:4px 20px;border:0;border-right:1px solid #e3eaf2;border-radius:0;background:none;}
+#fiscalView .fiscal-account-dialog-body .fiscal-detail-metric:first-child {padding-left:0;}
+#fiscalView .fiscal-account-dialog-body .fiscal-detail-metric small {font-size:12px;color:#526b82;}
+#fiscalView .fiscal-account-dialog-body .fiscal-detail-metric strong {font-size:21px;color:#284866;font-variant-numeric:tabular-nums;}
+#fiscalView .fiscal-account-dialog-body .fiscal-detail-metric-difference {background:#f2f6fb;border-radius:9px;padding:12px 16px;}
+#fiscalView .fiscal-account-dialog-body .fiscal-detail-metric-difference strong {font-size:25px;color:#234e7c;}
+#fiscalView .fiscal-account-dialog-body .fiscal-detail-metric-hint {font-size:11px;line-height:1.5;color:#526b82;}
+#fiscalView .fiscal-account-dialog-body .fiscal-difference-reading {font-size:13px;line-height:1.7;margin:16px 0;padding:11px 14px;border-left:2px solid #7b9fc5;background:#f8fafc;color:#3b5d7c;}
+#fiscalView .fiscal-account-dialog-body .fiscal-detail-explanation {background:none;padding:12px 0;margin:0;}
+#fiscalView .fiscal-account-dialog-body .fiscal-accum-breakdown {margin-top:14px;}
+#fiscalView .fiscal-account-dialog-body .fiscal-detail-notices {font-size:12px;line-height:1.7;}
+#fiscalView .fiscal-account-dialog-body .fiscal-detail-table {min-width:820px;}
+#fiscalView .fiscal-account-dialog-footer {flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 26px;border-top:1px solid #e3eaf2;background:#f8fafc;}
+#fiscalView .fiscal-account-dialog-footer p {margin:0;font-size:12px;line-height:1.5;color:#526b82;}
+#fiscalView .fiscal-account-dialog-footer nav {display:flex;gap:8px;}
+#fiscalView .fiscal-account-dialog-footer button {min-height:42px;padding:10px 16px;border:1px solid #d6e1ee;border-radius:9px;background:#fff;color:#315777;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
+#fiscalView .fiscal-account-dialog-footer button:hover:not(:disabled),
+#fiscalView .fiscal-account-dialog-header .fiscal-detail-close:hover {background:#edf3fa;border-color:#adc4df;}
+#fiscalView .fiscal-account-dialog-footer button:disabled {opacity:.4;cursor:default;}
+#fiscalView .fiscal-account-dialog button:focus-visible {outline:2px solid #426e9e;outline-offset:3px;}
+@keyframes fiscal-account-appear {from {opacity:0;transform:translateY(8px);} to {opacity:1;transform:translateY(0);}}
+@media(max-width:760px) {
+  #fiscalView .fiscal-account-dialog {width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);border-radius:14px;}
+  #fiscalView .fiscal-account-dialog-header {padding:16px;}
+  #fiscalView .fiscal-account-dialog-header .fiscal-detail-heading {display:flex;flex-direction:row;flex-wrap:wrap;gap:12px;}
+  #fiscalView .fiscal-account-dialog-header .fiscal-detail-title {flex:1 1 190px;}
+  #fiscalView .fiscal-account-dialog-header h3 {font-size:22px;}
+  #fiscalView .fiscal-account-dialog-header .fiscal-detail-heading-actions {flex:1 1 100%;justify-content:space-between;}
+  #fiscalView .fiscal-account-dialog-body.fiscal-detail {padding:16px;}
+  #fiscalView .fiscal-account-dialog-body .fiscal-comparison-metrics {grid-template-columns:1fr 1fr;gap:14px;}
+  #fiscalView .fiscal-account-dialog-body .fiscal-detail-metric {border:0;padding:0;}
+  #fiscalView .fiscal-account-dialog-body .fiscal-detail-metric strong {font-size:17px;overflow-wrap:anywhere;}
+  #fiscalView .fiscal-account-dialog-body .fiscal-detail-metric-difference {grid-column:1/-1;padding:12px;}
+  #fiscalView .fiscal-account-dialog-body .fiscal-detail-metric-difference strong {font-size:23px;}
+  #fiscalView .fiscal-account-dialog-body .fiscal-comparison-bridge-values {grid-template-columns:1fr;}
+  #fiscalView .fiscal-account-dialog-footer {padding:12px 16px;flex-wrap:wrap;gap:10px;}
+  #fiscalView .fiscal-account-dialog-footer nav {width:100%;}
+  #fiscalView .fiscal-account-dialog-footer button {flex:1;min-height:44px;}
+}
+@media(prefers-reduced-motion:reduce) {#fiscalView .fiscal-account-dialog[open] {animation:none;}}
