@@ -270,3 +270,57 @@ html.fiscal-account-dialog-open {overflow:hidden;scrollbar-gutter:stable;}
   #fiscalView .fiscal-document-dialog .fiscal-account-dialog-footer .fiscal-account-analysis-button {min-height:44px;flex:1;white-space:normal;line-height:1.4;font-size:11px;padding:8px 10px;}
   #fiscalView .fiscal-account-dialog-footer .fiscal-account-analysis-cancel {min-height:44px;}
 }
+
+/* Parecer com hierarquia editorial: conclusão, evidências e roteiro de revisão. */
+#fiscalView .fiscal-account-analysis.is-docked .fiscal-account-opinion-source {font-size:11px;color:#5a7290;padding-bottom:8px;}
+#fiscalView .fiscal-account-analysis.is-docked .fiscal-account-opinion-conclusion {padding:17px 19px;border:1px solid #d8e5f4;border-left:3px solid #507fb3;border-radius:10px;background:linear-gradient(110deg,#f0f6fd,#fafcff);}
+#fiscalView .fiscal-account-analysis.is-docked .fiscal-account-opinion-conclusion h5 {font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#557595;margin:0 0 7px;}
+#fiscalView .fiscal-account-analysis.is-docked .fiscal-account-opinion-conclusion > p {font-size:15px;line-height:1.65;color:#24435e;font-weight:500;}
+#fiscalView .fiscal-account-opinion-values {display:flex;flex-wrap:wrap;gap:10px 30px;margin:14px 0 0;padding-top:12px;border-top:1px solid #dbe6f3;font-variant-numeric:tabular-nums;}
+#fiscalView .fiscal-account-opinion-values dt {font-size:10px;color:#5a7290;line-height:1.5;}
+#fiscalView .fiscal-account-opinion-values dd {font-size:15px;font-weight:600;color:#2a4e72;margin:3px 0 0;line-height:1.4;}
+#fiscalView .fiscal-account-opinion-values .is-difference {margin-left:auto;}
+#fiscalView .fiscal-account-opinion-values .is-difference dd {color:#234f80;}
+#fiscalView .fiscal-account-opinion-grid {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:32px;margin:23px 0 20px;align-items:start;}
+#fiscalView .fiscal-account-opinion-grid > section:only-child {grid-column:1/-1;}
+#fiscalView .fiscal-account-opinion-review {border-left:1px solid #e0e8f1;padding-left:26px;}
+#fiscalView .fiscal-account-opinion-grid > section:only-child {border-left:0;padding-left:0;}
+#fiscalView .fiscal-account-analysis.is-docked .fiscal-account-opinion-grid h5 {margin:0 0 12px;font-size:12px;color:#294d70;}
+#fiscalView .fiscal-account-analysis.is-docked .fiscal-account-opinion-reading h5:not(:first-child) {margin-top:22px;}
+#fiscalView .fiscal-account-opinion-hypothesis {display:inline-block;font-size:10px;line-height:1.5;font-weight:500;color:#705521;background:#faf2e1;border-radius:4px;padding:3px 7px;margin-bottom:5px;}
+#fiscalView .fiscal-account-opinion-interpretation {line-height:1.8;color:#425e77;}
+#fiscalView .fiscal-account-opinion-facts {list-style:none;padding:0;margin:0;}
+#fiscalView .fiscal-account-opinion-facts li {position:relative;padding:10px 0 10px 15px!important;margin:0!important;border-top:1px solid #edf1f6;line-height:1.7;}
+#fiscalView .fiscal-account-opinion-facts li::before {content:"";position:absolute;left:0;top:18px;width:4px;height:4px;border-radius:50%;background:#7e9fc2;}
+#fiscalView .fiscal-account-opinion-steps {list-style:none;counter-reset:opinion-step;padding:0!important;margin:0!important;}
+#fiscalView .fiscal-account-opinion-steps > li {position:relative;counter-increment:opinion-step;padding:0 0 18px 33px!important;margin:0 0 18px!important;border-bottom:1px solid #e7edf4;}
+#fiscalView .fiscal-account-opinion-steps > li:last-child {border:0;padding-bottom:0!important;margin-bottom:0!important;}
+#fiscalView .fiscal-account-opinion-steps > li::before {content:counter(opinion-step,decimal-leading-zero);position:absolute;left:0;top:0;font-size:10px;font-weight:700;line-height:24px;text-align:center;width:24px;height:24px;border-radius:7px;background:#edf3fb;color:#416b99;}
+#fiscalView .fiscal-account-opinion-steps > li > strong {display:block;font-size:12px;line-height:1.6;margin-bottom:7px;color:#2b4967;}
+#fiscalView .fiscal-account-opinion-refs {margin:10px 0;padding:0 0 0 10px;border-left:2px solid #dce7f4;}
+#fiscalView .fiscal-account-opinion-refs p {margin:0 0 8px;}
+#fiscalView .fiscal-account-opinion-refs strong {display:block;font-size:11px;color:#345b80;font-weight:600;}
+#fiscalView .fiscal-account-opinion-refs span {display:block;font-size:11px;line-height:1.7;color:#526b82;}
+#fiscalView .fiscal-account-opinion-criterion {margin-top:11px;}
+#fiscalView .fiscal-account-opinion-criterion small {font-size:10px;font-weight:650;text-transform:uppercase;letter-spacing:.04em;color:#496c8f;}
+#fiscalView .fiscal-account-opinion-criterion p {font-size:11px;line-height:1.7;}
+#fiscalView .fiscal-account-opinion-reconsider {font-size:11px;line-height:1.7;color:#62768c;margin-top:8px!important;}
+#fiscalView .fiscal-account-opinion-reconsider strong {font-weight:500;color:#4b647e;}
+#fiscalView .fiscal-account-opinion-details {padding:12px 0;border-top:1px solid #dfe7f1;border-bottom:1px solid #dfe7f1;}
+#fiscalView .fiscal-account-opinion-details > summary {font-size:11px;font-weight:600;line-height:1.7;}
+#fiscalView .fiscal-account-opinion-local {padding:18px 20px;background:#f4f8fd;border:1px solid #dce7f4;border-radius:10px;}
+#fiscalView .fiscal-account-opinion-eyebrow {font-size:10px;letter-spacing:.08em;color:#5a7c9f;}
+#fiscalView .fiscal-account-opinion-local h5 {font-size:17px!important;margin:7px 0!important;}
+#fiscalView .fiscal-account-opinion-local small {font-size:11px;color:#61768b;}
+@media(max-width:1000px) {
+  #fiscalView .fiscal-account-opinion-grid {grid-template-columns:minmax(0,1fr);gap:23px;}
+  #fiscalView .fiscal-account-opinion-review {border-left:0;border-top:1px solid #e0e8f1;padding:20px 0 0;}
+}
+@media(max-width:760px) {
+  #fiscalView .fiscal-account-analysis.is-docked .fiscal-account-opinion-conclusion {padding:13px 14px;}
+  #fiscalView .fiscal-account-analysis.is-docked .fiscal-account-opinion-conclusion > p {font-size:14px;}
+  #fiscalView .fiscal-account-opinion-values {gap:12px 18px;}
+  #fiscalView .fiscal-account-opinion-values dd {font-size:13px;}
+  #fiscalView .fiscal-account-opinion-values .is-difference {margin-left:0;}
+  #fiscalView .fiscal-account-opinion-grid {margin-top:18px;}
+}

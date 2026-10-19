@@ -1129,9 +1129,12 @@
     const content = node("div", "fiscal-account-opinion");
     const item = result.analises?.[0];
     if (!item) {
-      content.append(node("strong", "", "Conferência local · sem chamada de IA"),
-        node("p", "", result.aviso || "Não há pendências nesta seleção para enviar à IA."));
-      return content;
+      const local = node("section", "fiscal-account-opinion-local");
+      local.append(node("span", "fiscal-account-opinion-eyebrow", "CONFERÊNCIA LOCAL"),
+        node("h5", "", "Sem pendências para enviar à IA"),
+        node("p", "", result.aviso || "Não há pendências nesta seleção para enviar à IA."),
+        node("small", "", "Resultado obtido pelo cruzamento local, sem chamada de IA."));
+      content.appendChild(local); return content;
     }
     const reading = item.parecer?.leitura_comparacao || {};
     const executive = item.parecer?.resumo_executivo || {};
@@ -1139,15 +1142,29 @@
       (result.cache_reutilizado || result.contas_reutilizadas ? " · parecer reaproveitado" : "")));
     const conclusion = node("section", "fiscal-account-opinion-conclusion");
     conclusion.append(node("h5", "", "Conclusão desta seleção"), node("p", "", executive.conclusao || reading.resultado || item.explicacao || "Confira as evidências antes de concluir."));
+    if (item.valores) {
+      const values = node("dl", "fiscal-account-opinion-values");
+      for (const [label,key] of [["Fiscal","fiscal"],["Razão na comparação","contabil"],["Diferença","diferenca"]]) {
+        if (item.valores[key] == null || !Number.isFinite(Number(item.valores[key]))) continue;
+        const entry = node("div", key === "diferenca" ? "is-difference" : "");
+        entry.append(node("dt", "", label), node("dd", "", money.format(Number(item.valores[key])))); values.appendChild(entry);
+      }
+      if (values.children.length) conclusion.appendChild(values);
+    }
     content.appendChild(conclusion);
+    const grid = node("div", "fiscal-account-opinion-grid");
+    const evidence = node("section", "fiscal-account-opinion-reading");
+    const review = node("section", "fiscal-account-opinion-review");
     const interpretation = item.parecer?.analise_exibicao;
     if (interpretation && interpretation !== executive.conclusao && interpretation !== reading.resultado) {
-      content.append(node("h5", "", item.provedor === "local" ? "O que o sistema identificou" : "Interpretação da IA · hipótese a confirmar"), node("p", "", interpretation));
+      evidence.append(node("h5", "", item.provedor === "local" ? "O que o sistema identificou" : "O que a análise indica"));
+      if (item.provedor !== "local") evidence.appendChild(node("span", "fiscal-account-opinion-hypothesis", "Hipótese a confirmar"));
+      evidence.appendChild(node("p", "fiscal-account-opinion-interpretation", interpretation));
     }
     if (reading.observacoes?.length) {
       const facts = node("ul", "fiscal-account-opinion-facts");
       reading.observacoes.slice(0, 3).forEach(text => facts.appendChild(node("li", "", text)));
-      content.append(node("h5", "", "Evidências principais"), facts);
+      evidence.append(node("h5", "", "Evidências principais"), facts);
     }
     const steps = reading.orientacoes || [];
     if (steps.length) {
@@ -1155,14 +1172,31 @@
       steps.forEach(step => {
         const li = node("li"); li.appendChild(node("strong", "", step.acao));
         if (step.objetivo) li.appendChild(node("p", "", step.objetivo));
-        if (step.documentos?.length) li.appendChild(node("p", "fiscal-account-opinion-refs",
-          step.documentos.map(d => [d.titulo || d.referencia, d.detalhes].filter(Boolean).join(": ")).join(" · ")));
-        if (step.para_concluir) li.appendChild(node("p", "", "Para concluir: " + step.para_concluir));
-        if (step.quando_reavaliar) li.appendChild(node("p", "", "Reavalie a hipótese se: " + step.quando_reavaliar));
+        if (step.documentos?.length) {
+          const references = node("div", "fiscal-account-opinion-refs");
+          for (const doc of step.documentos) {
+            const reference = node("p");
+            reference.appendChild(node("strong", "", doc.titulo || doc.referencia || "Documento"));
+            if (doc.detalhes) reference.appendChild(node("span", "", doc.detalhes));
+            references.appendChild(reference);
+          }
+          li.appendChild(references);
+        }
+        if (step.para_concluir) {
+          const criterion = node("div", "fiscal-account-opinion-criterion");
+          criterion.append(node("small", "", "Para concluir"), node("p", "", step.para_concluir)); li.appendChild(criterion);
+        }
+        if (step.quando_reavaliar) {
+          const reconsider = node("p", "fiscal-account-opinion-reconsider");
+          reconsider.append(node("strong", "", "Quando reavaliar: "), node("span", "", step.quando_reavaliar)); li.appendChild(reconsider);
+        }
         checklist.appendChild(li);
       });
-      content.append(node("h5", "", "O que conferir agora"), checklist);
-    } else if (executive.primeiro_passo) content.append(node("h5", "", "O que conferir agora"), node("p", "", executive.primeiro_passo));
+      review.append(node("h5", "", "O que conferir agora"), checklist);
+    } else if (executive.primeiro_passo) review.append(node("h5", "", "O que conferir agora"), node("p", "", executive.primeiro_passo));
+    if (evidence.children.length) grid.appendChild(evidence);
+    if (review.children.length) grid.appendChild(review);
+    if (grid.children.length) content.appendChild(grid);
     const extra = node("details", "fiscal-account-opinion-details");
     extra.appendChild(node("summary", "", "Ver evidências e critérios completos"));
     for (const text of [...(reading.observacoes || []).slice(3), ...(reading.explicacoes || [])]) extra.appendChild(node("p", "", text));
