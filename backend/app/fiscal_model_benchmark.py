@@ -8,8 +8,12 @@ import argparse
 import json
 import os
 import time
+import sys
+from pathlib import Path
 import urllib.error
 import urllib.request
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "legacy"))
 
 from app.fiscal_ai import detailed_context, _validar_resposta_ia
 from app.fiscal_ai_strategy import REVIEW_PROMPT
