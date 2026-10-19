@@ -126,3 +126,69 @@ html.fiscal-account-dialog-open {overflow:hidden;scrollbar-gutter:stable;}
   #fiscalView .fiscal-document-dialog .fiscal-doc-comparison-totals {grid-template-columns:1fr 1fr;}
   #fiscalView .fiscal-document-dialog .fiscal-doc-total-difference {grid-column:1/-1;}
 }
+
+/* Mais área útil para os documentos, sem ocultar históricos ou evidências. */
+#fiscalView .fiscal-document-dialog {width:min(1360px,calc(100vw - 32px));height:min(940px,calc(100dvh - 32px));max-height:calc(100dvh - 32px);border-radius:14px;}
+#fiscalView .fiscal-document-dialog .fiscal-account-dialog-header {padding:14px 20px 0;}
+#fiscalView .fiscal-document-dialog .fiscal-account-dialog-header h3 {font-size:22px;margin:4px 0;}
+#fiscalView .fiscal-document-dialog .fiscal-account-dialog-header .fiscal-detail-title p {font-size:11px;line-height:1.45;}
+#fiscalView .fiscal-document-dialog .fiscal-account-situation {margin-top:10px;padding:9px 0;gap:9px;}
+#fiscalView .fiscal-document-dialog .fiscal-account-situation-symbol {width:27px;height:27px;font-size:20px;border-radius:8px;}
+#fiscalView .fiscal-document-dialog .fiscal-account-situation-copy {display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 12px;}
+#fiscalView .fiscal-document-dialog .fiscal-account-situation-copy strong {font-size:12px;}
+#fiscalView .fiscal-document-dialog .fiscal-account-situation-copy p {font-size:11px;line-height:1.45;margin:0;}
+#fiscalView .fiscal-document-dialog .fiscal-account-dialog-body.fiscal-detail {padding:12px 20px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-balance {padding:0;margin:0 0 10px;background:none;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-balance > h5 {font-size:12px;line-height:1.4;margin:8px 0 4px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-balance > small {font-size:11px;line-height:1.45;color:#526b82;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-comparison-totals {margin:6px 0;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-comparison-totals > div {padding:8px 10px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-comparison-totals strong {font-size:16px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-comparison-totals small {font-size:11px;line-height:1.4;margin-bottom:4px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-balance-lines {margin:0 0 4px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-balance-lines > div {padding:4px 0;line-height:1.4;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-balance-lines strong {font-size:11px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-document-title {margin:10px 0 0;padding-top:9px;font-size:12px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-controls {margin:7px 0;gap:7px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-controls input,
+#fiscalView .fiscal-document-dialog .fiscal-doc-controls select,
+#fiscalView .fiscal-document-dialog .fiscal-doc-controls button {font-size:11px;padding:8px 10px;min-height:34px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-caption {margin:6px 0;font-size:11px;line-height:1.4;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-pagination {padding:6px 0;gap:8px;margin-bottom:6px;font-size:11px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-pagination button,
+#fiscalView .fiscal-document-dialog .fiscal-doc-pagination select {padding:6px 9px;font-size:11px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-rows .fiscal-investigation-table {font-size:11.5px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-rows td {padding:10px;line-height:1.45;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-source > span,
+#fiscalView .fiscal-document-dialog .fiscal-doc-source > strong,
+#fiscalView .fiscal-document-dialog .fiscal-doc-source > small,
+#fiscalView .fiscal-document-dialog .fiscal-doc-movement > * {line-height:1.45;margin-bottom:3px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-rows .fiscal-doc-value {font-size:14px;margin-bottom:6px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-rows td small {font-size:11px;line-height:1.45;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-status > * {margin-bottom:5px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-badge {font-size:11px;padding:4px 6px;}
+#fiscalView .fiscal-document-dialog .fiscal-doc-movement + .fiscal-doc-movement {padding-top:6px;margin-top:6px;}
+#fiscalView .fiscal-document-dialog .fiscal-account-dialog-footer {padding:9px 20px;gap:10px;}
+#fiscalView .fiscal-document-dialog .fiscal-account-dialog-footer p {font-size:11px;}
+#fiscalView .fiscal-document-dialog .fiscal-account-dialog-footer button {min-height:36px;padding:7px 12px;font-size:11px;}
+@media(min-width:1100px) {
+  #fiscalView .fiscal-document-dialog .fiscal-doc-balance:has(.fiscal-doc-balance-lines) {display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);column-gap:26px;align-items:start;}
+  #fiscalView .fiscal-document-dialog .fiscal-doc-balance:has(.fiscal-doc-balance-lines) > .fiscal-doc-balance-caption {grid-column:1;grid-row:1;}
+  #fiscalView .fiscal-document-dialog .fiscal-doc-balance:has(.fiscal-doc-balance-lines) > .fiscal-doc-comparison-totals {grid-column:1;grid-row:2;}
+  #fiscalView .fiscal-document-dialog .fiscal-doc-balance:has(.fiscal-doc-balance-lines) > small:nth-child(3) {grid-column:1;grid-row:3;}
+  #fiscalView .fiscal-document-dialog .fiscal-doc-balance:has(.fiscal-doc-balance-lines) > h5 {grid-column:2;grid-row:1;margin:0 0 5px;}
+  #fiscalView .fiscal-document-dialog .fiscal-doc-balance:has(.fiscal-doc-balance-lines) > .fiscal-doc-balance-lines {grid-column:2;grid-row:2 / span 2;}
+  #fiscalView .fiscal-document-dialog .fiscal-doc-balance:has(.fiscal-doc-balance-lines) > small:last-child {grid-column:2;grid-row:4;}
+}
+@media(max-width:760px) {
+  #fiscalView .fiscal-document-dialog {width:calc(100vw - 12px);height:calc(100dvh - 12px);max-height:calc(100dvh - 12px);border-radius:12px;}
+  #fiscalView .fiscal-document-dialog .fiscal-account-dialog-header {padding:12px 12px 0;}
+  #fiscalView .fiscal-document-dialog .fiscal-account-dialog-header h3 {font-size:20px;}
+  #fiscalView .fiscal-document-dialog .fiscal-account-dialog-body.fiscal-detail {padding:10px 12px;}
+  #fiscalView .fiscal-document-dialog .fiscal-doc-comparison-totals strong {font-size:14px;}
+  #fiscalView .fiscal-document-dialog .fiscal-doc-controls input,
+  #fiscalView .fiscal-document-dialog .fiscal-doc-controls select,
+  #fiscalView .fiscal-document-dialog .fiscal-doc-controls button {font-size:12px;min-height:44px;}
+  #fiscalView .fiscal-document-dialog .fiscal-account-dialog-footer {padding:8px 12px;}
+  #fiscalView .fiscal-document-dialog .fiscal-account-dialog-footer button {min-height:44px;}
+}
