@@ -20,7 +20,7 @@ function setup(){
   const node=(...args)=>new Element(...args),files={fiscal242Entradas:{files:['entradas.xls']},fiscal242Saidas:{files:['saidas.xls']}};
   const previewBody=new Form();previewBody.append('acumuladores','resumo.xls');previewBody.append('razao','razao.xls');previewBody.append('filial','242');
   const requests=[];
-  const context={node,FormData:Form,AbortController,previewBody,byId:id=>files[id],API:()=>'/api',responseError:async()=> 'Indisponível',
+  const context={node,FormData:Form,AbortController,Date,setInterval:()=>1,clearInterval:()=>{},previewBody,byId:id=>files[id],API:()=>'/api',responseError:async()=> 'Indisponível',
     aiSourceLabel:()=> 'Groq · gratuito',renderAIConsidered:()=>null,renderAIExcluded:()=>null,renderAIDocumentary:()=>null,renderAICases:()=>null,renderAILimits:()=>null,
     fetch:async(url,options)=>{requests.push({url,options});const body=options.body;return {ok:true,json:async()=>({
       escopo:{conta:body.get('conta'),tipo:body.get('tipo'),origem:body.get('origem'),acumulador:body.get('acumulador')},
@@ -83,4 +83,22 @@ test('botão fica no rodapé e parecer ocupa uma vista separada sem novas chamad
   let prevented=false;tabs.events.keydown({key:'Home',preventDefault:()=>{prevented=true;}});
   assert.equal(prevented,true);assert.equal(comparison.hidden,false);assert.equal(tabs.children[0].tabIndex,0);
   panel.destroy();assert.equal(find(footer,'fiscal-account-analysis-button'),undefined);assert.equal(header.children.length,0);
+});
+
+test('carregamento usa tempo real, encerra o timer e não muda a vista escolhida ao concluir',async()=>{
+  const {context,find,node}=setup();let clock=0,tick,finish,calls=0;const cleared=[];
+  context.Date={now:()=>clock};context.setInterval=fn=>{tick=fn;return 123;};context.clearInterval=id=>cleared.push(id);
+  context.fetch=()=>{calls++;return new Promise(resolve=>{finish=resolve;});};
+  const panel=context.createAccountAnalysis({origem:'resumo',conta:'470',tipo:'ENTRADAS'});
+  const shell=node('div'),header=node('header'),comparison=node('div'),footer=node('footer'),navigation=node('nav');
+  shell.append(header,comparison,footer);footer.append(navigation);panel.mount({shell,header,comparison,footer,navigation});
+  const button=find(footer,'fiscal-account-analysis-button'),pending=button.click();
+  const loading=find(panel,'fiscal-account-loading');assert.equal(loading.hidden,false);
+  assert.equal(find(panel,'fiscal-account-loading-meter').attributes['aria-valuenow'],undefined);
+  clock=65000;tick();assert.equal(find(panel,'fiscal-account-loading-time').textContent,'1 min 5 s');
+  await find(header,'fiscal-account-analysis-tabs').children[0].click();assert.equal(comparison.hidden,false);
+  finish({ok:true,json:async()=>({escopo:{conta:'470',tipo:'ENTRADAS',origem:'resumo',acumulador:''},analises:[]})});
+  await pending;
+  assert.equal(loading.hidden,true);assert.ok(cleared.includes(123));assert.equal(comparison.hidden,false);
+  await button.click();assert.equal(calls,1);assert.equal(panel.hidden,false);assert.equal(loading.hidden,true);
 });

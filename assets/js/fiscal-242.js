@@ -1122,7 +1122,7 @@
 
   const accountAnalysisCache = new Map();
   function resetAccountAnalyses() {
-    for (const state of accountAnalysisCache.values()) state.controller?.abort();
+    for (const state of accountAnalysisCache.values()) { state.controller?.abort(); clearInterval(state.timer); }
     accountAnalysisCache.clear();
   }
   function renderAccountOpinion(result, scope) {
@@ -1175,9 +1175,19 @@
         if (step.documentos?.length) {
           const references = node("div", "fiscal-account-opinion-refs");
           for (const doc of step.documentos) {
-            const reference = node("p");
+            const reference = node("article", "fiscal-account-opinion-reference");
             reference.appendChild(node("strong", "", doc.titulo || doc.referencia || "Documento"));
-            if (doc.detalhes) reference.appendChild(node("span", "", doc.detalhes));
+            if (doc.detalhes) {
+              const fields = node("dl", "fiscal-account-opinion-reference-fields");
+              for (const text of String(doc.detalhes).split(" · ")) {
+                const colon = text.indexOf(":");
+                const field = node("div", colon < 0 ? "is-full" : "");
+                if (colon >= 0) field.append(node("dt", "", text.slice(0,colon)), node("dd", "", text.slice(colon+1).trim()));
+                else field.appendChild(node("dd", "", text));
+                fields.appendChild(field);
+              }
+              reference.appendChild(fields);
+            }
             references.appendChild(reference);
           }
           li.appendChild(references);
@@ -1232,6 +1242,23 @@
     const status = node("p", "fiscal-account-analysis-status"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite");
     const exportButton = node("button", "fiscal-account-analysis-export", "Exportar parecer"); exportButton.type = "button";
     const body = node("div", "fiscal-account-analysis-body");
+    const loading = node("section", "fiscal-account-loading"); loading.hidden = true;
+    loading.setAttribute("aria-label", "Análise desta seleção em andamento");
+    const loadingHead = node("div", "fiscal-account-loading-heading");
+    const orbit = node("span", "fiscal-account-loading-orbit"); orbit.setAttribute("aria-hidden", "true");
+    orbit.appendChild(node("span", "", "✦"));
+    const loadingCopy = node("div", "fiscal-account-loading-copy");
+    loadingCopy.append(node("small", "", "ANÁLISE POR SELEÇÃO"), node("h5", "", "Preparando seu parecer"),
+      node("p", "", "Consultando as evidências da seleção e verificando se já existe uma análise salva."));
+    const elapsed = node("span", "fiscal-account-loading-time");
+    loadingHead.append(orbit, loadingCopy, elapsed);
+    const meter = node("div", "fiscal-account-loading-meter");
+    meter.setAttribute("role", "progressbar"); meter.setAttribute("aria-label", "Aguardando retorno da análise");
+    meter.appendChild(node("span"));
+    const loadingHint = node("p", "fiscal-account-loading-hint");
+    const skeleton = node("div", "fiscal-account-loading-skeleton"); skeleton.setAttribute("aria-hidden", "true");
+    for (const width of ["wide","medium","short"]) skeleton.appendChild(node("span", width));
+    loading.append(loadingHead, meter, loadingHint, skeleton);
     const panelHeading = node("div", "fiscal-account-analysis-heading");
     const panelTitle = node("h4", "", "Parecer da IA");
     panelHeading.append(panelTitle, exportButton);
@@ -1246,7 +1273,7 @@
     opinionTab.setAttribute("aria-controls", panelId); area.setAttribute("aria-labelledby", opinionTab.id);
     button.setAttribute("aria-controls", panelId);
     tabs.append(conferenceTab, opinionTab);
-    bar.append(button, cancel); area.append(tabs, bar, panelHeading, context, note, status, body);
+    bar.append(button, cancel); area.append(tabs, bar, panelHeading, context, note, status, loading, body);
     let layout = null, renderedResult = null;
     function switchView(opinion, focus = false) {
       state.expanded = opinion; state.paint();
@@ -1282,13 +1309,18 @@
       exportButton.hidden = !state.result?.analises?.length;
       const local = state.result && (state.result.provedor === "local" || state.result.analises?.[0]?.provedor === "local");
       panelTitle.textContent = local ? "Leitura da conferência" : "Parecer da IA";
-      opinionTab.textContent = local ? "Análise local" : "Parecer da IA";
+      opinionTab.textContent = (local ? "Análise local" : "Parecer da IA") + (state.pending ? " · em andamento" : state.result && !state.expanded ? " · pronto" : "");
       status.textContent = state.pending ? "Analisando somente esta seleção. Você pode voltar à conferência durante a espera." : state.error || (state.result ? "Parecer pronto para esta seleção." : "");
-      status.className = "fiscal-account-analysis-status" + (!state.pending && !state.error && state.result ? " visually-hidden" : "");
+      status.className = "fiscal-account-analysis-status" + (state.pending || !state.error && state.result ? " visually-hidden" : "");
       status.hidden = !status.textContent;
       body.hidden = !state.result;
       body.setAttribute("aria-busy", String(state.pending));
-      note.hidden = Boolean(state.result);
+      note.hidden = state.pending || Boolean(state.result);
+      loading.hidden = !state.pending;
+      loading.setAttribute("aria-busy", String(state.pending));
+      const seconds = state.pending ? Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000)) : 0;
+      elapsed.textContent = seconds < 60 ? seconds + " s" : Math.floor(seconds / 60) + " min " + seconds % 60 + " s";
+      loadingHint.textContent = seconds >= 45 ? "O servidor ainda não respondeu. Você pode voltar à conferência enquanto aguarda." : "Aguardando retorno do servidor. Você pode consultar a conferência durante a espera.";
       context.hidden = false;
       for (const [tab, selected] of [[conferenceTab,!state.expanded],[opinionTab,state.expanded]]) {
         tab.setAttribute("aria-selected", String(selected)); tab.tabIndex = selected ? 0 : -1;
@@ -1308,7 +1340,8 @@
       for (const name of ["conta", "tipo", "origem", "acumulador"]) body.append(name, scope[name] || "");
       if (file) body.append(scope.tipo === "SAÍDAS" ? "saidas" : "entradas", file);
       const controller = new AbortController(); state.controller = controller;
-      state.pending = true; state.expanded = true; state.error = ""; state.paint();
+      state.pending = true; state.expanded = true; state.error = ""; state.startedAt = Date.now(); state.paint();
+      state.timer = setInterval(() => { if (state.pending) state.paint(); }, 1000);
       opinionTab.focus({preventScroll:true});
       try {
         const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/conta", {method:"POST", body, signal:controller.signal});
@@ -1320,10 +1353,11 @@
           (result.analises || []).some(item => String(item.conta) !== String(scope.conta) || item.tipo !== scope.tipo) || (result.analises || []).length > 1) {
           throw new Error("A resposta não corresponde à seleção aberta. Nenhum parecer foi exibido.");
         }
-        state.result = result; state.expanded = true;
+        state.result = result;
       } catch (error) {
         state.error = controller.signal.aborted ? "Espera cancelada. Você pode consultar esta seleção novamente." : error.message || "Não foi possível analisar esta seleção.";
       } finally {
+        clearInterval(state.timer); state.timer = null;
         state.pending = false; state.controller = null; state.paint();
       }
     });
