@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="./assets/css/fiscal-results.css?v=visual-20261019-1">
   <link rel="stylesheet" href="./assets/css/fiscal-studio.css?v=ia-documentos-20261014-15">
   <link rel="stylesheet" href="./assets/css/fiscal-ai-reader.css?v=comparison-20261019-1">
-  <link rel="stylesheet" href="./assets/css/fiscal-account-dialog.css?v=20261019-4">
+  <link rel="stylesheet" href="./assets/css/fiscal-account-dialog.css?v=20261019-5">
 </head>
 <body>
   <div class="app-shell">
@@ -167,7 +167,10 @@
             <nav class="fiscal-workflow-nav" aria-label="Navegar pelos resultados">
               <span class="fiscal-workflow-label">RESULTADOS</span>
               <button type="button" class="fiscal-workflow-button is-current" data-fiscal-target="fiscal242Overview">Resultados</button>
-              <button type="button" class="fiscal-workflow-button" data-fiscal-target="fiscal242AISection">Análise com IA</button>
+              <span class="fiscal-account-ai-hint">A IA fica disponível ao abrir uma conta.</span>
+                  <button type="button" class="fiscal-usage-trigger" id="fiscal242UsageButton" aria-haspopup="dialog" aria-controls="fiscal242UsageDialog" aria-expanded="false" title="Ver uso e limites das IAs gratuitas">
+                    <span aria-hidden="true">◷</span> Limites da IA
+                  </button>
             </nav>
             <div class="fiscal-section-panel" data-fiscal-panel="comparison">
             <div id="fiscal242Company" class="fiscal-company-result">
@@ -293,16 +296,14 @@
               <div id="fiscal242InvestigarResultado" hidden></div>
             </section>
             </div>
-            <div class="fiscal-section-panel" data-fiscal-panel="ai" hidden>
+            <div class="fiscal-section-panel" data-fiscal-panel="ai" hidden inert>
             <section class="fiscal-ai">
               <div class="fiscal-ai-heading" id="fiscal242AISection">
                 <span class="fiscal-ai-icon" aria-hidden="true">✦</span>
                 <div><span class="fiscal-ai-eyebrow">CONFERÊNCIA ASSISTIDA</span><h3>Análise inteligente</h3><p>Entenda a diferença. Encontre a evidência. Saiba o que conferir.</p><p id="fiscal242AIContext" class="fiscal-ai-context"></p></div>
                 <div class="fiscal-ai-heading-tools">
                   <span class="fiscal-ai-provider" id="fiscal242AIProvider">IA</span>
-                  <button type="button" class="fiscal-usage-trigger" id="fiscal242UsageButton" aria-haspopup="dialog" aria-controls="fiscal242UsageDialog" aria-expanded="false" title="Ver uso e limites das IAs gratuitas">
-                    <span aria-hidden="true">◷</span> Limites da IA
-                  </button>
+
                 </div>
 
               </div>
@@ -624,7 +625,7 @@
   <script src="./assets/js/company-guides.js?v=1001-santander-pdf"></script>
   <script src="./assets/js/app.js?v=fiscal-floating-help-1"></script>
   <script src="./assets/js/migration.js?v=fiscal-modern-20261013-5"></script>
-  <script src="./assets/js/fiscal-242.js?v=dialog-20261019-3"></script>
+  <script src="./assets/js/fiscal-242.js?v=account-ai-20261019-1"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
 </html>

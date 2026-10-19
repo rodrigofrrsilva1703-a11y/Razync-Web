@@ -35,7 +35,9 @@ required = (
 assert set(required).issubset(ids), "A interface não preserva controles fiscais essenciais."
 
 anchors = [a.get("data-fiscal-target") for _, a in p.elements if "data-fiscal-target" in a]
-assert set(anchors) == {"fiscal242Overview", "fiscal242AISection"}
+assert set(anchors) == {"fiscal242Overview"}
+assert "Analisar esta conta com IA" in JS
+assert "/api/v1/conferencia-fiscal/ia/conta" in JS
 assert set(anchors).issubset(ids)
 
 quick = [a.get("data-fiscal-filter") for _, a in p.elements if "data-fiscal-filter" in a]

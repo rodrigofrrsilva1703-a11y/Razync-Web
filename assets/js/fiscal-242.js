@@ -1051,6 +1051,7 @@
     message.dataset.state = kind || "";
   }
   function clearState() {
+    resetAccountAnalyses();
     loadingPanel.hidden = true;
     aiInlineStatus.hidden = false;
     byId("fiscalSetup").open = true;
@@ -1117,6 +1118,144 @@
     if (!reasons.length) reasons.push(Math.abs(Number(row.diferenca || 0)) <= 0.01
       ? "Sem diferença nos totais comparados" : "Valores comparados diferentes");
     return {side, noneSelected, separated, reason:reasons.join(" · ")};
+  }
+
+  const accountAnalysisCache = new Map();
+  function resetAccountAnalyses() {
+    for (const state of accountAnalysisCache.values()) state.controller?.abort();
+    accountAnalysisCache.clear();
+  }
+  function renderAccountOpinion(result, scope) {
+    const content = node("div", "fiscal-account-opinion");
+    const item = result.analises?.[0];
+    if (!item) {
+      content.append(node("strong", "", "Conferência local · sem chamada de IA"),
+        node("p", "", result.aviso || "Não há pendências nesta seleção para enviar à IA."));
+      return content;
+    }
+    const reading = item.parecer?.leitura_comparacao || {};
+    const executive = item.parecer?.resumo_executivo || {};
+    content.appendChild(node("p", "fiscal-account-opinion-source", aiSourceLabel(item) +
+      (result.cache_reutilizado || result.contas_reutilizadas ? " · parecer reaproveitado" : "")));
+    const conclusion = node("section", "fiscal-account-opinion-conclusion");
+    conclusion.append(node("h5", "", "Conclusão desta seleção"), node("p", "", executive.conclusao || reading.resultado || item.explicacao || "Confira as evidências antes de concluir."));
+    content.appendChild(conclusion);
+    const interpretation = item.parecer?.analise_exibicao;
+    if (interpretation && interpretation !== executive.conclusao && interpretation !== reading.resultado) {
+      content.append(node("h5", "", item.provedor === "local" ? "O que o sistema identificou" : "Interpretação da IA · hipótese a confirmar"), node("p", "", interpretation));
+    }
+    if (reading.observacoes?.length) {
+      const facts = node("ul", "fiscal-account-opinion-facts");
+      reading.observacoes.slice(0, 3).forEach(text => facts.appendChild(node("li", "", text)));
+      content.append(node("h5", "", "Evidências principais"), facts);
+    }
+    const steps = reading.orientacoes || [];
+    if (steps.length) {
+      const checklist = node("ol", "fiscal-account-opinion-steps");
+      steps.forEach(step => {
+        const li = node("li"); li.appendChild(node("strong", "", step.acao));
+        if (step.objetivo) li.appendChild(node("p", "", step.objetivo));
+        if (step.documentos?.length) li.appendChild(node("p", "fiscal-account-opinion-refs",
+          step.documentos.map(d => [d.titulo || d.referencia, d.detalhes].filter(Boolean).join(": ")).join(" · ")));
+        if (step.para_concluir) li.appendChild(node("p", "", "Para concluir: " + step.para_concluir));
+        if (step.quando_reavaliar) li.appendChild(node("p", "", "Reavalie a hipótese se: " + step.quando_reavaliar));
+        checklist.appendChild(li);
+      });
+      content.append(node("h5", "", "O que conferir agora"), checklist);
+    } else if (executive.primeiro_passo) content.append(node("h5", "", "O que conferir agora"), node("p", "", executive.primeiro_passo));
+    const extra = node("details", "fiscal-account-opinion-details");
+    extra.appendChild(node("summary", "", "Ver evidências e critérios completos"));
+    for (const text of [...(reading.observacoes || []).slice(3), ...(reading.explicacoes || [])]) extra.appendChild(node("p", "", text));
+    if (reading.criterio) extra.appendChild(node("p", "", reading.criterio));
+    const considered = renderAIConsidered(item), excluded = renderAIExcluded(item), documentary = renderAIDocumentary(item, true);
+    if (documentary) extra.appendChild(documentary);
+    if (considered) extra.appendChild(considered);
+    if (excluded) extra.appendChild(excluded);
+    const cases = renderAICases(item); if (cases) extra.appendChild(cases);
+    const limits = renderAILimits(item); if (limits) extra.appendChild(limits);
+    if (extra.children.length > 1) content.appendChild(extra);
+    content.appendChild(node("p", "fiscal-account-opinion-limit", "Sugestões para revisão. A análise não altera os valores nem confirma a natureza contábil dos lançamentos."));
+    return content;
+  }
+  function createAccountAnalysis(scope) {
+    const key = [scope.origem, scope.conta, scope.tipo, scope.acumulador || ""].join(":");
+    const fileId = scope.tipo === "SAÍDAS" ? "fiscal242Saidas" : "fiscal242Entradas";
+    const file = scope.origem === "documentos" ? byId(fileId).files?.[0] : null;
+    let state = accountAnalysisCache.get(key);
+    if (!state || state.source !== previewBody || state.file !== file) {
+      state?.controller?.abort();
+      state = {source:previewBody, file, pending:false, result:null, error:"", expanded:false};
+      accountAnalysisCache.set(key, state);
+    }
+    const area = node("section", "fiscal-account-analysis");
+    area.setAttribute("aria-label", "Análise da seleção com IA");
+    const bar = node("div", "fiscal-account-analysis-bar");
+    const button = node("button", "fiscal-account-analysis-button"); button.type = "button";
+    const cancel = node("button", "fiscal-account-analysis-cancel", "Cancelar espera"); cancel.type = "button";
+    const note = node("p", "fiscal-account-analysis-note", scope.acumulador
+      ? "Só este acumulador, nesta conta e tipo. Os filtros de nota não alteram a base da análise."
+      : "Só esta conta e este tipo. O parecer é reaproveitado enquanto os arquivos forem os mesmos.");
+    const status = node("p", "fiscal-account-analysis-status"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite");
+    const exportButton = node("button", "fiscal-account-analysis-export", "Exportar parecer"); exportButton.type = "button";
+    const body = node("div", "fiscal-account-analysis-body");
+    bar.append(button, cancel, exportButton, note); area.append(bar, status, body);
+    function paint() {
+      button.disabled = state.pending || !state.source;
+      button.textContent = state.pending ? "Analisando esta seleção…" : state.result ? (state.expanded ? "Ocultar análise" : "Ver análise salva") : state.error ? "Tentar novamente" : scope.acumulador ? "Analisar este acumulador com IA" : "Analisar esta conta com IA";
+      button.setAttribute("aria-expanded", String(state.expanded));
+      cancel.hidden = !state.pending;
+      exportButton.hidden = !state.result?.analises?.length;
+      status.textContent = state.pending ? "Preparando somente esta seleção e consultando o parecer salvo antes de chamar a IA…" : state.error || "";
+      status.hidden = !status.textContent;
+      body.hidden = !state.result || !state.expanded;
+      body.setAttribute("aria-busy", String(state.pending));
+      body.replaceChildren();
+      if (state.result && state.expanded) body.appendChild(renderAccountOpinion(state.result, scope));
+    }
+    state.paint = paint;
+    button.addEventListener("click", async () => {
+      if (state.pending) return;
+      if (state.result) { state.expanded = !state.expanded; state.paint(); return; }
+      if (!state.source || state.source !== previewBody) return;
+      const body = new FormData();
+      for (const [name, value] of state.source.entries()) if (!["entradas", "saidas", "conta", "tipo", "origem", "acumulador"].includes(name)) body.append(name, value);
+      for (const name of ["conta", "tipo", "origem", "acumulador"]) body.append(name, scope[name] || "");
+      if (file) body.append(scope.tipo === "SAÍDAS" ? "saidas" : "entradas", file);
+      const controller = new AbortController(); state.controller = controller;
+      state.pending = true; state.error = ""; state.paint();
+      try {
+        const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/conta", {method:"POST", body, signal:controller.signal});
+        if (!response.ok) throw new Error(await responseError(response));
+        const result = await response.json();
+        if (controller.signal.aborted || state.source !== previewBody || accountAnalysisCache.get(key) !== state) return;
+        if (result.escopo?.conta !== String(scope.conta) || result.escopo?.tipo !== scope.tipo ||
+          (result.escopo?.acumulador || "") !== (scope.acumulador || "") || result.escopo?.origem !== scope.origem ||
+          (result.analises || []).some(item => String(item.conta) !== String(scope.conta) || item.tipo !== scope.tipo) || (result.analises || []).length > 1) {
+          throw new Error("A resposta não corresponde à seleção aberta. Nenhum parecer foi exibido.");
+        }
+        state.result = result; state.expanded = true;
+      } catch (error) {
+        state.error = controller.signal.aborted ? "Espera cancelada. Você pode consultar esta seleção novamente." : error.message || "Não foi possível analisar esta seleção.";
+      } finally {
+        state.pending = false; state.controller = null; state.paint();
+      }
+    });
+    cancel.addEventListener("click", () => state.controller?.abort());
+    exportButton.addEventListener("click", async () => {
+      if (!state.result?.analises?.length) return;
+      exportButton.disabled = true;
+      try {
+        const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/exportar", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({empresa_nome:data?.empresa_nome || "GERAL", filial:data?.filial_aplicada || "", analises:state.result.analises})
+        });
+        if (!response.ok) throw new Error(await responseError(response));
+        if (state.source !== previewBody || accountAnalysisCache.get(key) !== state) return;
+        await downloadBlob(response, "RAZYNC_PARECER_" + scope.conta + "_" + scope.tipo + (scope.acumulador ? "_ACUM_" + scope.acumulador : "") + ".xlsx");
+      } catch (error) { state.error = error.message || "Não foi possível exportar o parecer."; state.paint(); }
+      finally { exportButton.disabled = false; }
+    });
+    paint(); return area;
   }
 
   function fiscalAccountSituation(row, reading) {
@@ -1188,6 +1327,7 @@
       ? "Há movimentos no Razão, mas nenhum foi selecionado pelo histórico. Revise a seleção antes de concluir que existe uma diferença fiscal."
       : differenceMeaning(row.diferenca).replace("Contábil considerado", "Razão na comparação")));
 
+    details.appendChild(createAccountAnalysis({origem:"resumo", conta:String(row.conta), tipo:row.tipo}));
     const bridge = node("section", "fiscal-comparison-bridge");
     bridge.appendChild(node("h4", "", "Do total do Razão ao valor comparado"));
     const bridgeValues = node("dl", "fiscal-comparison-bridge-values");
@@ -1786,6 +1926,8 @@
       reader.append(node("small", "fiscal-doc-eyebrow", group.tipo + " · CONTA " + group.conta), scopeTitle);
       const balance = node("div", "fiscal-doc-balance");
       reader.appendChild(balance);
+      const analysisArea = node("div", "fiscal-document-analysis-slot"); reader.appendChild(analysisArea);
+      let analysisScope = null;
       const coverageArea = node("div", "fiscal-doc-coverage");
       const comparisons = group.comparacoes || (group.documentos || []).map(d => ({...d,
         valor_fiscal:d.valor, valor_razao:d.valor_razao_candidato, diferenca:d.diferenca_candidato,
@@ -1850,6 +1992,11 @@
         const acc = currentAccumulator();
         scopeTitle.textContent = acc ? "Acumulador " + acc.acc.codigo + " · " + (acc.acc.descricao || "Documentos fiscais") : group.descricao || "Cruzamento documental";
         fillScopeBalance(group, acc, balance);
+        const scopeCode = acc ? String(acc.acc.codigo) : "";
+        if (scopeCode !== analysisScope) {
+          analysisScope = scopeCode;
+          analysisArea.replaceChildren(createAccountAnalysis({origem:"documentos", conta:String(group.conta), tipo:group.tipo, acumulador:scopeCode}));
+        }
         documentTitle.textContent = acc ? "Documentos e lançamentos · acumulador " + acc.acc.codigo : "Documentos e lançamentos desta conta";
         const scoped = comparisons.filter(d => scopedComparison(d, acc));
         dialogTitle.textContent = acc ? "Acumulador " + acc.acc.codigo : "Conta " + group.conta;
@@ -2047,6 +2194,7 @@
 
 
   ["fiscal242Entradas", "fiscal242Saidas"].forEach(id => byId(id).addEventListener("change", () => {
+    resetAccountAnalyses();
     investigationController?.abort(); investigationController = null;
     investigationButton.disabled = false;
     investigationResults.documentDialog?.close();
@@ -2080,6 +2228,7 @@
     event.preventDefault();
     let body;
     try { body = buildFormData(); } catch (error) { setMessage(error.message, "error"); return; }
+    resetAccountAnalyses();
     discardPendingAI(); aiRetry.hidden = true;
     aiController?.abort(); aiController = null; aiButton.disabled = true; aiResult.replaceChildren(); clearAIAccounts();
     aiReport = null; aiExport.disabled = true;
@@ -2135,4 +2284,5 @@
       download.disabled = false;
     }
   });
+  pane.appendChild(usageDialog);
 })();

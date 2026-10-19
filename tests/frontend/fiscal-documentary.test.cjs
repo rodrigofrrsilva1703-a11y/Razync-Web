@@ -20,7 +20,7 @@ function setup({grouped=false}={}) {
   const node=(...args)=>new Element(...args); const root=node('div');
   let exported;
   const classes=new Set();
-  const context={node,investigationResults:root,document:{documentElement:{classList:{add:c=>classes.add(c),remove:c=>classes.delete(c)}}},money:new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}),
+  const context={node,createAccountAnalysis:()=>node("section","fiscal-account-analysis"),investigationResults:root,document:{documentElement:{classList:{add:c=>classes.add(c),remove:c=>classes.delete(c)}}},money:new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}),
     cell:(tr,text,cls)=>tr.appendChild(node('td',cls,text)),Blob,
     URL:{createObjectURL:blob=>{exported=blob;return 'blob:test';},revokeObjectURL:()=>{}},setTimeout:fn=>fn()};
   vm.createContext(context);
