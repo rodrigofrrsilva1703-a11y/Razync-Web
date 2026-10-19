@@ -4,9 +4,9 @@ import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 import pandas as pd
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, Request
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 from app.registry import CAPABILITIES
 from app.migration_services import reconcile
 
@@ -70,7 +70,7 @@ def daily_entries(daily, bank_account, investment_account, opening=Decimal(0)):
     return result
 
 
-def generate(company_code, banks, files, model, options, settings):
+def prepare_entries(company_code, banks, files, model, options, settings):
     if (not isinstance(banks, list) or not banks or len(banks) != len(set(banks))
             or not isinstance(options, dict) or not isinstance(settings, dict)):
         raise ValueError("Configuração dos bancos inválida.")
@@ -95,24 +95,45 @@ def generate(company_code, banks, files, model, options, settings):
         summary, sheets = reconcile(company_code, bank, model, statements, options)
         if summary.get('ok') is not True or summary.get('faltando_planilha') or summary.get('a_mais_planilha'):
             raise ValueError("Resolva os lançamentos sem correspondência de todos os bancos antes de gerar o TXT.")
-        entries.extend(daily_entries(sheets.get('Conferência diária', pd.DataFrame()), bank_account, investment_account, opening))
+        for entry in daily_entries(sheets.get('Conferência diária', pd.DataFrame()), bank_account, investment_account, opening):
+            redemption = entry['HISTÓRICO'] == REDEMPTION
+            entries.append(dict(entry, BANCO=bank, TIPO='Resgate' if redemption else 'Aplicação',
+                SALDO_ANTES=-entry['VALOR'] if redemption else entry['VALOR'], SALDO_APOS=Decimal('0.00')))
     if not entries:
         raise ValueError("Os dias já estão zerados. Não há aplicações ou resgates a gerar.")
     entries.sort(key=lambda row: pd.to_datetime(row['DATA'], dayfirst=True))
+    return entries
+
+
+def serialize_txt(entries):
     # Mesmo formato do exportador Domínio existente. Históricos preservados literalmente,
     # sem prefixos Pago/Recebido; valores sempre positivos e natureza nas contas D/C.
     return ''.join(f"{row['DATA']};{row['DÉBITO']};{row['CRÉDITO']};{row['VALOR']:.2f};{row['HISTÓRICO']}\n" for row in entries).encode('utf-8')
 
 
+def generate(company_code, banks, files, model, options, settings):
+    return serialize_txt(prepare_entries(company_code,banks,files,model,options,settings))
+
+
+@router.post('/{company_code}/aplicacoes-resgates/preview')
 @router.post('/{company_code}/aplicacoes-resgates')
-async def download_investments(company_code: int, banks_json: str = Form(...), file_banks_json: str = Form(...),
+async def download_investments(request: Request, company_code: int, banks_json: str = Form(...), file_banks_json: str = Form(...),
     settings_json: str = Form(...), model_file: UploadFile = File(...), files: list[UploadFile] = File(...), options_json: str = Form('{}')):
     try:
         banks, file_banks, options, settings = (json.loads(value) for value in (banks_json,file_banks_json,options_json,settings_json))
         if not isinstance(file_banks,list) or len(file_banks) != len(files):
             raise ValueError("Os extratos não correspondem aos bancos selecionados.")
         prepared = [(bank, upload.filename or 'extrato', await upload.read()) for bank, upload in zip(file_banks,files)]
-        content = await run_in_threadpool(generate,company_code,banks,prepared,await model_file.read(),options,settings)
+        entries = await run_in_threadpool(prepare_entries,company_code,banks,prepared,await model_file.read(),options,settings)
+        content = serialize_txt(entries)
+        if request.url.path.endswith('/preview'):
+            rows = [{key:format(value,'.2f') if isinstance(value,Decimal) else value for key,value in row.items()} for row in entries]
+            return JSONResponse({'rows':rows,'txt':content.decode('utf-8'), 'summary':{
+                'lancamentos':len(rows), 'resgates':sum(row['TIPO']=='Resgate' for row in rows),
+                'aplicacoes':sum(row['TIPO']=='Aplicação' for row in rows),
+                'total_resgates':format(sum((row['VALOR'] for row in entries if row['TIPO']=='Resgate'),Decimal(0)),'.2f'),
+                'total_aplicacoes':format(sum((row['VALOR'] for row in entries if row['TIPO']=='Aplicação'),Decimal(0)),'.2f')}},
+                headers={'Cache-Control':'no-store'})
         return Response(content,media_type='text/plain; charset=utf-8',headers={
             'Content-Disposition':f'attachment; filename="RAZYNC_{company_code}_APLICACOES_RESGATES.txt"','Cache-Control':'no-store'})
     except (ValueError, TypeError, KeyError) as exc:

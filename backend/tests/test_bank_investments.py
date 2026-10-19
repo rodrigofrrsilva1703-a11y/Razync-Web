@@ -103,3 +103,20 @@ def test_integracao_le_modelo_e_extrato_reais_sem_substituir_motor():
     assert response.text.splitlines()==[
         '01/08/2026;508;900;100.00;RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO',
         '02/08/2026;900;508;30.00;APLICAÇÃO FINANCEIRA CF EXTRATO']
+
+
+def test_previa_e_txt_tem_mesmos_lancamentos_e_saldos_zerados(monkeypatch):
+    monkeypatch.setattr(investments,'reconcile',lambda *args:({'ok':True},{'Conferência diária':daily()}))
+    client=TestClient(app)
+    data={'banks_json':'["itau"]','file_banks_json':'["itau"]','settings_json':'{"itau":{"conta_aplicacao":"900"}}'}
+    files=[('model_file',('modelo.xlsx',b'test')),('files',('extrato.pdf',b'test'))]
+    preview=client.post('/api/v1/conferencia-extrato/3/aplicacoes-resgates/preview',data=data,files=files)
+    txt=client.post('/api/v1/conferencia-extrato/3/aplicacoes-resgates',data=data,files=files)
+    assert preview.status_code==txt.status_code==200
+    result=preview.json()
+    assert result['txt']==txt.text
+    assert result['summary']=={'lancamentos':2,'resgates':1,'aplicacoes':1,'total_resgates':'100.00','total_aplicacoes':'30.00'}
+    assert [row['SALDO_ANTES'] for row in result['rows']]==['-100.00','30.00']
+    assert all(row['SALDO_APOS']=='0.00' for row in result['rows'])
+    assert {row['BANCO'] for row in result['rows']}=={'itau'}
+    assert preview.headers['cache-control']=='no-store'
