@@ -62,7 +62,7 @@ def test_txt_formato_dominio_historicos_exatos_e_valores_positivos(monkeypatch):
     monkeypatch.setattr(investments,'reconcile',reconcile)
     response=post({'itau':{'conta_aplicacao':'900','saldo_anterior':'0,00'}})
     assert response.status_code==200,response.text
-    assert response.text=='01/08/2026;508;900;100.00;RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO\n02/08/2026;900;508;30.00;APLICAÇÃO FINANCEIRA CF EXTRATO\n'
+    assert response.text=='DESCRIÇÃO: APLICAÇÃO E RESGATE;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO\nAPLICAÇÃO E RESGATE;01/08/2026;100.00;508;900;RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO\nAPLICAÇÃO E RESGATE;02/08/2026;30.00;900;508;APLICAÇÃO FINANCEIRA CF EXTRATO\n'
     assert calls[0][0:3]==(3,'itau',b'test')
 
 
@@ -101,8 +101,9 @@ def test_integracao_le_modelo_e_extrato_reais_sem_substituir_motor():
         files=[('model_file',('modelo.xlsx',model)),('files',('itau.xlsx',statement))])
     assert response.status_code==200,response.text
     assert response.text.splitlines()==[
-        '01/08/2026;508;900;100.00;RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO',
-        '02/08/2026;900;508;30.00;APLICAÇÃO FINANCEIRA CF EXTRATO']
+        'DESCRIÇÃO: APLICAÇÃO E RESGATE;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO',
+        'APLICAÇÃO E RESGATE;01/08/2026;100.00;508;900;RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO',
+        'APLICAÇÃO E RESGATE;02/08/2026;30.00;900;508;APLICAÇÃO FINANCEIRA CF EXTRATO']
 
 
 def test_previa_e_txt_tem_mesmos_lancamentos_e_saldos_zerados(monkeypatch):
@@ -115,6 +116,9 @@ def test_previa_e_txt_tem_mesmos_lancamentos_e_saldos_zerados(monkeypatch):
     assert preview.status_code==txt.status_code==200
     result=preview.json()
     assert result['txt']==txt.text
+    assert result['txt'].splitlines()[0]=='DESCRIÇÃO: APLICAÇÃO E RESGATE;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO'
+    assert all(row['DESCRIÇÃO']=='APLICAÇÃO E RESGATE' for row in result['rows'])
+    assert all(len(line.split(';'))==6 for line in result['txt'].splitlines())
     assert result['summary']=={'lancamentos':2,'resgates':1,'aplicacoes':1,'total_resgates':'100.00','total_aplicacoes':'30.00'}
     assert [row['SALDO_ANTES'] for row in result['rows']]==['-100.00','30.00']
     assert all(row['SALDO_APOS']=='0.00' for row in result['rows'])
@@ -127,7 +131,7 @@ def test_saldos_diarios_batendo_liberam_txt_sem_exigir_pareamento_individual(mon
         {'ok':False,'faltando_planilha':2,'a_mais_planilha':1},{'Conferência diária':daily()}))
     response=post({'itau':{'conta_aplicacao':'900'}})
     assert response.status_code==200,response.text
-    assert ';508;900;100.00;' in response.text
+    assert ';100.00;508;900;' in response.text
 
 
 def test_selecao_de_um_banco_nao_exige_contas_ou_extratos_dos_outros(monkeypatch):

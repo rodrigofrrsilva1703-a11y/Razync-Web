@@ -13,6 +13,8 @@ from app.migration_services import reconcile
 router = APIRouter(prefix="/api/v1/conferencia-extrato")
 REDEMPTION = "RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO"
 INVESTMENT = "APLICAÇÃO FINANCEIRA CF EXTRATO"
+DESCRIPTION = "APLICAÇÃO E RESGATE"
+TXT_HEADER = "DESCRIÇÃO: APLICAÇÃO E RESGATE;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO\n"
 
 
 def money(value):
@@ -98,7 +100,7 @@ def prepare_entries(company_code, banks, files, model, options, settings):
         _, sheets = reconcile(company_code, bank, model, statements, options)
         for entry in daily_entries(sheets.get('Conferência diária', pd.DataFrame()), bank_account, investment_account, opening):
             redemption = entry['HISTÓRICO'] == REDEMPTION
-            entries.append(dict(entry, BANCO=bank, TIPO='Resgate' if redemption else 'Aplicação',
+            entries.append(dict(entry, **{'DESCRIÇÃO':DESCRIPTION}, BANCO=bank, TIPO='Resgate' if redemption else 'Aplicação',
                 SALDO_ANTES=-entry['VALOR'] if redemption else entry['VALOR'], SALDO_APOS=Decimal('0.00')))
     if not entries:
         raise ValueError("Os dias já estão zerados. Não há aplicações ou resgates a gerar.")
@@ -107,9 +109,10 @@ def prepare_entries(company_code, banks, files, model, options, settings):
 
 
 def serialize_txt(entries):
-    # Mesmo formato do exportador Domínio existente. Históricos preservados literalmente,
-    # sem prefixos Pago/Recebido; valores sempre positivos e natureza nas contas D/C.
-    return ''.join(f"{row['DATA']};{row['DÉBITO']};{row['CRÉDITO']};{row['VALOR']:.2f};{row['HISTÓRICO']}\n" for row in entries).encode('utf-8')
+    # Cabeçalho e seis colunas na ordem pedida para o Modelo Domínio.
+    # Históricos literais, valores positivos e natureza nas contas D/C.
+    lines = ''.join(f"{DESCRIPTION};{row['DATA']};{row['VALOR']:.2f};{row['DÉBITO']};{row['CRÉDITO']};{row['HISTÓRICO']}\n" for row in entries)
+    return (TXT_HEADER + lines).encode('utf-8')
 
 
 def generate(company_code, banks, files, model, options, settings):

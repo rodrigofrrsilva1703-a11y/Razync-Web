@@ -10,7 +10,8 @@
       ? 'Saldos diários conferidos. Escolha o banco para preparar os lançamentos.'
       : 'A geração será liberada quando todas as entradas e saídas diárias estiverem batendo e não houver bancos com erro.'));
     if (ready && summary?.ok === false) panel.appendChild(el('p','bank-investments-note','Os totais diários batem, mas há lançamentos sem correspondência individual no relatório. Revise-os na conferência; o zeramento abaixo usa os totais diários.'));
-    panel.appendChild(el('p','bank-investments-rule','Zeramento diário: saldo negativo gera resgate (débito no banco); saldo positivo gera aplicação (crédito no banco). A conta informada é a mesma para as duas operações.'));
+    const help=el('details','bank-investments-help');help.appendChild(el('summary','','Como funciona o zeramento'));
+    help.appendChild(el('p','bank-investments-rule','Zeramento diário: saldo negativo gera resgate (débito no banco); saldo positivo gera aplicação (crédito no banco). A conta informada é a mesma para as duas operações.'));
     const form = el('form','bank-investments-form'), fields = [];
     const bankLabel=el('label','bank-investments-selector','Banco para gerar os lançamentos');
     const bankSelect=el('select','bank-investments-bank-select');bankSelect.setAttribute('aria-label','Banco para aplicações e resgates');
@@ -27,7 +28,7 @@
       const opening = makeInput('Saldo anterior ao primeiro dia (R$)','0,00','-?(?:[0-9]{1,3}(?:[.][0-9]{3})+|[0-9]+)(?:,[0-9]{1,2})?','decimal');
       fields.push({bank:bank.code,account,investment,opening,fieldset}); form.appendChild(fieldset);
     }
-    form.appendChild(el('small','bank-investments-note','Use 0,00 se o banco já estava zerado antes do primeiro dia analisado. O saldo anterior entra somente no primeiro dia; nos seguintes, o cálculo considera o zeramento do dia anterior.'));
+    help.appendChild(el('small','bank-investments-note','Use 0,00 se o banco já estava zerado antes do primeiro dia analisado. O saldo anterior entra somente no primeiro dia; nos seguintes, o cálculo considera o zeramento do dia anterior.'));
     const button=el('button','bank-investments-preview-button','Gerar prévia'); button.type='submit';
     const downloadButton=el('button','bank-investments-download','Baixar TXT'); downloadButton.type='button'; downloadButton.hidden=true; downloadButton.disabled=true;
     const preview=el('section','bank-investments-preview'); preview.hidden=true; preview.setAttribute('aria-label','Prévia dos lançamentos de aplicações e resgates');
@@ -39,7 +40,7 @@
       preview.appendChild(el('h4','','Prévia dos lançamentos'));
       preview.appendChild(el('p','bank-investments-preview-totals',result.rows.length+(result.rows.length===1?' lançamento · Resgates: ':' lançamentos · Resgates: ')+currency.format(Number(result.summary.total_resgates))+' · Aplicações: '+currency.format(Number(result.summary.total_aplicacoes))));
       const scroll=el('div','bank-investments-preview-scroll');scroll.tabIndex=0;scroll.setAttribute('role','region');scroll.setAttribute('aria-label','Lançamentos gerados; role para conferir todas as colunas');
-      const table=el('table'),caption=el('caption','bank-investments-caption','Lançamentos que serão incluídos no TXT. Saldo antes considera as movimentações do dia e o zeramento dos dias anteriores.');table.appendChild(caption);
+      const table=el('table'),caption=el('caption','bank-investments-caption','Descrição: APLICAÇÃO E RESGATE. Lançamentos incluídos no TXT; saldo antes considera o zeramento dos dias anteriores.');table.appendChild(caption);
       const head=el('thead'),heading=el('tr');
       const columns=[['DATA','Data'],['BANCO','Banco'],['TIPO','Operação'],['DÉBITO','Débito'],['CRÉDITO','Crédito'],['VALOR','Valor'],['SALDO_ANTES','Saldo antes'],['SALDO_APOS','Saldo após'],['HISTÓRICO','Histórico']];
       columns.forEach(([,label])=>{const th=el('th','',label);th.setAttribute('scope','col');heading.appendChild(th);});head.appendChild(heading);table.appendChild(head);
@@ -62,7 +63,7 @@
       pagination.hidden=result.rows.length<=size;pagination.append(previous,range,next);preview.appendChild(pagination);draw();
     }
     const message=el('p','bank-investments-message');message.setAttribute('role','status');message.setAttribute('aria-live','polite');
-    form.append(button,message); panel.append(form,preview,downloadButton); target.prepend(panel);
+    form.append(button,message); panel.append(form,help,preview,downloadButton); target.prepend(panel);
     let active, revision=0;
     signal?.addEventListener('abort',()=>active?.abort(),{once:true});
     function syncBank() {
