@@ -92,7 +92,6 @@ function initializeCompanyControls() {
     document.querySelector("#mainSidebar").inert = collapsed;
     toggle.setAttribute("aria-expanded", String(!collapsed));
     toggle.setAttribute("aria-label", collapsed ? "Abrir menu lateral" : "Recolher menu lateral");
-    toggle.title = collapsed ? "Abrir menu lateral" : "Recolher menu lateral";
   };
   applySidebar();
   toggle.addEventListener("click", () => {

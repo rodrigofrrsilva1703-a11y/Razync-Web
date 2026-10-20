@@ -41,22 +41,51 @@ body.preview-modal-open { overflow:hidden; }
 }
 
 /* Roomier workspace and a persistent navigation toggle. */
+/* Controle na borda: o mesmo botão acompanha a abertura e o recolhimento. */
 .sidebar-toggle {
- flex:none; display:inline-flex; align-items:center; justify-content:center;
- width:38px; height:38px; padding:0; border:1px solid #dce4ee; border-radius:10px;
- background:linear-gradient(150deg,#fff,#f6f8fc); color:#607791; cursor:pointer;
- box-shadow:0 1px 2px #21385405,inset 0 1px 0 #fff;
- transition:background 180ms ease,border-color 180ms ease,color 180ms ease,box-shadow 180ms ease;
+ position:fixed; z-index:30; top:34px; left:216px;
+ display:inline-flex; align-items:center; justify-content:center; flex:none;
+ width:44px; height:44px; padding:0; border:0; border-radius:50%;
+ background:transparent; color:#5c7594; cursor:pointer;
+ transition:left 300ms cubic-bezier(.22,1,.36,1),top 300ms cubic-bezier(.22,1,.36,1),color 180ms ease;
 }
-.sidebar-toggle::after { content:none; }
-.sidebar-toggle:hover { border-color:#b8cbe2; background:#edf3fb; color:#365e8e; box-shadow:0 2px 6px #2138540a; }
-.sidebar-toggle:active { background:#e3ecf7; box-shadow:inset 0 1px 3px #2138540d; }
-.sidebar-toggle:focus-visible { outline:2px solid #678ebd; outline-offset:3px; }
-.sidebar-toggle svg { width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
-.sidebar-toggle .toggle-pane { fill:currentColor; fill-opacity:.13; stroke:none; }
-.sidebar-toggle .toggle-chevron { transform-origin:14.25px 12px; transition:transform 220ms ease; }
+.sidebar-toggle::before {
+ content:""; position:absolute; inset:7px; border:1px solid #d3deeb; border-radius:50%;
+ background:#fff; box-shadow:0 2px 7px #10243e12;
+ transition:background 180ms ease,border-color 180ms ease,box-shadow 180ms ease,inset 300ms ease;
+}
+.sidebar-toggle::after {
+ content:attr(aria-label); position:absolute; left:calc(100% + 6px); top:50%;
+ padding:7px 10px; border-radius:7px; background:#213650; color:#fff;
+ font-size:10px; font-weight:500; line-height:1.4; white-space:nowrap;
+ opacity:0; visibility:hidden; pointer-events:none; transform:translateY(-50%);
+ transition:opacity 140ms ease,visibility 140ms ease;
+}
+.sidebar-toggle:hover { color:#244f80; }
+.sidebar-toggle:hover::before { background:#edf4fd; border-color:#a7bed9; box-shadow:0 3px 10px #10243e1a; }
+.sidebar-toggle:is(:hover,:focus-visible)::after { opacity:1; visibility:visible; }
+.sidebar-toggle:active::before { background:#e0ebf8; }
+.sidebar-toggle:focus-visible { outline:2px solid #7198c5; outline-offset:0; }
+.sidebar-toggle svg { position:relative; width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+.sidebar-toggle .toggle-chevron { transform-origin:12px 12px; transition:transform 300ms cubic-bezier(.22,1,.36,1); }
+body.sidebar-collapsed .sidebar-toggle { left:14px; top:19px; }
+body.sidebar-collapsed .sidebar-toggle::before { inset:4px; }
 body.sidebar-collapsed .sidebar-toggle .toggle-chevron { transform:rotate(180deg); }
-body.sidebar-collapsed .sidebar-toggle .toggle-pane { fill-opacity:.04; }
+@media(min-width:761px) {
+ .topbar { transition:padding-left 300ms cubic-bezier(.22,1,.36,1); }
+ body.sidebar-collapsed .topbar { padding-left:38px; }
+}
+@media(min-width:761px) and (max-width:1100px) { .sidebar-toggle { left:188px; } }
+@media(max-width:760px) {
+ .sidebar-toggle,body.sidebar-collapsed .sidebar-toggle { position:relative; top:auto; left:auto; }
+ .sidebar-toggle::before,body.sidebar-collapsed .sidebar-toggle::before { inset:4px; border-radius:11px; box-shadow:0 1px 3px #10243e08; }
+ .sidebar-toggle .toggle-chevron { transform:rotate(90deg); }
+ body.sidebar-collapsed .sidebar-toggle .toggle-chevron { transform:rotate(-90deg); }
+ .sidebar-toggle::after { display:none; }
+}
+@media(prefers-reduced-motion:reduce) {
+ .sidebar-toggle,.sidebar-toggle::before,.sidebar-toggle::after,.sidebar-toggle .toggle-chevron,.topbar { transition:none; }
+}
 .topbar { gap:14px; }
 .topbar-title { margin-right:auto; }
 .sidebar { transition:transform 300ms cubic-bezier(.22,1,.36,1), opacity 220ms ease; box-shadow:4px 0 24px #14243b0a; }
