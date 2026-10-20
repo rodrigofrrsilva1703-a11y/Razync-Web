@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="./assets/css/fiscal-studio.css?v=ia-documentos-20261014-15">
   <link rel="stylesheet" href="./assets/css/fiscal-ai-reader.css?v=comparison-20261019-1">
   <link rel="stylesheet" href="./assets/css/fiscal-account-dialog.css?v=20261019-10">
-  <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=20261020-1">
+  <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=20261020-2">
 </head>
 <body>
   <div class="app-shell">
@@ -46,17 +46,30 @@
       <section id="companiesView" class="global-view active">
         <section id="portfolioPicker" class="portfolio-picker" aria-label="Carteiras dos colaboradores">
           <div class="portfolio-heading">
-            <span class="eyebrow">SEU ESPAÇO DE TRABALHO</span>
-            <h1>Carteiras de empresas<span class="portfolio-title-dot" aria-hidden="true"></span></h1>
-            <p>Encontre suas empresas e continue a rotina contábil.</p>
+            <div class="portfolio-heading-copy">
+              <span class="eyebrow"><span class="portfolio-eyebrow-line" aria-hidden="true"></span>SEU ESPAÇO DE TRABALHO</span>
+              <h1>Carteiras de empresas</h1>
+              <p>Suas empresas, organizadas.<br>Um acesso direto à sua rotina contábil.</p>
+              <div class="portfolio-summary" aria-live="polite"><span id="portfolioTotal">— carteiras</span><span aria-hidden="true">/</span><span id="portfolioCompanyTotal">— empresas</span></div>
+            </div>
+            <div class="portfolio-art" aria-hidden="true">
+              <svg viewBox="0 0 200 150" fill="none">
+                <defs><linearGradient id="portfolioFolderFill" x1="55" y1="30" x2="150" y2="145" gradientUnits="userSpaceOnUse"><stop stop-color="#f9fbff"/><stop offset="1" stop-color="#dce7f5"/></linearGradient></defs>
+                <ellipse cx="106" cy="133" rx="68" ry="8" fill="#233d61" opacity=".04"/>
+                <rect x="73" y="17" width="83" height="102" rx="10" transform="rotate(10 73 17)" fill="#e7eef8" stroke="#cfdced"/>
+                <rect x="53" y="26" width="83" height="102" rx="10" transform="rotate(-7 53 26)" fill="white" stroke="#d5dfed"/>
+                <path d="M33 67a9 9 0 0 1 9-9h37l12 11h69a9 9 0 0 1 9 9v44a9 9 0 0 1-9 9H42a9 9 0 0 1-9-9V67Z" fill="url(#portfolioFolderFill)" stroke="#bfcee2"/>
+                <path d="M48 86h106M48 95h63" stroke="#bdcde3" stroke-width="2" stroke-linecap="round"/>
+                <rect x="130" y="106" width="25" height="15" rx="4" fill="white" stroke="#c9d7e9"/>
+              </svg>
+            </div>
           </div>
           <div class="portfolio-directory">
             <div class="portfolio-directory-heading">
-              <div><h2>Escolha uma carteira</h2><p>As empresas estão organizadas por colaborador.</p></div>
-              <span class="portfolio-directory-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7V5a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/><path d="M3 9h18"/></svg></span>
+              <h2>Suas carteiras <span id="portfolioCount" class="portfolio-count">—</span></h2>
+              <span class="portfolio-directory-caption">Organizadas por colaborador</span>
             </div>
-            <div id="portfolioList" class="portfolio-list"></div>
-            <p class="portfolio-directory-note">Selecione o colaborador para pesquisar empresas e acessar as ferramentas.</p>
+            <div id="portfolioList" class="portfolio-list" aria-busy="true"><p class="portfolio-loading" role="status">Carregando carteiras…</p></div>
           </div>
         </section>
         <section class="hero compact-hero" hidden>
@@ -633,7 +646,7 @@
   <script src="./assets/js/workspace-ui.js?v=5"></script>
   <script src="./assets/js/company-guides.js?v=1001-santander-pdf"></script>
   <script src="./assets/js/bank-investments.js?v=20261019-2"></script>
-  <script src="./assets/js/app.js?v=portfolio-home-20261020-1"></script>
+  <script src="./assets/js/app.js?v=portfolio-home-20261020-2"></script>
   <script src="./assets/js/migration.js?v=fiscal-modern-20261013-5"></script>
   <script src="./assets/js/fiscal-242.js?v=account-ai-20261019-8"></script>
   <script src="./assets/js/motion.js?v=1"></script>

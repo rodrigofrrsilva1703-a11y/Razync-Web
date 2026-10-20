@@ -44,6 +44,9 @@ function companyBelongsToPortfolio(company) {
 
 function renderPortfolios() {
   portfolioList.replaceChildren();
+  $("#portfolioTotal").textContent = portfolios.length.toLocaleString("pt-BR") + (portfolios.length === 1 ? " carteira" : " carteiras");
+  $("#portfolioCompanyTotal").textContent = companies.length.toLocaleString("pt-BR") + (companies.length === 1 ? " empresa" : " empresas");
+  $("#portfolioCount").textContent = portfolios.length.toLocaleString("pt-BR");
   for (const portfolio of portfolios) {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -60,20 +63,25 @@ function renderPortfolios() {
     const quantity = companies.filter(company =>
       portfolio.companyCodes === null || portfolio.companyCodes.includes(Number(company.codigo))).length;
     details.textContent = quantity.toLocaleString("pt-BR") + (quantity === 1 ? " empresa na carteira" : " empresas na carteira");
-    info.append(name, details);
+    const role = document.createElement("span");
+    role.className = "portfolio-entry-role";
+    role.textContent = "Responsável pela carteira";
+    info.append(name, role);
+    details.className = "portfolio-entry-quantity";
     const arrow = document.createElement("span");
     arrow.className = "portfolio-entry-arrow";
     arrow.setAttribute("aria-hidden", "true");
     const action = document.createElement("span");
     action.className = "portfolio-entry-action";
-    action.textContent = "Acessar carteira";
+    action.textContent = "Acessar empresas";
     arrow.textContent = "→";
     action.appendChild(arrow);
     btn.setAttribute("aria-label", "Abrir carteira de " + portfolio.name);
-    btn.append(avatar, info, action);
+    btn.append(avatar, info, details, action);
     btn.addEventListener("click", () => selectPortfolio(portfolio.id));
     portfolioList.appendChild(btn);
   }
+  portfolioList.setAttribute("aria-busy", "false");
 }
 
 function selectPortfolio(id) {
