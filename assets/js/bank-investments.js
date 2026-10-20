@@ -1,22 +1,34 @@
 (function () {
   function mount({target, company, banks, snapshot, summary, rows, balances, isCurrent, signal, api, download, responseError}) {
     if (!rows.length || !banks.length) return;
-    const ready = !summary?.errors?.length && rows.every(row => balances(row).ok);
+    const bankStates=new Map(banks.map(bank=>{
+      // A prévia multibanco identifica cada conta pelo nome e código contábil.
+      // Comparação exata evita misturar duas contas do mesmo banco (ex.: Itaú 508/509).
+      const label=[bank.label,String(bank.account || '').trim()].filter(Boolean).join(' ');
+      const daily=banks.length===1 ? rows : rows.filter(row=>String(row.BANCO || '').trim()===label);
+      const error=(summary?.errors || []).some(item=>!item.bank || item.bank===bank.code);
+      const ready=!error && daily.length>0 && daily.every(row=>balances(row).ok);
+      const ownSummary=summary?.by_bank?.[bank.code] || (banks.length===1 ? summary : null);
+      return [bank.code,{ready,error,hasRows:daily.length>0,summary:ownSummary}];
+    }));
+    let ready=false;
     const el = (tag, cls, text) => { const item = document.createElement(tag); item.className = cls || ''; if (text) item.textContent = text; return item; };
     const panel = el('details','bank-investments');
     panel.open=true;
     panel.appendChild(el('summary','','Aplicações e resgates · prévia e TXT'));
-    panel.appendChild(el('p','bank-investments-status',ready
-      ? 'Saldos diários conferidos. Escolha o banco para preparar os lançamentos.'
-      : 'A geração será liberada quando todas as entradas e saídas diárias estiverem batendo e não houver bancos com erro.'));
-    if (ready && summary?.ok === false) panel.appendChild(el('p','bank-investments-note','Os totais diários batem, mas há lançamentos sem correspondência individual no relatório. Revise-os na conferência; o zeramento abaixo usa os totais diários.'));
+    const status=el('p','bank-investments-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');panel.appendChild(status);
+    const reviewNote=el('p','bank-investments-note','Os totais diários deste banco batem, mas há lançamentos sem correspondência individual no relatório. Revise-os na conferência; o zeramento abaixo usa os totais diários.');
+    reviewNote.hidden=true;panel.appendChild(reviewNote);
     const help=el('details','bank-investments-help');help.appendChild(el('summary','','Como funciona o zeramento'));
     help.appendChild(el('p','bank-investments-rule','Zeramento diário: saldo negativo gera resgate (débito no banco); saldo positivo gera aplicação (crédito no banco). A conta informada é a mesma para as duas operações.'));
     const form = el('form','bank-investments-form'), fields = [];
     const bankLabel=el('label','bank-investments-selector','Banco para gerar os lançamentos');
     const bankSelect=el('select','bank-investments-bank-select');bankSelect.setAttribute('aria-label','Banco para aplicações e resgates');
-    banks.forEach(bank=>{const option=el('option','',bank.label+(bank.account?' · conta '+bank.account:''));option.value=bank.code;bankSelect.appendChild(option);});
-    bankSelect.value=banks[0].code;bankLabel.appendChild(bankSelect);form.appendChild(bankLabel);
+    banks.forEach(bank=>{const state=bankStates.get(bank.code);
+      const note=state.ready?'Conferido':state.error?'Erro na conferência':state.hasRows?'Com divergências':'Sem dias conferidos';
+      const option=el('option','',bank.label+(bank.account?' · conta '+bank.account:'')+' · '+note);option.value=bank.code;bankSelect.appendChild(option);
+    });
+    bankSelect.value=(banks.find(bank=>bankStates.get(bank.code).ready) || banks[0]).code;bankLabel.appendChild(bankSelect);form.appendChild(bankLabel);
     for (const bank of banks) {
       const fieldset = el('fieldset','bank-investments-bank'); fieldset.appendChild(el('legend','',bank.label));
       const makeInput = (text,value,pattern,mode) => {
@@ -68,6 +80,13 @@
     let active, revision=0;
     signal?.addEventListener('abort',()=>active?.abort(),{once:true});
     function syncBank() {
+      const state=bankStates.get(bankSelect.value),bank=banks.find(item=>item.code===bankSelect.value);
+      ready=Boolean(state?.ready);
+      status.textContent=ready ? bank.label+': saldos diários conferidos. Prévia e TXT liberados para este banco.'
+        : state?.error ? bank.label+': há erro na conferência deste banco. Confira os arquivos e processe novamente.'
+        : !state?.hasRows ? bank.label+': não há dias conferidos para gerar os lançamentos deste banco.'
+        : bank.label+': a geração será liberada quando todas as entradas e saídas diárias deste banco estiverem batendo.';
+      reviewNote.hidden=!ready || state?.summary?.ok!==false;
       fields.forEach(item=>{const chosen=item.bank===bankSelect.value;item.fieldset.hidden=!chosen;
         [item.account,item.investment,item.opening].forEach(input=>input.disabled=!chosen || !ready);
       });

@@ -32,7 +32,7 @@ test('painel fica visível e explica o bloqueio quando há diferença diária ou
     const {context,state,find}=setup();modify(state);context.RazyncInvestments.mount(state);
     assert.equal(state.target.children.length,1);
     assert.equal(find('bank-investments-preview-button').disabled,true);
-    assert.match(find('bank-investments-status').textContent,/liberada/);
+    assert.match(find('bank-investments-status').textContent,/liberada|erro/);
   }
   const {context,state}=setup();state.rows=[];context.RazyncInvestments.mount(state);assert.equal(state.target.children.length,0);
 });
@@ -97,6 +97,7 @@ test('prévia pagina todos os lançamentos sem cortar o conteúdo baixado',async
 test('seletor preserva contas de cada banco e envia somente seus extratos',async()=>{
   const {context,state,calls,all,find}=setup();
   state.banks.push({code:'daycoval',label:'Daycoval',account:'2283'});
+  state.rows=[{BANCO:'Itaú 508',DATA:'01/08/2026'},{BANCO:'Daycoval 2283',DATA:'01/08/2026'}];
   state.snapshot.values=state.snapshot.values.filter(([key])=>!['banks_json','file_banks_json','files'].includes(key));
   state.snapshot.append('banks_json','["itau","daycoval"]');state.snapshot.append('file_banks_json','["itau","daycoval","itau"]');
   state.snapshot.append('files','ITAU_A');state.snapshot.append('files','DAYCOVAL_A');state.snapshot.append('files','ITAU_B');
@@ -124,4 +125,50 @@ test('prévia sem bytes ANSI não libera um download em UTF-8 por engano',async(
   assert.equal(find('bank-investments-download').disabled,true);
   assert.match(find('bank-investments-message').textContent,/prévia válida/);
   await find('bank-investments-download').events.click();assert.equal(downloads.length,0);
+});
+
+
+test('banco conferido gera TXT mesmo com divergência diária em outro banco',async()=>{
+  const {context,state,calls,all,find}=setup();
+  state.banks.push({code:'daycoval',label:'Daycoval',account:'2283'});
+  state.rows=[{BANCO:'Itaú 508',ok:true},{BANCO:'Daycoval 2283',ok:false}];
+  state.balances=row=>({ok:row.ok});state.summary={ok:false,by_bank:{itau:{ok:true},daycoval:{ok:false}}};
+  context.RazyncInvestments.mount(state);
+  assert.equal(find('bank-investments-preview-button').disabled,false);
+  all(state.target).filter(el=>el.tag==='input')[1].value='900';
+  await find('bank-investments-form').events.submit({preventDefault(){}});
+  assert.equal(calls.length,1);assert.deepEqual(JSON.parse(calls[0].body.get('banks_json')),['itau']);
+  const selector=find('bank-investments-bank-select');selector.value='daycoval';selector.events.change();
+  assert.equal(find('bank-investments-preview-button').disabled,true);
+  assert.equal(find('bank-investments-download').disabled,true);
+  assert.match(find('bank-investments-status').textContent,/Daycoval.*liberada/);
+  await find('bank-investments-form').events.submit({preventDefault(){}});assert.equal(calls.length,1);
+});
+
+test('erro de outro banco não bloqueia o banco conferido nem mostra aviso de pendência nele',async()=>{
+  const {context,state,all,find,calls}=setup();
+  state.banks.unshift({code:'daycoval',label:'Daycoval',account:'2283'});
+  state.rows=[{BANCO:'Itaú 508'}];
+  state.summary={ok:false,errors:[{bank:'daycoval',error:'Arquivo não reconhecido'}],by_bank:{itau:{ok:true}}};
+  context.RazyncInvestments.mount(state);
+  const selector=find('bank-investments-bank-select');
+  assert.equal(selector.value,'itau');assert.equal(find('bank-investments-preview-button').disabled,false);
+  assert.equal(all(state.target).find(el=>el.className==='bank-investments-note').hidden,true);
+  all(state.target).filter(el=>el.tag==='input')[4].value='900';
+  await find('bank-investments-form').events.submit({preventDefault(){}});assert.equal(calls.length,1);
+  selector.value='daycoval';selector.events.change();
+  assert.equal(find('bank-investments-preview-button').disabled,true);
+  assert.match(find('bank-investments-status').textContent,/erro/);
+});
+
+test('contas diferentes do mesmo banco são avaliadas separadamente e dias ausentes bloqueiam a conta',()=>{
+  const {context,state,find}=setup();
+  state.banks=[{code:'itau_508',label:'Itaú',account:'508'},{code:'itau_509',label:'Itaú',account:'509'},{code:'inter',label:'Banco Inter',account:'510'}];
+  state.rows=[{BANCO:'Itaú 508',ok:false},{BANCO:'Itaú 509',ok:true}];state.balances=row=>({ok:row.ok});
+  context.RazyncInvestments.mount(state);
+  const selector=find('bank-investments-bank-select');assert.equal(selector.value,'itau_509');
+  assert.equal(find('bank-investments-preview-button').disabled,false);
+  selector.value='itau_508';selector.events.change();assert.equal(find('bank-investments-preview-button').disabled,true);
+  selector.value='inter';selector.events.change();assert.equal(find('bank-investments-preview-button').disabled,true);
+  assert.match(find('bank-investments-status').textContent,/não há dias/);
 });
