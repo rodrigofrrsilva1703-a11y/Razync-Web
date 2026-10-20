@@ -1,4 +1,5 @@
 from decimal import Decimal
+import base64
 import json
 import pandas as pd
 import pytest
@@ -116,6 +117,12 @@ def test_previa_e_txt_tem_mesmos_lancamentos_e_saldos_zerados(monkeypatch):
     assert preview.status_code==txt.status_code==200
     result=preview.json()
     assert result['txt']==txt.text
+    assert result['encoding']=='windows-1252'
+    assert base64.b64decode(result['txt_base64'])==txt.content
+    assert txt.content.decode('cp1252')==result['txt']
+    assert b'APLICA\xc7\xc3O' in txt.content
+    assert b'APLICA\xc3\x87\xc3\x83O' not in txt.content
+    assert 'charset=windows-1252' in txt.headers['content-type']
     assert result['txt'].splitlines()[0]=='DESCRIÇÃO;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO'
     assert all(row['DESCRIÇÃO']=='APLICAÇÃO E RESGATE' for row in result['rows'])
     assert all(len(line.split(';'))==6 for line in result['txt'].splitlines())

@@ -1,4 +1,5 @@
 """TXT Domínio para zeramento diário após conferência com extrato concluída."""
+import base64
 import json
 import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -111,8 +112,9 @@ def prepare_entries(company_code, banks, files, model, options, settings):
 def serialize_txt(entries):
     # Cabeçalho e seis colunas na ordem pedida para o Modelo Domínio.
     # Históricos literais, valores positivos e natureza nas contas D/C.
+    # ANSI/Windows-1252 evita que o importador legado leia acentos UTF-8 como Ã.
     lines = ''.join(f"{DESCRIPTION};{row['DATA']};{row['VALOR']:.2f};{row['DÉBITO']};{row['CRÉDITO']};{row['HISTÓRICO']}\n" for row in entries)
-    return (TXT_HEADER + lines).encode('utf-8')
+    return (TXT_HEADER + lines).encode('cp1252')
 
 
 def generate(company_code, banks, files, model, options, settings):
@@ -132,13 +134,14 @@ async def download_investments(request: Request, company_code: int, banks_json: 
         content = serialize_txt(entries)
         if request.url.path.endswith('/preview'):
             rows = [{key:format(value,'.2f') if isinstance(value,Decimal) else value for key,value in row.items()} for row in entries]
-            return JSONResponse({'rows':rows,'txt':content.decode('utf-8'), 'summary':{
+            return JSONResponse({'rows':rows,'txt':content.decode('cp1252'),
+                'txt_base64':base64.b64encode(content).decode('ascii'),'encoding':'windows-1252', 'summary':{
                 'lancamentos':len(rows), 'resgates':sum(row['TIPO']=='Resgate' for row in rows),
                 'aplicacoes':sum(row['TIPO']=='Aplicação' for row in rows),
                 'total_resgates':format(sum((row['VALOR'] for row in entries if row['TIPO']=='Resgate'),Decimal(0)),'.2f'),
                 'total_aplicacoes':format(sum((row['VALOR'] for row in entries if row['TIPO']=='Aplicação'),Decimal(0)),'.2f')}},
                 headers={'Cache-Control':'no-store'})
-        return Response(content,media_type='text/plain; charset=utf-8',headers={
+        return Response(content,media_type='text/plain; charset=windows-1252',headers={
             'Content-Disposition':f'attachment; filename="RAZYNC_{company_code}_APLICACOES_RESGATES.txt"','Cache-Control':'no-store'})
     except (ValueError, TypeError, KeyError) as exc:
         raise HTTPException(422,str(exc)) from exc

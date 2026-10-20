@@ -106,7 +106,7 @@
         if (!isCurrent() || controller.signal.aborted || revision!==currentRevision) return;
         const result=await response.json();
         if (!isCurrent() || controller.signal.aborted || revision!==currentRevision) return;
-        if (!Array.isArray(result.rows) || !result.rows.length || typeof result.txt!=='string' || !result.summary) throw new Error('Não foi possível montar uma prévia válida. Gere novamente.');
+        if (!Array.isArray(result.rows) || !result.rows.length || typeof result.txt!=='string' || typeof result.txt_base64!=='string' || result.encoding!=='windows-1252' || !result.summary) throw new Error('Não foi possível montar uma prévia válida. Gere novamente.');
         prepared={...result,revision:currentRevision};renderPreview(result);downloadButton.hidden=false;downloadButton.disabled=false;
         message.textContent='Confira os lançamentos abaixo e clique em Baixar TXT.';
       } catch(error) {
@@ -117,7 +117,8 @@
       if (!prepared || prepared.revision!==revision || !isCurrent()) return;
       const current=prepared;downloadButton.disabled=true;
       try {
-        await download(new Response(current.txt,{headers:{'Content-Type':'text/plain; charset=utf-8'}}),'RAZYNC_'+company+'_'+bankSelect.value.toUpperCase()+'_APLICACOES_RESGATES.txt');
+        const bytes=Uint8Array.from(atob(current.txt_base64),char=>char.charCodeAt(0));
+        await download(new Response(bytes,{headers:{'Content-Type':'text/plain; charset=windows-1252'}}),'RAZYNC_'+company+'_'+bankSelect.value.toUpperCase()+'_APLICACOES_RESGATES.txt');
         if (prepared===current && isCurrent()) message.textContent='TXT baixado com os mesmos lançamentos da prévia.';
       } catch(error) { if (prepared===current && isCurrent()) message.textContent=error.message || 'Não foi possível baixar o TXT.'; }
       finally { if (prepared===current && isCurrent()) downloadButton.disabled=false; }

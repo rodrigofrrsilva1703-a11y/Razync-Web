@@ -16,11 +16,13 @@ function setup(){
   }
   const calls=[],downloads=[];
   const preview={rows:[{DATA:'01/08/2026',BANCO:'itau',TIPO:'Resgate','DÉBITO':'508','CRÉDITO':'900',VALOR:'100.00',SALDO_ANTES:'-100.00',SALDO_APOS:'0.00','HISTÓRICO':'RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO'}],txt:'DESCRIÇÃO;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO\nAPLICAÇÃO E RESGATE;01/08/2026;100.00;508;900;RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO\n',summary:{total_resgates:'100.00',total_aplicacoes:'0.00'}};
-  const context={document:{createElement:tag=>new Element(tag)},FormData,AbortController,Response,
+  preview.encoding='windows-1252';
+  Object.defineProperty(preview,'txt_base64',{get(){return Buffer.from(this.txt,'latin1').toString('base64');},enumerable:true,configurable:true});
+  const context={atob,document:{createElement:tag=>new Element(tag)},FormData,AbortController,Response,
     fetch:async(url,options)=>{calls.push({url,...options});return {ok:true,json:async()=>preview};}};
   vm.createContext(context);vm.runInContext(fs.readFileSync('assets/js/bank-investments.js','utf8'),context);
   const target=new Element('div'),snapshot=new FormData();snapshot.append('banks_json','["itau"]');snapshot.append('file_banks_json','["itau"]');snapshot.append('model_file','MODELO_A');snapshot.append('files','EXTRATO_A');snapshot.append('options_json','{"data_inicial":"2026-08-01"}');
-  const state={target,company:3,banks:[{code:'itau',label:'Itaú',account:'508'}],snapshot,summary:{ok:true},rows:[{DATA:'01/08/2026'}],balances:()=>({ok:true}),isCurrent:()=>true,signal:new AbortController().signal,api:'/api',download:async(r,name)=>downloads.push({name,txt:await r.text()}),responseError:async()=> 'Falha'};
+  const state={target,company:3,banks:[{code:'itau',label:'Itaú',account:'508'}],snapshot,summary:{ok:true},rows:[{DATA:'01/08/2026'}],balances:()=>({ok:true}),isCurrent:()=>true,signal:new AbortController().signal,api:'/api',download:async(r,name)=>{const bytes=Buffer.from(await r.arrayBuffer());downloads.push({name,bytes,type:r.headers.get('content-type'),txt:new TextDecoder('windows-1252').decode(bytes)});},responseError:async()=> 'Falha'};
   const all=root=>[root,...root.children.flatMap(all)];
   return {context,state,calls,downloads,all,preview,find:(cls)=>all(target).find(el=>el.className===cls)};
 }
@@ -54,6 +56,9 @@ test('TXT usa mesma conta para aplicação e resgate e preserva arquivos e perí
   await find('bank-investments-download').events.click();
   assert.equal(downloads.length,1);assert.equal(downloads[0].txt,'DESCRIÇÃO;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO\nAPLICAÇÃO E RESGATE;01/08/2026;100.00;508;900;RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO\n');
   assert.equal(calls.length,1);
+  assert.equal(downloads[0].type,'text/plain; charset=windows-1252');
+  assert.ok(downloads[0].bytes.includes(Buffer.from([0x41,0x50,0x4c,0x49,0x43,0x41,0xc7,0xc3,0x4f])));
+  assert.ok(!downloads[0].bytes.includes(Buffer.from('APLICAÇÃO','utf8')));
   inputs[2].value='10,00';find('bank-investments-form').events.input();
   assert.equal(find('bank-investments-preview').hidden,true);
   await find('bank-investments-download').events.click();assert.equal(downloads.length,1);
@@ -108,4 +113,15 @@ test('seletor preserva contas de cada banco e envia somente seus extratos',async
   await find('bank-investments-form').events.submit({preventDefault(){}});
   assert.deepEqual(calls[1].body.values.filter(([key])=>key==='files').map(([,v])=>v),['ITAU_A','ITAU_B']);
   assert.deepEqual(JSON.parse(calls[1].body.get('settings_json')),{itau:{conta_banco:'508',conta_aplicacao:'900',saldo_anterior:'0,00'}});
+});
+
+
+test('prévia sem bytes ANSI não libera um download em UTF-8 por engano',async()=>{
+  const {context,state,preview,all,find,downloads}=setup();
+  delete preview.txt_base64;
+  context.RazyncInvestments.mount(state);all(state.target).filter(el=>el.tag==='input')[1].value='900';
+  await find('bank-investments-form').events.submit({preventDefault(){}});
+  assert.equal(find('bank-investments-download').disabled,true);
+  assert.match(find('bank-investments-message').textContent,/prévia válida/);
+  await find('bank-investments-download').events.click();assert.equal(downloads.length,0);
 });
