@@ -85,14 +85,14 @@ function initializeWorkspaceUI() {
 
 function initializeSidebarControls() {
   const toggle = document.querySelector("#sidebarToggle");
-  const mobile = window.matchMedia("(max-width: 760px)");
   let collapsed = false;
   try { collapsed = localStorage.getItem("razync.sidebar-collapsed") === "true"; } catch (_) {}
   const applySidebar = () => {
     document.body.classList.toggle("sidebar-collapsed", collapsed);
-    document.querySelector("#mainSidebar").inert = mobile.matches && collapsed;
+    document.querySelector("#mainSidebar").inert = collapsed;
     toggle.setAttribute("aria-expanded", String(!collapsed));
-    toggle.setAttribute("aria-label", collapsed ? (mobile.matches ? "Abrir menu lateral" : "Expandir menu lateral") : "Recolher menu lateral");
+    toggle.setAttribute("aria-label", collapsed ? "Abrir menu lateral" : "Recolher menu lateral");
+    toggle.title = collapsed ? "Abrir menu lateral" : "Recolher menu lateral";
   };
   applySidebar();
   toggle.addEventListener("click", () => {
@@ -100,7 +100,6 @@ function initializeSidebarControls() {
     try { localStorage.setItem("razync.sidebar-collapsed", String(collapsed)); } catch (_) {}
     window.dispatchEvent(new Event("resize"));
   });
-  mobile.addEventListener("change", applySidebar);
 }
 
 function initializeCompanyControls() {
