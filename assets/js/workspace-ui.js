@@ -85,20 +85,44 @@ function initializeWorkspaceUI() {
 
 function initializeSidebarControls() {
   const toggle = document.querySelector("#sidebarToggle");
-  let collapsed = false;
-  try { collapsed = localStorage.getItem("razync.sidebar-collapsed") === "true"; } catch (_) {}
-  const applySidebar = () => {
-    document.body.classList.toggle("sidebar-collapsed", collapsed);
-    document.querySelector("#mainSidebar").inert = collapsed;
-    toggle.setAttribute("aria-expanded", String(!collapsed));
-    toggle.setAttribute("aria-label", collapsed ? "Abrir menu lateral" : "Recolher menu lateral");
-    toggle.title = collapsed ? "Abrir menu lateral" : "Recolher menu lateral";
-  };
-  applySidebar();
-  toggle.addEventListener("click", () => {
-    collapsed = !collapsed; applySidebar();
-    try { localStorage.setItem("razync.sidebar-collapsed", String(collapsed)); } catch (_) {}
-    window.dispatchEvent(new Event("resize"));
+  const sidebar = document.querySelector("#mainSidebar");
+  const main = document.querySelector("main");
+  const footer = document.querySelector("footer");
+  let open = false;
+  function setOpen(next, moveFocus = true) {
+    open = next;
+    document.body.classList.toggle("sidebar-collapsed", !open);
+    document.body.classList.toggle("nav-drawer-open", open);
+    main.inert = open;
+    if (footer) footer.inert = open;
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.setAttribute("aria-label", open ? "Fechar menu lateral" : "Abrir menu lateral");
+    toggle.title = open ? "Fechar menu lateral" : "Abrir menu lateral";
+    if (!open && moveFocus) toggle.focus();
+    sidebar.inert = !open;
+    sidebar.setAttribute("aria-hidden", String(!open));
+    if (open && moveFocus) sidebar.querySelector(".main-nav-btn.active, .main-nav-btn")?.focus();
+  }
+  setOpen(false, false);
+  toggle.addEventListener("click", () => setOpen(!open));
+  document.querySelector("#sidebarClose").addEventListener("click", () => setOpen(false));
+  document.querySelector("#sidebarBackdrop").addEventListener("click", () => setOpen(false));
+  sidebar.addEventListener("click", event => {
+    if (event.target.closest(".main-nav-btn")) setOpen(false);
+  });
+  document.addEventListener("keydown", event => {
+    if (!open) return;
+    if (event.key === "Escape") {
+      event.preventDefault(); setOpen(false); return;
+    }
+    if (event.key !== "Tab") return;
+    const items = [...sidebar.querySelectorAll('a[href], button:not([disabled])')];
+    const first = items[0], last = items.at(-1);
+    if (event.shiftKey && (document.activeElement === first || !sidebar.contains(document.activeElement))) {
+      event.preventDefault(); last?.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !sidebar.contains(document.activeElement))) {
+      event.preventDefault(); first?.focus();
+    }
   });
 }
 
