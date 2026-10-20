@@ -2,12 +2,12 @@
 @keyframes portfolioReveal {from {opacity:0;transform:translateY(9px);} to {opacity:1;transform:translateY(0);}}
 #portfolioPicker {
   box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,1fr);
-  align-items:center;gap:clamp(30px,5vw,64px);
-  max-width:1040px;min-height:360px;margin:32px auto 50px;
-  padding:clamp(28px,4vw,48px);
-  border:1px solid #dfe7ef;border-radius:22px;
-  background:radial-gradient(ellipse at 5% 0%,#eaf3fc80,transparent 65%),#fff;
-  box-shadow:0 12px 40px #263e5605;
+  align-items:center;gap:0 clamp(30px,5vw,64px);
+  max-width:1040px;min-height:0;margin:32px auto 50px;
+  padding:clamp(28px,4vw,44px) clamp(28px,4vw,48px) 0;
+  border:1px solid #dce5ef;border-radius:24px;
+  background:radial-gradient(ellipse at 0% 0%,#e5f0fb80,transparent 55%),linear-gradient(145deg,#fff 55%,#f8fafd);
+  box-shadow:0 16px 48px #263e5607,inset 0 1px 0 #fff;
   animation:portfolioReveal .4s ease-out both;
 }
 #portfolioPicker[hidden] {display:none!important;}
@@ -15,31 +15,35 @@
   display:block;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:none;text-align:left;
 }
 #portfolioPicker .portfolio-eyebrow {
-  display:flex;align-items:center;gap:9px;margin-bottom:23px;
+  display:flex;align-items:center;gap:9px;margin-bottom:20px;
   color:#71859a;font-size:9px;font-weight:600;letter-spacing:1.2px;
 }
 #portfolioPicker .portfolio-brand-dot {width:7px;height:7px;border-radius:50%;background:#5994bb;box-shadow:0 0 0 4px #edf4fa;}
 #portfolioPicker .portfolio-eyebrow-divider {margin:0 2px;color:#c4cfda;font-weight:400;}
 #portfolioPicker h1 {
-  margin:0 0 16px;color:#203a54;font-size:clamp(27px,3.2vw,37px);font-weight:600;
-  line-height:1.2;letter-spacing:-1.25px;
+  margin:0 0 16px;color:#203a54;font-size:clamp(30px,3.6vw,41px);font-weight:600;
+  line-height:1.16;letter-spacing:-1.5px;
 }
+#portfolioPicker h1 > span {color:#6d89a4;font-weight:450;}
 #portfolioPicker .portfolio-heading p {max-width:330px;margin:0;color:#7b8b9b;font-size:12px;line-height:1.85;}
-#portfolioPicker .portfolio-capabilities {display:flex;flex-wrap:wrap;gap:7px;margin-top:25px;}
-#portfolioPicker .portfolio-capabilities span {
-  padding:5px 8px;border:1px solid #e5ebf2;border-radius:6px;background:#ffffff80;
-  color:#7a8b9d;font-size:9px;line-height:1.4;white-space:nowrap;
+#portfolioPicker .portfolio-capabilities {
+  grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:18px;margin-top:32px;padding:18px 0;border-top:1px solid #e7edf4;
 }
+#portfolioPicker .portfolio-capabilities > span {display:flex;align-items:center;justify-content:center;gap:9px;color:#7d8fa2;font-size:10px;line-height:1.5;}
+#portfolioPicker .portfolio-capabilities > span + span {border-left:1px solid #e7edf4;}
+#portfolioPicker .portfolio-capabilities svg {flex:none;width:17px;height:17px;stroke:#7e9bb7;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
 #portfolioPicker .portfolio-access {min-width:0;animation:portfolioReveal .4s .08s ease-out both;}
 #portfolioPicker .portfolio-access-heading {display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:13px;}
 #portfolioPicker .portfolio-section-title {margin:0;color:#4c6279;font-size:12px;font-weight:600;line-height:1.5;}
-#portfolioPicker .portfolio-access-caption {font-size:9px;color:#96a3b1;}
+#portfolioPicker .portfolio-access-caption {display:flex;align-items:center;gap:5px;font-size:8px;letter-spacing:.7px;color:#96a3b1;}
+#portfolioPicker .portfolio-access-caption > span {display:grid;place-items:center;width:19px;height:19px;border:1px solid #dde7f0;border-radius:6px;letter-spacing:0;color:#6d8ba6;font-size:9px;}
 #portfolioPicker .portfolio-list {display:grid;grid-template-columns:minmax(0,1fr);gap:12px;padding:0;}
 #portfolioPicker .portfolio-entry {
-  position:relative;box-sizing:border-box;display:grid;grid-template-columns:46px minmax(0,1fr);
-  align-items:center;gap:0 14px;width:100%;min-height:0;padding:23px 23px 0;
-  border:1px solid #dbe5ef;border-radius:15px;background:#fff;
-  box-shadow:0 4px 16px #253e5805;text-align:left;cursor:pointer;transform:none;
+  position:relative;box-sizing:border-box;display:grid;grid-template-columns:50px minmax(0,1fr);
+  align-items:center;gap:0 14px;width:100%;min-height:0;padding:25px 25px 0;
+  border:1px solid #d7e3ee;border-radius:17px;background:linear-gradient(140deg,#fff 60%,#f7fafe);
+  box-shadow:0 7px 20px #253e5807;text-align:left;cursor:pointer;transform:none;
   transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;
 }
 #portfolioPicker .portfolio-entry::before {content:none;}
@@ -47,36 +51,39 @@
 #portfolioPicker .portfolio-entry:active {background:#fbfdff;transform:translateY(-1px);}
 #portfolioPicker .portfolio-entry:focus-visible {outline:2px solid #6485a6;outline-offset:4px;}
 #portfolioPicker .portfolio-avatar {
-  grid-column:1;grid-row:1;display:grid;place-items:center;width:46px;height:46px;
-  border:1px solid #345c81;border-radius:13px;background:#294d70;color:#fff;
-  font-size:19px;font-weight:500;letter-spacing:0;box-shadow:0 3px 8px #294d7012;
+  grid-column:1;grid-row:1;display:grid;place-items:center;width:50px;height:50px;
+  border:1px solid #345c81;border-radius:13px;background:linear-gradient(145deg,#3e6a91,#284b6c);color:#fff;
+  font-size:22px;font-weight:500;letter-spacing:0;box-shadow:0 3px 8px #294d7012;
 }
 #portfolioPicker .portfolio-entry-info {grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:6px;min-width:0;}
-#portfolioPicker .portfolio-entry-info strong {color:#2b435d;font-size:16px;font-weight:600;line-height:1.35;overflow-wrap:anywhere;}
+#portfolioPicker .portfolio-entry-info strong {color:#2b435d;font-size:18px;font-weight:600;line-height:1.35;overflow-wrap:anywhere;}
 #portfolioPicker .portfolio-entry-quantity {margin:0;padding:0;color:#8a98a7;font-size:11px;font-weight:400;line-height:1.5;font-variant-numeric:tabular-nums;}
 #portfolioPicker .portfolio-entry-action {
   grid-column:1/-1;grid-row:2;display:flex;align-items:center;justify-content:space-between;gap:12px;
-  margin:22px 0 0;padding:13px 0;border-top:1px solid #edf1f5;
-  color:#547391;font-size:11px;font-weight:500;
+  margin:24px 0 0;padding:15px 0;border-top:1px solid #edf1f5;
+  color:#416586;font-size:12px;font-weight:500;
 }
 #portfolioPicker .portfolio-entry-arrow {
-  grid-column:auto;grid-row:auto;display:grid;place-items:center;width:28px;height:28px;
-  border:0;border-radius:8px;background:#eef4f9;color:#5a7b9b;font-size:18px;
+  grid-column:auto;grid-row:auto;display:grid;place-items:center;width:30px;height:30px;
+  border:1px solid #e4edf5;border-radius:50%;background:#f0f5fa;color:#5a7b9b;font-size:18px;
   transition:background-color .2s ease,color .2s ease,transform .2s ease;
 }
 #portfolioPicker .portfolio-entry:hover .portfolio-entry-arrow {background:#294d70;color:#fff;transform:translateX(2px);}
 #portfolioPicker .portfolio-access-hint {margin:13px 0 0;color:#93a0ad;font-size:10px;line-height:1.6;}
+#portfolioPicker .portfolio-access-hint > span {margin-left:4px;color:#819bb3;}
 #portfolioPicker .portfolio-loading {margin:0;padding:20px 0;color:#7b8593;font-size:12px;}
 @media(max-width:760px) {
-  #portfolioPicker {grid-template-columns:minmax(0,1fr);gap:29px;max-width:540px;min-height:0;margin-top:22px;border-radius:18px;padding:28px;}
+  #portfolioPicker {grid-template-columns:minmax(0,1fr);gap:27px;max-width:540px;min-height:0;margin-top:22px;border-radius:20px;padding:28px 28px 0;}
   #portfolioPicker h1 {font-size:31px;}
   #portfolioPicker .portfolio-eyebrow {margin-bottom:19px;}
-  #portfolioPicker .portfolio-capabilities {margin-top:18px;}
+  #portfolioPicker .portfolio-capabilities {gap:7px;margin-top:0;padding:17px 0;}
+  #portfolioPicker .portfolio-capabilities > span {gap:5px;font-size:9px;}
+  #portfolioPicker .portfolio-capabilities svg {width:15px;height:15px;}
   #portfolioPicker .portfolio-access {padding-top:23px;border-top:1px solid #e9eef4;}
 }
 @media(max-width:400px) {
-  #portfolioPicker {padding:23px 19px;}
-  #portfolioPicker h1 {font-size:28px;letter-spacing:-1px;}
+  #portfolioPicker {padding:25px 19px 0;}
+  #portfolioPicker h1 {font-size:30px;letter-spacing:-1.2px;}
   #portfolioPicker .portfolio-entry {padding:20px 18px 0;}
 }
 @media(prefers-reduced-motion:reduce) {
