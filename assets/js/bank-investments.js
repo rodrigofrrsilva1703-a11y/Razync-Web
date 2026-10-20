@@ -25,7 +25,8 @@
       };
       const account = makeInput('Conta do banco',bank.account || '', '[0-9]{1,15}','numeric'); account.readOnly=Boolean(bank.account);
       const investment = makeInput('Conta de aplicação e resgate','','[0-9]{1,15}','numeric');
-      const opening = makeInput('Saldo anterior ao primeiro dia (R$)','0,00','-?(?:[0-9]{1,3}(?:[.][0-9]{3})+|[0-9]+)(?:,[0-9]{1,2})?','decimal');
+      const opening = makeInput('Saldo anterior (R$)','0,00','-?(?:[0-9]{1,3}(?:[.][0-9]{3})+|[0-9]+)(?:,[0-9]{1,2})?','decimal');
+      opening.title='Saldo anterior ao primeiro dia analisado. Nos dias seguintes, considera o zeramento do dia anterior.';
       fields.push({bank:bank.code,account,investment,opening,fieldset}); form.appendChild(fieldset);
     }
     help.appendChild(el('small','bank-investments-note','Use 0,00 se o banco já estava zerado antes do primeiro dia analisado. O saldo anterior entra somente no primeiro dia; nos seguintes, o cálculo considera o zeramento do dia anterior.'));

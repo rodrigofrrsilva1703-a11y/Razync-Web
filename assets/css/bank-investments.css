@@ -31,32 +31,41 @@
 .bank-investments-bank-select {width:100%;min-height:40px;padding:9px 11px;border:1px solid #cbd9e9;border-radius:8px;background:#f7faff;color:#365b7e;font:inherit;font-size:12px;}
 .bank-investments-bank-select:focus-visible {outline:2px solid #7097c1;outline-offset:2px;}
 .bank-investments input:disabled {opacity:.65;}
-/* Configuração compacta; orientações detalhadas ficam sob demanda. */
-.bank-investments {margin-top:12px;padding:10px 12px;}
-.bank-investments > summary {font-size:12px;}
-.bank-investments-status {font-size:11px;line-height:1.5;margin:7px 0 10px;}
-.bank-investments .bank-investments-form {display:grid;grid-template-columns:minmax(160px,.8fr) minmax(0,2.2fr);gap:8px 12px;align-items:end;}
-.bank-investments-selector {max-width:none;margin:0;gap:4px;}
-.bank-investments-bank-select {min-height:34px;padding:7px 9px;font-size:11px;}
-.bank-investments-bank {margin:0;padding:0;border:0;border-radius:0;gap:9px;align-items:end;}
-.bank-investments-bank legend {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
-.bank-investments-bank input {margin-top:4px;padding:7px 8px;min-height:34px;}
-.bank-investments .bank-investments-preview-button {justify-self:start;margin:0;padding:7px 11px;font-size:11px;}
-.bank-investments-message {font-size:11px;line-height:1.5;margin:0;align-self:center;}
+/* Configuração alinhada, isolada dos estilos gerais dos formulários. */
+#reconcileResult .bank-investments {margin:12px 0 18px;padding:12px 14px;border-color:#dce6f0;border-radius:12px;box-shadow:0 2px 8px #253f5904;}
+#reconcileResult .bank-investments > summary {font-size:12px;font-weight:650;color:#314f70;line-height:1.6;}
+#reconcileResult .bank-investments > summary::marker {color:#7f98b3;}
+#reconcileResult .bank-investments-status {font-size:11px;line-height:1.5;margin:5px 0 12px;color:#5b7390;}
+#reconcileResult .bank-investments > .bank-investments-note {font-size:11px;line-height:1.5;margin:0 0 14px;padding:8px 10px;background:#f5f8fc;border:1px solid #e8eef5;border-radius:7px;color:#698097;}
+#reconcileResult .bank-investments-form {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:stretch;}
+#reconcileResult .bank-investments-selector {max-width:none;}
+#reconcileResult .bank-investments-bank {grid-column:span 3;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0;padding:0;border:0;align-items:stretch;}
+#reconcileResult .bank-investments-bank legend {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
+#reconcileResult .bank-investments-form label {display:flex;flex-direction:column;justify-content:space-between;gap:6px;margin:0;font-size:11px!important;font-weight:600;line-height:18px;color:#57708d!important;min-width:0;}
+#reconcileResult .bank-investments input,
+#reconcileResult .bank-investments select {box-sizing:border-box;width:100%;height:40px;min-height:40px;margin:0;padding:8px 10px!important;border-radius:8px!important;background:#fff!important;font-size:12px!important;line-height:20px;color:#29445f!important;font-variant-numeric:tabular-nums;}
+#reconcileResult .bank-investments input:read-only {background:#f3f6fa!important;color:#72859b!important;}
+#reconcileResult .bank-investments select {cursor:pointer;background:#f9fbfe!important;}
+#reconcileResult .bank-investments .bank-investments-preview-button {grid-column:1;justify-self:start;align-self:center;min-height:36px;margin:0;padding:8px 13px;font-size:11px;font-weight:600;border-color:#c9d8e9;background:#edf3fb;color:#355b85;border-radius:8px;}
+#reconcileResult .bank-investments .bank-investments-preview-button:hover:not(:disabled) {background:#e3edf9;border-color:#a9c0dc;}
+#reconcileResult .bank-investments-message {grid-column:2/-1;align-self:center;font-size:11px;line-height:1.5;margin:0;}
 .bank-investments-message:empty {display:none;}
-.bank-investments-help {margin-top:9px;}
-.bank-investments-help > summary {cursor:pointer;color:#6b8095;font-size:10px;}
+#reconcileResult .bank-investments-help {margin-top:10px;padding-top:8px;border-top:1px solid #edf1f6;}
+#reconcileResult .bank-investments-help > summary {cursor:pointer;color:#72869c;font-size:10px;line-height:1.6;}
 .bank-investments-rule,.bank-investments-note {font-size:11px;line-height:1.5;margin:7px 0;}
 .bank-investments-preview {margin-top:12px;padding-top:10px;}
 .bank-investments-preview-scroll {max-height:280px;}
 .bank-investments-preview-totals {font-size:11px;line-height:1.5;margin-bottom:7px;}
 .bank-investments .bank-investments-download {padding:7px 11px;font-size:11px;}
-@media(max-width:900px) {
- .bank-investments .bank-investments-form {grid-template-columns:minmax(0,1fr);}
- .bank-investments-bank {grid-template-columns:repeat(3,minmax(0,1fr));}
+@media(max-width:850px) {
+ #reconcileResult .bank-investments-form {grid-template-columns:repeat(2,minmax(0,1fr));}
+ #reconcileResult .bank-investments-selector,#reconcileResult .bank-investments-bank {grid-column:1/-1;}
+ #reconcileResult .bank-investments-message {grid-column:2;}
 }
 @media(max-width:560px) {
- .bank-investments-bank {grid-template-columns:repeat(2,minmax(0,1fr));}
- .bank-investments-bank label:last-child {grid-column:1/-1;}
- .bank-investments-bank input,.bank-investments-bank-select,.bank-investments .bank-investments-preview-button,.bank-investments .bank-investments-download {min-height:44px;}
+ #reconcileResult .bank-investments {padding:12px;}
+ #reconcileResult .bank-investments-bank {grid-template-columns:repeat(2,minmax(0,1fr));}
+ #reconcileResult .bank-investments-bank label:last-child {grid-column:1/-1;}
+ #reconcileResult .bank-investments-message {grid-column:1/-1;}
+ #reconcileResult .bank-investments input,#reconcileResult .bank-investments select,#reconcileResult .bank-investments .bank-investments-preview-button,.bank-investments .bank-investments-download {min-height:44px;}
 }
