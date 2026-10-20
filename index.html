@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="./assets/css/fiscal-studio.css?v=ia-documentos-20261014-15">
   <link rel="stylesheet" href="./assets/css/fiscal-ai-reader.css?v=comparison-20261019-1">
   <link rel="stylesheet" href="./assets/css/fiscal-account-dialog.css?v=20261020-11">
-  <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=20261020-6">
+  <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=20261020-7">
 </head>
 <body class="sidebar-collapsed">
   <div class="app-shell">
@@ -48,22 +48,21 @@
       <section id="companiesView" class="global-view active">
         <section id="portfolioPicker" class="portfolio-picker" aria-label="Carteiras dos colaboradores">
           <div class="portfolio-heading">
-            <div class="portfolio-heading-copy">
-              <span class="portfolio-eyebrow">ÁREA DE TRABALHO</span>
-              <h1>Sua rotina contábil, organizada.</h1>
-              <p>Acesse suas empresas e continue de onde precisa.</p>
+            <span class="portfolio-eyebrow"><span class="portfolio-brand-dot" aria-hidden="true"></span> RAZYNC <span class="portfolio-eyebrow-divider" aria-hidden="true">/</span> EMPRESAS</span>
+            <h1>Mais fluidez na sua<br>rotina contábil.</h1>
+            <p>Da organização à conferência, tudo começa pela sua carteira de empresas.</p>
+            <div class="portfolio-capabilities" aria-label="Ferramentas disponíveis nas empresas">
+              <span>Modelo Domínio</span><span>Base Inteligente</span><span>Conferências</span>
             </div>
-            <svg class="portfolio-heading-art" width="96" height="80" viewBox="0 0 96 80" fill="none" aria-hidden="true">
-              <rect x="31" y="8" width="46" height="56" rx="8" stroke="currentColor" opacity=".25"/>
-              <rect x="23" y="16" width="46" height="56" rx="8" fill="#f3f7fb" stroke="currentColor" opacity=".5"/>
-              <rect x="15" y="24" width="46" height="48" rx="8" fill="#fff" stroke="currentColor"/>
-              <path d="M27 38h22M27 46h16M27 54h19" stroke="currentColor" stroke-linecap="round"/>
-              <circle cx="69" cy="58" r="13" fill="#e9f1f8"/>
-              <path d="m64 58 3 3 7-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
           </div>
-          <h2 class="portfolio-section-title">Suas carteiras</h2>
-          <div id="portfolioList" class="portfolio-list" aria-busy="true"><p class="portfolio-loading" role="status">Carregando carteiras…</p></div>
+          <div class="portfolio-access">
+            <div class="portfolio-access-heading">
+              <h2 class="portfolio-section-title">Escolha sua carteira</h2>
+              <span class="portfolio-access-caption">Para começar</span>
+            </div>
+            <div id="portfolioList" class="portfolio-list" aria-busy="true"><p class="portfolio-loading" role="status">Carregando carteiras…</p></div>
+            <p class="portfolio-access-hint">Selecione uma empresa na próxima etapa.</p>
+          </div>
         </section>
         <section class="hero compact-hero" hidden>
           <div class="eyebrow">RAZYNC</div>
