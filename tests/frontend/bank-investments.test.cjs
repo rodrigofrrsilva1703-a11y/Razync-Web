@@ -15,7 +15,7 @@ function setup(){
     get(k){return this.values.find(([name])=>name===k)?.[1];}
   }
   const calls=[],downloads=[];
-  const preview={rows:[{DATA:'01/08/2026',BANCO:'itau',TIPO:'Resgate','DÉBITO':'508','CRÉDITO':'900',VALOR:'100.00',SALDO_ANTES:'-100.00',SALDO_APOS:'0.00','HISTÓRICO':'RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO'}],txt:'DESCRIÇÃO: APLICAÇÃO E RESGATE;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO\nAPLICAÇÃO E RESGATE;01/08/2026;100.00;508;900;RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO\n',summary:{total_resgates:'100.00',total_aplicacoes:'0.00'}};
+  const preview={rows:[{DATA:'01/08/2026',BANCO:'itau',TIPO:'Resgate','DÉBITO':'508','CRÉDITO':'900',VALOR:'100.00',SALDO_ANTES:'-100.00',SALDO_APOS:'0.00','HISTÓRICO':'RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO'}],txt:'DESCRIÇÃO;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO\nAPLICAÇÃO E RESGATE;01/08/2026;100.00;508;900;RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO\n',summary:{total_resgates:'100.00',total_aplicacoes:'0.00'}};
   const context={document:{createElement:tag=>new Element(tag)},FormData,AbortController,Response,
     fetch:async(url,options)=>{calls.push({url,...options});return {ok:true,json:async()=>preview};}};
   vm.createContext(context);vm.runInContext(fs.readFileSync('assets/js/bank-investments.js','utf8'),context);
@@ -52,7 +52,7 @@ test('TXT usa mesma conta para aplicação e resgate e preserva arquivos e perí
   assert.equal(downloads.length,0);
   assert.equal(find('bank-investments-preview').hidden,false);
   await find('bank-investments-download').events.click();
-  assert.equal(downloads.length,1);assert.equal(downloads[0].txt,'DESCRIÇÃO: APLICAÇÃO E RESGATE;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO\nAPLICAÇÃO E RESGATE;01/08/2026;100.00;508;900;RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO\n');
+  assert.equal(downloads.length,1);assert.equal(downloads[0].txt,'DESCRIÇÃO;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO\nAPLICAÇÃO E RESGATE;01/08/2026;100.00;508;900;RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO\n');
   assert.equal(calls.length,1);
   inputs[2].value='10,00';find('bank-investments-form').events.input();
   assert.equal(find('bank-investments-preview').hidden,true);

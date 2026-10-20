@@ -62,7 +62,7 @@ def test_txt_formato_dominio_historicos_exatos_e_valores_positivos(monkeypatch):
     monkeypatch.setattr(investments,'reconcile',reconcile)
     response=post({'itau':{'conta_aplicacao':'900','saldo_anterior':'0,00'}})
     assert response.status_code==200,response.text
-    assert response.text=='DESCRIÇÃO: APLICAÇÃO E RESGATE;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO\nAPLICAÇÃO E RESGATE;01/08/2026;100.00;508;900;RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO\nAPLICAÇÃO E RESGATE;02/08/2026;30.00;900;508;APLICAÇÃO FINANCEIRA CF EXTRATO\n'
+    assert response.text=='DESCRIÇÃO;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO\nAPLICAÇÃO E RESGATE;01/08/2026;100.00;508;900;RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO\nAPLICAÇÃO E RESGATE;02/08/2026;30.00;900;508;APLICAÇÃO FINANCEIRA CF EXTRATO\n'
     assert calls[0][0:3]==(3,'itau',b'test')
 
 
@@ -101,7 +101,7 @@ def test_integracao_le_modelo_e_extrato_reais_sem_substituir_motor():
         files=[('model_file',('modelo.xlsx',model)),('files',('itau.xlsx',statement))])
     assert response.status_code==200,response.text
     assert response.text.splitlines()==[
-        'DESCRIÇÃO: APLICAÇÃO E RESGATE;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO',
+        'DESCRIÇÃO;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO',
         'APLICAÇÃO E RESGATE;01/08/2026;100.00;508;900;RESGATE APLICAÇÃO FINANCEIRA CF EXTRATO',
         'APLICAÇÃO E RESGATE;02/08/2026;30.00;900;508;APLICAÇÃO FINANCEIRA CF EXTRATO']
 
@@ -116,7 +116,7 @@ def test_previa_e_txt_tem_mesmos_lancamentos_e_saldos_zerados(monkeypatch):
     assert preview.status_code==txt.status_code==200
     result=preview.json()
     assert result['txt']==txt.text
-    assert result['txt'].splitlines()[0]=='DESCRIÇÃO: APLICAÇÃO E RESGATE;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO'
+    assert result['txt'].splitlines()[0]=='DESCRIÇÃO;DATA;VALOR;DÉBITO;CRÉDITO;HISTÓRICO'
     assert all(row['DESCRIÇÃO']=='APLICAÇÃO E RESGATE' for row in result['rows'])
     assert all(len(line.split(';'))==6 for line in result['txt'].splitlines())
     assert result['summary']=={'lancamentos':2,'resgates':1,'aplicacoes':1,'total_resgates':'100.00','total_aplicacoes':'30.00'}
