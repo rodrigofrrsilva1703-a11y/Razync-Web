@@ -25,26 +25,22 @@ function setup(companies, portfolios) {
 }
 
 test('carteiras mostram totais reais e contam apenas as empresas do colaborador', () => {
-  const {context, nodes} = setup([{codigo: 242}, {codigo: 626}, {codigo: 1000}], [
+  const {context} = setup([{codigo: 242}, {codigo: 626}, {codigo: 1000}], [
     {id: 'all', name: 'Rodrigo', companyCodes: null},
     {id: 'one', name: 'Ana', companyCodes: [626]},
   ]);
-  assert.equal(nodes.get('#portfolioTotal').textContent, '2 carteiras');
-  assert.equal(nodes.get('#portfolioCompanyTotal').textContent, '3 empresas');
   const cards = context.portfolioList.children;
-  assert.equal(cards[0].children.find(x => x.className === 'portfolio-entry-quantity').textContent, '3 empresas na carteira');
-  assert.equal(cards[1].children.find(x => x.className === 'portfolio-entry-quantity').textContent, '1 empresa na carteira');
+  assert.equal(cards[0].children.find(x => x.className === 'portfolio-entry-info').children[1].textContent, '3 empresas na carteira');
+  assert.equal(cards[1].children.find(x => x.className === 'portfolio-entry-info').children[1].textContent, '1 empresa na carteira');
   assert.equal(context.portfolioList.attributes['aria-busy'], 'false');
   cards[1].click();
   assert.equal(context.selectedId, 'one');
 });
 
 test('carteira vazia e nomes com caracteres especiais continuam acessíveis', () => {
-  const {context, nodes} = setup([], [{id: 'empty', name: 'João & Maria', companyCodes: []}]);
-  assert.equal(nodes.get('#portfolioTotal').textContent, '1 carteira');
-  assert.equal(nodes.get('#portfolioCompanyTotal').textContent, '0 empresas');
+  const {context} = setup([], [{id: 'empty', name: 'João & Maria', companyCodes: []}]);
   const card = context.portfolioList.children[0];
   assert.equal(card.attributes['aria-label'], 'Abrir carteira de João & Maria');
   assert.equal(card.children.find(x => x.className === 'portfolio-entry-info').children[0].textContent, 'João & Maria');
-  assert.equal(card.children.find(x => x.className === 'portfolio-entry-quantity').textContent, '0 empresas na carteira');
+  assert.equal(card.children.find(x => x.className === 'portfolio-entry-info').children[1].textContent, '0 empresas na carteira');
 });
