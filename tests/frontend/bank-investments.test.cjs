@@ -172,3 +172,57 @@ test('contas diferentes do mesmo banco são avaliadas separadamente e dias ausen
   selector.value='inter';selector.events.change();assert.equal(find('bank-investments-preview-button').disabled,true);
   assert.match(find('bank-investments-status').textContent,/não há dias/);
 });
+
+
+test('salvar abre a escolha de pasta e grava os bytes ANSI da prévia sem baixar outra cópia',async()=>{
+  const {context,state,preview,downloads,all,find}=setup();const events=[];let options,written;
+  context.showSaveFilePicker=async config=>{options=config;events.push('picker');return {createWritable:async()=>({
+    write:async bytes=>{written=Buffer.from(bytes);events.push('write');},
+    close:async()=>events.push('close'),abort:async()=>events.push('abort'),
+  })};};
+  context.RazyncInvestments.mount(state);all(state.target).filter(el=>el.tag==='input')[1].value='900';
+  await find('bank-investments-form').events.submit({preventDefault(){}});
+  assert.equal(find('bank-investments-download').textContent,'Salvar TXT…');
+  await find('bank-investments-download').events.click();
+  assert.equal(options.suggestedName,'RAZYNC_3_ITAU_APLICACOES_RESGATES.txt');
+  assert.equal(options.types[0].accept['text/plain'][0],'.txt');
+  assert.deepEqual(written,Buffer.from(preview.txt,'latin1'));
+  assert.deepEqual(events,['picker','write','close']);assert.equal(downloads.length,0);
+  assert.match(find('bank-investments-message').textContent,/pasta escolhida/);
+  assert.equal(find('bank-investments-download').disabled,false);
+});
+
+test('cancelar a escolha da pasta mantém a prévia disponível sem iniciar outro download',async()=>{
+  const {context,state,downloads,all,find}=setup();
+  context.showSaveFilePicker=async()=>{throw Object.assign(new Error('Cancelado'),{name:'AbortError'});};
+  context.RazyncInvestments.mount(state);all(state.target).filter(el=>el.tag==='input')[1].value='900';
+  await find('bank-investments-form').events.submit({preventDefault(){}});
+  await find('bank-investments-download').events.click();
+  assert.equal(downloads.length,0);assert.equal(find('bank-investments-preview').hidden,false);
+  assert.equal(find('bank-investments-download').disabled,false);
+  assert.match(find('bank-investments-message').textContent,/cancelado/);
+});
+
+test('alterar configuração durante a escolha da pasta impede salvar a prévia antiga',async()=>{
+  const {context,state,downloads,all,find}=setup();let finish,created=0;
+  context.showSaveFilePicker=()=>new Promise(resolve=>finish=resolve);
+  context.RazyncInvestments.mount(state);all(state.target).filter(el=>el.tag==='input')[1].value='900';
+  await find('bank-investments-form').events.submit({preventDefault(){}});
+  const pending=find('bank-investments-download').events.click();
+  find('bank-investments-form').events.input();finish({createWritable:async()=>{created++;}});await pending;
+  assert.equal(created,0);assert.equal(downloads.length,0);assert.equal(find('bank-investments-download').disabled,true);
+});
+
+test('erro na gravação aborta o arquivo temporário e permite tentar salvar novamente',async()=>{
+  const {context,state,downloads,all,find}=setup();let aborted=0,closed=0;
+  context.showSaveFilePicker=async()=>({createWritable:async()=>({
+    write:async()=>{throw Error('Sem espaço na pasta.');},
+    close:async()=>closed++,abort:async()=>aborted++,
+  })});
+  context.RazyncInvestments.mount(state);all(state.target).filter(el=>el.tag==='input')[1].value='900';
+  await find('bank-investments-form').events.submit({preventDefault(){}});
+  await find('bank-investments-download').events.click();
+  assert.equal(aborted,1);assert.equal(closed,0);assert.equal(downloads.length,0);
+  assert.equal(find('bank-investments-download').disabled,false);
+  assert.match(find('bank-investments-message').textContent,/Sem espaço/);
+});

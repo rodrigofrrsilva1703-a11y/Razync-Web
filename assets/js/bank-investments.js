@@ -43,7 +43,7 @@
     }
     help.appendChild(el('small','bank-investments-note','Use 0,00 se o banco já estava zerado antes do primeiro dia analisado. O saldo anterior entra somente no primeiro dia; nos seguintes, o cálculo considera o zeramento do dia anterior.'));
     const button=el('button','bank-investments-preview-button','Gerar prévia'); button.type='submit';
-    const downloadButton=el('button','bank-investments-download','Baixar TXT'); downloadButton.type='button'; downloadButton.hidden=true; downloadButton.disabled=true;
+    const downloadButton=el('button','bank-investments-download',typeof globalThis.showSaveFilePicker==='function'?'Salvar TXT…':'Baixar TXT'); downloadButton.type='button'; downloadButton.hidden=true; downloadButton.disabled=true;
     const preview=el('section','bank-investments-preview'); preview.hidden=true; preview.setAttribute('aria-label','Prévia dos lançamentos de aplicações e resgates');
     let prepared=null;
     const currency=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
@@ -128,7 +128,7 @@
         if (!isCurrent() || controller.signal.aborted || revision!==currentRevision) return;
         if (!Array.isArray(result.rows) || !result.rows.length || typeof result.txt!=='string' || typeof result.txt_base64!=='string' || result.encoding!=='windows-1252' || !result.summary) throw new Error('Não foi possível montar uma prévia válida. Gere novamente.');
         prepared={...result,revision:currentRevision};renderPreview(result);downloadButton.hidden=false;downloadButton.disabled=false;
-        message.textContent='Confira os lançamentos abaixo e clique em Baixar TXT.';
+        message.textContent=typeof globalThis.showSaveFilePicker==='function'?'Confira os lançamentos abaixo e clique em Salvar TXT para escolher a pasta.':'Confira os lançamentos abaixo e clique em Baixar TXT.';
       } catch(error) {
         if (error.name!=='AbortError' && isCurrent() && revision===currentRevision) message.textContent=error.message;
       } finally { if (revision===currentRevision) button.disabled=false; }
@@ -137,10 +137,31 @@
       if (!prepared || prepared.revision!==revision || !isCurrent()) return;
       const current=prepared;downloadButton.disabled=true;
       try {
-        const bytes=Uint8Array.from(atob(current.txt_base64),char=>char.charCodeAt(0));
-        await download(new Response(bytes,{headers:{'Content-Type':'text/plain; charset=windows-1252'}}),'RAZYNC_'+company+'_'+bankSelect.value.toUpperCase()+'_APLICACOES_RESGATES.txt');
-        if (prepared===current && isCurrent()) message.textContent='TXT baixado com os mesmos lançamentos da prévia.';
-      } catch(error) { if (prepared===current && isCurrent()) message.textContent=error.message || 'Não foi possível baixar o TXT.'; }
+        const txtBytes=()=>Uint8Array.from(atob(current.txt_base64),char=>char.charCodeAt(0));
+        const filename='RAZYNC_'+company+'_'+bankSelect.value.toUpperCase()+'_APLICACOES_RESGATES.txt';
+        const stillCurrent=()=>prepared===current && current.revision===revision && isCurrent();
+        if (typeof globalThis.showSaveFilePicker==='function') {
+          // Invocado diretamente no clique, antes de qualquer espera de rede.
+          const handle=await globalThis.showSaveFilePicker({id:'razync-investments',suggestedName:filename,
+            types:[{description:'TXT para Domínio',accept:{'text/plain':['.txt']}}]});
+          if (!stillCurrent()) return;
+          let writer;
+          try {
+            writer=await handle.createWritable();
+            if (!stillCurrent()) {await writer.abort();writer=null;return;}
+            await writer.write(txtBytes());
+            if (!stillCurrent()) {await writer.abort();writer=null;return;}
+            await writer.close();writer=null;
+          } catch(error) {if(writer) await writer.abort().catch(()=>{});throw error;}
+          if (stillCurrent()) message.textContent='TXT salvo na pasta escolhida, com os mesmos lançamentos da prévia.';
+        } else {
+          await download(new Response(txtBytes(),{headers:{'Content-Type':'text/plain; charset=windows-1252'}}),filename);
+          if (stillCurrent()) message.textContent='TXT baixado com os mesmos lançamentos da prévia.';
+        }
+      } catch(error) {
+        if (prepared===current && isCurrent()) message.textContent=error.name==='AbortError'
+          ? 'Salvamento cancelado. Você pode escolher a pasta novamente.' : error.message || 'Não foi possível salvar o TXT.';
+      }
       finally { if (prepared===current && isCurrent()) downloadButton.disabled=false; }
     });
     return panel;
