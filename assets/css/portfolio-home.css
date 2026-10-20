@@ -1,93 +1,118 @@
-/* Painel de entrada: apresentação e acesso à carteira em uma única composição. */
-@keyframes portfolioReveal {from {opacity:0;transform:translateY(9px);} to {opacity:1;transform:translateY(0);}}
+/* Entrada da carteira e catálogo: estilos limitados à página de empresas. */
+@keyframes portfolioReveal { from {opacity:0;transform:translateY(10px)} to {opacity:1;transform:none} }
 #portfolioPicker {
-  box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,1fr);
-  align-items:center;gap:0 clamp(30px,5vw,64px);
-  max-width:1040px;min-height:0;margin:32px auto 50px;
-  padding:clamp(28px,4vw,44px) clamp(28px,4vw,48px) 0;
-  border:1px solid #dce5ef;border-radius:24px;
-  background:radial-gradient(ellipse at 0% 0%,#e5f0fb80,transparent 55%),linear-gradient(145deg,#fff 55%,#f8fafd);
-  box-shadow:0 16px 48px #263e5607,inset 0 1px 0 #fff;
-  animation:portfolioReveal .4s ease-out both;
+  box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
+  max-width:1100px;margin:32px auto 44px;padding:0;gap:0;overflow:hidden;
+  border:1px solid #dce5ef;border-radius:24px;background:#fff;
+  box-shadow:0 20px 60px #1f38550a;animation:portfolioReveal .4s ease-out both;
 }
-#portfolioPicker[hidden] {display:none!important;}
+#portfolioPicker[hidden] {display:none!important}
 #portfolioPicker .portfolio-heading {
-  display:block;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:none;text-align:left;
+  display:flex;flex-direction:column;align-items:flex-start;position:relative;isolation:isolate;
+  min-width:0;margin:0;padding:40px 42px;border:0;border-radius:0;text-align:left;
+  background:radial-gradient(ellipse at 95% 100%,#33608080,transparent 65%),#1d354e;
 }
-#portfolioPicker .portfolio-eyebrow {
-  display:flex;align-items:center;gap:9px;margin-bottom:20px;
-  color:#71859a;font-size:9px;font-weight:600;letter-spacing:1.2px;
+#portfolioPicker .portfolio-heading::after {
+  content:"";position:absolute;z-index:-1;right:-75px;bottom:-125px;width:300px;height:300px;
+  border:1px solid #ffffff0d;border-radius:50%;box-shadow:0 0 0 48px #ffffff03,0 0 0 96px #ffffff02;pointer-events:none;
 }
-#portfolioPicker .portfolio-brand-dot {width:7px;height:7px;border-radius:50%;background:#5994bb;box-shadow:0 0 0 4px #edf4fa;}
-#portfolioPicker .portfolio-eyebrow-divider {margin:0 2px;color:#c4cfda;font-weight:400;}
-#portfolioPicker h1 {
-  margin:0 0 16px;color:#203a54;font-size:clamp(30px,3.6vw,41px);font-weight:600;
-  line-height:1.16;letter-spacing:-1.5px;
-}
-#portfolioPicker h1 > span {color:#6d89a4;font-weight:450;}
-#portfolioPicker .portfolio-heading p {max-width:330px;margin:0;color:#7b8b9b;font-size:12px;line-height:1.85;}
-#portfolioPicker .portfolio-capabilities {
-  grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:18px;margin-top:32px;padding:18px 0;border-top:1px solid #e7edf4;
-}
-#portfolioPicker .portfolio-capabilities > span {display:flex;align-items:center;justify-content:center;gap:9px;color:#7d8fa2;font-size:10px;line-height:1.5;}
-#portfolioPicker .portfolio-capabilities > span + span {border-left:1px solid #e7edf4;}
-#portfolioPicker .portfolio-capabilities svg {flex:none;width:17px;height:17px;stroke:#7e9bb7;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
-#portfolioPicker .portfolio-access {min-width:0;animation:portfolioReveal .4s .08s ease-out both;}
-#portfolioPicker .portfolio-access-heading {display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:13px;}
-#portfolioPicker .portfolio-section-title {margin:0;color:#4c6279;font-size:12px;font-weight:600;line-height:1.5;}
-#portfolioPicker .portfolio-access-caption {display:flex;align-items:center;gap:5px;font-size:8px;letter-spacing:.7px;color:#96a3b1;}
-#portfolioPicker .portfolio-access-caption > span {display:grid;place-items:center;width:19px;height:19px;border:1px solid #dde7f0;border-radius:6px;letter-spacing:0;color:#6d8ba6;font-size:9px;}
-#portfolioPicker .portfolio-list {display:grid;grid-template-columns:minmax(0,1fr);gap:12px;padding:0;}
+#portfolioPicker .portfolio-brand {display:flex;align-items:center;gap:12px;margin-bottom:38px;color:#fff}
+#portfolioPicker .portfolio-brand img {width:46px;height:46px;object-fit:contain;border-radius:12px;background:#fff;padding:5px;box-sizing:border-box}
+#portfolioPicker .portfolio-brand > span {font-size:23px;font-weight:650;line-height:1.2;letter-spacing:-.5px}
+#portfolioPicker .portfolio-brand small {display:block;margin-top:5px;color:#b7cadd;font-size:9px;font-weight:500;letter-spacing:1.5px}
+#portfolioPicker .portfolio-eyebrow {display:block;margin-bottom:14px;color:#adcae3;font-size:10px;font-weight:650;letter-spacing:1.7px}
+#portfolioPicker h1 {margin:0 0 18px;color:#fff;font-size:clamp(30px,3.3vw,43px);font-weight:600;line-height:1.18;letter-spacing:-1.5px}
+#portfolioPicker h1 > span {color:#b8d5ed;font-weight:450}
+#portfolioPicker .portfolio-heading p {max-width:340px;margin:0;color:#c4d3e1;font-size:14px;line-height:1.8}
+#portfolioPicker .portfolio-steps {display:flex;flex-wrap:wrap;gap:16px;margin:32px 0 0;padding:0;list-style:none}
+#portfolioPicker .portfolio-steps li {display:flex;align-items:center;gap:7px;color:#c5d5e3;font-size:11px}
+#portfolioPicker .portfolio-steps li > span {display:grid;place-items:center;width:24px;height:24px;border:1px solid #ffffff24;border-radius:7px;color:#acc8df;font-size:9px;font-variant-numeric:tabular-nums}
+#portfolioPicker .portfolio-steps li:first-child {color:#fff}
+#portfolioPicker .portfolio-steps li:first-child > span {background:#ffffff18;color:#fff;border-color:#ffffff40}
+#portfolioPicker .portfolio-access {display:flex;flex-direction:column;justify-content:center;min-width:0;padding:40px;animation:portfolioReveal .4s .08s ease-out both}
+#portfolioPicker .portfolio-access-heading {margin-bottom:24px}
+#portfolioPicker .portfolio-access-eyebrow {display:block;margin-bottom:10px;color:#6b8299;font-size:10px;font-weight:650;letter-spacing:1.5px}
+#portfolioPicker .portfolio-section-title {margin:0;color:#203b56;font-size:24px;letter-spacing:-.65px;font-weight:600;line-height:1.3}
+#portfolioPicker .portfolio-access-description {margin:9px 0 0;color:#6d7e90;font-size:13px;line-height:1.7}
+#portfolioPicker .portfolio-list {display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding:0}
 #portfolioPicker .portfolio-entry {
-  position:relative;box-sizing:border-box;display:grid;grid-template-columns:50px minmax(0,1fr);
-  align-items:center;gap:0 14px;width:100%;min-height:0;padding:25px 25px 0;
-  border:1px solid #d7e3ee;border-radius:17px;background:linear-gradient(140deg,#fff 60%,#f7fafe);
-  box-shadow:0 7px 20px #253e5807;text-align:left;cursor:pointer;transform:none;
-  transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;
+  box-sizing:border-box;position:relative;display:grid;grid-template-columns:50px minmax(0,1fr);
+  align-items:center;gap:0 14px;width:100%;min-height:0;padding:22px 22px 0;
+  border:1px solid #cfddeb;border-radius:16px;background:#f8fbfe;box-shadow:0 4px 12px #253e5804;
+  text-align:left;cursor:pointer;transform:none;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;
 }
-#portfolioPicker .portfolio-entry::before {content:none;}
-#portfolioPicker .portfolio-entry:hover {border-color:#9bb9d4;box-shadow:0 9px 25px #2948650d;transform:translateY(-3px);}
-#portfolioPicker .portfolio-entry:active {background:#fbfdff;transform:translateY(-1px);}
-#portfolioPicker .portfolio-entry:focus-visible {outline:2px solid #6485a6;outline-offset:4px;}
-#portfolioPicker .portfolio-avatar {
-  grid-column:1;grid-row:1;display:grid;place-items:center;width:50px;height:50px;
-  border:1px solid #345c81;border-radius:13px;background:linear-gradient(145deg,#3e6a91,#284b6c);color:#fff;
-  font-size:22px;font-weight:500;letter-spacing:0;box-shadow:0 3px 8px #294d7012;
+#portfolioPicker .portfolio-entry::before {content:none}
+#portfolioPicker .portfolio-entry:hover {border-color:#7e9fbe;box-shadow:0 8px 24px #29486512;transform:translateY(-3px)}
+#portfolioPicker .portfolio-entry:active {transform:none}
+#portfolioPicker .portfolio-entry:focus-visible {outline:3px solid #517da8;outline-offset:4px}
+#portfolioPicker .portfolio-avatar {grid-column:1;grid-row:1;display:grid;place-items:center;width:50px;height:50px;border:1px solid #d0deeb;border-radius:14px;background:#e6eff8;color:#365e82;font-size:23px;font-weight:550;letter-spacing:0}
+#portfolioPicker .portfolio-entry-info {grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:5px;min-width:0}
+#portfolioPicker .portfolio-entry-info strong {color:#243e58;font-size:19px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+#portfolioPicker .portfolio-entry-quantity {margin:0;padding:0;color:#687d91;font-size:12px;font-weight:400;line-height:1.5;font-variant-numeric:tabular-nums}
+#portfolioPicker .portfolio-entry-action {grid-column:1/-1;grid-row:2;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 0;padding:13px 0;border-top:1px solid #dfe9f2;color:#315b81;font-size:13px;font-weight:600}
+#portfolioPicker .portfolio-entry-arrow {grid-column:auto;grid-row:auto;display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:9px;background:#294e70;color:#fff;font-size:19px;transition:transform .2s ease,background-color .2s ease}
+#portfolioPicker .portfolio-entry:hover .portfolio-entry-arrow {background:#1c3e5d;transform:translateX(2px)}
+#portfolioPicker .portfolio-access-hint {margin:16px 0 0;color:#7b8b9c;font-size:11px;line-height:1.7}
+#portfolioPicker .portfolio-loading {margin:0;padding:28px 0;color:#667b8f;font-size:13px}
+#portfolioPicker .portfolio-capabilities {grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin:0;padding:25px 32px;border-top:1px solid #e5ecf3;background:#fbfcfe}
+#portfolioPicker .portfolio-capabilities > span {display:flex;align-items:center;gap:12px;min-width:0;color:#516a82;line-height:1.5}
+#portfolioPicker .portfolio-capabilities > span + span {padding-left:24px;border-left:1px solid #e2eaf2}
+#portfolioPicker .portfolio-capabilities svg {flex:none;width:23px;height:23px;stroke:#6486a6;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+#portfolioPicker .portfolio-capabilities strong {display:block;color:#3e5973;font-size:12px;font-weight:600}
+#portfolioPicker .portfolio-capabilities small {display:block;margin-top:3px;color:#74869a;font-size:11px;line-height:1.6}
+/* Catálogo após a escolha da carteira. */
+#companiesView .workspace {padding-bottom:24px}
+#companiesView .portfolio-toolbar {margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #e0e8f0}
+#companiesView .portfolio-back {min-height:40px;padding:9px 12px;border:1px solid #dce5ef;border-radius:10px;background:#fff;font-size:12px;text-decoration:none}
+#companiesView .portfolio-back:hover {background:#f2f6fb;border-color:#adc1d5}
+#companiesView .portfolio-owner {font-size:12px;color:#546e87}
+#companiesView .search-card {padding:24px;margin-bottom:18px;border:1px solid #dce5ef;border-radius:16px;background:#fff;box-shadow:0 3px 14px #203c5704}
+#companiesView .directory-heading {margin-bottom:20px}
+#companiesView .directory-heading h2 {margin:0 0 6px;font-size:19px;font-weight:600;letter-spacing:-.4px;color:#29435d}
+#companiesView .directory-heading p {margin:0;color:#718399;line-height:1.6}
+#companiesView .directory-controls {padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+#companiesView .directory-controls input,#companiesView .directory-controls select {min-height:48px;border-radius:10px;background:#f8fafc;font-size:14px}
+#companiesView .company-filters {margin-top:16px;gap:8px}
+#companiesView .company-filter {min-height:38px;padding:8px 13px;border-radius:8px;font-size:12px}
+#companiesView .company-filter.active {background:#eaf1f9;border-color:#c9d9e9;color:#2c5275}
+#companiesView .search-meta {margin-top:16px;padding:14px 0 0;border-top:1px solid #edf1f6;color:#7a8b9e}
+#companiesView #companyCount {color:#445f78;font-weight:550}
+#companiesView .grid {border-radius:16px;border-color:#dce5ef}
+#companiesView .company-card.company-row {min-height:82px;padding:16px 22px;gap:16px}
+#companiesView .company-row-name {font-size:14px}
+#companiesView .company-row-code {width:50px;height:40px;border-radius:10px;background:#edf3f9;border-color:#dce6f1;color:#456784}
+#companiesView .company-row-action b {width:30px;height:30px;border-radius:9px}
+#companiesView .company-card.company-row:hover {background:#f7faff;box-shadow:inset 3px 0 #6b91b4}
+@media(max-width:900px) {
+  #portfolioPicker .portfolio-heading {padding:32px}
+  #portfolioPicker .portfolio-access {padding:32px}
+  #portfolioPicker .portfolio-capabilities {gap:16px;padding:22px 26px}
+  #portfolioPicker .portfolio-capabilities > span + span {padding-left:16px}
 }
-#portfolioPicker .portfolio-entry-info {grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:6px;min-width:0;}
-#portfolioPicker .portfolio-entry-info strong {color:#2b435d;font-size:18px;font-weight:600;line-height:1.35;overflow-wrap:anywhere;}
-#portfolioPicker .portfolio-entry-quantity {margin:0;padding:0;color:#8a98a7;font-size:11px;font-weight:400;line-height:1.5;font-variant-numeric:tabular-nums;}
-#portfolioPicker .portfolio-entry-action {
-  grid-column:1/-1;grid-row:2;display:flex;align-items:center;justify-content:space-between;gap:12px;
-  margin:24px 0 0;padding:15px 0;border-top:1px solid #edf1f5;
-  color:#416586;font-size:12px;font-weight:500;
-}
-#portfolioPicker .portfolio-entry-arrow {
-  grid-column:auto;grid-row:auto;display:grid;place-items:center;width:30px;height:30px;
-  border:1px solid #e4edf5;border-radius:50%;background:#f0f5fa;color:#5a7b9b;font-size:18px;
-  transition:background-color .2s ease,color .2s ease,transform .2s ease;
-}
-#portfolioPicker .portfolio-entry:hover .portfolio-entry-arrow {background:#294d70;color:#fff;transform:translateX(2px);}
-#portfolioPicker .portfolio-access-hint {margin:13px 0 0;color:#93a0ad;font-size:10px;line-height:1.6;}
-#portfolioPicker .portfolio-access-hint > span {margin-left:4px;color:#819bb3;}
-#portfolioPicker .portfolio-loading {margin:0;padding:20px 0;color:#7b8593;font-size:12px;}
 @media(max-width:760px) {
-  #portfolioPicker {grid-template-columns:minmax(0,1fr);gap:27px;max-width:540px;min-height:0;margin-top:22px;border-radius:20px;padding:28px 28px 0;}
-  #portfolioPicker h1 {font-size:31px;}
-  #portfolioPicker .portfolio-eyebrow {margin-bottom:19px;}
-  #portfolioPicker .portfolio-capabilities {gap:7px;margin-top:0;padding:17px 0;}
-  #portfolioPicker .portfolio-capabilities > span {gap:5px;font-size:9px;}
-  #portfolioPicker .portfolio-capabilities svg {width:15px;height:15px;}
-  #portfolioPicker .portfolio-access {padding-top:23px;border-top:1px solid #e9eef4;}
-}
-@media(max-width:400px) {
-  #portfolioPicker {padding:25px 19px 0;}
-  #portfolioPicker h1 {font-size:30px;letter-spacing:-1.2px;}
-  #portfolioPicker .portfolio-entry {padding:20px 18px 0;}
+  #portfolioPicker {grid-template-columns:minmax(0,1fr);max-width:540px;margin:20px auto 32px;border-radius:20px}
+  #portfolioPicker .portfolio-heading {padding:28px}
+  #portfolioPicker .portfolio-brand {margin-bottom:28px}
+  #portfolioPicker h1 {font-size:34px;letter-spacing:-1px}
+  #portfolioPicker .portfolio-heading p {font-size:13px}
+  #portfolioPicker .portfolio-steps {margin-top:24px;gap:14px}
+  #portfolioPicker .portfolio-access {padding:28px}
+  #portfolioPicker .portfolio-access-heading {margin-bottom:20px}
+  #portfolioPicker .portfolio-section-title {font-size:22px}
+  #portfolioPicker .portfolio-capabilities {grid-template-columns:1fr;gap:16px;padding:22px 28px}
+  #portfolioPicker .portfolio-capabilities > span + span {padding:16px 0 0;border-left:0;border-top:1px solid #e5ecf3}
+  #companiesView .search-card {padding:18px}
+  #companiesView .directory-heading {gap:14px;margin-bottom:16px}
+  #companiesView .directory-heading #addCompany {width:auto;min-height:44px}
+  #companiesView .directory-controls {padding:0}
+  #companiesView .search-meta {align-items:flex-start;gap:8px;flex-wrap:wrap}
+  #companiesView .company-card.company-row {grid-template-columns:46px minmax(0,1fr) auto;padding:15px 12px;gap:10px}
+  #companiesView .company-row-code {width:44px;height:38px;font-size:11px}
+  #companiesView .company-row-name {font-size:13px;white-space:normal;overflow-wrap:anywhere}
+  #companiesView .company-row-action > span {display:none}
 }
 @media(prefers-reduced-motion:reduce) {
-  #portfolioPicker,#portfolioPicker .portfolio-access {animation:none;}
-  #portfolioPicker .portfolio-entry,#portfolioPicker .portfolio-entry-arrow {transition:none;}
-  #portfolioPicker .portfolio-entry:hover,#portfolioPicker .portfolio-entry:active,#portfolioPicker .portfolio-entry:hover .portfolio-entry-arrow {transform:none;}
+  #portfolioPicker,#portfolioPicker .portfolio-access {animation:none}
+  #portfolioPicker .portfolio-entry,#portfolioPicker .portfolio-entry-arrow {transition:none}
+  #portfolioPicker .portfolio-entry:hover,#portfolioPicker .portfolio-entry:active,#portfolioPicker .portfolio-entry:hover .portfolio-entry-arrow {transform:none}
 }
