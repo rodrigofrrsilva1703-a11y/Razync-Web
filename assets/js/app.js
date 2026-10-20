@@ -137,6 +137,7 @@ function setProcessStage(stage, title="", text="") {
 
   const box = $("#processVisualStatus");
   if (!box) return;
+  box.setAttribute("aria-busy", String(stage === "processing"));
   if (!title && !text) {
     box.hidden = true;
     box.classList.remove("is-processing","is-success","is-error");
@@ -148,24 +149,6 @@ function setProcessStage(stage, title="", text="") {
   box.classList.toggle("is-error", stage === "error");
   $("#processStatusTitle").textContent = title;
   $("#processStatusText").textContent = text;
-}
-
-function renderProcessingSkeleton() {
-  const target = $("#workflowPreview");
-  if (!target) return;
-  target.innerHTML = `
-    <div class="processing-preview" aria-hidden="true">
-      <div class="processing-preview-head">
-        <span class="skeleton skeleton-icon"></span>
-        <div><span class="skeleton skeleton-line wide"></span><span class="skeleton skeleton-line short"></span></div>
-      </div>
-      <div class="processing-preview-table">
-        <span class="skeleton skeleton-row"></span>
-        <span class="skeleton skeleton-row"></span>
-        <span class="skeleton skeleton-row"></span>
-        <span class="skeleton skeleton-row"></span>
-      </div>
-    </div>`;
 }
 
 function enhanceFileInput(input) {
@@ -1188,8 +1171,8 @@ form.addEventListener("submit", async (event) => {
     processMessage.textContent = "";
     submitButton.disabled = true;
     submitButton.classList.add("is-loading");
-    setProcessStage("processing", "Processando arquivos", "O Razync está lendo, organizando e montando os lançamentos.");
-    renderProcessingSkeleton();
+    setProcessStage("processing", "Gerando prévia…");
+    $("#workflowPreview").replaceChildren();
     const response = await fetch(endpoint, { method: "POST", body: data, signal:controller.signal });
     if (currentVersion !== previewVersion) return;
     if (!response.ok) throw new Error(await responseError(response));

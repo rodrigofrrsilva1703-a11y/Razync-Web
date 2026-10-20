@@ -4,7 +4,6 @@
   to { opacity:1; translate:0 0; }
 }
 @keyframes razyncSpin { to { rotate:360deg; } }
-@keyframes razyncLoading { to { background-position:-220% 0; } }
 .company-card, .tool-tab, .file-drop-shell, .preview-download, .daily-download {
   transition:background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, translate 180ms ease !important;
 }
@@ -18,26 +17,42 @@
 }
 .preview-loading {
   position:relative;
-  min-height:58px;
-  padding:14px 16px 23px 44px !important;
-  border:1px solid #dce6f3 !important;
-  border-radius:12px;
-  background:#f6f9fe !important;
-  color:#476384 !important;
+  box-sizing:border-box;
+  min-height:28px;
+  padding:6px 0 6px 22px !important;
+  border:0 !important;
+  border-radius:0;
+  background:transparent !important;
+  box-shadow:none !important;
+  color:#64758a !important;
+  font-size:11px !important;
+  line-height:16px;
 }
 .preview-loading::before {
-  content:""; position:absolute; top:15px; left:16px;
-  width:16px; height:16px; box-sizing:border-box;
-  border:2px solid #cbdcf1; border-top-color:#3769bc; border-radius:50%;
-  animation:razyncSpin 850ms linear infinite;
+  content:""; position:absolute; top:7px; left:0;
+  width:13px; height:13px; box-sizing:border-box;
+  border:1.5px solid #e0e7ee; border-top-color:#52769b; border-radius:50%;
+  animation:razyncSpin 800ms linear infinite;
 }
-.preview-loading::after {
-  content:""; position:absolute; left:16px; right:16px; bottom:10px; height:3px;
-  border-radius:4px;
-  background:linear-gradient(90deg,#e0e9f5 25%,#81a6dc 50%,#e0e9f5 75%);
-  background-size:220% 100%; animation:razyncLoading 1600ms linear infinite;
+.preview-loading::after {content:none;}
+.preview-loading .notice-icon {display:none;}
+#companyPanel #processVisualStatus.is-processing {
+  display:flex;align-items:center;gap:8px;min-height:30px;
+  padding:7px 0;margin:10px 0;
+  border:0;border-radius:0;background:transparent;box-shadow:none;
 }
-.preview-loading .notice-icon { display:none; }
+#companyPanel #processVisualStatus.is-processing .process-status-icon {
+  position:relative;flex:0 0 13px;width:13px;height:13px;
+  border:0;border-radius:0;background:none;
+}
+#companyPanel #processVisualStatus.is-processing .process-status-icon::before {
+  inset:0;border:1.5px solid #e0e7ee;border-top-color:#52769b;
+  animation:razyncSpin 800ms linear infinite;
+}
+#companyPanel #processVisualStatus.is-processing strong {
+  font-size:11px;font-weight:500;line-height:16px;color:#64758a;
+}
+#companyPanel #processVisualStatus.is-processing small {display:none;}
 @media(prefers-reduced-motion:reduce) {
   *, *::before, *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
   .company-card:hover, .file-drop-shell:hover, .tool-tab:active, .preview-download:active, .daily-download:active { translate:none; }

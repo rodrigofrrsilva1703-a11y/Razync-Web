@@ -1,9 +1,9 @@
 /* Presentation only: follows the existing status messages without changing requests. */
 (() => {
-  const selector = '[id$="Message"]';
+  const selector = '[id$="Message"], .bank-investments-message';
   function update(element) {
     const text = element.textContent.trim();
-    const busy = /^(Analisando|Classificando|Conferindo|Processando|Carregando|Abrindo|Montando|Gerando|Preparando)\b/i.test(text)
+    const busy = /^(Analisando|Classificando|Conferindo|Processando|Carregando|Abrindo|Montando|Gerando|Preparando|Validando)\b/i.test(text)
       || /^Arquivos prontos\..*(Montando|Conferindo)/i.test(text);
     element.classList.toggle('preview-loading', busy);
     element.setAttribute('aria-busy', String(busy));
