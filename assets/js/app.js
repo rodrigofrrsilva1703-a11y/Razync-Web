@@ -67,7 +67,12 @@ function renderPortfolios() {
     arrow.setAttribute("aria-hidden", "true");
     arrow.textContent = "→";
     btn.setAttribute("aria-label", "Abrir carteira de " + portfolio.name);
-    btn.append(avatar, info, arrow);
+    const action = document.createElement("span");
+    action.className = "portfolio-entry-action";
+    const actionLabel = document.createElement("span");
+    actionLabel.textContent = "Acessar empresas";
+    action.append(actionLabel, arrow);
+    btn.append(avatar, info, action);
     btn.addEventListener("click", () => selectPortfolio(portfolio.id));
     portfolioList.appendChild(btn);
   }
