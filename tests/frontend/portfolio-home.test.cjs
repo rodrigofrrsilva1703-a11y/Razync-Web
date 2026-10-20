@@ -2,7 +2,7 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const source = fs.readFileSync('assets/js/app.js', 'utf8');
+const source = fs.readFileSync('assets/js/portfolios.js', 'utf8');
 const renderSource = source.slice(source.indexOf('function renderPortfolios()'), source.indexOf('function selectPortfolio('));
 
 function setup(companies, portfolios) {

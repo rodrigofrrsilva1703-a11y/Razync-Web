@@ -26,87 +26,6 @@ let companies = [];
 let selected = null;
 let companyFilter = 'all';
 
-// Carteiras: enquanto somente a primeira estiver cadastrada, ela reúne todas
-// as empresas existentes. Para os próximos colaboradores, usar códigos
-// explícitos em companyCodes, sem modificar ferramentas nem dados contábeis.
-const portfolios = [
-  {id: "rodrigo", name: "Rodrigo", companyCodes: null},
-];
-let activePortfolio = null;
-const portfolioPicker = $("#portfolioPicker");
-const portfolioList = $("#portfolioList");
-
-function companyBelongsToPortfolio(company) {
-  if (!activePortfolio) return false;
-  return activePortfolio.companyCodes === null ||
-    activePortfolio.companyCodes.includes(Number(company.codigo));
-}
-
-function renderPortfolios() {
-  portfolioList.replaceChildren();
-  for (const portfolio of portfolios) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "portfolio-entry";
-    const avatar = document.createElement("span");
-    avatar.className = "portfolio-avatar";
-    avatar.setAttribute("aria-hidden", "true");
-    avatar.textContent = portfolio.name.trim().slice(0, 1).toUpperCase();
-    const info = document.createElement("span");
-    info.className = "portfolio-entry-info";
-    const name = document.createElement("strong");
-    name.textContent = portfolio.name;
-    const details = document.createElement("span");
-    const quantity = companies.filter(company =>
-      portfolio.companyCodes === null || portfolio.companyCodes.includes(Number(company.codigo))).length;
-    details.textContent = quantity.toLocaleString("pt-BR") + (quantity === 1 ? " empresa na carteira" : " empresas na carteira");
-    details.className = "portfolio-entry-quantity";
-    info.append(name, details);
-    const arrow = document.createElement("span");
-    arrow.className = "portfolio-entry-arrow";
-    arrow.setAttribute("aria-hidden", "true");
-    arrow.textContent = "→";
-    btn.setAttribute("aria-label", "Abrir carteira de " + portfolio.name);
-    const action = document.createElement("span");
-    action.className = "portfolio-entry-action";
-    const actionLabel = document.createElement("span");
-    actionLabel.textContent = "Acessar empresas";
-    action.append(actionLabel, arrow);
-    btn.append(avatar, info, action);
-    btn.addEventListener("click", () => selectPortfolio(portfolio.id));
-    portfolioList.appendChild(btn);
-  }
-  portfolioList.setAttribute("aria-busy", "false");
-}
-
-function selectPortfolio(id) {
-  const portfolio = portfolios.find(item => item.id === id);
-  if (!portfolio) return;
-  activePortfolio = portfolio;
-  portfolioPicker.hidden = true;
-  workspace.hidden = false;
-  $(".hero").hidden = false;
-  $("#portfolioActiveName").textContent = "Carteira de " + portfolio.name;
-  $(".hero h1").textContent = "Empresas de " + portfolio.name;
-  $(".hero p").textContent = "Pesquise uma empresa e acesse suas ferramentas.";
-  search.value = "";
-  $('#regimeFilter').value = "";
-  filterCompanies();
-  window.scrollTo({top:0,behavior:"smooth"});
-}
-
-function showPortfolioPicker() {
-  activePortfolio = null;
-  selected = null;
-  panel.hidden = true;
-  portfolioPicker.hidden = false;
-  workspace.hidden = true;
-  $(".hero").hidden = true;
-  renderPortfolios();
-  window.scrollTo({top:0,behavior:"smooth"});
-}
-$("#backToPortfolios").addEventListener("click", showPortfolioPicker);
-
 const API = () => String(window.RAZYNC_CONFIG?.apiBase || "").replace(/\/$/, "");
 
 function dateApiValue(input) {
@@ -770,7 +689,7 @@ function renderReconcileBankFields(banks) {
     const id = `reconcile_files_${bank}`;
     const label = document.createElement("label");
     label.htmlFor = id;
-    label.innerHTML = `${bankName(bank)} <span class="optional">Conta ${account || "—"}</span>`;
+    label.innerHTML = `${RazyncDOM.escapeHTML(bankName(bank))} <span class="optional">Conta ${RazyncDOM.escapeHTML(account || "—")}</span>`;
 
     const input = document.createElement("input");
     input.id = id;
@@ -818,10 +737,10 @@ function renderWorkflow(company) {
       wrap.dataset.roleGroup = role.name;
       const id = `role_${role.name}`;
       wrap.innerHTML = `
-        <label for="${id}">${role.label}${role.optional ? " <span class='optional'>(opcional)</span>" : ""}</label>
-        <input id="${id}" data-role="${role.name}" type="file"
+        <label for="${RazyncDOM.escapeHTML(id)}">${RazyncDOM.escapeHTML(role.label)}${role.optional ? " <span class='optional'>(opcional)</span>" : ""}</label>
+        <input id="${RazyncDOM.escapeHTML(id)}" data-role="${RazyncDOM.escapeHTML(role.name)}" type="file"
           ${role.multiple ? "multiple" : ""}
-          accept="${role.accept || ".pdf,.xls,.xlsx,.zip"}"
+          accept="${RazyncDOM.escapeHTML(role.accept || ".pdf,.xls,.xlsx,.zip")}"
           ${role.optional ? "" : "required"}>
       `;
       advancedFields.appendChild(wrap);
@@ -831,8 +750,8 @@ function renderWorkflow(company) {
       wrap.className = "field-group";
       const year = new Date().getFullYear();
       wrap.innerHTML = `
-        <label for="opt_${option.name}">${option.label}</label>
-        <input id="opt_${option.name}" data-option="${option.name}" type="${option.type || "text"}"
+        <label for="opt_${RazyncDOM.escapeHTML(option.name)}">${RazyncDOM.escapeHTML(option.label)}</label>
+        <input id="opt_${RazyncDOM.escapeHTML(option.name)}" data-option="${RazyncDOM.escapeHTML(option.name)}" type="${RazyncDOM.escapeHTML(option.type || "text")}"
           ${option.type === "number" ? `value="${year}" min="2000" max="2100"` : ""}>
       `;
       advancedFields.appendChild(wrap);
@@ -856,8 +775,8 @@ function renderWorkflow(company) {
       wrap.className = "field-group";
       wrap.dataset.bankGroup = bank;
       wrap.innerHTML = `
-        <label for="bankfiles_${bank}">${bankLabel(bank, account)} <span class="optional">(opcional)</span></label>
-        <input id="bankfiles_${bank}" data-bank="${bank}" type="file" multiple
+        <label for="bankfiles_${RazyncDOM.escapeHTML(bank)}">${RazyncDOM.escapeHTML(bankLabel(bank, account))} <span class="optional">(opcional)</span></label>
+        <input id="bankfiles_${RazyncDOM.escapeHTML(bank)}" data-bank="${RazyncDOM.escapeHTML(bank)}" type="file" multiple
           accept=".pdf,.xls,.xlsx,.csv,.ofx">
       `;
       advancedFields.appendChild(wrap);
@@ -1370,206 +1289,6 @@ classifyForm.addEventListener("submit", async (event) => {
   }
 });
 
-function formatDailyDate(value) {
-  if (!value) return "—";
-  const date = new Date(String(value) + (String(value).length === 10 ? "T00:00:00" : ""));
-  return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat("pt-BR").format(date);
-}
-
-function reconciliationBalances(row, kind="modelo") {
-  const ledger = kind === "razao";
-  const leftIn = Number(row[ledger ? "ENTRADAS_RAZAO" : "ENTRADAS PLANILHA"] || 0);
-  const rightIn = Number(
-    ledger
-      ? (row["ENTRADAS_EXTRATO"] ?? row["ENTRADAS EXTRATO"] ?? 0)
-      : (row["ENTRADAS EXTRATO"] ?? row["ENTRADAS_EXTRATO"] ?? 0)
-  );
-  const leftOut = Number(row[ledger ? "SAIDAS_RAZAO" : "SAÍDAS PLANILHA"] || 0);
-  const rightOut = Number(
-    ledger
-      ? (row["SAIDAS_EXTRATO"] ?? row["SAÍDAS EXTRATO"] ?? 0)
-      : (row["SAÍDAS EXTRATO"] ?? row["SAIDAS_EXTRATO"] ?? 0)
-  );
-  const entryBalance = Math.round((leftIn - rightIn) * 100) / 100;
-  const exitBalance = Math.round((leftOut - rightOut) * 100) / 100;
-  const entryOk = Math.abs(entryBalance) < 0.01;
-  const exitOk = Math.abs(exitBalance) < 0.01;
-  return {
-    leftIn,rightIn,leftOut,rightOut,
-    entryBalance,exitBalance,
-    entryOk,exitOk,
-    ok:entryOk && exitOk
-  };
-}
-
-function renderDailyReconciliation(target, {rows=[], kind="modelo", download=null}) {
-  if (!target) return;
-  target.replaceChildren();
-  target.hidden = false;
-  target.className = "daily-reconciliation";
-
-  const normalized = rows.map(row => {
-    const balances = reconciliationBalances(row,kind);
-    return {
-      bank:String(row.BANCO || ""),
-      date:row.DATA,
-      ...balances
-    };
-  });
-
-  const banks = [...new Set(normalized.map(row => row.bank).filter(Boolean))];
-  const multiBank = banks.length > 1;
-  const okCount = normalized.filter(row => row.ok).length;
-  const reviewCount = normalized.length - okCount;
-
-  const summary = document.createElement("div");
-  summary.className = "daily-summary";
-  summary.innerHTML = `
-    <div><small>${multiBank ? "Banco/dia analisados" : "Dias analisados"}</small><strong>${normalized.length}</strong></div>
-    <div><small>Batendo</small><strong>${okCount}</strong></div>
-    <div><small>Divergentes</small><strong>${reviewCount}</strong></div>
-  `;
-
-  const rule = document.createElement("div");
-  rule.className = "daily-rule";
-  const sourceLabel = kind === "razao" ? "Razão" : "Modelo";
-  rule.innerHTML = `
-    <strong>Regra da conferência</strong>
-    <span>Saldo entrada = Entrada ${sourceLabel} − Entrada Extrato · Saldo saída = Saída ${sourceLabel} − Saída Extrato · O status só fica <b>Batendo</b> quando os dois saldos forem R$ 0,00.</span>
-  `;
-
-  const toolbar = document.createElement("div");
-  toolbar.className = "daily-toolbar";
-  const toolbarLeft = document.createElement("div");
-  toolbarLeft.className = "daily-toolbar-left";
-
-  if (multiBank) {
-    const bankFilter = document.createElement("select");
-    bankFilter.className = "daily-bank-filter";
-    bankFilter.setAttribute("aria-label","Filtrar banco");
-    [["","Todos os bancos"],...banks.map(bank => [bank,bank])].forEach(([value,label]) => {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = label;
-      bankFilter.appendChild(option);
-    });
-    toolbarLeft.appendChild(bankFilter);
-  }
-
-  const filters = document.createElement("div");
-  filters.className = "daily-filters";
-  [
-    ["all","Todos"],
-    ["ok","Batendo"],
-    ["review","Divergentes"]
-  ].forEach(([value,label],index) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "daily-filter" + (index === 0 ? " active" : "");
-    button.dataset.filter = value;
-    button.textContent = label;
-    filters.appendChild(button);
-  });
-  toolbarLeft.appendChild(filters);
-  toolbar.appendChild(toolbarLeft);
-
-  if (download) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "daily-download";
-    button.textContent = "Baixar relatório Excel";
-    button.addEventListener("click", async () => {
-      button.disabled = true;
-      const old = button.textContent;
-      button.textContent = "Gerando relatório…";
-      try { await download(); }
-      finally { button.disabled = false; button.textContent = old; }
-    });
-    toolbar.appendChild(button);
-  }
-
-  const scroll = document.createElement("div");
-  scroll.className = "daily-table-scroll";
-  const table = document.createElement("table");
-  table.className = "daily-table daily-table-reconciliation razync-table";
-  const leftLabel = kind === "razao" ? "Razão" : "Modelo";
-  const bankHeader = banks.length ? "<th>Banco</th>" : "";
-  table.innerHTML = `
-    <thead><tr>
-      ${bankHeader}
-      <th>Data</th>
-      <th>Entrada ${leftLabel}</th>
-      <th>Entrada Extrato</th>
-      <th>Saldo Entrada</th>
-      <th>Saída ${leftLabel}</th>
-      <th>Saída Extrato</th>
-      <th>Saldo Saída</th>
-      <th>Status</th>
-    </tr></thead>
-    <tbody></tbody>
-  `;
-  const body = table.querySelector("tbody");
-
-  normalized.forEach(row => {
-    const tr = document.createElement("tr");
-    tr.dataset.status = row.ok ? "ok" : "review";
-    tr.dataset.bank = row.bank;
-    tr.className = row.ok ? "daily-ok" : "daily-review";
-    const status = row.ok ? "Batendo" : "Divergente";
-
-    const values = [];
-    if (banks.length) values.push({value:row.bank,type:"bank"});
-    values.push(
-      {value:formatDailyDate(row.date),type:"date"},
-      {value:brl(row.leftIn),type:"numeric"},
-      {value:brl(row.rightIn),type:"numeric"},
-      {value:brl(row.entryBalance),type:"balance",ok:row.entryOk},
-      {value:brl(row.leftOut),type:"numeric"},
-      {value:brl(row.rightOut),type:"numeric"},
-      {value:brl(row.exitBalance),type:"balance",ok:row.exitOk},
-      {value:status,type:"status"}
-    );
-
-    values.forEach(cell => {
-      const td = document.createElement("td");
-      if (cell.type === "numeric") td.className = "numeric";
-      if (cell.type === "balance") td.className = "numeric daily-balance " + (cell.ok ? "is-zero" : "is-different");
-      if (cell.type === "bank") td.className = "daily-bank-cell";
-      if (cell.type === "status") {
-        const badge = document.createElement("span");
-        badge.className = "daily-status " + (row.ok ? "is-ok" : "is-review");
-        badge.textContent = cell.value;
-        td.appendChild(badge);
-      } else {
-        td.textContent = cell.value;
-      }
-      tr.appendChild(td);
-    });
-    body.appendChild(tr);
-  });
-
-  const applyFilters = () => {
-    const activeStatus = filters.querySelector(".daily-filter.active")?.dataset.filter || "all";
-    const selectedBank = toolbarLeft.querySelector(".daily-bank-filter")?.value || "";
-    body.querySelectorAll("tr").forEach(row => {
-      const statusMatch = activeStatus === "all" || row.dataset.status === activeStatus;
-      const bankMatch = !selectedBank || row.dataset.bank === selectedBank;
-      row.hidden = !statusMatch || !bankMatch;
-    });
-  };
-
-  filters.addEventListener("click", event => {
-    const button = event.target.closest(".daily-filter");
-    if (!button) return;
-    filters.querySelectorAll(".daily-filter").forEach(item => item.classList.toggle("active",item === button));
-    applyFilters();
-  });
-  toolbarLeft.querySelector(".daily-bank-filter")?.addEventListener("change",applyFilters);
-
-  scroll.appendChild(table);
-  target.append(summary,rule,toolbar,scroll);
-}
-
 function reconcileSelectionState() {
   const banks = selectedReconcileBanks();
   const missing = [];
@@ -1792,6 +1511,7 @@ async function loadCompanies() {
     companies = await response.json();
   }
   renderPortfolios();
+  populateTaskCompanies(companies);
   if (activePortfolio) filterCompanies();
 }
 
@@ -1807,6 +1527,7 @@ async function checkApi() {
   }
 }
 
+initializeTaskUI();
 loadCompanies();
 checkApi();
 enhanceFileInputs(panel);
@@ -2028,98 +1749,6 @@ function brl(value) {
   return new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(value||0));
 }
 
-async function loadTasks() {
-  const metrics = $("#taskMetrics");
-  const companiesBox = $("#companyTasks");
-  const manualBox = $("#manualTasks");
-  try {
-    const response = await fetch(`${API()}/api/v1/tasks`);
-    if (!response.ok) throw new Error(await responseError(response));
-    const data = await response.json();
-    const r = data.resumo || {};
-    metrics.innerHTML = [
-      ["Pendentes",r.pendentes],["Atrasadas",r.atrasadas],
-      ["Urgentes / hoje",r.urgentes_hoje],["Concluídas",r.concluidas],
-      ["Progresso",`${r.progresso||0}%`]
-    ].map(([a,b])=>`<div class="task-metric"><span>${a}</span><strong>${b??0}</strong></div>`).join("");
-    $("#taskCompetencia").textContent = `Competência ${String(data.competencia||"").slice(5,7)}/${String(data.competencia||"").slice(0,4)}`;
-
-    companiesBox.innerHTML = (data.empresas||[]).map(item => `
-      <div class="task-row ${item.classe||""}">
-        <div>
-          <strong>${item.codigo} · ${item.nome}</strong>
-          <small>${item.regime} · vence ${new Date(item.vencimento+"T12:00:00").toLocaleDateString("pt-BR")} · ${item.status}</small>
-        </div>
-        <button type="button" data-company-task="${item.codigo}" data-done="${item.concluida ? "1":"0"}" data-competencia="${data.competencia}">
-          ${item.concluida ? "Reabrir" : "Concluir"}
-        </button>
-      </div>
-    `).join("");
-
-    manualBox.innerHTML = (data.manuais||[]).length ? (data.manuais||[]).map(item => `
-      <div class="task-row">
-        <div>
-          <strong>${item.titulo}</strong>
-          <small>${item.prioridade||"Normal"} · ${item.classificacao?.faixa||item.status}</small>
-        </div>
-        <div class="task-actions">
-          <button type="button" data-manual-done="${item.id}">${item.status==="Concluída" ? "Reabrir":"Concluir"}</button>
-          <button type="button" data-manual-delete="${item.id}" class="danger-lite">Excluir</button>
-        </div>
-      </div>
-    `).join("") : '<div class="empty-state compact">Nenhuma tarefa manual.</div>';
-
-    companiesBox.querySelectorAll("[data-company-task]").forEach(btn => btn.addEventListener("click", async () => {
-      await fetch(`${API()}/api/v1/tasks/company/${btn.dataset.companyTask}`, {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({competencia:btn.dataset.competencia, concluida:btn.dataset.done!=="1"})
-      });
-      loadTasks();
-    }));
-    manualBox.querySelectorAll("[data-manual-done]").forEach(btn => btn.addEventListener("click", async () => {
-      const row = (data.manuais||[]).find(x=>x.id===btn.dataset.manualDone);
-      await fetch(`${API()}/api/v1/tasks/manual/${btn.dataset.manualDone}`, {
-        method:"PATCH", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({status:row?.status==="Concluída" ? "Pendente":"Concluída"})
-      });
-      loadTasks();
-    }));
-    manualBox.querySelectorAll("[data-manual-delete]").forEach(btn => btn.addEventListener("click", async () => {
-      await fetch(`${API()}/api/v1/tasks/manual/${btn.dataset.manualDelete}`, {method:"DELETE"});
-      loadTasks();
-    }));
-  } catch (error) {
-    metrics.innerHTML = `<div class="empty-state">${error.message}</div>`;
-  }
-}
-
-$("#manualTaskForm")?.addEventListener("submit", async event => {
-  event.preventDefault();
-  const payload = {
-    titulo: $("#taskTitle").value,
-    codigo_empresa: $("#taskCompany").value,
-    categoria: $("#taskCategory").value,
-    prioridade: $("#taskPriority").value,
-    prazo: $("#taskDue").value,
-    descricao: $("#taskDescription").value
-  };
-  const msg = $("#taskMessage");
-  msg.textContent = "Salvando…";
-  try {
-    const response = await fetch(`${API()}/api/v1/tasks/manual`, {
-      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)
-    });
-    if (!response.ok) throw new Error(await responseError(response));
-    event.target.reset();
-    $("#taskCategory").value = "Geral";
-    $("#taskPriority").value = "Normal";
-    msg.textContent = "Tarefa criada.";
-    loadTasks();
-  } catch (error) {
-    msg.textContent = error.message;
-  }
-});
-
 $("#taxForm")?.addEventListener("submit", async event => {
   event.preventDefault();
   clearToolResult("#taxResult");
@@ -2168,14 +1797,3 @@ async function runTaxComparison(balance, revenue, msgElement) {
   const report = await response.blob();
   return {summary, report};
 }
-
-const originalLoadCompanies = loadCompanies;
-loadCompanies = async function() {
-  await originalLoadCompanies();
-  const select=$("#taskCompany");
-  if(select) {
-    select.innerHTML='<option value="">Sem empresa específica</option>'+companies.map(c=>`<option value="${c.codigo}">${c.codigo} · ${c.nome}</option>`).join("");
-  }
-};
-
-loadCompanies();
