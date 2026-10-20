@@ -92,9 +92,10 @@ def prepare_entries(company_code, banks, files, model, options, settings):
         statements = [(name, content) for code, name, content in files if code == bank]
         if not statements:
             raise ValueError("Envie o extrato de todos os bancos selecionados.")
-        summary, sheets = reconcile(company_code, bank, model, statements, options)
-        if summary.get('ok') is not True or summary.get('faltando_planilha') or summary.get('a_mais_planilha'):
-            raise ValueError("Resolva os lançamentos sem correspondência de todos os bancos antes de gerar o TXT.")
+        # O critério desta ferramenta é a igualdade diária de entradas e saídas,
+        # validada novamente em daily_entries. Correspondência individual pode
+        # divergir por agrupamentos sem alterar os totais conferidos do dia.
+        _, sheets = reconcile(company_code, bank, model, statements, options)
         for entry in daily_entries(sheets.get('Conferência diária', pd.DataFrame()), bank_account, investment_account, opening):
             redemption = entry['HISTÓRICO'] == REDEMPTION
             entries.append(dict(entry, BANCO=bank, TIPO='Resgate' if redemption else 'Aplicação',

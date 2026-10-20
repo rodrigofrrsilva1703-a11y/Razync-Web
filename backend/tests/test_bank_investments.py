@@ -67,7 +67,7 @@ def test_txt_formato_dominio_historicos_exatos_e_valores_positivos(monkeypatch):
 
 
 def test_multibanco_nao_mistura_contas_e_bloqueia_resultado_parcial(monkeypatch):
-    monkeypatch.setattr(investments,'reconcile',lambda *args:({'ok':args[1]=='itau'},{'Conferência diária':daily()}))
+    monkeypatch.setattr(investments,'reconcile',lambda *args:({'ok':False},{'Conferência diária':daily() if args[1]=='itau' else daily().assign(**{'ENTRADAS EXTRATO':999})}))
     settings={'itau':{'conta_aplicacao':'900'},'daycoval':{'conta_aplicacao':'901'}}
     response=post(settings,('itau','daycoval'),('itau','daycoval'))
     assert response.status_code==422
@@ -120,3 +120,24 @@ def test_previa_e_txt_tem_mesmos_lancamentos_e_saldos_zerados(monkeypatch):
     assert all(row['SALDO_APOS']=='0.00' for row in result['rows'])
     assert {row['BANCO'] for row in result['rows']}=={'itau'}
     assert preview.headers['cache-control']=='no-store'
+
+
+def test_saldos_diarios_batendo_liberam_txt_sem_exigir_pareamento_individual(monkeypatch):
+    monkeypatch.setattr(investments,'reconcile',lambda *args:(
+        {'ok':False,'faltando_planilha':2,'a_mais_planilha':1},{'Conferência diária':daily()}))
+    response=post({'itau':{'conta_aplicacao':'900'}})
+    assert response.status_code==200,response.text
+    assert ';508;900;100.00;' in response.text
+
+
+def test_selecao_de_um_banco_nao_exige_contas_ou_extratos_dos_outros(monkeypatch):
+    calls=[]
+    def reconcile(code,bank,model,files,options):
+        calls.append(bank)
+        return {'ok':True},{'Conferência diária':daily()}
+    monkeypatch.setattr(investments,'reconcile',reconcile)
+    response=post({'daycoval':{'conta_aplicacao':'901'}},('daycoval',),('daycoval',))
+    assert response.status_code==200,response.text
+    assert calls==['daycoval']
+    assert ';2283;901;' in response.text
+    assert ';508;' not in response.text

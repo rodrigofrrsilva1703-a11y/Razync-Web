@@ -1,11 +1,21 @@
 (function () {
   function mount({target, company, banks, snapshot, summary, rows, balances, isCurrent, signal, api, download, responseError}) {
-    if (!rows.length || summary?.ok !== true || summary.errors?.length || !rows.every(row => balances(row).ok)) return;
+    if (!rows.length || !banks.length) return;
+    const ready = !summary?.errors?.length && rows.every(row => balances(row).ok);
     const el = (tag, cls, text) => { const item = document.createElement(tag); item.className = cls || ''; if (text) item.textContent = text; return item; };
     const panel = el('details','bank-investments');
-    panel.appendChild(el('summary','','Gerar TXT de aplicações e resgates'));
+    panel.open=true;
+    panel.appendChild(el('summary','','Aplicações e resgates · prévia e TXT'));
+    panel.appendChild(el('p','bank-investments-status',ready
+      ? 'Saldos diários conferidos. Escolha o banco para preparar os lançamentos.'
+      : 'A geração será liberada quando todas as entradas e saídas diárias estiverem batendo e não houver bancos com erro.'));
+    if (ready && summary?.ok === false) panel.appendChild(el('p','bank-investments-note','Os totais diários batem, mas há lançamentos sem correspondência individual no relatório. Revise-os na conferência; o zeramento abaixo usa os totais diários.'));
     panel.appendChild(el('p','bank-investments-rule','Zeramento diário: saldo negativo gera resgate (débito no banco); saldo positivo gera aplicação (crédito no banco). A conta informada é a mesma para as duas operações.'));
     const form = el('form','bank-investments-form'), fields = [];
+    const bankLabel=el('label','bank-investments-selector','Banco para gerar os lançamentos');
+    const bankSelect=el('select','bank-investments-bank-select');bankSelect.setAttribute('aria-label','Banco para aplicações e resgates');
+    banks.forEach(bank=>{const option=el('option','',bank.label+(bank.account?' · conta '+bank.account:''));option.value=bank.code;bankSelect.appendChild(option);});
+    bankSelect.value=banks[0].code;bankLabel.appendChild(bankSelect);form.appendChild(bankLabel);
     for (const bank of banks) {
       const fieldset = el('fieldset','bank-investments-bank'); fieldset.appendChild(el('legend','',bank.label));
       const makeInput = (text,value,pattern,mode) => {
@@ -15,7 +25,7 @@
       const account = makeInput('Conta do banco',bank.account || '', '[0-9]{1,15}','numeric'); account.readOnly=Boolean(bank.account);
       const investment = makeInput('Conta de aplicação e resgate','','[0-9]{1,15}','numeric');
       const opening = makeInput('Saldo anterior ao primeiro dia (R$)','0,00','-?(?:[0-9]{1,3}(?:[.][0-9]{3})+|[0-9]+)(?:,[0-9]{1,2})?','decimal');
-      fields.push({bank:bank.code,account,investment,opening}); form.appendChild(fieldset);
+      fields.push({bank:bank.code,account,investment,opening,fieldset}); form.appendChild(fieldset);
     }
     form.appendChild(el('small','bank-investments-note','Use 0,00 se o banco já estava zerado antes do primeiro dia analisado. O saldo anterior entra somente no primeiro dia; nos seguintes, o cálculo considera o zeramento do dia anterior.'));
     const button=el('button','bank-investments-preview-button','Gerar prévia'); button.type='submit';
@@ -52,22 +62,41 @@
       pagination.hidden=result.rows.length<=size;pagination.append(previous,range,next);preview.appendChild(pagination);draw();
     }
     const message=el('p','bank-investments-message');message.setAttribute('role','status');message.setAttribute('aria-live','polite');
-    form.append(button,message); panel.append(form,preview,downloadButton); target.appendChild(panel);
+    form.append(button,message); panel.append(form,preview,downloadButton); target.prepend(panel);
     let active, revision=0;
     signal?.addEventListener('abort',()=>active?.abort(),{once:true});
-    form.addEventListener('input',()=>{revision++;active?.abort();button.disabled=false;clearPreview();message.textContent='Configuração alterada. Gere a prévia novamente.';});
+    function syncBank() {
+      fields.forEach(item=>{const chosen=item.bank===bankSelect.value;item.fieldset.hidden=!chosen;
+        [item.account,item.investment,item.opening].forEach(input=>input.disabled=!chosen || !ready);
+      });
+      button.disabled=!ready;
+    }
+    function invalidate() { revision++;active?.abort();syncBank();clearPreview();message.textContent=ready?'Configuração alterada. Gere a prévia novamente.':''; }
+    syncBank();
+    bankSelect.addEventListener('change',invalidate);
+    form.addEventListener('input',invalidate);
     form.addEventListener('submit',async event=>{
       event.preventDefault();
-      if (!isCurrent() || !form.reportValidity()) return;
+      if (!ready || !isCurrent() || !form.reportValidity()) return;
       const settings={};
-      for (const item of fields) {
+      for (const item of fields.filter(field=>field.bank===bankSelect.value)) {
         if (!Number(item.investment.value) || !Number(item.account.value) || Number(item.account.value)===Number(item.investment.value)) {
           message.textContent='Informe uma conta de aplicação/resgate diferente da conta do banco.';return;
         }
         settings[item.bank]={conta_banco:item.account.value,conta_aplicacao:item.investment.value,saldo_anterior:item.opening.value};
       }
       active?.abort();const controller=new AbortController();active=controller;const currentRevision=revision;
-      const data=new FormData(); for (const [key,value] of snapshot.entries()) data.append(key,value);
+      const data=new FormData(), uploads=[];
+      const fileBanks=JSON.parse(snapshot.get('file_banks_json') || '[]');
+      let index=0;
+      for (const [key,value] of snapshot.entries()) {
+        if (key==='files') {if(fileBanks[index]===bankSelect.value) uploads.push(value);index++;}
+        else if (!['banks_json','file_banks_json','settings_json'].includes(key)) data.append(key,value);
+      }
+      if (!uploads.length) {message.textContent='Não há extrato deste banco na conferência. Envie o extrato e confira novamente.';return;}
+      data.append('banks_json',JSON.stringify([bankSelect.value]));
+      data.append('file_banks_json',JSON.stringify(uploads.map(()=>bankSelect.value)));
+      uploads.forEach(file=>data.append('files',file));
       data.append('settings_json',JSON.stringify(settings));
       clearPreview();button.disabled=true;message.textContent='Validando a conferência e montando a prévia…';
       try {
@@ -87,7 +116,7 @@
       if (!prepared || prepared.revision!==revision || !isCurrent()) return;
       const current=prepared;downloadButton.disabled=true;
       try {
-        await download(new Response(current.txt,{headers:{'Content-Type':'text/plain; charset=utf-8'}}),'RAZYNC_'+company+'_APLICACOES_RESGATES.txt');
+        await download(new Response(current.txt,{headers:{'Content-Type':'text/plain; charset=utf-8'}}),'RAZYNC_'+company+'_'+bankSelect.value.toUpperCase()+'_APLICACOES_RESGATES.txt');
         if (prepared===current && isCurrent()) message.textContent='TXT baixado com os mesmos lançamentos da prévia.';
       } catch(error) { if (prepared===current && isCurrent()) message.textContent=error.message || 'Não foi possível baixar o TXT.'; }
       finally { if (prepared===current && isCurrent()) downloadButton.disabled=false; }
