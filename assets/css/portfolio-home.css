@@ -86,3 +86,35 @@
   #portfolioPicker .portfolio-entry,#portfolioPicker .portfolio-entry-arrow {transition:none}
   #portfolioPicker .portfolio-entry:hover,#portfolioPicker .portfolio-entry:active,#portfolioPicker .portfolio-entry:hover .portfolio-entry-arrow {transform:none}
 }
+
+/* Entrada da carteira: movimento curto, com sequência limitada mesmo em listas grandes. */
+@keyframes portfolioWorkspaceEnter {
+  from {opacity:0;transform:translateY(10px)}
+  to {opacity:1;transform:none}
+}
+@keyframes portfolioCompanyEnter {
+  from {opacity:0;transform:translateY(6px)}
+  to {opacity:1;transform:none}
+}
+#companiesView .hero:not([hidden]) {
+  animation:portfolioWorkspaceEnter 280ms cubic-bezier(.22,1,.36,1) both;
+}
+#companiesView .hero:not([hidden]) + .overview {
+  animation:portfolioWorkspaceEnter 300ms 35ms cubic-bezier(.22,1,.36,1) both;
+}
+#companiesView .workspace:not([hidden]) .portfolio-toolbar {
+  animation:portfolioWorkspaceEnter 300ms 55ms cubic-bezier(.22,1,.36,1) both;
+}
+#companiesView .workspace:not([hidden]) .search-card {
+  animation:portfolioWorkspaceEnter 320ms 75ms cubic-bezier(.22,1,.36,1) both;
+}
+#companiesView .workspace:not([hidden]) .company-card.company-row {
+  animation:portfolioCompanyEnter 300ms cubic-bezier(.22,1,.36,1) both;
+  animation-delay:calc(90ms + min(var(--row-index,0) * 18ms,126ms));
+}
+#portfolioPicker .portfolio-entry:active {background:#eaf2fa;box-shadow:inset 0 1px 3px #2948650a}
+@media(prefers-reduced-motion:reduce) {
+  #companiesView .hero,#companiesView .overview,
+  #companiesView .portfolio-toolbar,#companiesView .search-card,
+  #companiesView .company-card.company-row {animation:none}
+}
