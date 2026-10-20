@@ -17,7 +17,7 @@ function selectedFileBankLabel(input) {
     || (input.id === "fileInput" ? bankSelect.value : "")
     || (input.closest?.("#processForm") && Object.keys(banks).length === 1 ? Object.keys(banks)[0] : "");
   if (bank) return bankLabel(bank, banks[bank]);
-  if (["modelFile", "classifyFile", "reviewFile", "txtModel"].includes(input.id)) return "Abas do modelo";
+  if (["modelFile", "classifyFile", "txtModel"].includes(input.id)) return "Abas do modelo";
   return "Identificado no processamento";
 }
 

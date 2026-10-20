@@ -30,7 +30,7 @@
 #companyPanel button[type=submit]:hover, #companyPanel .preview-download:hover { background:#076d86; }
 #companyPanel .secondary-action { border-radius:10px; min-height:44px; padding:11px 16px !important; box-shadow:none; }
 #companyPanel .stack-forms { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; align-items:start; }
-#companyPanel .stack-forms > .base-management, #companyPanel .stack-forms > #reviewForm { grid-column:1/-1; }
+#companyPanel .stack-forms > .base-management { grid-column:1/-1; }
 #companyPanel .base-management { padding:16px 20px; border:1px solid #dde7ef; border-radius:14px; background:#f5f8fb; }
 #companyPanel #workflowPreview { margin-top:6px; padding-top:20px; border-top:1px solid #dce6ef; min-width:0; }
 #companyPanel .preview-commandbar { border-radius:14px; padding:18px 20px; background:#fff; border:1px solid #dde7ef; box-shadow:0 4px 16px #19324f05; }
@@ -389,9 +389,6 @@
 #companyPanel .stack-forms > .base-management {
   grid-column:1;
   width:100%;
-}
-#companyPanel #reviewForm {
-  grid-column:1;
 }
 #companyPanel .base-management {
   display:flex;

@@ -1,8 +1,6 @@
 /* Additional controls use the same company state and original API routes. */
 const migratedRenderWorkflow = renderWorkflow;
 const migratedOpenCompany = openCompany;
-let reviewPendingRows = [];
-let reviewSourceFile = null;
 
 const francesinhasTab = document.createElement("button");
 francesinhasTab.type = "button";
@@ -24,7 +22,6 @@ renderWorkflow = function(company) {
   $("#previewWorkflow").hidden = true;
   $("#eletro242Classification").hidden = companyCode !== 242;
   $("#eletro1408Classification").hidden = companyCode !== 1408;
-  $("#reviewForm").hidden = false;
 
   const learnLabel = document.querySelector('label[for="learnFiles"]');
   const classifyLabel = document.querySelector('label[for="classifyFile"]');
@@ -46,10 +43,6 @@ renderWorkflow = function(company) {
   francesinhasTab.hidden = companyCode !== 242;
   updateUploadProgress();
   $("#workflowPreview").replaceChildren();
-  $("#reviewRows").replaceChildren();
-  $("#applyReview").hidden = true;
-  reviewPendingRows = [];
-  reviewSourceFile = null;
 };
 
 openCompany = function(company) {
@@ -68,7 +61,6 @@ openCompany = function(company) {
   $("#workflowPreview").replaceChildren();
   $("#adminAccess").value = "";
   $("#baseManagementMessage").textContent = "";
-  $("#reviewMessage").textContent = "";
   migratedOpenCompany(company);
 };
 
@@ -387,50 +379,6 @@ $("#exportBase").addEventListener("click",async()=>{
 $("#importOriginalBase").addEventListener("click",async()=>{
   const code=selected.codigo; const msg=$("#baseManagementMessage");msg.textContent="Copiando padrões da base original…";
   try {const r=await fetch(`${API()}/api/v1/base-inteligente/${code}/importar-original`,{method:"POST",headers:adminHeaders()});if(!r.ok)throw new Error(await responseError(r));const result=await r.json();msg.textContent=`${result.learned} padrão(ões) copiado(s).`;refreshBaseStats();}catch(e){msg.textContent=e.message;}
-});
-
-window.prepareIntelligentReview = async function(file, code = selected?.codigo) {
-  const msg=$("#reviewMessage");
-  if (!file || !code) return;
-  reviewSourceFile=file;
-  const sourceFile=reviewSourceFile;
-  const data=new FormData();data.append("file",reviewSourceFile);
-  msg.textContent="Listando pendências…";
-  try {
-    const r=await fetch(`${API()}/api/v1/base-inteligente/${code}/pendencias`,{method:"POST",body:data});
-    if(!r.ok)throw new Error(await responseError(r));
-    const result=await r.json();
-    if(Number(selected?.codigo)!==Number(code) || reviewSourceFile!==sourceFile)return;
-    reviewPendingRows=result.pendencias;
-    const table=tableFor(["Banco","Data","Valor","Histórico","Classificar em","Conta da contrapartida"],reviewPendingRows.map(row=>[row.Banco,row.Data,row.Valor,row["Histórico"],row["Classificar em"],""]));
-    [...table.querySelectorAll("tbody tr")].forEach((tr,i)=>{
-      const input=document.createElement("input");input.type="text";input.inputMode="numeric";input.setAttribute("aria-label",`Conta da contrapartida do lançamento ${i+1}`);
-      input.addEventListener("input",()=>reviewPendingRows[i]["Conta da contrapartida"]=input.value);
-      tr.lastElementChild.appendChild(input);
-    });
-    const scroll = document.createElement("div"); scroll.className = "preview-table-scroll";
-    scroll.appendChild(table);
-    $("#reviewRows").replaceChildren(scroll);$("#applyReview").hidden=!reviewPendingRows.length;
-    msg.textContent=reviewPendingRows.length
-      ? `${reviewPendingRows.length} lançamento(s) pendente(s). Confirme as contas abaixo.`
-      : "Nenhuma pendência de contrapartida encontrada.";
-    $("#reviewForm").scrollIntoView({behavior:"smooth",block:"nearest"});
-  }catch(e){msg.textContent=e.message;}
-};
-
-$("#reviewForm").addEventListener("submit", async event=>{
-  event.preventDefault();
-  const file=$("#reviewFile").files[0];
-  if(!file)return;
-  await window.prepareIntelligentReview(file, selected.codigo);
-});
-$("#reviewFile").addEventListener("change",()=>{$("#applyReview").hidden=true;reviewSourceFile=null;$("#reviewRows").replaceChildren();});
-$("#applyReview").addEventListener("click",async()=>{
-  const code=selected.codigo;const msg=$("#reviewMessage");if(!reviewSourceFile)return;
-  const revisions=reviewPendingRows.filter(row=>row["Conta da contrapartida"]?.trim());
-  if(!revisions.length)return msg.textContent="Informe ao menos uma conta.";
-  const data=new FormData();data.append("file",reviewSourceFile);data.append("revisoes_json",JSON.stringify(revisions));data.append("aprender",$("#rememberReview").checked);
-  try {const r=await fetch(`${API()}/api/v1/base-inteligente/${code}/revisar`,{method:"POST",body:data});if(!r.ok)throw new Error(await responseError(r));await downloadBlob(r,`RAZYNC_${code}_REVISADO.xlsx`);msg.textContent="Revisão aplicada. Baixe e confira o arquivo.";refreshBaseStats();}catch(e){msg.textContent=e.message;}
 });
 
 $("#txtForm")?.addEventListener("submit",async event=>{

@@ -200,7 +200,7 @@
       steps:[
         step(1,"Ensinar à base", "Na seção Ensinar à base, envie planilhas já conferidas, com as contas contábeis preenchidas corretamente."),
         step(2,"Classificar Modelo Domínio", "Anexe um Modelo Domínio da empresa "+code+" para aplicar os padrões aprendidos."),
-        step(3,"Revisar classificações", "Confira a prévia e as contas preenchidas antes de baixar. Use Revisão Inteligente para tratar pendências.")
+        step(3,"Revisar classificações", "Confira a prévia, as contas preenchidas e as pendências antes de baixar.")
       ],
       note:extra?.base || "Não misture modelos de outras empresas: os padrões são organizados por empresa e banco."
     };

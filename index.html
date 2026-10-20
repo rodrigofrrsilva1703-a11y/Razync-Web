@@ -10,8 +10,8 @@
   <meta name="description" content="Razync — automação contábil">
   <link rel="stylesheet" href="./assets/css/app.css?v=base242-streamlit-1">
   <link rel="stylesheet" href="./assets/css/bank-investments.css?v=20261020-6">
-  <link rel="stylesheet" href="./assets/css/workspace.css?v=portfolio-refined-2">
-  <link rel="stylesheet" href="./assets/css/tools.css?v=base-coverage-20261015-1">
+  <link rel="stylesheet" href="./assets/css/workspace.css?v=base-without-review-20261020-1">
+  <link rel="stylesheet" href="./assets/css/tools.css?v=base-without-review-20261020-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=2">
   <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=sidebar-label-20261020-6">
   <link rel="stylesheet" href="./assets/css/refined-theme.css?v=3">
@@ -538,19 +538,6 @@
                 <button id="importOriginalBase" type="button" class="secondary-action" hidden>Copiar base do Streamlit</button>
                 <p id="baseManagementMessage" class="helper"></p>
               </div>
-              <form id="reviewForm" class="modern-form compact-form">
-                <div class="form-card-header">
-                  <span class="form-card-icon icon-review" aria-hidden="true"></span>
-                  <div><strong>Revisão Inteligente</strong><small>Resolva contas pendentes e, se quiser, ensine a correção.</small></div>
-                </div>
-                <label for="reviewFile">Modelo Domínio com contas pendentes</label>
-                <input id="reviewFile" type="file" accept=".xlsx" required>
-                <button type="submit">Listar lançamentos pendentes</button>
-                <div id="reviewRows" class="preview-results"></div>
-                <label><input id="rememberReview" type="checkbox">Aprender somente as contas confirmadas nesta revisão</label>
-                <button id="applyReview" type="button" hidden>Aplicar contas e baixar</button>
-                <p id="reviewMessage" class="helper"></p>
-              </form>
             </div>
             <div id="classificationPreview" class="preview-results streamlit-preview" aria-live="polite"></div>
           </div>
@@ -645,11 +632,11 @@
   </dialog>
   <script src="./assets/js/config.js"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
-  <script src="./assets/js/workspace-ui.js?v=sidebar-drawer-20261020-5"></script>
-  <script src="./assets/js/company-guides.js?v=1001-santander-pdf"></script>
+  <script src="./assets/js/workspace-ui.js?v=base-without-review-20261020-1"></script>
+  <script src="./assets/js/company-guides.js?v=base-without-review-20261020-1"></script>
   <script src="./assets/js/bank-investments.js?v=20261020-8"></script>
-  <script src="./assets/js/app.js?v=portfolio-home-20261020-2"></script>
-  <script src="./assets/js/migration.js?v=fiscal-modern-20261013-5"></script>
+  <script src="./assets/js/app.js?v=base-without-review-20261020-1"></script>
+  <script src="./assets/js/migration.js?v=base-without-review-20261020-1"></script>
   <script src="./assets/js/fiscal-242.js?v=account-ai-20261019-8"></script>
   <script src="./assets/js/motion.js?v=1"></script>
 </body>
