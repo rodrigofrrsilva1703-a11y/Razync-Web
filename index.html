@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="./assets/css/fiscal-studio.css?v=ia-documentos-20261014-15">
   <link rel="stylesheet" href="./assets/css/fiscal-ai-reader.css?v=comparison-20261019-1">
   <link rel="stylesheet" href="./assets/css/fiscal-account-dialog.css?v=20261019-10">
+  <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=20261020-1">
 </head>
 <body>
   <div class="app-shell">
@@ -45,11 +46,18 @@
       <section id="companiesView" class="global-view active">
         <section id="portfolioPicker" class="portfolio-picker" aria-label="Carteiras dos colaboradores">
           <div class="portfolio-heading">
-            <span class="eyebrow">ORGANIZAÇÃO DO ESCRITÓRIO</span>
-            <h1>Carteiras de empresas</h1>
-            <p>Selecione um colaborador para acessar as empresas de sua carteira.</p>
+            <span class="eyebrow">SEU ESPAÇO DE TRABALHO</span>
+            <h1>Carteiras de empresas<span class="portfolio-title-dot" aria-hidden="true"></span></h1>
+            <p>Encontre suas empresas e continue a rotina contábil.</p>
           </div>
-          <div id="portfolioList" class="portfolio-list"></div>
+          <div class="portfolio-directory">
+            <div class="portfolio-directory-heading">
+              <div><h2>Escolha uma carteira</h2><p>As empresas estão organizadas por colaborador.</p></div>
+              <span class="portfolio-directory-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7V5a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/><path d="M3 9h18"/></svg></span>
+            </div>
+            <div id="portfolioList" class="portfolio-list"></div>
+            <p class="portfolio-directory-note">Selecione o colaborador para pesquisar empresas e acessar as ferramentas.</p>
+          </div>
         </section>
         <section class="hero compact-hero" hidden>
           <div class="eyebrow">RAZYNC</div>
@@ -625,7 +633,7 @@
   <script src="./assets/js/workspace-ui.js?v=5"></script>
   <script src="./assets/js/company-guides.js?v=1001-santander-pdf"></script>
   <script src="./assets/js/bank-investments.js?v=20261019-2"></script>
-  <script src="./assets/js/app.js?v=bank-investments-20261019-1"></script>
+  <script src="./assets/js/app.js?v=portfolio-home-20261020-1"></script>
   <script src="./assets/js/migration.js?v=fiscal-modern-20261013-5"></script>
   <script src="./assets/js/fiscal-242.js?v=account-ai-20261019-8"></script>
   <script src="./assets/js/motion.js?v=1"></script>
