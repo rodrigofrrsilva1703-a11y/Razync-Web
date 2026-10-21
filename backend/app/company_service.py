@@ -1,14 +1,13 @@
 """Persistent company catalog; registration never enables processors."""
 import sqlite3
 from contextlib import closing
-from app import classification_service
+from app import classification_service, persistence
 from razync.company_catalog import EMPRESAS
 
 def _db():
     path = classification_service.DB_PATH
-    path.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(path, timeout=30)
-    con.row_factory = sqlite3.Row
+    con = persistence.connect(path)
+    if persistence.is_postgres(con):return con
     con.execute('CREATE TABLE IF NOT EXISTS custom_companies (codigo INTEGER PRIMARY KEY, nome TEXT NOT NULL, regime TEXT NOT NULL)')
     return con
 
@@ -31,6 +30,6 @@ def create(code, name='', regime='Não informado'):
     with closing(_db()) as con, con:
         try:
             con.execute('INSERT INTO custom_companies(codigo,nome,regime) VALUES(?,?,?)',(code,name,regime))
-        except sqlite3.IntegrityError as exc:
+        except persistence.INTEGRITY_ERRORS as exc:
             raise FileExistsError('Já existe uma empresa com esse código.') from exc
     return {'codigo':code,'nome':name,'regime':regime}

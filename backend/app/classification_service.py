@@ -9,7 +9,7 @@ import urllib.request
 import urllib.parse
 from pathlib import Path
 import pandas as pd
-from app import engine
+from app import engine, persistence
 from app.migration_services import accounts, slug
 
 DB_PATH = Path(os.getenv('RAZYNC_DB_PATH', '/data/razync.db'))
@@ -63,9 +63,8 @@ def resolve_classification_options(company, options=None):
     return resolved
 
 def _db():
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(DB_PATH, timeout=30)
-    con.row_factory = sqlite3.Row
+    con = persistence.connect(DB_PATH)
+    if persistence.is_postgres(con):return con
     con.executescript('''
       CREATE TABLE IF NOT EXISTS classification_records(
         company INTEGER NOT NULL, id TEXT NOT NULL, payload TEXT NOT NULL,
@@ -86,14 +85,14 @@ def _save(con, company, records):
             previous = json.loads(old['payload'])
             record['periodos'] = sorted(set(record.get('periodos', []) + previous.get('periodos', [])))
             record['ocorrencias'] = max(int(record.get('ocorrencias', 1)), int(previous.get('ocorrencias', 1)))
-        con.execute('INSERT OR REPLACE INTO classification_records VALUES(?,?,?)', (company, identity, json.dumps(record, ensure_ascii=False)))
+        con.execute('INSERT INTO classification_records VALUES(?,?,?) ON CONFLICT(company,id) DO UPDATE SET payload=excluded.payload', (company, identity, json.dumps(record, ensure_ascii=False)))
 
 def records(company):
     con = _db()
     try:
         result = [json.loads(row['payload']) for row in con.execute('SELECT payload FROM classification_records WHERE company=?', (company,))]
         # Preserve all previously learned v0.3 records without rewriting the table.
-        if con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='patterns'").fetchone():
+        if persistence.table_exists(con, 'patterns'):
             known = {(r['banco'], r['assinatura'], r['debito'], r['credito']) for r in result}
             for row in con.execute('SELECT * FROM patterns WHERE company=?', (company,)):
                 bank = row['bank']
@@ -285,6 +284,7 @@ def review(company, content, filename, revisions, remember=False):
     if remember:
         con = _db()
         try:
+            con.execute('BEGIN IMMEDIATE')
             _save(con, company, new_records)
             con.commit()
         finally:
@@ -312,9 +312,10 @@ def import_original_online(company):
 def clear(company):
     con = _db()
     try:
+        con.execute('BEGIN IMMEDIATE')
         for table in ('classification_records', 'classification_imports'):
             con.execute(f'DELETE FROM {table} WHERE company=?', (company,))
-        if con.execute("SELECT 1 FROM sqlite_master WHERE name='patterns'").fetchone():
+        if persistence.table_exists(con, 'patterns'):
             con.execute('DELETE FROM patterns WHERE company=?', (company,))
         con.commit()
     finally:

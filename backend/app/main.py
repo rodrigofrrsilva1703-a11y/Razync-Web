@@ -72,6 +72,17 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+def initialize_persistence():
+    if os.getenv('RAZYNC_MIGRATE_ON_START') == '1':
+        from app.migrate_to_supabase import migrate
+        migrate()
+    from app import persistence, classification_service
+    if persistence.marker(classification_service.DB_PATH):
+        con = persistence.connect(classification_service.DB_PATH)
+        con.close()
+
+
 @app.get("/health")
 def health():
     return {

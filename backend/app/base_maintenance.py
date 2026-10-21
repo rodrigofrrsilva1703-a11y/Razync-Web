@@ -1,7 +1,7 @@
 """Exclusão exata de um banco/período, preservando os demais aprendizados."""
 import hashlib
 import json
-from app import classification_service as base
+from app import classification_service as base, persistence
 from app.migration_services import accounts
 
 
@@ -21,7 +21,7 @@ def _rows(con, company):
     modern = [(row['id'], json.loads(row['payload'])) for row in con.execute(
         'SELECT id,payload FROM classification_records WHERE company=? ORDER BY id', (company,))]
     legacy = []
-    if con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='patterns'").fetchone():
+    if persistence.table_exists(con, 'patterns'):
         legacy = [dict(row) for row in con.execute('SELECT * FROM patterns WHERE company=? ORDER BY bank,signature,nature,counterpart,period', (company,))]
     return modern, legacy
 

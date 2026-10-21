@@ -1,11 +1,15 @@
 """Encrypted A1 storage; original validation/crypto, server-only master key."""
 import json
 import os
-from app.classification_service import _db
+import sqlite3
+from app import classification_service
 from razync.certificado_digital import validar_certificado, _cifrar, _cnpj_valido
 
 def connection():
-    con = _db()
+    # Certificados A1 permanecem criptografados no volume local nesta etapa.
+    classification_service.DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    con = sqlite3.connect(classification_service.DB_PATH, timeout=30)
+    con.row_factory = sqlite3.Row
     con.execute('CREATE TABLE IF NOT EXISTS certificates(company INTEGER PRIMARY KEY, metadata TEXT NOT NULL, encrypted TEXT NOT NULL)')
     return con
 

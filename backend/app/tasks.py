@@ -5,6 +5,7 @@ import sqlite3
 import uuid
 from datetime import date, datetime, timezone
 from pathlib import Path
+from app import persistence
 
 from razync.company_catalog import EMPRESAS
 from razync.task_center import classificar_tarefa, ordenar_tarefas, resumir_tarefas
@@ -14,9 +15,8 @@ DB_PATH = Path(os.getenv("RAZYNC_DB_PATH", "/data/razync.db"))
 
 
 def _db():
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(DB_PATH)
-    con.row_factory = sqlite3.Row
+    con = persistence.connect(DB_PATH)
+    if persistence.is_postgres(con):return con
     con.executescript("""
     CREATE TABLE IF NOT EXISTS manual_tasks(
       id TEXT PRIMARY KEY,
@@ -146,7 +146,7 @@ def import_company_statuses(rows):
             old = con.execute('SELECT updated_at FROM company_task_status WHERE codigo_empresa=? AND competencia=?',record[:2]).fetchone()
             if old and datetime.fromisoformat(old['updated_at']) >= datetime.fromisoformat(record[3]):
                 continue
-            con.execute('INSERT OR REPLACE INTO company_task_status VALUES(?,?,?,?)',record)
+            con.execute('INSERT INTO company_task_status VALUES(?,?,?,?) ON CONFLICT(codigo_empresa,competencia) DO UPDATE SET concluida=excluded.concluida, updated_at=excluded.updated_at',record)
             imported += 1
         con.commit()
         return imported
