@@ -45,7 +45,7 @@ def pool():
     with _pool_lock:
         if _pool is None or _pool_url != url:
             if _pool is not None:_pool.close()
-            _pool=ConnectionPool(url,min_size=0,max_size=3,timeout=15,
+            _pool=ConnectionPool(url,min_size=0,max_size=3,timeout=15,open=True,
                 kwargs={'row_factory':dict_row,'prepare_threshold':None,'connect_timeout':10,'sslmode':'require'},
                 configure=_configure)
             _pool_url=url

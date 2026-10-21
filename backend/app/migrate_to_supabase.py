@@ -28,7 +28,8 @@ def fingerprint(rows):
 
 
 def migrate(path=None):
-    path=Path(path or os.getenv('RAZYNC_DB_PATH','/data/razync.db'))
+    from app.classification_service import DB_PATH
+    path=Path(path or DB_PATH)
     if not path.exists():raise RuntimeError('A base SQLite de origem não existe. Migração interrompida.')
     if persistence.marker(path):return {'status':'already_active'}
     source=sqlite3.connect(path,timeout=30);source.row_factory=sqlite3.Row

@@ -24,7 +24,7 @@ def postgres(monkeypatch):
         admin.execute('TRUNCATE '+','.join('razync.'+table for table in (*persistence.TABLES,'migration_state')))
     def configure(con):
         con.execute('SET ROLE razync_api');persistence._configure(con)
-    test_pool=ConnectionPool(URL,min_size=0,max_size=3,timeout=10,kwargs={'row_factory':dict_row,'prepare_threshold':None},configure=configure)
+    test_pool=ConnectionPool(URL,min_size=0,max_size=3,timeout=10,open=True,kwargs={'row_factory':dict_row,'prepare_threshold':None},configure=configure)
     monkeypatch.setenv('RAZYNC_DATABASE_URL',URL)
     monkeypatch.setattr(persistence,'_pool',test_pool);monkeypatch.setattr(persistence,'_pool_url',URL)
     yield base.DB_PATH
