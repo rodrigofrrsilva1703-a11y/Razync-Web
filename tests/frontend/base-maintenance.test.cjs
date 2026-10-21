@@ -16,6 +16,7 @@ function setup() {
       else data={ok:true};
       return {ok:true,json:async()=>data};
     }};
+  scope.window.adminFetch=(url,init,current)=>{if(!current())throw new DOMException('Cancelado','AbortError');return scope.fetch(url,init);};
   vm.createContext(scope);vm.runInContext(fs.readFileSync('assets/js/base-maintenance.js','utf8'),scope);
   async function prepare(){await node('loadBaseSlices').click();node('baseCleanupBank').value='itau';node('baseCleanupBank').change();node('baseCleanupPeriod').value='2026-09';node('baseCleanupPeriod').change();await node('previewBaseCleanup').click();}
   return {node,calls,scope,prepare};

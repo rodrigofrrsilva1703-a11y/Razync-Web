@@ -27,15 +27,14 @@
     if (!selected || selected.capabilities?.status!=='api_ready') throw new Error('Abra uma empresa disponível para consultar sua base.');
     controller?.abort();controller=new AbortController();
     const company=selected.codigo, version=revision, signal=controller.signal;
-    const headers={...adminHeaders(),...(init.headers||{})};
     const current=()=>!signal.aborted && revision===version && selected?.codigo===company;
-    const response=await fetch(`${API()}/api/v1/base-inteligente/${company}/${path}`,{...init,headers,signal});
+    const response=await window.adminFetch(`${API()}/api/v1/base-inteligente/${company}/${path}`,{...init,signal},current);
     if(!current()) return null;
     if(response.status===404) throw new Error('A exclusão por período aguarda a atualização do serviço. Tente novamente quando a publicação no Railway for liberada.');
     if(!response.ok) throw new Error(await responseError(response));
     const data=await response.json();return current()?{data,company,version}:null;
   }
-  function report(error) {if(error.name!=='AbortError')message.textContent=error.message;}
+  function report(error) {message.textContent=error.name==='AbortError'?'Ação cancelada. Nenhum dado foi alterado.':error.message;}
   async function loadSlices(keepMessage=false) {
     invalidate();load.disabled=true;if(!keepMessage)message.textContent='Carregando bancos e períodos…';
     options(bank,[],'Carregando…');options(period,[],'Selecione o banco');preview.disabled=true;

@@ -59,17 +59,12 @@ openCompany = function(company) {
     shell.classList.remove("is-dragging");
   });
   $("#workflowPreview").replaceChildren();
-  $("#adminAccess").value = "";
+  window.clearAdminAccess();
   $("#baseManagementMessage").textContent = "";
   window.resetBaseMaintenance?.();
   migratedOpenCompany(company);
 };
 
-function adminHeaders() {
-  const token = $("#adminAccess").value;
-  if (!token) throw new Error("Informe a chave em Acesso administrativo, acima das ferramentas.");
-  return {Authorization: `Bearer ${token}`};
-}
 
 function previewLabel(value) {
   return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -375,11 +370,11 @@ $("#francesinhasForm").addEventListener("submit", async event => {
 
 $("#exportBase").addEventListener("click",async()=>{
   const code=selected.codigo; const msg=$("#baseManagementMessage");
-  try {const r=await fetch(`${API()}/api/v1/base-inteligente/${code}/exportar`,{headers:adminHeaders()}); if(!r.ok)throw new Error(await responseError(r));await downloadBlob(r,`RAZYNC_${code}_BASE.json`);msg.textContent="Base exportada. Reimporte o JSON no campo Arquivos revisados.";}catch(e){msg.textContent=e.message;}
+  try {const r=await window.adminFetch(`${API()}/api/v1/base-inteligente/${code}/exportar`,{},()=>selected?.codigo===code); if(!r.ok)throw new Error(await responseError(r));await downloadBlob(r,`RAZYNC_${code}_BASE.json`);msg.textContent="Base exportada. Reimporte o JSON no campo Arquivos revisados.";}catch(e){if(e.name!=="AbortError" && selected?.codigo===code)msg.textContent=e.message;}
 });
 $("#importOriginalBase").addEventListener("click",async()=>{
   const code=selected.codigo; const msg=$("#baseManagementMessage");msg.textContent="Copiando padrões da base original…";
-  try {const r=await fetch(`${API()}/api/v1/base-inteligente/${code}/importar-original`,{method:"POST",headers:adminHeaders()});if(!r.ok)throw new Error(await responseError(r));const result=await r.json();msg.textContent=`${result.learned} padrão(ões) copiado(s).`;refreshBaseStats();}catch(e){msg.textContent=e.message;}
+  try {const r=await window.adminFetch(`${API()}/api/v1/base-inteligente/${code}/importar-original`,{method:"POST"},()=>selected?.codigo===code);if(!r.ok)throw new Error(await responseError(r));const result=await r.json();msg.textContent=`${result.learned} padrão(ões) copiado(s).`;refreshBaseStats();}catch(e){if(e.name!=="AbortError" && selected?.codigo===code)msg.textContent=e.message;}
 });
 
 $("#txtForm")?.addEventListener("submit",async event=>{

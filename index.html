@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="./assets/css/fiscal-account-dialog.css?v=20261020-11">
   <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=search-border-20261021-1">
   <link rel="stylesheet" href="./assets/css/base-maintenance.css?v=20261021-1">
+  <link rel="stylesheet" href="./assets/css/admin-auth.css?v=20261021-1">
 </head>
 <body class="sidebar-collapsed">
   <div class="app-shell">
@@ -409,11 +410,6 @@
           <span id="panelStatus" class="status-pill"></span>
         </div>
 
-        <details class="admin-access">
-          <summary>Acesso administrativo</summary>
-          <label for="adminAccess">Chave administrativa para backup e manutenção da Base Inteligente</label>
-          <input id="adminAccess" name="razync_admin_access_key" type="password" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" readonly>
-        </details>
         <nav class="tool-tabs" aria-label="Ferramentas">
           <button type="button" class="tool-tab active" data-tool="organizar">Organizar arquivos</button>
           <button type="button" class="tool-tab" data-tool="base">Base Inteligente</button>
@@ -640,6 +636,17 @@
       <p id="companyCreateMessage" role="status"></p><button type="submit">Criar empresa</button>
     </form>
   </dialog>
+  <dialog id="adminAuthDialog" class="admin-auth-dialog" aria-labelledby="adminAuthTitle" aria-describedby="adminAuthDescription">
+    <form id="adminAuthForm">
+      <div class="admin-auth-heading"><span class="admin-auth-badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg></span><button id="adminAuthClose" type="button" aria-label="Fechar">×</button></div>
+      <h2 id="adminAuthTitle">Acesso administrativo</h2>
+      <p id="adminAuthDescription">Informe a senha administrativa para continuar esta ação.</p>
+      <label for="adminAccess">Senha administrativa</label>
+      <input id="adminAccess" name="razync_admin_access_key" type="password" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" required>
+      <p id="adminAuthError" role="alert" hidden></p>
+      <div class="admin-auth-actions"><button id="adminAuthCancel" type="button">Cancelar</button><button type="submit">Continuar</button></div>
+    </form>
+  </dialog>
   <script src="./assets/js/config.js"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
   <script src="./assets/js/workspace-ui.js?v=base-without-review-20261020-1"></script>
@@ -649,10 +656,11 @@
   <script src="./assets/js/portfolios.js?v=20261020-1"></script>
   <script src="./assets/js/reconciliation-preview.js?v=20261020-1"></script>
   <script src="./assets/js/tasks-ui.js?v=20261020-1"></script>
+  <script src="./assets/js/admin-auth.js?v=20261021-1"></script>
   <script src="./assets/js/app.js?v=organized-20261020-1"></script>
-  <script src="./assets/js/migration.js?v=base-cleanup-20261021-1"></script>
+  <script src="./assets/js/migration.js?v=admin-modal-20261021-1"></script>
   <script src="./assets/js/fiscal-242.js?v=account-ai-20261019-8"></script>
-  <script src="./assets/js/base-maintenance.js?v=20261021-2"></script>
+  <script src="./assets/js/base-maintenance.js?v=20261021-3"></script>
   <script src="./assets/js/motion.js?v=20261020-2"></script>
 </body>
 </html>
