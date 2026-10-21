@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="./assets/css/fiscal-ai-reader.css?v=comparison-20261019-1">
   <link rel="stylesheet" href="./assets/css/fiscal-account-dialog.css?v=20261020-11">
   <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=search-border-20261021-1">
+  <link rel="stylesheet" href="./assets/css/base-maintenance.css?v=20261021-1">
 </head>
 <body class="sidebar-collapsed">
   <div class="app-shell">
@@ -529,6 +530,23 @@
                 <button id="exportBase" type="button" class="secondary-action">Exportar Base Inteligente</button>
                 <button id="importOriginalBase" type="button" class="secondary-action" hidden>Copiar base do Streamlit</button>
                 <p id="baseManagementMessage" class="helper"></p>
+                <details id="baseCleanup" class="base-cleanup">
+                  <summary>Excluir aprendizado por banco e período</summary>
+                  <p>Remova somente o período escolhido da empresa aberta. Padrões aprendidos em outros períodos serão preservados. A base guarda períodos mensais, sem seleção por dia.</p>
+                  <button id="loadBaseSlices" type="button" class="secondary-action">Carregar bancos e períodos</button>
+                  <div class="base-cleanup-fields">
+                    <label>Banco<select id="baseCleanupBank" disabled><option value="">Carregue os dados da base</option></select></label>
+                    <label>Período salvo<select id="baseCleanupPeriod" disabled><option value="">Selecione o banco</option></select></label>
+                  </div>
+                  <button id="previewBaseCleanup" type="button" class="secondary-action" disabled>Conferir exclusão</button>
+                  <div id="baseCleanupConfirmation" class="base-cleanup-confirmation" hidden>
+                    <p id="baseCleanupSummary"></p>
+                    <p>Esta exclusão é definitiva. Você pode exportar a base antes para manter uma cópia.</p>
+                    <button id="confirmBaseCleanup" type="button">Confirmar exclusão deste período</button>
+                    <button id="cancelBaseCleanup" type="button" class="secondary-action">Cancelar</button>
+                  </div>
+                  <p id="baseCleanupMessage" class="helper" role="status" aria-live="polite"></p>
+                </details>
               </div>
             </div>
             <div id="classificationPreview" class="preview-results streamlit-preview" aria-live="polite"></div>
@@ -632,8 +650,9 @@
   <script src="./assets/js/reconciliation-preview.js?v=20261020-1"></script>
   <script src="./assets/js/tasks-ui.js?v=20261020-1"></script>
   <script src="./assets/js/app.js?v=organized-20261020-1"></script>
-  <script src="./assets/js/migration.js?v=base-without-review-20261020-1"></script>
+  <script src="./assets/js/migration.js?v=base-cleanup-20261021-1"></script>
   <script src="./assets/js/fiscal-242.js?v=account-ai-20261019-8"></script>
+  <script src="./assets/js/base-maintenance.js?v=20261021-1"></script>
   <script src="./assets/js/motion.js?v=20261020-2"></script>
 </body>
 </html>

@@ -61,6 +61,7 @@ openCompany = function(company) {
   $("#workflowPreview").replaceChildren();
   $("#adminAccess").value = "";
   $("#baseManagementMessage").textContent = "";
+  window.resetBaseMaintenance?.();
   migratedOpenCompany(company);
 };
 

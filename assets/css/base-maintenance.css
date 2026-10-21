@@ -1,0 +1,13 @@
+#companyPanel .base-cleanup {flex-basis:100%;width:100%;margin-top:14px;padding-top:13px;border-top:1px solid #e1e8f0;min-width:0;}
+#companyPanel .base-cleanup > summary {cursor:pointer;color:#61778e;font-size:11px;line-height:1.6;}
+#companyPanel .base-cleanup p {font-size:11px;line-height:1.65;margin:10px 0;color:#75879a;}
+#companyPanel .base-cleanup-fields {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0;}
+#companyPanel .base-cleanup-fields label {display:flex;flex-direction:column;gap:6px;font-size:11px;color:#61778e;min-width:0;}
+#companyPanel .base-cleanup-fields select {width:100%;min-height:38px;padding:8px 10px;border:1px solid #cbd8e6;border-radius:8px;background:#fff;color:#385773;font-size:12px;}
+#companyPanel .base-cleanup button {width:auto;min-height:36px;padding:8px 11px;font-size:11px;border-radius:8px;cursor:pointer;}
+#companyPanel .base-cleanup button:disabled {opacity:.5;cursor:default;}
+#companyPanel .base-cleanup-confirmation {margin-top:12px;padding:12px;border:1px solid #e8d5d1;border-radius:9px;background:#fffaf9;}
+#companyPanel #baseCleanupSummary {margin-top:0;color:#67504a;}
+#companyPanel #confirmBaseCleanup {border:1px solid #9e5750!important;background:#9e5750!important;color:#fff!important;margin-right:7px;}
+#companyPanel .base-cleanup :focus-visible {outline:2px solid #6485a6;outline-offset:3px;}
+@media(max-width:560px) {#companyPanel .base-cleanup-fields {grid-template-columns:1fr;} #companyPanel .base-cleanup button {min-height:44px;}}

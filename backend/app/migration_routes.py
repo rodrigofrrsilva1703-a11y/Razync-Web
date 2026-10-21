@@ -5,6 +5,7 @@ import os
 import hmac
 import zipfile
 from pathlib import Path
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from fastapi.concurrency import run_in_threadpool
@@ -179,6 +180,38 @@ def import_base(company_code: int):
         return {'learned': base.import_original_online(company_code), **base.status(company_code)}
     except Exception as exc:
         raise HTTPException(422, str(exc)) from exc
+
+class BaseSliceDeletion(BaseModel):
+    bank: str
+    period: str
+    token: str
+
+
+@router.get('/base-inteligente/{company_code}/recortes', dependencies=[Depends(require_admin)])
+def base_slices(company_code: int):
+    from app import base_maintenance
+    return base_maintenance.slices(company_code)
+
+
+@router.get('/base-inteligente/{company_code}/exclusao-previa', dependencies=[Depends(require_admin)])
+def base_deletion_preview(company_code: int, bank: str, period: str):
+    from app import base_maintenance
+    try:
+        return base_maintenance.preview(company_code, bank, period)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@router.post('/base-inteligente/{company_code}/excluir-recorte', dependencies=[Depends(require_admin)])
+def base_delete_slice(company_code: int, payload: BaseSliceDeletion):
+    from app import base_maintenance
+    try:
+        return base_maintenance.delete(company_code, payload.bank, payload.period, payload.token)
+    except base_maintenance.StaleSelection as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
 
 @router.delete('/base-inteligente/{company_code}', dependencies=[Depends(require_admin)])
 def clear_base(company_code: int):
