@@ -31,6 +31,7 @@
     const current=()=>!signal.aborted && revision===version && selected?.codigo===company;
     const response=await fetch(`${API()}/api/v1/base-inteligente/${company}/${path}`,{...init,headers,signal});
     if(!current()) return null;
+    if(response.status===404) throw new Error('A exclusão por período aguarda a atualização do serviço. Tente novamente quando a publicação no Railway for liberada.');
     if(!response.ok) throw new Error(await responseError(response));
     const data=await response.json();return current()?{data,company,version}:null;
   }
