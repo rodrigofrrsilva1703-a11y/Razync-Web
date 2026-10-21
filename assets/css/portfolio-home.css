@@ -53,6 +53,22 @@
 #companiesView .directory-heading p {margin:0;color:#718399;line-height:1.6}
 #companiesView .directory-controls {padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
 #companiesView .directory-controls input,#companiesView .directory-controls select {min-height:48px;border-radius:10px;background:#f8fafc;font-size:14px}
+/* A borda pertence ao conjunto ícone + campo; o input fica dentro dela. */
+#companiesView .directory-controls .search-wrap {
+  box-sizing:border-box;height:48px;min-height:48px;
+  border:1px solid #9eafc2;border-radius:10px;background:#fff;
+  box-shadow:0 1px 2px #203c5704;
+}
+#companiesView .directory-controls .search-wrap:hover {border-color:#7e97b1}
+#companiesView .directory-controls .search-wrap:focus-within {
+  border-color:#547b9f;background:#fff;box-shadow:0 0 0 3px #547b9f18;
+}
+#companiesView .directory-controls .search-wrap input {
+  box-sizing:border-box;height:100%;min-height:0;border:0;
+  border-radius:0!important;background:transparent!important;
+}
+#companiesView .directory-controls .search-wrap > span {color:#738ba3}
+
 #companiesView .company-filters {margin-top:16px;gap:8px}
 #companiesView .company-filter {min-height:38px;padding:8px 13px;border-radius:8px;font-size:12px}
 #companiesView .company-filter.active {background:#eaf1f9;border-color:#c9d9e9;color:#2c5275}
