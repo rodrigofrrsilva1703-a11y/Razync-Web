@@ -4,6 +4,7 @@ import json
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
+from app.attachments import upload_group
 from app import fiscal_ai_sessions as sessions
 from app.fiscal_242 import conferencia_fiscal_preview
 from app.fiscal_documentos import preparar_relatorio_pendencias_para_ia
@@ -28,11 +29,15 @@ def review_context(report, scope, filial, empresa_codigo):
 
 
 @router.post("")
-async def analyze_account(acumuladores: UploadFile = File(...), razao: UploadFile = File(...),
+async def analyze_account(acumuladores: list[UploadFile] = File(...), razao: list[UploadFile] = File(...),
                           conta: str = Form(...), tipo: str = Form(...),
                           origem: str = Form("resumo"), acumulador: str = Form(""),
                           filial: str = Form(""), empresa_codigo: str = Form(""),
-                          entradas: UploadFile | None = File(None), saidas: UploadFile | None = File(None)):
+                          entradas: list[UploadFile] | None = File(None), saidas: list[UploadFile] | None = File(None)):
+    acumuladores = await upload_group(acumuladores)
+    razao = await upload_group(razao)
+    entradas = await upload_group(entradas)
+    saidas = await upload_group(saidas)
     if not conta.isdigit() or tipo not in {"ENTRADAS", "SAÍDAS"} or origem not in {"resumo", "documentos"}:
         raise HTTPException(422, "Selecione uma conta, um tipo e uma origem válidos.")
     if any(value and not value.isdigit() for value in (filial, empresa_codigo, acumulador)):

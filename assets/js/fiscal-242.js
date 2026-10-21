@@ -885,7 +885,7 @@
     aiInputBody = new FormData();
     for (const [key, value] of previewBody.entries()) aiInputBody.append(key, value);
     for (const [id, key] of [["fiscal242Entradas", "entradas"], ["fiscal242Saidas", "saidas"]]) {
-      const file = byId(id).files?.[0]; if (file) aiInputBody.append(key, file);
+      [...byId(id).files].forEach(file => aiInputBody.append(key, file));
     }
     return aiInputBody;
   }
@@ -1020,16 +1020,16 @@
   }
   const keyOf = row => String(row.conta) + ":" + String(row.tipo);
   const selectedFiles = () => {
-    const acumuladores = byId("fiscal242Acumuladores").files[0];
-    const razao = byId("fiscal242Razao").files[0];
-    if (!acumuladores || !razao) throw new Error("Selecione o Resumo por Acumulador e o Razão.");
+    const acumuladores = [...byId("fiscal242Acumuladores").files];
+    const razao = [...byId("fiscal242Razao").files];
+    if (!acumuladores.length || !razao.length) throw new Error("Selecione o Resumo por Acumulador e o Razão.");
     return {acumuladores, razao};
   };
   function buildFormData() {
     const files = selectedFiles();
     const body = new FormData();
-    body.append("acumuladores", files.acumuladores);
-    body.append("razao", files.razao);
+    files.acumuladores.forEach(file => body.append("acumuladores", file));
+    files.razao.forEach(file => body.append("razao", file));
     const filial = byId("fiscalFilialCodigo").value.trim();
     if (filial && !/^\d+$/.test(filial)) throw new Error("A filial deve conter apenas números.");
     body.append("filial", filial);
@@ -1441,7 +1441,7 @@
       const body = new FormData();
       for (const [name, value] of state.source.entries()) if (!["entradas", "saidas", "conta", "tipo", "origem", "acumulador"].includes(name)) body.append(name, value);
       for (const name of ["conta", "tipo", "origem", "acumulador"]) body.append(name, scope[name] || "");
-      if (file) body.append(scope.tipo === "SAÍDAS" ? "saidas" : "entradas", file);
+      if (file) [...byId(fileId).files].forEach(document => body.append(scope.tipo === "SAÍDAS" ? "saidas" : "entradas", document));
       const controller = new AbortController(); state.controller = controller;
       state.pending = true; state.expanded = true; state.error = ""; state.startedAt = Date.now(); state.paint();
       state.timer = setInterval(() => { if (state.pending) state.tick(); }, 1000);
@@ -2382,20 +2382,20 @@
       investigationMessage.textContent = "Conclua a conferência inicial antes de investigar documentos.";
       return;
     }
-    const entradas = byId("fiscal242Entradas").files?.[0];
-    const saidas = byId("fiscal242Saidas").files?.[0];
-    if (!entradas && !saidas) {
+    const entradas = [...byId("fiscal242Entradas").files];
+    const saidas = [...byId("fiscal242Saidas").files];
+    if (!entradas.length && !saidas.length) {
       investigationMessage.textContent = "Selecione Entradas, Saídas ou ambos.";
       return;
     }
     const snapshot = data;
     const body = new FormData();
     const files = selectedFiles();
-    body.append("acumuladores", files.acumuladores);
-    body.append("razao", files.razao);
+    files.acumuladores.forEach(file => body.append("acumuladores", file));
+    files.razao.forEach(file => body.append("razao", file));
     body.append("filial", String(data.filial_aplicada || byId("fiscalFilialCodigo").value || ""));
-    if (entradas) body.append("entradas", entradas);
-    if (saidas) body.append("saidas", saidas);
+    entradas.forEach(file => body.append("entradas", file));
+    saidas.forEach(file => body.append("saidas", file));
     investigationController?.abort();
     const controller = new AbortController();
     investigationController = controller;
@@ -2444,7 +2444,7 @@
     const label = byId(labelId);
     if (!input || !label) return;
     const file = input.files?.[0];
-    label.textContent = file ? file.name : "Nenhum arquivo selecionado";
+    label.textContent = input.files.length > 1 ? `${input.files.length} arquivos selecionados` : file ? file.name : "Nenhum arquivo selecionado";
     label.dataset.ready = file ? "true" : "false";
   }
   function syncFileNames() {

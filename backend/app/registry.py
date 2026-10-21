@@ -193,3 +193,8 @@ next(r for r in CAPABILITIES[1402]['roles'] if r['name'] == 'extrato')['optional
 for capability in CAPABILITIES.values():
     capability['validation_status'] = 'pending_real_files'
 COMMON_TOOLS.extend(['revisao_inteligente'])
+
+# These processors already combine each upload independently before aggregation.
+for _code in (3, 178, 242, 343, 266, 1396):
+    for _role in CAPABILITIES.get(_code, {}).get("roles", []):
+        _role["multiple"] = True

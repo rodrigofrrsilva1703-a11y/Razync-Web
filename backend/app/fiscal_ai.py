@@ -14,6 +14,7 @@ import urllib.request
 from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 from fastapi.concurrency import run_in_threadpool
+from app.attachments import upload_group
 from app.fiscal_242 import conferencia_fiscal_preview
 from app.ai_budget import request_slot, daily_report
 from app.fiscal_ai_audit import audit_analysis, structured_analysis, link_text_evidence, protect_publication, local_review_sufficient
@@ -1035,11 +1036,15 @@ def usage_report(response: Response):
 @router.post("")
 @legacy_router.post("")
 async def analyze(
-    acumuladores: UploadFile = File(...), razao: UploadFile = File(...),
+    acumuladores: list[UploadFile] = File(...), razao: list[UploadFile] = File(...),
     filial: str = Form(""), empresa_codigo: str = Form(""),
     provedor: Literal["", "openrouter"] = Form(""),
-    entradas: UploadFile | None = File(None), saidas: UploadFile | None = File(None),
+    entradas: list[UploadFile] | None = File(None), saidas: list[UploadFile] | None = File(None),
 ):
+    acumuladores = await upload_group(acumuladores)
+    razao = await upload_group(razao)
+    entradas = await upload_group(entradas)
+    saidas = await upload_group(saidas)
     if not status()["configurado"]:
         raise HTTPException(
             503, "IA não configurada. Configure um provedor gratuito e suas permissões no Railway."

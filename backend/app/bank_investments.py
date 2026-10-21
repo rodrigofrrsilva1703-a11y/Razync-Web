@@ -124,7 +124,9 @@ def generate(company_code, banks, files, model, options, settings):
 @router.post('/{company_code}/aplicacoes-resgates/preview')
 @router.post('/{company_code}/aplicacoes-resgates')
 async def download_investments(request: Request, company_code: int, banks_json: str = Form(...), file_banks_json: str = Form(...),
-    settings_json: str = Form(...), model_file: UploadFile = File(...), files: list[UploadFile] = File(...), options_json: str = Form('{}')):
+    settings_json: str = Form(...), model_file: list[UploadFile] = File(...), files: list[UploadFile] = File(...), options_json: str = Form('{}')):
+    from app.attachments import upload_group
+    model_file = await upload_group(model_file, model=True)
     try:
         banks, file_banks, options, settings = (json.loads(value) for value in (banks_json,file_banks_json,options_json,settings_json))
         if not isinstance(file_banks,list) or len(file_banks) != len(files):

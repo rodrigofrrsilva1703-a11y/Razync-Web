@@ -9,6 +9,7 @@ import threading
 import time
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
+from app.attachments import upload_group
 from fastapi.responses import JSONResponse
 from app import fiscal_ai, ai_result_cache
 from app.fiscal_ai_audit import ANALYSIS_VERSION
@@ -356,9 +357,13 @@ def process(token, batch_id):
 
 
 @router.post("")
-async def create(acumuladores: UploadFile = File(...), razao: UploadFile = File(...),
+async def create(acumuladores: list[UploadFile] = File(...), razao: list[UploadFile] = File(...),
                  filial: str = Form(""), empresa_codigo: str = Form(""),
-                 entradas: UploadFile | None = File(None), saidas: UploadFile | None = File(None)):
+                 entradas: list[UploadFile] | None = File(None), saidas: list[UploadFile] | None = File(None)):
+    acumuladores = await upload_group(acumuladores)
+    razao = await upload_group(razao)
+    entradas = await upload_group(entradas)
+    saidas = await upload_group(saidas)
     if not fiscal_ai.status()["configurado"]:
         raise HTTPException(503, "IA não configurada.")
     if (empresa_codigo and not empresa_codigo.isdigit()) or (filial and not filial.isdigit()):

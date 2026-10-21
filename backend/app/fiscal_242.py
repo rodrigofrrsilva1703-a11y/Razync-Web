@@ -25,6 +25,8 @@ def _normalizar(texto) -> str:
 
 
 def _csv_para_excel(conteudo: bytes, nome: str) -> tuple[bytes, str]:
+    if isinstance(conteudo, list):
+        return conteudo, nome
     if Path(nome).suffix.lower() != ".csv":
         return conteudo, nome
     try:
@@ -105,6 +107,8 @@ def _periodo(dados: dict) -> dict:
     for campo in ("inicio", "fim"):
         data = pd.to_datetime(dados.get(campo), errors="coerce")
         resposta[campo] = data.strftime("%d/%m/%Y") if pd.notna(data) else ""
+    if dados.get("intervalos"):
+        resposta["intervalos"] = [{"inicio": a.strftime("%d/%m/%Y"), "fim": b.strftime("%d/%m/%Y")} for a, b in dados["intervalos"]]
     return resposta
 
 
@@ -120,7 +124,7 @@ def conferencia_fiscal_preview(
         raise ValueError("Envie o Razão em XLS, XLSX ou CSV.")
     if not acumuladores_bytes or not razao_bytes:
         raise ValueError("Envie os dois relatórios.")
-    if len(acumuladores_bytes) > 25_000_000 or len(razao_bytes) > 25_000_000:
+    if (not isinstance(acumuladores_bytes, list) and len(acumuladores_bytes) > 25_000_000) or (not isinstance(razao_bytes, list) and len(razao_bytes) > 25_000_000):
         raise ValueError("Cada arquivo deve ter no máximo 25 MB.")
 
     razao_bytes, razao_nome = _csv_para_excel(razao_bytes, razao_nome)

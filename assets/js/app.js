@@ -88,6 +88,26 @@ function enhanceFileInput(input) {
   hint.className = "file-drop-hint";
   hint.innerHTML = '<i aria-hidden="true"></i><span>Arraste o arquivo aqui ou clique para selecionar</span>';
   shell.appendChild(hint);
+  hint.querySelector("span").textContent = input.multiple
+    ? "Adicione arquivos ou arraste aqui. Novas seleções mantêm os anexos anteriores."
+    : "Arraste o arquivo aqui ou clique para selecionar";
+  let retained = [...input.files];
+  input.addEventListener("change", () => {
+    if (input.multiple && !input.dataset.replacingFiles) {
+      const files = [...retained, ...input.files];
+      const unique = files.filter((file, index) => files.findIndex(other =>
+        other.name === file.name && other.size === file.size && other.lastModified === file.lastModified) === index);
+      const transfer = new DataTransfer();
+      unique.forEach(file => transfer.items.add(file));
+      input.files = transfer.files;
+    }
+    retained = [...input.files];
+    updateFileSelection(input);
+  });
+  input.form?.addEventListener("reset", () => {
+    retained = [];
+    queueMicrotask(() => updateFileSelection(input));
+  });
 
   const activate = event => {
     event.preventDefault();
@@ -739,7 +759,7 @@ function renderWorkflow(company) {
       wrap.innerHTML = `
         <label for="${RazyncDOM.escapeHTML(id)}">${RazyncDOM.escapeHTML(role.label)}${role.optional ? " <span class='optional'>(opcional)</span>" : ""}</label>
         <input id="${RazyncDOM.escapeHTML(id)}" data-role="${RazyncDOM.escapeHTML(role.name)}" type="file"
-          ${role.multiple ? "multiple" : ""}
+          ${role.multiple || [3,178,242,343,266,1396].includes(Number(company.codigo)) ? "multiple" : ""}
           accept="${RazyncDOM.escapeHTML(role.accept || ".pdf,.xls,.xlsx,.zip")}"
           ${role.optional ? "" : "required"}>
       `;
@@ -1253,7 +1273,7 @@ classifyForm.addEventListener("submit", async (event) => {
   const button = event.submitter;
   button.disabled = true;
   const data = new FormData();
-  data.append("file", file);
+  [...$("#classifyFile").files].forEach(file => data.append("file", file));
   const classifyOptions = {};
   if (Number(selected.codigo) === 242) {
     classifyOptions.origem_242 = eletro242ClassificationMode;
@@ -1314,7 +1334,7 @@ function reconcileSelectionState() {
 function buildSingleReconcileData(bank) {
   const data = new FormData();
   data.append("bank",bank);
-  data.append("model_file",$("#modelFile").files[0]);
+  [...$("#modelFile").files].forEach(file => data.append("model_file",file));
   data.append("options_json",JSON.stringify({
     data_inicial:dateApiValue($("#reconcileStart")),
     data_final:dateApiValue($("#reconcileEnd"))
@@ -1329,7 +1349,7 @@ function buildReconcileData() {
   const data = new FormData();
   data.append("banks_json",JSON.stringify(state.banks));
   data.append("file_banks_json",JSON.stringify(state.fileBanks));
-  data.append("model_file",$("#modelFile").files[0]);
+  [...$("#modelFile").files].forEach(file => data.append("model_file",file));
   data.append("options_json",JSON.stringify({
     data_inicial:dateApiValue($("#reconcileStart")),
     data_final:dateApiValue($("#reconcileEnd"))
@@ -1530,7 +1550,7 @@ async function checkApi() {
 initializeTaskUI();
 loadCompanies();
 checkApi();
-enhanceFileInputs(panel);
+enhanceFileInputs(document);
 
 
 function showGlobalView(name) {
@@ -1572,8 +1592,10 @@ function humanFileSize(bytes) {
 function replaceInputFiles(input, files) {
   const transfer = new DataTransfer();
   files.forEach(file => transfer.items.add(file));
+  input.dataset.replacingFiles = "1";
   input.files = transfer.files;
   input.dispatchEvent(new Event("change",{bubbles:true}));
+  delete input.dataset.replacingFiles;
 }
 
 function removeSelectedFile(input,index) {
@@ -1648,7 +1670,7 @@ function updateFileSelection(input) {
   }
 }
 
-panel.addEventListener("change", event => {
+document.addEventListener("change", event => {
   const input = event.target;
   if (!(input instanceof HTMLInputElement) || input.type !== "file") return;
   updateFileSelection(input);
@@ -1659,8 +1681,8 @@ let ledgerPreviewController;
 
 function buildLedgerData() {
   const data = new FormData();
-  data.append("extrato", $("#ledgerStatement").files[0]);
-  data.append("razao", $("#ledgerFile").files[0]);
+  [...$("#ledgerStatement").files].forEach(file => data.append("extrato", file));
+  [...$("#ledgerFile").files].forEach(file => data.append("razao", file));
   const period = ledgerPeriod();
   data.append("data_inicial",period.data_inicial);
   data.append("data_final",period.data_final);

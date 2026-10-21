@@ -392,7 +392,38 @@ def _periodo_relatorio(valores: list) -> tuple[pd.Timestamp, pd.Timestamp] | Non
     return inicio, fim
 
 
+def _ler_lote(documentos, leitor, fiscal=False):
+    quadros, periodos, pendentes = [], [], []
+    empresa = ""
+    chaves = {}
+    for conteudo, nome in documentos:
+        quadro, periodo = leitor(conteudo, nome)
+        identificacao = periodo.get("empresa_nome", "")
+        if empresa and identificacao and _chave_empresa(empresa) != _chave_empresa(identificacao):
+            raise ValueError("Os arquivos anexados pertencem a empresas diferentes.")
+        empresa = empresa or identificacao
+        inicio, fim = periodo.get("inicio"), periodo.get("fim")
+        if fiscal and (inicio is None or fim is None):
+            raise ValueError(f"Não foi possível identificar o período de {nome}.")
+        if inicio is not None and fim is not None:
+            periodos.append((inicio, fim))
+            if fiscal:
+                for chave in quadro[["TIPO", "ACUMULADOR", "CONTA"]].drop_duplicates().itertuples(index=False, name=None):
+                    if any(inicio <= b and fim >= a for a, b in chaves.get(chave, [])):
+                        raise ValueError(f"Períodos sobrepostos para o acumulador {chave[1]} da conta {chave[2]}. Remova os relatórios que repetem o mesmo período.")
+                    chaves.setdefault(chave, []).append((inicio, fim))
+        pendentes.extend(quadro.attrs.get("sem_conta", []))
+        quadros.append(quadro)
+    resultado = pd.concat(quadros, ignore_index=True)
+    resultado.attrs["sem_conta"] = pendentes
+    periodo = {"empresa_nome": empresa, "inicio": min((a for a, b in periodos), default=None),
+               "fim": max((b for a, b in periodos), default=None), "intervalos": sorted(set(periodos))}
+    return resultado, periodo
+
+
 def ler_acumuladores(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
+    if isinstance(conteudo, list):
+        return _ler_lote(conteudo, ler_acumuladores, fiscal=True)
     xls = _excel(conteudo, nome)
     periodo = {"inicio": None, "fim": None, "empresa_nome": ""}
     registros = []
@@ -482,6 +513,10 @@ def ler_acumuladores(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
 
 
 def ler_razao(conteudo: bytes, nome: str) -> tuple[pd.DataFrame, dict]:
+    if isinstance(conteudo, list):
+        from app.fiscal_242 import _csv_para_excel
+        documentos = [_csv_para_excel(data, filename) for data, filename in conteudo]
+        return _ler_lote(documentos, ler_razao)
     xls = _excel(conteudo, nome)
     registros = []
     periodo = {"inicio": None, "fim": None, "empresa_nome": ""}
@@ -672,7 +707,11 @@ def processar_conferencia(
             raise ValueError("O período do Resumo por Acumulador está invertido.")
         quantidade_original = len(razao)
         datas = pd.to_datetime(razao["DATA"], errors="coerce").dt.normalize()
-        razao = razao.loc[datas.between(inicio, fim, inclusive="both")].copy()
+        intervalos = periodo_fiscal.get("intervalos") or [(inicio, fim)]
+        manter = pd.Series(False, index=razao.index)
+        for de, ate in intervalos:
+            manter |= datas.between(de, ate, inclusive="both")
+        razao = razao.loc[manter].copy()
         movimentos_fora_periodo = quantidade_original - len(razao)
 
     filiais_encontradas = sorted(

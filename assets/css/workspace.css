@@ -2737,3 +2737,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .portfolio-entry,.portfolio-entry .portfolio-entry-arrow { transition:none; }
   .portfolio-entry:hover { transform:none; }
 }
+
+/* A mesma lista compacta de anexos em ferramentas globais e empresas. */
+.file-drop-shell { min-width:0; }
+.file-selection-summary { display:flex; justify-content:space-between; gap:12px; color:#68788d; font-size:11px; padding:3px 2px; }
+.file-drop-shell .file-selection { max-height:240px; overflow:auto; overscroll-behavior:contain; }
+.file-drop-shell .file-selection-item { display:flex; align-items:center; gap:8px; }
+.file-drop-shell .file-selection-item > span { flex:1; min-width:0; }
+.file-drop-shell .file-selection-item strong { font-size:12px; line-height:1.4; }
+.file-drop-shell .file-selection-item small { font-size:10px; line-height:1.4; }
+.file-drop-shell .file-selection-remove { flex:0 0 30px; width:30px !important; min-width:30px !important; height:30px !important; min-height:30px !important; margin:0 !important; padding:0 !important; border:1px solid #dce4ed !important; border-radius:8px !important; background:#fff !important; color:#52647a !important; box-shadow:none !important; }
+.file-drop-shell .file-selection-remove > span { font-size:21px; line-height:1; }
+.file-drop-shell .file-selection-remove:hover { background:#f1f5f9 !important; color:#192f4a !important; }
+.file-drop-shell .file-selection-remove:focus-visible { outline:2px solid #5179af; outline-offset:2px; }
+.fiscal-upload-item > .fiscal-file-selected { display:none; }

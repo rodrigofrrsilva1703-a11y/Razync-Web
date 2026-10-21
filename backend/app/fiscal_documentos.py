@@ -66,6 +66,23 @@ def ler_acompanhamento(content: bytes, name: str, tipo: str, acumuladores: set[s
     Se o layout não expuser um acumulador reconhecível, o documento NÃO
     será associado a uma conta por aproximação numérica.
     """
+    if isinstance(content, list):
+        partes = [ler_acompanhamento(data, filename, tipo, acumuladores) for data, filename in content]
+        empresas = {_chave_empresa(p["empresa"]) for p in partes if p["empresa"]}
+        cnpjs = {p["cnpj"] for p in partes if p["cnpj"]}
+        if len(empresas) > 1 or len(cnpjs) > 1:
+            raise ValueError("Os acompanhamentos anexados pertencem a empresas diferentes.")
+        periodos = [p["periodo"] for p in partes if p["periodo"]]
+        if len(periodos) != len(partes):
+            raise ValueError("Não foi possível identificar o período de todos os acompanhamentos.")
+        documentos = []
+        for indice, parte in enumerate(partes):
+            for documento in parte["documentos"]:
+                documentos.append({**documento, "id": f"{indice+1}-{documento['id']}", "arquivo_origem": content[indice][1]})
+        return {"documentos": documentos, "periodo": (min(a for a, b in periodos), max(b for a, b in periodos)),
+                "intervalos": periodos, "empresa": next((p["empresa"] for p in partes if p["empresa"]), ""),
+                "cnpj": next(iter(cnpjs), ""), "filiais": sorted({f for p in partes for f in p["filiais"]}),
+                "ignoradas": sum(p["ignoradas"] for p in partes), "sem_acumulador": sum(p["sem_acumulador"] for p in partes)}
     if not name.lower().endswith((".xls", ".xlsx")):
         raise ValueError("Os acompanhamentos devem estar em XLS ou XLSX.")
     if not content or len(content) > 25_000_000:
@@ -256,6 +273,11 @@ def _nota_inferida_historico(texto):
 
 def _cnpj_no_resumo(content, name):
     """Confere identidade da filial quando CNPJ está disponível em ambos os arquivos."""
+    if isinstance(content, list):
+        cnpjs = {_cnpj_no_resumo(data, filename) for data, filename in content} - {""}
+        if len(cnpjs) > 1:
+            raise ValueError("Os resumos anexados pertencem a CNPJs diferentes.")
+        return next(iter(cnpjs), "")
     book = _excel(content, name)
     for sheet in book.sheet_names[:3]:
         header = pd.read_excel(book, sheet_name=sheet, header=None, nrows=12, dtype=object)
@@ -284,6 +306,16 @@ def _valida_relatorio(detalhe, preview, tipo):
         raise ValueError(f"Não foi possível confirmar o período do Acompanhamento de {tipo.title()}.")
     if interval[0].date() != start or interval[1].date() != end:
         raise ValueError(f"O período do Acompanhamento de {tipo.title()} é diferente do Resumo por Acumulador.")
+    def coverage(intervals):
+        result = set()
+        for a, b in intervals:
+            result.update(pd.date_range(a, b, freq="D").date)
+        return result
+    fiscal_intervals = fiscal.get("intervalos")
+    if fiscal_intervals:
+        fiscal_ranges = [(datetime.strptime(p["inicio"], "%d/%m/%Y"), datetime.strptime(p["fim"], "%d/%m/%Y")) for p in fiscal_intervals]
+        if coverage(detalhe.get("intervalos") or [interval]) != coverage(fiscal_ranges):
+            raise ValueError(f"Os períodos do Acompanhamento de {tipo.title()} não correspondem aos resumos anexados.")
     chosen = str(preview.get("filial_aplicada") or "")
     if detalhe["filiais"] and chosen and chosen not in detalhe["filiais"]:
         raise ValueError(f"O Acompanhamento de {tipo.title()} não contém a filial {chosen}.")

@@ -29,6 +29,7 @@ from app.advanced import workflow_modelo, processar_itau_generico, processar_day
 from app.conferencia import ler_modelo_excel, conciliar
 from app.classification_service import learn as base_learn, status as base_status, classify as base_classify, classify_with_coverage as base_classify_with_coverage
 from app.migration_services import workflow as migrated_workflow, statement as migrated_statement
+from app.attachments import upload_group
 from app.global_tools import processar_arquivo, processar_razao, conciliar_razao
 from app.tasks import dashboard as task_dashboard, set_company_status, create_task, update_task, delete_task
 
@@ -89,6 +90,7 @@ def health():
         "ok": True,
         "service": "razync-web-api",
         "version": app.version,
+        "capabilities": {"multiple_documents": True},
         "persistent_data": str(os.getenv("RAZYNC_DB_PATH", "/data/razync.db")),
     }
 
@@ -328,7 +330,8 @@ async def intelligent_base_learn(
 
 
 @app.post("/api/v1/base-inteligente/{company_code}/classificar")
-async def intelligent_base_classify(company_code: int, file: UploadFile = File(...), options_json: str = Form('{}')):
+async def intelligent_base_classify(company_code: int, file: list[UploadFile] = File(...), options_json: str = Form('{}')):
+    file = await upload_group(file, model=True)
     try:
         options = json.loads(options_json)
         if not isinstance(options, dict):
@@ -407,10 +410,11 @@ async def conferencia_extrato_multi_preview(
     company_code: int,
     banks_json: str = Form(...),
     file_banks_json: str = Form(...),
-    model_file: UploadFile = File(...),
+    model_file: list[UploadFile] = File(...),
     files: list[UploadFile] = File(...),
     options_json: str = Form("{}"),
 ):
+    model_file = await upload_group(model_file, model=True)
     try:
         banks = json.loads(banks_json)
         file_banks = json.loads(file_banks_json)
@@ -436,10 +440,11 @@ async def conferencia_extrato_multi(
     company_code: int,
     banks_json: str = Form(...),
     file_banks_json: str = Form(...),
-    model_file: UploadFile = File(...),
+    model_file: list[UploadFile] = File(...),
     files: list[UploadFile] = File(...),
     options_json: str = Form("{}"),
 ):
+    model_file = await upload_group(model_file, model=True)
     try:
         banks = json.loads(banks_json)
         file_banks = json.loads(file_banks_json)
@@ -469,10 +474,11 @@ async def conferencia_extrato_multi(
 async def conferencia_extrato_preview(
     company_code: int,
     bank: str = Form(...),
-    model_file: UploadFile = File(...),
+    model_file: list[UploadFile] = File(...),
     statement_files: list[UploadFile] = File(...),
     options_json: str = Form("{}"),
 ):
+    model_file = await upload_group(model_file, model=True)
     try:
         from app.migration_services import reconcile
         options = json.loads(options_json)
@@ -491,10 +497,11 @@ async def conferencia_extrato_preview(
 async def conferencia_extrato(
     company_code: int,
     bank: str = Form(...),
-    model_file: UploadFile = File(...),
+    model_file: list[UploadFile] = File(...),
     statement_files: list[UploadFile] = File(...),
     options_json: str = Form("{}"),
 ):
+    model_file = await upload_group(model_file, model=True)
     try:
         from app.migration_services import reconcile
         options = json.loads(options_json)
@@ -511,11 +518,13 @@ async def conferencia_extrato(
 
 @app.post("/api/v1/conferencia-fiscal/preview")
 async def conferencia_fiscal_universal_preview(
-    acumuladores: UploadFile = File(...),
-    razao: UploadFile = File(...),
+    acumuladores: list[UploadFile] = File(...),
+    razao: list[UploadFile] = File(...),
     filial: str = Form(""),
     empresa_codigo: str = Form(""),
 ):
+    acumuladores = await upload_group(acumuladores)
+    razao = await upload_group(razao)
     """Prévia para qualquer empresa, com filtro explícito da filial do Domínio."""
     if empresa_codigo and not empresa_codigo.isdigit():
         raise HTTPException(status_code=422, detail="O código da empresa deve conter apenas números.")
@@ -536,11 +545,13 @@ async def conferencia_fiscal_universal_preview(
 
 @app.post("/api/v1/conferencia-fiscal/exportar")
 async def conferencia_fiscal_universal_exportar(
-    acumuladores: UploadFile = File(...),
-    razao: UploadFile = File(...),
+    acumuladores: list[UploadFile] = File(...),
+    razao: list[UploadFile] = File(...),
     filial: str = Form(""),
     empresa_codigo: str = Form(""),
 ):
+    acumuladores = await upload_group(acumuladores)
+    razao = await upload_group(razao)
     """Exporta a mesma comparação exibida no site, independente da empresa."""
     if empresa_codigo and not empresa_codigo.isdigit():
         raise HTTPException(status_code=422, detail="O código da empresa deve conter apenas números.")
@@ -573,12 +584,16 @@ async def conferencia_fiscal_universal_exportar(
 @app.post("/api/v1/conferencia-fiscal/investigar/ia/sessoes")
 async def conferencia_fiscal_investigacao_documental_ia(
     request: Request,
-    acumuladores: UploadFile = File(...),
-    razao: UploadFile = File(...),
-    entradas: UploadFile | None = File(None),
-    saidas: UploadFile | None = File(None),
+    acumuladores: list[UploadFile] = File(...),
+    razao: list[UploadFile] = File(...),
+    entradas: list[UploadFile] | None = File(None),
+    saidas: list[UploadFile] | None = File(None),
     filial: str = Form(""),
 ):
+    acumuladores = await upload_group(acumuladores)
+    razao = await upload_group(razao)
+    entradas = await upload_group(entradas)
+    saidas = await upload_group(saidas)
     """IA gratuita apenas sobre pendências; não recebe documentos conciliados."""
     if filial and not filial.isdigit():
         raise HTTPException(422, "A filial deve conter apenas números.")
@@ -621,12 +636,16 @@ async def conferencia_fiscal_investigacao_documental_ia(
 
 @app.post("/api/v1/conferencia-fiscal/investigar")
 async def conferencia_fiscal_investigacao_documental(
-    acumuladores: UploadFile = File(...),
-    razao: UploadFile = File(...),
-    entradas: UploadFile | None = File(None),
-    saidas: UploadFile | None = File(None),
+    acumuladores: list[UploadFile] = File(...),
+    razao: list[UploadFile] = File(...),
+    entradas: list[UploadFile] | None = File(None),
+    saidas: list[UploadFile] | None = File(None),
     filial: str = Form(""),
 ):
+    acumuladores = await upload_group(acumuladores)
+    razao = await upload_group(razao)
+    entradas = await upload_group(entradas)
+    saidas = await upload_group(saidas)
     """Etapa opcional; não modifica a conferência inicial ou seus arquivos."""
     if filial and not filial.isdigit():
         raise HTTPException(422, "A filial deve conter apenas números.")
@@ -655,9 +674,11 @@ app.include_router(fiscal_ai_router)
 @app.post("/api/v1/conferencia-fiscal/{company_code}/preview")
 async def conferencia_fiscal_preview_web(
     company_code: int,
-    acumuladores: UploadFile = File(...),
-    razao: UploadFile = File(...),
+    acumuladores: list[UploadFile] = File(...),
+    razao: list[UploadFile] = File(...),
 ):
+    acumuladores = await upload_group(acumuladores)
+    razao = await upload_group(razao)
     """Devolve os resultados na tela, sem obrigar o usuário a baixar o Excel."""
     try:
         from app.fiscal_242 import conferencia_fiscal_preview
@@ -674,10 +695,12 @@ async def conferencia_fiscal_preview_web(
 @app.post("/api/v1/conferencia-fiscal/{company_code}")
 async def conferencia_fiscal(
     company_code: int,
-    acumuladores: UploadFile = File(...),
-    razao: UploadFile = File(...),
+    acumuladores: list[UploadFile] = File(...),
+    razao: list[UploadFile] = File(...),
     filial: str = Form(""),
 ):
+    acumuladores = await upload_group(acumuladores)
+    razao = await upload_group(razao)
     try:
         from razync.conferencia_fiscal import processar_conferencia, gerar_relatorio_excel
         from app.fiscal_242 import _csv_para_excel
@@ -727,16 +750,24 @@ async def conversor_extratos(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+async def _parse_upload_frames(uploads, parser):
+    group = await upload_group(uploads)
+    content = await group.read()
+    documents = content if isinstance(content, list) else [(content, group.filename)]
+    frames = [await run_in_threadpool(parser, data, name) for data, name in documents]
+    return pd.concat(frames, ignore_index=True)
+
+
 @app.post("/api/v1/conciliacao-razao/preview")
 async def conciliacao_razao_preview(
-    extrato: UploadFile = File(...),
-    razao: UploadFile = File(...),
+    extrato: list[UploadFile] = File(...),
+    razao: list[UploadFile] = File(...),
     data_inicial: str = Form(""),
     data_final: str = Form(""),
 ):
     try:
-        df_ext = await run_in_threadpool(processar_arquivo, await extrato.read(), extrato.filename or "extrato")
-        df_raz = await run_in_threadpool(processar_razao, await razao.read(), razao.filename or "razao")
+        df_ext = await _parse_upload_frames(extrato, processar_arquivo)
+        df_raz = await _parse_upload_frames(razao, processar_razao)
         df_ext = _filter_period_frame(df_ext, data_inicial, data_final)
         df_raz = _filter_period_frame(df_raz, data_inicial, data_final)
         diario, resumo = conciliar_razao(df_ext, df_raz)
@@ -747,14 +778,14 @@ async def conciliacao_razao_preview(
 
 @app.post("/api/v1/conciliacao-razao")
 async def conciliacao_razao(
-    extrato: UploadFile = File(...),
-    razao: UploadFile = File(...),
+    extrato: list[UploadFile] = File(...),
+    razao: list[UploadFile] = File(...),
     data_inicial: str = Form(""),
     data_final: str = Form(""),
 ):
     try:
-        df_ext = await run_in_threadpool(processar_arquivo, await extrato.read(), extrato.filename or "extrato")
-        df_raz = await run_in_threadpool(processar_razao, await razao.read(), razao.filename or "razao")
+        df_ext = await _parse_upload_frames(extrato, processar_arquivo)
+        df_raz = await _parse_upload_frames(razao, processar_razao)
         df_ext = _filter_period_frame(df_ext, data_inicial, data_final)
         df_raz = _filter_period_frame(df_raz, data_inicial, data_final)
         diario, resumo = conciliar_razao(df_ext, df_raz)

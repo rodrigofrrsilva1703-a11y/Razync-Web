@@ -10,7 +10,7 @@
   <meta name="description" content="Razync — automação contábil">
   <link rel="stylesheet" href="./assets/css/app.css?v=base242-streamlit-1">
   <link rel="stylesheet" href="./assets/css/bank-investments.css?v=20261020-6">
-  <link rel="stylesheet" href="./assets/css/workspace.css?v=base-without-review-20261020-1">
+  <link rel="stylesheet" href="./assets/css/workspace.css?v=attachments-20261021-1-base-without-review-20261020-1">
   <link rel="stylesheet" href="./assets/css/tools.css?v=base-without-review-20261020-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=2">
   <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=sidebar-label-20261020-6">
@@ -113,9 +113,9 @@
           </div>
           <form id="ledgerForm">
             <label for="ledgerStatement">Extrato bancário</label>
-            <input id="ledgerStatement" type="file" accept=".pdf,.ofx,.csv,.xls,.xlsx">
+            <input id="ledgerStatement" type="file" accept=".pdf,.ofx,.csv,.xls,.xlsx" multiple>
             <label for="ledgerFile">Razão da Domínio</label>
-            <input id="ledgerFile" type="file" accept=".csv,.xls,.xlsx">
+            <input id="ledgerFile" type="file" accept=".csv,.xls,.xlsx" multiple>
             <fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="ledgerStart">De</label><input id="ledgerStart" type="date"></div><div><label for="ledgerEnd">Até</label><input id="ledgerEnd" type="date"></div></div><p>Deixe em branco para considerar todo o período dos arquivos.</p></fieldset>
             <button type="submit">Atualizar conferência</button>
             <p id="ledgerMessage" class="helper"></p>
@@ -159,17 +159,17 @@
             <div class="fiscal-step">
               <div class="fiscal-step-heading">
                 <span class="fiscal-step-index" aria-hidden="true">02</span>
-                <div><h3>Arquivos da conferência</h3><p>Dois relatórios do mesmo período.</p></div>
+                <div><h3>Arquivos da conferência</h3><p>Anexe um ou vários relatórios da mesma empresa. Os períodos serão conferidos em conjunto.</p></div>
               </div>
               <div class="fiscal-upload-grid">
                 <div class="fiscal-upload-item">
                   <div class="fiscal-upload-label"><span class="fiscal-upload-symbol" aria-hidden="true">▤</span><div><label for="fiscal242Acumuladores">Resumo por Acumulador</label><small>Planilha fiscal · XLS ou XLSX</small></div></div>
-                  <input type="file" id="fiscal242Acumuladores" accept=".xls,.xlsx" required>
+                  <input type="file" id="fiscal242Acumuladores" accept=".xls,.xlsx" required multiple>
                   <span class="fiscal-file-selected" id="fiscal242AcumuladoresName" aria-live="polite">Nenhum arquivo selecionado</span>
                 </div>
                 <div class="fiscal-upload-item">
                   <div class="fiscal-upload-label"><span class="fiscal-upload-symbol" aria-hidden="true">▤</span><div><label for="fiscal242Razao">Razão contábil</label><small>Planilha do Domínio · XLS, XLSX ou CSV</small></div></div>
-                  <input type="file" id="fiscal242Razao" accept=".csv,.xls,.xlsx" required>
+                  <input type="file" id="fiscal242Razao" accept=".csv,.xls,.xlsx" required multiple>
                   <span class="fiscal-file-selected" id="fiscal242RazaoName" aria-live="polite">Nenhum arquivo selecionado</span>
                 </div>
               </div>
@@ -298,11 +298,11 @@
                 <div class="fiscal-upload-grid">
                   <div class="fiscal-upload-item">
                     <div class="fiscal-upload-label"><span class="fiscal-upload-symbol" aria-hidden="true">▤</span><div><label for="fiscal242Entradas">Acompanhamento de Entradas</label><small>Opcional · XLS ou XLSX</small></div></div>
-                    <input id="fiscal242Entradas" type="file" accept=".xls,.xlsx">
+                    <input id="fiscal242Entradas" type="file" accept=".xls,.xlsx" multiple>
                   </div>
                   <div class="fiscal-upload-item">
                     <div class="fiscal-upload-label"><span class="fiscal-upload-symbol" aria-hidden="true">▤</span><div><label for="fiscal242Saidas">Acompanhamento de Saídas</label><small>Opcional · XLS ou XLSX</small></div></div>
-                    <input id="fiscal242Saidas" type="file" accept=".xls,.xlsx">
+                    <input id="fiscal242Saidas" type="file" accept=".xls,.xlsx" multiple>
                   </div>
                 </div>
                 <div class="fiscal-investigation-actions">
@@ -489,7 +489,7 @@
                   <div><strong>Classificar arquivo</strong><small>Aplique os padrões aprendidos ao Modelo Domínio.</small></div>
                 </div>
                 <label for="classifyFile">Modelo Domínio para classificar</label>
-                <input id="classifyFile" type="file" accept=".xlsx">
+                <input id="classifyFile" type="file" accept=".xlsx" multiple>
                 <div id="eletro242Classification" class="eletro-classification" hidden>
                   <span class="classification-mode-label">Tipo de planilha da 242</span>
                   <div id="eletro242Modes" class="classification-mode-tabs" role="tablist" aria-label="Tipo de classificação da empresa 242">
@@ -569,7 +569,7 @@
               <div id="reconcileBankSelector" class="bank-selector"></div>
               <select id="reconcileBank" hidden aria-hidden="true"></select>
               <label for="modelFile">Modelo Domínio final</label>
-              <input id="modelFile" type="file" accept=".xlsx,.xls">
+              <input id="modelFile" type="file" accept=".xlsx,.xls" multiple>
               <div id="reconcileStatementFields" class="reconcile-bank-files"></div>
               <fieldset class="period-card standard-period-card"><legend>Período da conferência <span>(opcional)</span></legend><div class="period-fields"><div><label for="reconcileStart">De</label><input id="reconcileStart" type="date"></div><div><label for="reconcileEnd">Até</label><input id="reconcileEnd" type="date"></div></div></fieldset>
               <button type="submit">Atualizar conferência</button>
@@ -648,6 +648,7 @@
     </form>
   </dialog>
   <script src="./assets/js/config.js"></script>
+  <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
   <script src="./assets/js/workspace-ui.js?v=base-without-review-20261020-1"></script>
   <script src="./assets/js/company-guides.js?v=base-without-review-20261020-1"></script>
@@ -657,9 +658,9 @@
   <script src="./assets/js/reconciliation-preview.js?v=20261020-1"></script>
   <script src="./assets/js/tasks-ui.js?v=20261020-1"></script>
   <script src="./assets/js/admin-auth.js?v=20261021-1"></script>
-  <script src="./assets/js/app.js?v=organized-20261020-1"></script>
+  <script src="./assets/js/app.js?v=attachments-20261021-1"></script>
   <script src="./assets/js/migration.js?v=admin-modal-20261021-1"></script>
-  <script src="./assets/js/fiscal-242.js?v=account-ai-20261019-8"></script>
+  <script src="./assets/js/fiscal-242.js?v=attachments-20261021-1"></script>
   <script src="./assets/js/base-maintenance.js?v=20261021-3"></script>
   <script src="./assets/js/motion.js?v=20261020-2"></script>
 </body>
