@@ -313,6 +313,13 @@ def conciliar_razao(extrato: pd.DataFrame, razao: pd.DataFrame):
 # Adapters preserve the original universal readers instead of reduced copies.
 def processar_arquivo(file_bytes: bytes, filename: str) -> pd.DataFrame:
     from app import engine
+    if str(filename).lower().endswith('.pdf') and engine.identificar_chave_banco_empresa(filename) == 'caixa':
+        from razync.valean_625 import processar_caixa_625
+        frame = processar_caixa_625(file_bytes).copy()
+        # The global converter cannot presume the company's accounting account.
+        frame['DÉBITO'] = ''
+        frame['CRÉDITO'] = ''
+        return frame
     with engine.processing_context():
         rows = engine.processar_extrato_conferencia_empresa(file_bytes, filename)
         frame = pd.DataFrame(rows, columns=COLUNAS)

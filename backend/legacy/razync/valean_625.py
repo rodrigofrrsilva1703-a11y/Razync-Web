@@ -208,17 +208,78 @@ def processar_sicredi_625(conteudo: bytes) -> pd.DataFrame:
     return _finalizar(registros, "Sicredi")
 
 
+def _processar_caixa_historico(texto: str) -> pd.DataFrame:
+    """Layout Histórico da Conta: Data Mov., Data/Hora, Nr.Doc., Valor, Saldo."""
+    moeda = r"\d+(?:\.\d{3})*,\d{2}"
+    movimento = re.compile(
+        rf"^\s*(\d{{2}}/\d{{2}}/\d{{4}})\s+\d{{2}}/\d{{2}}\s*"
+        rf"\d{{2}}:\d{{2}}(?::\d{{2}})?\s+\d{{6,}}\s+(.+?)\s+"
+        rf"({moeda})\s*([CD])\s+({moeda})\s*([CD])\s*[|]?\s*$", re.I)
+    saldo_inicial = re.compile(rf"SALDO\s+ANTERIOR\s+({moeda})\s*([CD])", re.I)
+    registros = []
+    saldo_anterior = None
+    atual = None
+    em_limites = False
+    for original in texto.splitlines():
+        linha = re.sub(r"\s+", " ", original).strip()
+        norm = _normalizar(linha)
+        if "limite rotativo" in norm or norm.startswith(("sublimite", "limite disponibilizado", "custo efetivo")):
+            em_limites = True
+            atual = None
+            continue
+        inicio = saldo_inicial.search(linha)
+        if inicio:
+            if saldo_anterior is None:
+                saldo_anterior = round(_valor_br(*inicio.groups()) * 100)
+            atual = None
+            em_limites = False
+            continue
+        achado = movimento.match(linha)
+        if achado:
+            em_limites = False
+            data_txt, historico, valor_txt, natureza, saldo_txt, saldo_natureza = achado.groups()
+            data = pd.to_datetime(data_txt, format="%d/%m/%Y", errors="coerce")
+            if pd.isna(data):
+                raise ValueError("Data inválida na leitura do extrato Histórico da Caixa.")
+            valor = _valor_br(valor_txt, natureza)
+            saldo = round(_valor_br(saldo_txt, saldo_natureza) * 100)
+            if saldo_anterior is None:
+                raise ValueError("Não foi possível confirmar o saldo anterior do extrato Caixa. Envie um PDF mais legível.")
+            if saldo_anterior + round(valor * 100) != saldo:
+                raise ValueError(f"A leitura do extrato Caixa não fecha com o saldo em {data_txt}. Confira a qualidade do PDF antes de importar.")
+            saldo_anterior = saldo
+            atual = {"data": data, "valor": valor, "historico": [historico]}
+            registros.append(atual)
+            continue
+        if re.match(r"^\d{2}/\d{2}/\d{4}\b", linha) and not re.match(r"^\d{2}/\d{2}/\d{4}\s*[-a]\s*\d{2}/\d{2}/\d{4}\b", linha, re.I):
+            raise ValueError("Uma linha de movimento do extrato Caixa não foi reconhecida. Envie um PDF mais legível.")
+        if em_limites or not atual or not linha:
+            continue
+        if norm.startswith(("consulta realizada", "pagina", "data mov", "data e hora", "extrato", "periodo", "unidade", "titular", "conta", "cpf/", "nome d")):
+            atual = None
+            continue
+        complemento = re.sub(r"\bE\d{20,}\b", " ", linha, flags=re.I)
+        complemento = _limpar_cpf_cnpj_historico(complemento)
+        if complemento and not re.fullmatch(r"[\d\s|]+", complemento):
+            atual["historico"].append(complemento)
+    return _finalizar([_registro("caixa", r["data"], r["valor"], " ".join(r["historico"])) for r in registros], "Caixa")
+
+
 def processar_caixa_625(conteudo: bytes) -> pd.DataFrame:
-    """Lê os dois layouts de extrato Caixa usados pela Valean 625.
+    """Lê os layouts SIATR, PESSOAL e Histórico da Conta da Caixa.
 
     Suporta o SIATR antigo, com o lançamento em uma única linha, e o layout
     ``Extrato #PESSOAL``, no qual data, hora e detalhamento podem ocupar linhas
-    diferentes. Saldo, SALDO DIA, número do documento e identificadores
+    diferentes, e o Histórico da Conta com Data Mov. + Data e Hora.
+    Saldo, SALDO DIA, número do documento e identificadores
     técnicos não viram histórico.
     """
     texto = _texto_pdf(conteudo)
     if not texto.strip():
         texto = _texto_ocr_caixa(conteudo)
+
+    if re.search(r"extrato hist\S* da conta", _normalizar(texto)):
+        return _processar_caixa_historico(texto)
 
     # Layout novo da Caixa (#PESSOAL). O extract_text(layout) preserva as
     # colunas, permitindo distinguir VALOR do movimento e SALDO da conta.
