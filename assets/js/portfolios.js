@@ -49,9 +49,12 @@ function renderPortfolios() {
     const action = document.createElement("span");
     action.className = "portfolio-entry-action";
     const actionLabel = document.createElement("span");
-    actionLabel.textContent = "Acessar empresas";
+    actionLabel.textContent = "Entrar na carteira";
     action.append(actionLabel, arrow);
-    btn.append(avatar, info, action);
+    const label = document.createElement("span");
+    label.className = "portfolio-entry-label";
+    label.textContent = "CARTEIRA DE EMPRESAS";
+    btn.append(label, avatar, info, action);
     btn.addEventListener("click", () => selectPortfolio(portfolio.id));
     portfolioList.appendChild(btn);
   }
