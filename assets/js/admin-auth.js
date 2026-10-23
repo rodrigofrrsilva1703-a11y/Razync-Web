@@ -1,6 +1,6 @@
 /* A senha existe apenas na memória desta página e é limpa ao trocar de empresa. */
 (() => {
-  const dialog=document.getElementById('adminAuthDialog'), form=document.getElementById('adminAuthForm');
+  const dialog=document.getElementById('adminAuthDialog');
   const input=document.getElementById('adminAccess'), error=document.getElementById('adminAuthError');
   let cached='', pending=null, previousFocus=null;
   const aborted=()=>new DOMException('Ação administrativa cancelada.','AbortError');
@@ -20,9 +20,13 @@
     const promise=new Promise((resolve,reject)=>{pending={resolve,reject};});
     pending.promise=promise;dialog.showModal();input.focus();return promise;
   };
-  form.addEventListener('submit',event=> {
-    event.preventDefault();if(!form.reportValidity())return;
+  function confirmAccess() {
+    if(!pending || !input.reportValidity())return;
     cached=input.value;finish(cached);
+  }
+  document.getElementById('adminAuthConfirm').addEventListener('click',confirmAccess);
+  input.addEventListener('keydown',event=> {
+    if(event.key==='Enter' && !event.isComposing){event.preventDefault();confirmAccess();}
   });
   for(const id of ['adminAuthClose','adminAuthCancel'])document.getElementById(id).addEventListener('click',()=>finish(null));
   dialog.addEventListener('cancel',event=>{event.preventDefault();finish(null);});

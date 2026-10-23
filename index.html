@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="./assets/css/fiscal-account-dialog.css?v=20261020-11">
   <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=search-border-20261021-1">
   <link rel="stylesheet" href="./assets/css/base-maintenance.css?v=20261021-1">
-  <link rel="stylesheet" href="./assets/css/admin-auth.css?v=20261021-1">
+  <link rel="stylesheet" href="./assets/css/admin-auth.css?v=20261023-1">
 </head>
 <body class="sidebar-collapsed">
   <div class="app-shell">
@@ -632,32 +632,31 @@
       <label for="newCompanyCode">Código da empresa</label><input id="newCompanyCode" type="text" inputmode="numeric" pattern="[0-9]{1,9}" maxlength="9" required>
       <label for="newCompanyName">Nome (opcional)</label><input id="newCompanyName" type="text" maxlength="160" placeholder="Se não informar, será usado Empresa + código">
       <label for="newCompanyRegime">Regime (opcional)</label><select id="newCompanyRegime"><option>Não informado</option><option>LUCRO REAL</option><option>LUCRO PRESUMIDO</option><option>SIMPLES NACIONAL</option></select>
-      <label for="companyCreateKey">Chave administrativa</label><input id="companyCreateKey" type="password" autocomplete="new-password" required>
       <p id="companyCreateMessage" role="status"></p><button type="submit">Criar empresa</button>
     </form>
   </dialog>
   <dialog id="adminAuthDialog" class="admin-auth-dialog" aria-labelledby="adminAuthTitle" aria-describedby="adminAuthDescription">
-    <form id="adminAuthForm">
+    <div id="adminAuthForm">
       <div class="admin-auth-heading"><span class="admin-auth-badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg></span><button id="adminAuthClose" type="button" aria-label="Fechar">×</button></div>
       <h2 id="adminAuthTitle">Acesso administrativo</h2>
       <p id="adminAuthDescription">Informe a senha administrativa para continuar esta ação.</p>
       <label for="adminAccess">Senha administrativa</label>
-      <input id="adminAccess" name="razync_admin_access_key" type="password" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" required>
+      <input id="adminAccess" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" required>
       <p id="adminAuthError" role="alert" hidden></p>
-      <div class="admin-auth-actions"><button id="adminAuthCancel" type="button">Cancelar</button><button type="submit">Continuar</button></div>
-    </form>
+      <div class="admin-auth-actions"><button id="adminAuthCancel" type="button">Cancelar</button><button id="adminAuthConfirm" type="button">Continuar</button></div>
+    </div>
   </dialog>
   <script src="./assets/js/config.js"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
-  <script src="./assets/js/workspace-ui.js?v=base-without-review-20261020-1"></script>
+  <script src="./assets/js/workspace-ui.js?v=admin-access-20261023-1"></script>
   <script src="./assets/js/company-guides.js?v=base-without-review-20261020-1"></script>
   <script src="./assets/js/bank-investments.js?v=20261020-8"></script>
   <script src="./assets/js/dom-utils.js?v=20261020-1"></script>
   <script src="./assets/js/portfolios.js?v=20261020-1"></script>
   <script src="./assets/js/reconciliation-preview.js?v=20261020-1"></script>
   <script src="./assets/js/tasks-ui.js?v=20261020-1"></script>
-  <script src="./assets/js/admin-auth.js?v=20261021-1"></script>
+  <script src="./assets/js/admin-auth.js?v=20261023-1"></script>
   <script src="./assets/js/app.js?v=attachments-20261021-1"></script>
   <script src="./assets/js/migration.js?v=admin-modal-20261021-1"></script>
   <script src="./assets/js/fiscal-242.js?v=attachments-20261021-1"></script>

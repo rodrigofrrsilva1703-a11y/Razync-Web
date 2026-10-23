@@ -96,10 +96,13 @@ def download(content, filename, summary=None, mime='application/vnd.openxmlforma
     return StreamingResponse(io.BytesIO(content), media_type=mime, headers=headers)
 
 def require_admin(authorization: str = Header('')):
-    expected = os.getenv('RAZYNC_ACCESS_TOKEN') or os.getenv('CLASSIFICATION_ADMIN_PASSWORD')
-    if not expected:
-        raise HTTPException(503, 'Configure RAZYNC_ACCESS_TOKEN no Railway para gerenciar bases.')
-    if not hmac.compare_digest(authorization, f'Bearer {expected}'):
+    credentials = [value for value in (os.getenv('CLASSIFICATION_ADMIN_PASSWORD'), os.getenv('RAZYNC_ACCESS_TOKEN')) if value]
+    if not credentials:
+        raise HTTPException(503, 'A senha administrativa não está configurada no servidor.')
+    valid = False
+    for expected in credentials:
+        valid = hmac.compare_digest(authorization.encode('utf-8'), f'Bearer {expected}'.encode('utf-8')) or valid
+    if not valid:
         raise HTTPException(401, 'Informe a chave de acesso administrativa.')
 
 @router.post('/companies', dependencies=[Depends(require_admin)], status_code=201)

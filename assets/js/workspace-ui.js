@@ -135,14 +135,13 @@ function initializeCompanyControls() {
     form.reset(); message.textContent = ""; dialog.showModal();
   });
   document.querySelector("#closeCompanyDialog").addEventListener("click", () => dialog.close());
-  dialog.addEventListener("close", () => document.querySelector("#companyCreateKey").value = "");
   form.addEventListener("submit", async event => {
     event.preventDefault();
     const button = form.querySelector('[type="submit"]'); button.disabled = true;
     message.textContent = "Criando empresa…";
     try {
-      const response = await fetch(`${API()}/api/v1/companies`, {
-        method:"POST", headers:{"Content-Type":"application/json", Authorization:`Bearer ${document.querySelector("#companyCreateKey").value}`},
+      const response = await window.adminFetch(`${API()}/api/v1/companies`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({codigo:document.querySelector("#newCompanyCode").value, nome:document.querySelector("#newCompanyName").value, regime:document.querySelector("#newCompanyRegime").value})
       });
       if (!response.ok) throw new Error(await responseError(response));
@@ -153,7 +152,7 @@ function initializeCompanyControls() {
         document.querySelectorAll(".company-filter").forEach(item => { item.classList.toggle("active", item.dataset.filter === "all"); item.setAttribute("aria-pressed", String(item.dataset.filter === "all")); });
         filterCompanies(); dialog.close(); openCompany(company);
       } else filterCompanies();
-    } catch (error) { message.textContent = error.message; }
+    } catch (error) { message.textContent = error.name === "AbortError" ? "Cadastro cancelado. Você pode tentar novamente." : error.message; }
     finally { button.disabled = false; }
   });
 }

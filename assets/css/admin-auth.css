@@ -1,6 +1,6 @@
 #adminAuthDialog {box-sizing:border-box;width:min(360px,calc(100vw - 32px));max-height:calc(100dvh - 40px);overflow:auto;padding:24px;border:1px solid #dce5ef;border-radius:17px;background:#fff;color:#2e465e;box-shadow:0 20px 70px #142c4a26;}
 #adminAuthDialog::backdrop {background:#14243b55;backdrop-filter:blur(3px);}
-#adminAuthDialog form {display:block;margin:0;}
+#adminAuthDialog #adminAuthForm {display:block;margin:0;}
 #adminAuthDialog .admin-auth-heading {display:flex;justify-content:space-between;align-items:center;margin-bottom:17px;}
 #adminAuthDialog .admin-auth-badge {display:grid;place-items:center;width:35px;height:35px;border-radius:10px;background:#edf3f9;color:#6483a0;}
 #adminAuthDialog svg {width:19px;height:19px;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;}
@@ -12,6 +12,6 @@
 #adminAuthDialog #adminAuthError {margin:9px 0 0;color:#a4554c;font-size:11px;}
 #adminAuthDialog .admin-auth-actions {display:flex;justify-content:flex-end;gap:8px;margin-top:22px;}
 #adminAuthDialog .admin-auth-actions button {min-height:38px;padding:8px 14px;border:1px solid #dce5ef;border-radius:8px;background:#fff;color:#65809a;font-size:12px;cursor:pointer;}
-#adminAuthDialog .admin-auth-actions button[type=submit] {background:#315979;border-color:#315979;color:#fff;}
+#adminAuthDialog #adminAuthConfirm {background:#315979;border-color:#315979;color:#fff;}
 #adminAuthDialog :focus-visible {outline:2px solid #7095b5;outline-offset:3px;}
 @media(max-width:560px){#adminAuthDialog .admin-auth-actions button {min-height:44px;}}
