@@ -75,17 +75,34 @@ def _db():
     return con
 
 def _save(con, company, records):
-    for record in records:
-        record = dict(record)
-        record['empresa'] = slug(company)
-        identity = hashlib.sha256(f"{record['empresa']}|{record['banco']}|{record['assinatura']}|{record['debito']}|{record['credito']}".encode()).hexdigest()
-        record['id'] = identity
-        old = con.execute('SELECT payload FROM classification_records WHERE company=? AND id=?', (company, identity)).fetchone()
-        if old:
-            previous = json.loads(old['payload'])
-            record['periodos'] = sorted(set(record.get('periodos', []) + previous.get('periodos', [])))
-            record['ocorrencias'] = max(int(record.get('ocorrencias', 1)), int(previous.get('ocorrencias', 1)))
-        con.execute('INSERT INTO classification_records VALUES(?,?,?) ON CONFLICT(company,id) DO UPDATE SET payload=excluded.payload', (company, identity, json.dumps(record, ensure_ascii=False)))
+    # One read and one upsert per batch instead of two network trips per pattern.
+    # SQLite keeps batches below its traditional 999-parameter limit.
+    batch_size = 1000 if persistence.is_postgres(con) else 250
+    for offset in range(0, len(records), batch_size):
+        prepared = []
+        for source in records[offset:offset + batch_size]:
+            record = dict(source)
+            record['empresa'] = slug(company)
+            record['id'] = hashlib.sha256(f"{record['empresa']}|{record['banco']}|{record['assinatura']}|{record['debito']}|{record['credito']}".encode()).hexdigest()
+            prepared.append(record)
+        identities = list(dict.fromkeys(record['id'] for record in prepared))
+        placeholders = ','.join('?' for _ in identities)
+        previous = {row['id']: json.loads(row['payload']) for row in con.execute(
+            f'SELECT id,payload FROM classification_records WHERE company=? AND id IN ({placeholders})',
+            (company, *identities))}
+        updates = {}
+        for record in prepared:
+            identity = record['id']
+            old = updates.get(identity, previous.get(identity))
+            if old:
+                record['periodos'] = sorted(set(record.get('periodos', []) + old.get('periodos', [])))
+                record['ocorrencias'] = max(int(record.get('ocorrencias', 1)), int(old.get('ocorrencias', 1)))
+            updates[identity] = record
+        values = ','.join('(?,?,?)' for _ in updates)
+        parameters = tuple(value for record in updates.values()
+                           for value in (company, record['id'], json.dumps(record, ensure_ascii=False)))
+        con.execute('INSERT INTO classification_records(company,id,payload) VALUES ' + values +
+                    ' ON CONFLICT(company,id) DO UPDATE SET payload=excluded.payload', parameters)
 
 def records(company):
     con = _db()
@@ -126,46 +143,60 @@ class SourceFile(io.BytesIO):
         super().__init__(content)
         self.name = filename
 
+def _learning_records(company, content, filename, data_inicial='', data_final=''):
+    if filename.lower().endswith('.json'):
+        payload = json.loads(content)
+        if not isinstance(payload, dict) or int(payload.get('company', -1)) != company:
+            raise ValueError('A base importada pertence a outra empresa.')
+        imported = payload.get('records', [])
+        if not isinstance(imported, list):
+            raise ValueError('Base de classificações inválida.')
+    else:
+        imported = engine.importar_arquivos_classificados([SourceFile(content, filename)], slug(company), accounts(company))
+    if bool(data_inicial) != bool(data_final):
+        raise ValueError('Informe as duas datas do período.')
+    if data_inicial:
+        inicio = pd.Timestamp(data_inicial).to_period('M')
+        fim = pd.Timestamp(data_final).to_period('M')
+        if fim < inicio:
+            raise ValueError('A Data Final não pode ser anterior à Data Inicial.')
+        meses = {str(periodo) for periodo in pd.period_range(inicio, fim, freq='M')}
+        imported = [
+            item for item in imported
+            if any(str(periodo) in meses for periodo in (item.get('periodos') or []))
+        ]
+        if not imported:
+            raise ValueError('Nenhum padrão revisado foi encontrado no período informado.')
+    for item in imported:
+        if not all(k in item for k in ('banco', 'assinatura', 'debito', 'credito', 'periodos')) or item['banco'] not in accounts(company):
+            raise ValueError('Padrão inválido ou banco não configurado para esta empresa.')
+    if not imported:
+        raise ValueError('Nenhum padrão revisado foi encontrado. Envie um Modelo Domínio ou Razão com as contas preenchidas.')
+    return imported
+
+
 def learn(company, content, filename, data_inicial='', data_final=''):
     digest_source = content + f"|{data_inicial}|{data_final}".encode("utf-8") if (data_inicial or data_final) else content
     digest = hashlib.sha256(digest_source).hexdigest()
     con = _db()
     try:
-        con.execute('BEGIN IMMEDIATE')
         if con.execute('SELECT 1 FROM classification_imports WHERE company=? AND digest=?', (company, digest)).fetchone():
             return 0
-        if filename.lower().endswith('.json'):
-            payload = json.loads(content)
-            if not isinstance(payload, dict) or int(payload.get('company', -1)) != company:
-                raise ValueError('A base importada pertence a outra empresa.')
-            imported = payload.get('records', [])
-            if not isinstance(imported, list):
-                raise ValueError('Base de classificações inválida.')
-        else:
-            imported = engine.importar_arquivos_classificados([SourceFile(content, filename)], slug(company), accounts(company))
-        if bool(data_inicial) != bool(data_final):
-            raise ValueError('Informe as duas datas do período.')
-        if data_inicial:
-            inicio = pd.Timestamp(data_inicial).to_period('M')
-            fim = pd.Timestamp(data_final).to_period('M')
-            if fim < inicio:
-                raise ValueError('A Data Final não pode ser anterior à Data Inicial.')
-            meses = {str(periodo) for periodo in pd.period_range(inicio, fim, freq='M')}
-            imported = [
-                item for item in imported
-                if any(str(periodo) in meses for periodo in (item.get('periodos') or []))
-            ]
-            if not imported:
-                raise ValueError('Nenhum padrão revisado foi encontrado no período informado.')
-        for item in imported:
-            if not all(k in item for k in ('banco', 'assinatura', 'debito', 'credito', 'periodos')) or item['banco'] not in accounts(company):
-                raise ValueError('Padrão inválido ou banco não configurado para esta empresa.')
-        if not imported:
-            raise ValueError('Nenhum padrão revisado foi encontrado. Envie um Modelo Domínio ou Razão com as contas preenchidas.')
+    finally:
+        con.close()
+    # Parsing and validating a large workbook must not hold the shared write lock.
+    imported = _learning_records(company, content, filename, data_inicial, data_final)
+    learned = sum(int(r.get('ocorrencias', 1)) for r in imported)
+    con = _db()
+    try:
+        con.execute('BEGIN IMMEDIATE')
+        # Another request may have learned this file while it was being parsed.
+        if con.execute('SELECT 1 FROM classification_imports WHERE company=? AND digest=?', (company, digest)).fetchone():
+            return 0
         _save(con, company, imported)
         con.execute('INSERT INTO classification_imports VALUES(?,?)', (company, digest))
         con.commit()
-        return sum(int(r.get('ocorrencias', 1)) for r in imported)
+        return learned
     finally:
         con.close()
 

@@ -809,7 +809,7 @@ function renderWorkflow(company) {
   }
 }
 
-async function refreshBaseStats() {
+async function refreshBaseStats(learnedStatus=null) {
   if (!baseStats) return;
   if (!selected || selected.capabilities?.status !== "api_ready") {
     baseStats.innerHTML = '<span><strong>—</strong> padrões</span><span><strong>—</strong> bancos</span><span><strong>—</strong> períodos</span>';
@@ -820,9 +820,12 @@ async function refreshBaseStats() {
   baseStats.innerHTML = '<span><strong>…</strong> padrões</span><span><strong>…</strong> bancos</span><span><strong>…</strong> períodos</span>';
 
   try {
-    const r = await fetch(`${API()}/api/v1/base-inteligente/${selected.codigo}/status`);
-    if (!r.ok) throw new Error(await responseError(r));
-    const data = await r.json();
+    let data = learnedStatus;
+    if (!data) {
+      const r = await fetch(`${API()}/api/v1/base-inteligente/${selected.codigo}/status`);
+      if (!r.ok) throw new Error(await responseError(r));
+      data = await r.json();
+    }
     baseStats.innerHTML = `
       <span><strong>${Number(data.patterns || 0).toLocaleString("pt-BR")}</strong> padrões salvos</span>
       <span><strong>${Number(data.banks || 0).toLocaleString("pt-BR")}</strong> bancos aprendidos</span>
@@ -1167,19 +1170,29 @@ form.addEventListener("submit", async (event) => {
 
 learnForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const button = learnForm.querySelector('[type="submit"]');
+  if (button.disabled) return;
   const files = [...$("#learnFiles").files];
   if (!files.length) return $("#learnMessage").textContent = "Selecione pelo menos um arquivo revisado.";
+  const company = selected.codigo;
+  const current = () => selected?.codigo === company;
   const data = new FormData();
   files.forEach(file => data.append("files", file));
+  button.disabled = true;
   $("#learnMessage").textContent = "Aprendendo padrões…";
   try {
-    const response = await fetch(`${API()}/api/v1/base-inteligente/${selected.codigo}/aprender`, {method:"POST", body:data});
+    const response = await fetch(`${API()}/api/v1/base-inteligente/${company}/aprender`, {method:"POST", body:data});
     if (!response.ok) throw new Error(await responseError(response));
     const result = await response.json();
-    $("#learnMessage").textContent = `${result.learned} padrão(ões) processado(s).`;
-    refreshBaseStats();
+    if (current()) {
+      const errors = (result.errors || []).join("; ");
+      $("#learnMessage").textContent = `${result.learned} padrão(ões) processado(s).${errors ? ` Alguns arquivos não foram importados: ${errors}` : ""}`;
+      refreshBaseStats(result);
+    }
   } catch (error) {
-    $("#learnMessage").textContent = error.message;
+    if (current()) $("#learnMessage").textContent = error.message;
+  } finally {
+    button.disabled = false;
   }
 });
 

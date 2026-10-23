@@ -101,3 +101,21 @@ def test_unavailable_destination_never_falls_back_to_local_data(postgres,monkeyp
         def getconn(self):raise OSError('unavailable')
     monkeypatch.setattr(persistence,'pool',lambda:Unavailable())
     with pytest.raises(RuntimeError,match='conectar'):base.records(3)
+
+
+def test_large_learning_batches_merge_periods_and_isolate_companies(postgres):
+    from app import classification_service as base
+    from app.migrate_to_supabase import migrate
+    seed();migrate()
+    def record(signature,period='2026-10',count=1):
+        return {'banco':'itau','assinatura':signature,'debito':'166','credito':'508',
+                'periodos':[period],'ocorrencias':count}
+    rows=[record('acme','2026-10',3)]+[record('bulk-'+str(i)) for i in range(1001)]+[record('acme','2026-11',2)]
+    payload=json.dumps({'company':3,'records':rows}).encode()
+    assert base.learn(3,payload,'bulk.json')==1006
+    merged=next(r for r in base.records(3) if r['assinatura']=='acme')
+    assert merged['periodos']==['2026-07','2026-08','2026-09','2026-10','2026-11']
+    assert merged['ocorrencias']==3
+    assert len(base.records(3))==1002
+    assert base.records(88)==[]
+    assert base.learn(3,payload,'bulk.json')==0

@@ -329,7 +329,8 @@ async def intelligent_base_learn(
             errors.append(f"{upload.filename}: {exc}")
     if total == 0 and errors:
         raise HTTPException(status_code=422, detail="; ".join(errors))
-    return {"ok": True, "learned": total, "errors": errors, **base_status(company_code)}
+    stats = await run_in_threadpool(base_status, company_code)
+    return {"ok": True, "learned": total, "errors": errors, **stats}
 
 
 @app.post("/api/v1/base-inteligente/{company_code}/classificar")
