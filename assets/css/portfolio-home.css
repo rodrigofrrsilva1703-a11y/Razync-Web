@@ -126,12 +126,12 @@
 #portfolioPicker .portfolio-entry-preview>.portfolio-preview-more {background:#edf4fa!important;color:#4b7292!important;border-color:#dbe7f1!important}
 #portfolioPicker .portfolio-preview-caption {flex-basis:100%;margin-top:5px;font-size:9px;color:#92a2b2;line-height:1.5}
 #portfolioPicker .portfolio-entry-preview:empty {display:none}
-#portfolioPicker .portfolio-entry-action {grid-column:1/-1;grid-row:4;display:flex;align-items:center;justify-content:space-between;gap:15px;margin:0 -23px;padding:15px 23px;border:0;border-top:1px solid #e1eaf2;border-radius:0;background:#f0f6fb;transition:background .22s}
+#portfolioPicker .portfolio-entry-action {grid-column:1/-1;grid-row:4;display:flex;align-items:center;justify-content:space-between;gap:15px;margin:0 0 21px;padding:11px 13px;border:1px solid #cddce9;border-radius:5px;background:#edf3f8;transition:background .18s}
 #portfolioPicker .portfolio-entry-action>span:first-child {display:block;max-width:none;color:#416a8a;font-size:11px;line-height:1.5;font-weight:550;transition:color .22s}
-#portfolioPicker .portfolio-entry-arrow {display:grid;place-items:center;grid-column:auto;grid-row:auto;width:25px;height:25px;border:1px solid #dce8f1;border-radius:50%;background:#fff;color:#537c9d;font-size:18px;line-height:1;transition:transform .22s,background .22s,color .22s}
-#portfolioPicker .portfolio-entry:hover .portfolio-entry-action {background:#2c5475}
-#portfolioPicker .portfolio-entry:hover .portfolio-entry-action>span:first-child {color:#fff}
-#portfolioPicker .portfolio-entry:hover .portfolio-entry-arrow {background:#ffffff18;border-color:#ffffff38;color:#fff;transform:translateX(3px)}
+#portfolioPicker .portfolio-entry-arrow {display:grid;place-items:center;grid-column:auto;grid-row:auto;width:auto;height:auto;border:0;border-radius:0;background:none;color:#537c9d;font-size:17px;line-height:1;transition:color .18s}
+#portfolioPicker .portfolio-entry:hover .portfolio-entry-action {background:#e2ecf5}
+#portfolioPicker .portfolio-entry:hover .portfolio-entry-action>span:first-child {color:#2e5575}
+#portfolioPicker .portfolio-entry:hover .portfolio-entry-arrow {background:none;color:#2e5575;transform:none}
 #portfolioPicker .portfolio-loading {font-size:12px;color:#71899f;margin:0;padding:35px 0}
 #portfolioPicker .portfolio-capabilities {grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:13px;margin:5px 0 0;padding:25px 0 0;border:0;border-top:1px solid #dbe5ef;background:none;animation:homeArrive 500ms 160ms both}
 #portfolioPicker .portfolio-feature {min-width:0;border:1px solid #dee7ef;border-radius:13px;background:#ffffff9e;overflow:hidden;transition:background .2s,border-color .2s,box-shadow .2s}
