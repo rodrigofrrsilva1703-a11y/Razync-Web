@@ -11,3 +11,32 @@
 #companyPanel #confirmBaseCleanup {border:1px solid #9e5750!important;background:#9e5750!important;color:#fff!important;margin-right:7px;}
 #companyPanel .base-cleanup :focus-visible {outline:2px solid #6485a6;outline-offset:3px;}
 @media(max-width:560px) {#companyPanel .base-cleanup-fields {grid-template-columns:1fr;} #companyPanel .base-cleanup button {min-height:44px;}}
+
+/* Aprendizado e classificação compartilham a linha em telas maiores. */
+#companyPanel .tool-pane[data-pane="base"] .stack-forms {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+  align-items:start;
+}
+#companyPanel .tool-pane[data-pane="base"] .stack-forms > .modern-form {
+  grid-column:auto;
+  min-width:0;
+  min-height:0;
+  padding:18px!important;
+  gap:10px;
+}
+#companyPanel .tool-pane[data-pane="base"] .stack-forms > .base-management,
+#companyPanel .tool-pane[data-pane="base"] .base-period-card {grid-column:1/-1;min-width:0;}
+#companyPanel .tool-pane[data-pane="base"] .form-card-header {padding-bottom:12px;margin-bottom:2px;gap:10px;}
+#companyPanel .tool-pane[data-pane="base"] .form-card-header strong {font-size:15px;}
+#companyPanel .tool-pane[data-pane="base"] .form-card-header small {font-size:12px;line-height:1.5;}
+#companyPanel .tool-pane[data-pane="base"] .file-drop-shell {min-width:0;padding:12px;gap:8px;}
+#companyPanel .tool-pane[data-pane="base"] .file-drop-title {font-size:12px;}
+#companyPanel .tool-pane[data-pane="base"] .file-drop-hint {font-size:11px;line-height:1.5;}
+#companyPanel .tool-pane[data-pane="base"] input[type="file"] {width:100%;min-width:0;max-width:100%;font-size:12px;}
+#companyPanel .tool-pane[data-pane="base"] .file-selection {max-height:160px;}
+#companyPanel .tool-pane[data-pane="base"] .modern-form > .helper:empty {display:none;}
+#companyPanel .tool-pane[data-pane="base"] button[type="submit"] {min-height:42px;padding:10px 12px;font-size:12px;}
+@media(max-width:850px) {
+  #companyPanel .tool-pane[data-pane="base"] .stack-forms {grid-template-columns:minmax(0,1fr);}
+}
