@@ -42,10 +42,9 @@ def seed():
 
 
 def test_copy_verify_activate_and_keep_sqlite_backup(postgres):
-    from app import classification_service as base, tasks, company_service as companies, certificates_service as certificates
+    from app import classification_service as base, tasks, company_service as companies
     from app.migrate_to_supabase import migrate
     payload,task=seed();before=base.records(3)
-    con=certificates.connection();con.execute('INSERT INTO certificates VALUES(?,?,?)',(3,'{"cnpj":"test-only"}','encrypted-test-only'));con.commit();con.close()
     result=migrate();assert result['status']=='activated'
     assert (postgres.parent/result['backup']).exists()
     assert base.records(3)==before
@@ -54,7 +53,6 @@ def test_copy_verify_activate_and_keep_sqlite_backup(postgres):
     assert tasks._statuses('2026-10-01')['3']['concluida']
     assert any(c['codigo']==909091 for c in companies.catalog())
     with pytest.raises(FileExistsError):companies.create(909091)
-    assert certificates.get(3)=={'cnpj':'test-only'}
     with sqlite3.connect(postgres) as old:
         assert old.execute('SELECT status FROM manual_tasks WHERE id=?',(task['id'],)).fetchone()[0]=='Pendente'
         with pytest.raises(sqlite3.IntegrityError):old.execute('DELETE FROM classification_records')

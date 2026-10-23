@@ -14,7 +14,7 @@ O original em Streamlit permanece intacto. FastAPI no Railway e JavaScript no Gi
 
 ## Validação
 
-Os testes comparam os resultados com funções originais: lançamentos, entradas/saídas, datas, históricos, débito/crédito, remoção de saldos, abas, valores, estilos e Excel final. Também cobrem APIs, múltiplos bancos, classificação, relatórios, certificados sintéticos e TXT.
+Os testes comparam os resultados com funções originais: lançamentos, entradas/saídas, datas, históricos, débito/crédito, remoção de saldos, abas, valores, estilos e Excel final. Também cobrem APIs, múltiplos bancos, classificação, relatórios e TXT.
 Validação local: 102 testes aprovados, um `xfail` herdado. A prévia web foi conferida no navegador com arquivo sintético.
 
 As conclusões automáticas de L. Carlos e Nova Geração seguem os mesmos códigos/competência do original. A importação protegida de status mantém timestamps originais e não sobrescreve status mais novos no destino.

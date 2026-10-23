@@ -26,7 +26,6 @@ jobs:
         run: |
           python -m py_compile backend/app/*.py
           python -m compileall -q backend/legacy/razync
-          python -m compileall -q backend/legacy/connector_windows
 
   native-tests:
     needs: syntax

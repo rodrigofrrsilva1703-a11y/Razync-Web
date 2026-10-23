@@ -3,7 +3,6 @@ import io
 import json
 import os
 import hmac
-import zipfile
 from pathlib import Path
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
@@ -99,7 +98,7 @@ def download(content, filename, summary=None, mime='application/vnd.openxmlforma
 def require_admin(authorization: str = Header('')):
     expected = os.getenv('RAZYNC_ACCESS_TOKEN') or os.getenv('CLASSIFICATION_ADMIN_PASSWORD')
     if not expected:
-        raise HTTPException(503, 'Configure RAZYNC_ACCESS_TOKEN no Railway para gerenciar bases e certificados.')
+        raise HTTPException(503, 'Configure RAZYNC_ACCESS_TOKEN no Railway para gerenciar bases.')
     if not hmac.compare_digest(authorization, f'Bearer {expected}'):
         raise HTTPException(401, 'Informe a chave de acesso administrativa.')
 
@@ -121,7 +120,7 @@ def migration_status():
     manifest = Path(__file__).resolve().parents[1] / 'resources' / 'engine_manifest.json'
     data = json.loads(manifest.read_text(encoding='utf-8'))
     return {'reference': data['reference_repository'], 'extracted_functions': len(data['functions']),
-            'validation': 'pending_real_files', 'certificates_configured': bool(os.getenv('CERTIFICATES_MASTER_KEY') and os.getenv('RAZYNC_ACCESS_TOKEN')),
+            'validation': 'pending_real_files',
             'original_base_import_configured': bool(os.getenv('SUPABASE_URL') and os.getenv('SUPABASE_SERVICE_KEY'))}
 
 @router.post('/tasks/importar-status', dependencies=[Depends(require_admin)])
@@ -241,18 +240,6 @@ async def apply_review(company_code: int, file: UploadFile = File(...), revisoes
     except Exception as exc:
         raise HTTPException(422, str(exc)) from exc
 
-@router.get('/connector/download')
-def download_connector():
-    source = Path(__file__).resolve().parents[1] / 'legacy' / 'connector_windows'
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as archive:
-        for path in source.rglob('*'):
-            if path.is_file() and path.suffix.lower() in {'.py', '.ps1', '.bat', '.js', '.json'}:
-                archive.write(path, path.relative_to(source).as_posix())
-        archive.writestr('INSTALAR_RAZYNC_WEB.bat', '@echo off\r\npowershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0install.ps1"\r\npause\r\n')
-        archive.writestr('LEIA-ME.txt', 'Extraia todos os arquivos e execute INSTALAR_RAZYNC_WEB.bat.\nAbra o painel fiscal no Razync-Web e informe o codigo de pareamento.\n')
-    return download(buffer.getvalue(), 'RAZYNC_WEB_CONECTOR_WINDOWS.zip', mime='application/zip')
-
 @router.post('/modelo-dominio-txt')
 async def export_txt(
     file: UploadFile = File(...),
@@ -297,22 +284,3 @@ async def export_txt(
         return download(content, 'RAZYNC_MODELO_DOMINIO.txt', mime='text/plain; charset=utf-8')
     except Exception as exc:
         raise HTTPException(422,str(exc)) from exc
-
-@router.get('/certificates/{company_code}', dependencies=[Depends(require_admin)])
-def certificate_metadata(company_code: int):
-    from app.certificates_service import get
-    return {'certificate': get(company_code)}
-
-@router.post('/certificates/{company_code}', dependencies=[Depends(require_admin)])
-async def save_certificate(company_code: int, file: UploadFile = File(...), password: str = Form(...), cnpj: str = Form('')):
-    try:
-        from app.certificates_service import save
-        return {'certificate': save(company_code, await file.read(), password, cnpj)}
-    except Exception as exc:
-        raise HTTPException(422, str(exc)) from exc
-
-@router.delete('/certificates/{company_code}', dependencies=[Depends(require_admin)])
-def delete_certificate(company_code: int):
-    from app.certificates_service import delete
-    delete(company_code)
-    return {'ok': True}

@@ -6,7 +6,7 @@
 - Railway: API Python, leitura de PDF/Excel, OCR e conferências.
 - Supabase Postgres: aprendizado e controle de importações, padrões legados,
   tarefas manuais, tarefas por competência e empresas cadastradas.
-- Certificados A1 criptografados e caches/cotas de IA continuam no volume local.
+- Caches e cotas de IA continuam no volume local.
 - Os documentos enviados não são arquivados no Supabase Storage.
 - Login de colaboradores e acesso direto do navegador ao Supabase não foram
   acrescentados nesta migração. Não há chave secreta no frontend.
@@ -69,5 +69,7 @@ Supabase e acompanhar tamanho do banco, tráfego e pausas por inatividade.
 - Em `backend/`: `python -m pytest tests -q`
 - O workflow `Postgres persistence check` usa um PostgreSQL 17 descartável:
   testa cópia verificada, bloqueio de escrita local, tarefas, cadastros,
-  exclusão por período, deduplicação concorrente, certificados locais e
+  exclusão por período, deduplicação concorrente e
   ausência de fallback durante indisponibilidade.
+
+O cadastro A1 e o conector Windows foram descontinuados. A inicialização remove a tabela antiga da base local e das cópias pré-migração, preservando os registros contábeis e o marcador de migração.

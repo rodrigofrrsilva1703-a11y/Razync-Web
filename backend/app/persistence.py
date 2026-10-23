@@ -82,7 +82,7 @@ def is_postgres(con):return isinstance(con,PostgresConnection)
 
 
 def table_exists(con,name):
-    if name not in (*TABLES,'certificates'):raise ValueError('Tabela desconhecida.')
+    if name not in TABLES:raise ValueError('Tabela desconhecida.')
     if is_postgres(con):
         return con.execute('SELECT 1 FROM information_schema.tables WHERE table_schema=? AND table_name=?',('razync',name)).fetchone() is not None
     return con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",(name,)).fetchone() is not None

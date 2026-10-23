@@ -4,7 +4,6 @@ import json
 import hashlib
 import builtins
 import symtable
-import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -331,16 +330,11 @@ def test_review_does_not_accept_client_coordinates():
     assert wb.active['F2'].value == 'Pago: Empresa: ACME INDUSTRIAL'
     assert summary['aplicadas'] == 1
 
-def test_connector_package_includes_installer_and_automation():
-    response = client.get('/api/v1/connector/download')
-    assert response.status_code == 200
-    with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
-        assert {'connector.py','automate_ecac.ps1','chrome_extension/manifest.json','INSTALAR_RAZYNC_WEB.bat'} <= set(archive.namelist())
 
 def test_sensitive_operations_require_configured_auth(monkeypatch):
     monkeypatch.delenv('RAZYNC_ACCESS_TOKEN',raising=False)
     monkeypatch.delenv('CLASSIFICATION_ADMIN_PASSWORD',raising=False)
-    assert client.get('/api/v1/certificates/242').status_code == 503
+    assert client.post('/api/v1/companies',json={}).status_code == 503
     monkeypatch.setenv('RAZYNC_ACCESS_TOKEN','test-access')
-    assert client.get('/api/v1/certificates/242').status_code == 401
-    assert client.get('/api/v1/certificates/242',headers={'Authorization':'Bearer test-access'}).json() == {'certificate':None}
+    assert client.post('/api/v1/companies',json={}).status_code == 401
+    assert client.post('/api/v1/companies',json={},headers={'Authorization':'Bearer test-access'}).status_code == 422

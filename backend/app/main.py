@@ -75,6 +75,9 @@ app.add_middleware(
 
 @app.on_event("startup")
 def initialize_persistence():
+    from app.retired_data import remove_retired_credentials
+    from app.classification_service import DB_PATH
+    remove_retired_credentials(DB_PATH)
     if os.getenv('RAZYNC_MIGRATE_ON_START') == '1':
         from app.migrate_to_supabase import migrate
         migrate()

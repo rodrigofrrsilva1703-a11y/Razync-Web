@@ -263,31 +263,6 @@ def test_reconciliation_repeated_movements_and_removed_estornos_match_reference(
     for name,frame in zip(('Conferência diária','Faltando na planilha','A mais na planilha','Estornos ignorados'),expected):
         pd.testing.assert_frame_equal(tables[name],frame)
 
-def test_a1_validated_encrypted_and_scoped_to_company(monkeypatch):
-    from cryptography import x509
-    from cryptography.x509.oid import NameOID
-    from cryptography.hazmat.primitives import hashes,serialization
-    from cryptography.hazmat.primitives.asymmetric import rsa
-    from cryptography.hazmat.primitives.serialization import pkcs12
-    from datetime import datetime,timedelta,timezone
-    from app.certificates_service import connection
-    from razync.certificado_digital import decifrar_certificado
-    monkeypatch.setenv('RAZYNC_ACCESS_TOKEN','test-admin')
-    monkeypatch.setenv('CERTIFICATES_MASTER_KEY','test-crypto-master')
-    key=rsa.generate_private_key(public_exponent=65537,key_size=2048)
-    name=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,'Razync Teste:11222333000181')])
-    now=datetime.now(timezone.utc)
-    certificate=x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(key.public_key()).serial_number(x509.random_serial_number()).not_valid_before(now-timedelta(days=1)).not_valid_after(now+timedelta(days=30)).sign(key,hashes.SHA256())
-    content=pkcs12.serialize_key_and_certificates(b'teste',key,certificate,None,serialization.BestAvailableEncryption(b'test-password'))
-    headers={'Authorization':'Bearer test-admin'}
-    response=client.post('/api/v1/certificates/242',headers=headers,data={'password':'test-password'},files={'file':('teste.pfx',content)})
-    assert response.status_code==200,response.text
-    assert response.json()['certificate']['cnpj']=='11222333000181'
-    assert client.get('/api/v1/certificates/1408',headers=headers).json()['certificate'] is None
-    con=connection();row=con.execute('SELECT encrypted FROM certificates WHERE company=242').fetchone();con.close()
-    assert decifrar_certificado(row['encrypted'],'test-crypto-master')==(content,'test-password')
-    assert 'test-password' not in row['encrypted']
-    assert client.post('/api/v1/certificates/242',headers=headers,data={'password':'wrong'},files={'file':('teste.pfx',content)}).status_code==422
 
 def test_selected_period_filters_standard_api_without_changing_legacy_processor(monkeypatch):
     import importlib
