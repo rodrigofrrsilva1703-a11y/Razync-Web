@@ -25,6 +25,7 @@
   <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=rectangle-20261023-7">
   <link rel="stylesheet" href="./assets/css/base-maintenance.css?v=two-columns-20261023-2">
   <link rel="stylesheet" href="./assets/css/admin-auth.css?v=20261023-1">
+  <link rel="stylesheet" href="./assets/css/tool-preparation.css?v=20261023-1">
 </head>
 <body class="sidebar-collapsed">
   <div class="app-shell">
@@ -430,7 +431,7 @@
 
         <section class="tool-pane active" data-pane="organizar">
           <div class="tool-card">
-            <div>
+            <div class="tool-intro">
               <span class="tool-visual-icon tool-visual-organizar" aria-hidden="true"></span>
               <span class="company-code">MODELO DOMÍNIO</span>
               <h3>Organizar arquivos</h3>
@@ -441,7 +442,7 @@
                 <span data-step="review"><b>3</b>Conferir</span>
               </div>
             </div>
-            <form id="processForm" class="modern-form">
+            <form id="processForm" class="modern-form preparation-form">
               <div class="form-card-header">
                 <span class="form-card-icon icon-files" aria-hidden="true"></span>
                 <div><strong>Arquivos de origem</strong><small>Selecione os documentos e parâmetros deste processamento.</small></div>
@@ -469,7 +470,7 @@
 
         <section class="tool-pane" data-pane="base">
           <div class="tool-card">
-            <div>
+            <div class="tool-intro">
               <span class="tool-visual-icon tool-visual-base" aria-hidden="true"></span>
               <span class="company-code">BASE INTELIGENTE</span>
               <h3>Aprender e classificar</h3>
@@ -481,7 +482,7 @@
               <div id="baseStats" class="mini-metrics"></div>
             </div>
             <div class="stack-forms">
-              <form id="learnForm" class="modern-form compact-form">
+              <form id="learnForm" class="modern-form compact-form preparation-form">
                 <div class="form-card-header">
                   <span class="form-card-icon icon-learn" aria-hidden="true"></span>
                   <div><strong>Ensinar à base</strong><small>Adicione arquivos já revisados para ampliar os padrões.</small></div>
@@ -491,7 +492,7 @@
                 <button type="submit">Adicionar à Base Inteligente</button>
                 <p id="learnMessage" class="helper"></p>
               </form>
-              <form id="classifyForm" class="modern-form compact-form">
+              <form id="classifyForm" class="modern-form compact-form preparation-form">
                 <div class="form-card-header">
                   <span class="form-card-icon icon-classify" aria-hidden="true"></span>
                   <div><strong>Classificar arquivo</strong><small>Aplique os padrões aprendidos ao Modelo Domínio.</small></div>
@@ -559,7 +560,7 @@
 
         <section class="tool-pane" data-pane="extrato">
           <div class="tool-card">
-            <div>
+            <div class="tool-intro">
               <span class="tool-visual-icon tool-visual-extrato" aria-hidden="true"></span>
               <span class="company-code">CONFERÊNCIA</span>
               <h3>Modelo Domínio × Extrato</h3>
@@ -569,7 +570,7 @@
                 <span><b aria-hidden="true">✓</b> Repetidos tratados sem duplicação</span>
               </div>
             </div>
-            <form id="reconcileForm" class="modern-form">
+            <form id="reconcileForm" class="modern-form preparation-form">
               <div class="form-card-header">
                 <span class="form-card-icon icon-compare" aria-hidden="true"></span>
                 <div><strong>Arquivos para conferência</strong><small>Compare o Modelo Domínio final com um ou vários extratos.</small></div>
@@ -590,8 +591,8 @@
 
         <section class="tool-pane" data-pane="francesinhas">
           <div class="tool-card">
-            <div><span class="tool-visual-icon tool-visual-francesinhas" aria-hidden="true"></span><span class="company-code">FRANCESINHAS</span><h3>Francesinhas avulsas</h3><p>Leia as liquidações L pela data “Emitido em” e baixe o Modelo Domínio separado por conta.</p></div>
-            <form id="francesinhasForm" class="modern-form">
+            <div class="tool-intro"><span class="tool-visual-icon tool-visual-francesinhas" aria-hidden="true"></span><span class="company-code">FRANCESINHAS</span><h3>Francesinhas avulsas</h3><p>Leia as liquidações L pela data “Emitido em” e baixe o Modelo Domínio separado por conta.</p></div>
+            <form id="francesinhasForm" class="modern-form preparation-form">
               <div class="form-card-header">
                 <span class="form-card-icon icon-zip" aria-hidden="true"></span>
                 <div><strong>Arquivos ZIP</strong><small>Envie uma ou mais francesinhas para consolidar as liquidações.</small></div>

@@ -1,0 +1,48 @@
+/* Compacta apenas a preparação. Prévia, tabelas, totais e diálogos de resultados
+   não recebem regras deste arquivo. */
+#companyPanel .panel-head {padding:14px 18px!important;margin-bottom:10px;gap:14px;}
+#companyPanel .panel-head h2 {font-size:20px;line-height:1.3;margin:4px 0;}
+#companyPanel .panel-head p {margin:0;}
+#companyPanel .panel-quick-info {margin-top:6px;gap:5px;}
+#companyPanel .back-button {margin-bottom:9px;}
+#companyPanel .tool-tabs {margin:10px 0 14px;padding:4px;gap:7px;}
+#companyPanel .tool-tab {min-height:42px;padding:10px 13px;}
+#companyPanel .tool-card {row-gap:14px;}
+#companyPanel .tool-card > .tool-intro:first-child {padding:14px 18px!important;min-height:0;}
+#companyPanel .tool-intro .tool-visual-icon {width:36px!important;height:36px!important;margin:0 12px 5px 0!important;border-radius:10px!important;}
+#companyPanel .tool-intro h3 {font-size:18px;margin:2px 0 5px;line-height:1.3;}
+#companyPanel .tool-intro > p {font-size:12px;line-height:1.65;margin:4px 0!important;}
+#companyPanel .tool-intro .tool-feature-list {gap:6px 18px;margin-top:8px;font-size:11px;}
+#companyPanel .tool-intro .tool-flow {margin-top:10px;padding-top:9px;}
+#companyPanel .tool-intro #baseStats {margin-top:10px;}
+#companyPanel form.preparation-form {padding:16px 18px!important;gap:10px;min-width:0;}
+#companyPanel .preparation-form > .form-card-header {padding-bottom:10px;margin-bottom:2px;gap:10px;}
+#companyPanel .preparation-form > .form-card-header strong {font-size:15px;line-height:1.4;}
+#companyPanel .preparation-form > .form-card-header small {font-size:12px;line-height:1.5;margin-top:3px;}
+#companyPanel .preparation-form .file-drop-shell {padding:10px;gap:5px;min-width:0;}
+#companyPanel .preparation-form input[type="file"] {width:100%;min-width:0;max-width:100%;}
+#companyPanel .preparation-form > .helper:empty {display:none;}
+#companyPanel .preparation-form .bank-selector {padding:10px;gap:9px;}
+#companyPanel .preparation-form .bank-selector-options {gap:7px;}
+#companyPanel .preparation-form .bank-choice {padding:7px 10px;min-height:44px;}
+#companyPanel .preparation-form .bank-select-all {min-height:36px;padding:7px 10px;}
+#companyPanel .preparation-form .standard-period-card {margin:5px 0;padding:10px 12px;min-width:0;}
+#companyPanel .preparation-form .standard-period-card .period-fields {gap:12px;}
+#companyPanel .preparation-form .standard-period-card .period-fields > div {gap:4px;}
+#companyPanel .preparation-form .standard-period-card p {margin-top:7px;font-size:11px;line-height:1.5;}
+#companyPanel .preparation-form .period-fields input[type="date"] {min-height:40px;padding:9px 11px!important;}
+#companyPanel .preparation-form > button[type="submit"] {min-height:42px;padding:10px 14px;}
+#companyPanel .preparation-form #advancedFields {gap:12px;}
+#companyPanel .preparation-form .reconcile-bank-file {padding:10px;gap:6px;}
+@media(max-width:760px) {
+ #companyPanel .panel-head {padding:13px 15px!important;gap:10px;}
+ #companyPanel .panel-head h2 {font-size:18px;overflow-wrap:anywhere;}
+ #companyPanel .tool-tabs {gap:6px;}
+ #companyPanel .tool-tab {min-height:44px;padding:10px 11px;}
+ #companyPanel .tool-card > .tool-intro:first-child {padding:13px 15px!important;}
+ #companyPanel form.preparation-form {padding:15px!important;}
+ #companyPanel .preparation-form > button[type="submit"] {min-height:44px;}
+ #companyPanel .preparation-form .bank-select-all {min-height:44px;}
+ #companyPanel .preparation-form .standard-period-card .period-fields {gap:8px;}
+ #companyPanel .preparation-form .period-fields input[type="date"] {min-height:44px;padding:9px 7px!important;}
+}
