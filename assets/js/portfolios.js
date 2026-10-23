@@ -36,8 +36,9 @@ function renderPortfolios() {
     const name = document.createElement("strong");
     name.textContent = portfolio.name;
     const details = document.createElement("span");
-    const quantity = companies.filter(company =>
-      portfolio.companyCodes === null || portfolio.companyCodes.includes(Number(company.codigo))).length;
+    const portfolioCompanies = companies.filter(company =>
+      portfolio.companyCodes === null || portfolio.companyCodes.includes(Number(company.codigo)));
+    const quantity = portfolioCompanies.length;
     details.textContent = quantity.toLocaleString("pt-BR") + (quantity === 1 ? " empresa na carteira" : " empresas na carteira");
     details.className = "portfolio-entry-quantity";
     info.append(name, details);
@@ -53,8 +54,28 @@ function renderPortfolios() {
     action.append(actionLabel, arrow);
     const label = document.createElement("span");
     label.className = "portfolio-entry-label";
-    label.textContent = "RESPONSÁVEL PELA CARTEIRA";
-    btn.append(label, avatar, info, action);
+    label.textContent = "CARTEIRA DE EMPRESAS";
+    const preview = document.createElement("span");
+    preview.className = "portfolio-entry-preview";
+    preview.setAttribute("aria-hidden", "true");
+    for (const company of portfolioCompanies.slice(0, 3)) {
+      const code = document.createElement("span");
+      code.textContent = String(company.codigo);
+      preview.appendChild(code);
+    }
+    if (quantity > 3) {
+      const remaining = document.createElement("span");
+      remaining.className = "portfolio-preview-more";
+      remaining.textContent = "+" + (quantity - 3);
+      preview.appendChild(remaining);
+    }
+    if (quantity) {
+      const caption = document.createElement("span");
+      caption.className = "portfolio-preview-caption";
+      caption.textContent = "Suas empresas, reunidas.";
+      preview.appendChild(caption);
+    }
+    btn.append(label, avatar, info, preview, action);
     btn.addEventListener("click", () => selectPortfolio(portfolio.id));
     portfolioList.appendChild(btn);
   }

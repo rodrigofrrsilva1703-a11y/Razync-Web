@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="./assets/css/fiscal-studio.css?v=ia-documentos-20261014-15">
   <link rel="stylesheet" href="./assets/css/fiscal-ai-reader.css?v=comparison-20261019-1">
   <link rel="stylesheet" href="./assets/css/fiscal-account-dialog.css?v=20261020-11">
-  <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=workspace-20261023-4">
+  <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=compact-20261023-5">
   <link rel="stylesheet" href="./assets/css/base-maintenance.css?v=20261021-1">
   <link rel="stylesheet" href="./assets/css/admin-auth.css?v=20261023-1">
 </head>
@@ -55,23 +55,25 @@
           </div>
           <div class="portfolio-heading">
             <span class="portfolio-eyebrow" id="portfolioGreeting">Boas-vindas ao seu espaço.</span>
-            <h1>Seu espaço de trabalho.</h1>
-            <p>Escolha uma carteira para acessar suas empresas e ferramentas.</p>
-          </div>
-          <div class="portfolio-access">
-            <div class="portfolio-access-heading">
-              <div><span class="portfolio-access-kicker">ACESSO RÁPIDO</span><h2 class="portfolio-section-title">Suas carteiras</h2></div>
+            <span class="portfolio-intro-label">O SEU PRÓXIMO PASSO</span><h1>Sua rotina.<br><em>Em sintonia.</em></h1>
+            <p>Da organização dos extratos à conferência final.
+              Escolha sua carteira e deixe o Razync simplificar o caminho.</p>
               <div class="portfolio-home-summary" aria-label="Resumo das carteiras">
                 <span><strong id="portfolioCompanyTotal">—</strong> empresas no Razync</span>
                 <span><strong id="portfolioWalletTotal">—</strong> <span id="portfolioWalletLabel">carteira disponível</span></span>
               </div>
+          </div>
+          <div class="portfolio-access">
+            <div class="portfolio-access-heading">
+              <div><span class="portfolio-access-kicker">COMECE POR AQUI</span><h2 class="portfolio-section-title">Escolha sua carteira</h2></div>
+
             </div>
             <div id="portfolioList" class="portfolio-list" aria-busy="true"><p class="portfolio-loading" role="status">Carregando carteiras…</p></div>
           </div>
           <div class="portfolio-capabilities" aria-label="Ferramentas disponíveis nas empresas">
-            <span><span class="portfolio-feature-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 3h7l4 4v14H5V3h3Zm6 0v5h5M8 12h8M8 16h5"/></svg></span><span><strong>Organize</strong><small>Extratos no Modelo Domínio</small></span><span class="portfolio-feature-number" aria-hidden="true">01</span></span>
-            <span><span class="portfolio-feature-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v7c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 12v7c0 1.7 3.1 3 7 3s7-1.3 7-3v-7"/></svg></span><span><strong>Classifique</strong><small>Padrões da Base Inteligente</small></span><span class="portfolio-feature-number" aria-hidden="true">02</span></span>
-            <span><span class="portfolio-feature-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="3"/><path d="M9 4V2h6v2M9 12l2 2 4-4"/></svg></span><span><strong>Confira</strong><small>Saldos e lançamentos alinhados</small></span><span class="portfolio-feature-number" aria-hidden="true">03</span></span>
+            <details class="portfolio-feature"><summary><span class="portfolio-feature-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 3h7l4 4v14H5V3h3Zm6 0v5h5M8 12h8M8 16h5"/></svg></span><span><strong>Organize</strong><small>Extratos no Modelo Domínio</small></span><span class="portfolio-feature-number" aria-hidden="true">01</span><span class="portfolio-feature-toggle" aria-hidden="true">+</span></summary><p>Transforme seus extratos no Modelo Domínio, com os lançamentos organizados para importar.</p></details>
+            <details class="portfolio-feature"><summary><span class="portfolio-feature-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v7c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 12v7c0 1.7 3.1 3 7 3s7-1.3 7-3v-7"/></svg></span><span><strong>Classifique</strong><small>Padrões da Base Inteligente</small></span><span class="portfolio-feature-number" aria-hidden="true">02</span><span class="portfolio-feature-toggle" aria-hidden="true">+</span></summary><p>Use os padrões da Base Inteligente para classificar os lançamentos da empresa.</p></details>
+            <details class="portfolio-feature"><summary><span class="portfolio-feature-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="3"/><path d="M9 4V2h6v2M9 12l2 2 4-4"/></svg></span><span><strong>Confira</strong><small>Saldos e lançamentos alinhados</small></span><span class="portfolio-feature-number" aria-hidden="true">03</span><span class="portfolio-feature-toggle" aria-hidden="true">+</span></summary><p>Compare extrato e razão ou fiscal e contábil para localizar diferenças nos resultados.</p></details>
           </div>
         </section>
         <section class="hero compact-hero" hidden>
@@ -659,7 +661,7 @@
   <script src="./assets/js/company-guides.js?v=base-without-review-20261020-1"></script>
   <script src="./assets/js/bank-investments.js?v=20261020-8"></script>
   <script src="./assets/js/dom-utils.js?v=20261020-1"></script>
-  <script src="./assets/js/portfolios.js?v=workspace-20261023-4"></script>
+  <script src="./assets/js/portfolios.js?v=compact-20261023-5"></script>
   <script src="./assets/js/reconciliation-preview.js?v=20261020-1"></script>
   <script src="./assets/js/tasks-ui.js?v=20261020-1"></script>
   <script src="./assets/js/admin-auth.js?v=20261023-1"></script>
