@@ -17,7 +17,7 @@ function companyBelongsToPortfolio(company) {
 function renderPortfolios() {
   const today = new Date();
   const hour = Number(new Intl.DateTimeFormat("pt-BR", {hour:"numeric", hourCycle:"h23", timeZone:"America/Sao_Paulo"}).format(today));
-  $("#portfolioGreeting").textContent = hour < 12 ? "Bom dia. Vamos começar?" : hour < 18 ? "Boa tarde. Vamos começar?" : "Boa noite. Vamos começar?";
+  $("#portfolioGreeting").textContent = hour < 12 ? "Bom dia. Que bom ter você por aqui." : hour < 18 ? "Boa tarde. Que bom ter você por aqui." : "Boa noite. Que bom ter você por aqui.";
   $("#portfolioDate").textContent = new Intl.DateTimeFormat("pt-BR", {weekday:"long", day:"numeric", month:"long", timeZone:"America/Sao_Paulo"}).format(today);
   $("#portfolioCompanyTotal").textContent = companies.length.toLocaleString("pt-BR");
   $("#portfolioWalletTotal").textContent = portfolios.length.toLocaleString("pt-BR");
@@ -54,7 +54,11 @@ function renderPortfolios() {
     const label = document.createElement("span");
     label.className = "portfolio-entry-label";
     label.textContent = "CARTEIRA DE EMPRESAS";
-    btn.append(label, avatar, info, action);
+    const art = document.createElement("span");
+    art.className = "portfolio-entry-art";
+    art.setAttribute("aria-hidden", "true");
+    for (let i = 0; i < 3; i++) art.appendChild(document.createElement("i"));
+    btn.append(label, avatar, info, art, action);
     btn.addEventListener("click", () => selectPortfolio(portfolio.id));
     portfolioList.appendChild(btn);
   }
@@ -89,3 +93,19 @@ function showPortfolioPicker() {
 }
 document.querySelector("#backToPortfolios").addEventListener("click", showPortfolioPicker);
 
+
+// Preferência visual local: nunca altera a carteira ou os dados das empresas.
+const homeColorButtons = document.querySelectorAll("[data-home-color]");
+function applyHomeColor(color) {
+  const chosen = ["blue", "teal", "slate"].includes(color) ? color : "blue";
+  portfolioPicker.dataset.color = chosen;
+  homeColorButtons.forEach(button => button.setAttribute("aria-pressed", String(button.dataset.homeColor === chosen)));
+}
+let savedHomeColor = "blue";
+try { savedHomeColor = localStorage.getItem("razync.home.color") || "blue"; } catch (_) {}
+applyHomeColor(savedHomeColor);
+homeColorButtons.forEach(button => button.addEventListener("click", () => {
+  const color = button.dataset.homeColor;
+  applyHomeColor(color);
+  try { localStorage.setItem("razync.home.color", color); } catch (_) {}
+}));
