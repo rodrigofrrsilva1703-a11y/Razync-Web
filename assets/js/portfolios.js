@@ -15,6 +15,13 @@ function companyBelongsToPortfolio(company) {
 }
 
 function renderPortfolios() {
+  const today = new Date();
+  const hour = Number(new Intl.DateTimeFormat("pt-BR", {hour:"numeric", hourCycle:"h23", timeZone:"America/Sao_Paulo"}).format(today));
+  $("#portfolioGreeting").textContent = hour < 12 ? "Bom dia. Vamos começar?" : hour < 18 ? "Boa tarde. Vamos começar?" : "Boa noite. Vamos começar?";
+  $("#portfolioDate").textContent = new Intl.DateTimeFormat("pt-BR", {weekday:"long", day:"numeric", month:"long", timeZone:"America/Sao_Paulo"}).format(today);
+  $("#portfolioCompanyTotal").textContent = companies.length.toLocaleString("pt-BR");
+  $("#portfolioWalletTotal").textContent = portfolios.length.toLocaleString("pt-BR");
+  $("#portfolioWalletLabel").textContent = portfolios.length === 1 ? "carteira disponível" : "carteiras disponíveis";
   portfolioList.replaceChildren();
   for (const portfolio of portfolios) {
     const btn = document.createElement("button");
