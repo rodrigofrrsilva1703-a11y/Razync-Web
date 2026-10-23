@@ -156,3 +156,16 @@
  #portfolioPicker .portfolio-capabilities {grid-template-columns:minmax(0,1fr);gap:9px;padding-top:20px;margin:0}#portfolioPicker .portfolio-feature summary {padding:14px 15px;gap:12px}#portfolioPicker .portfolio-capabilities small {font-size:10px}#portfolioPicker .portfolio-feature p {font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){#portfolioPicker .portfolio-home-topline,#portfolioPicker .portfolio-heading,#portfolioPicker .portfolio-access,#portfolioPicker .portfolio-capabilities,#portfolioPicker .portfolio-feature p {animation:none}#portfolioPicker .portfolio-entry,#portfolioPicker .portfolio-entry-action,#portfolioPicker .portfolio-entry-action>span:first-child,#portfolioPicker .portfolio-entry-arrow,#portfolioPicker .portfolio-feature,#portfolioPicker .portfolio-feature-toggle {transition:none}#portfolioPicker .portfolio-entry:hover,#portfolioPicker .portfolio-entry:hover .portfolio-entry-arrow,#portfolioPicker .portfolio-feature[open] .portfolio-feature-toggle {transform:none}}
+
+/* O próprio cartão é um botão retangular compacto. */
+#portfolioPicker .portfolio-entry {grid-template-columns:40px minmax(0,1fr) auto;grid-template-rows:auto;gap:12px;min-height:90px;padding:18px;border-radius:6px;overflow:visible;box-shadow:0 2px 8px #1f456706;transition:background .18s,border-color .18s}
+#portfolioPicker .portfolio-entry::before {content:none}
+#portfolioPicker .portfolio-entry-label,#portfolioPicker .portfolio-entry-preview {display:none}
+#portfolioPicker .portfolio-avatar {grid-column:1;grid-row:1;width:40px;height:40px;border-radius:6px;font-size:19px;background:#edf3f8;box-shadow:none}
+#portfolioPicker .portfolio-entry-info {grid-column:2;grid-row:1;gap:4px}
+#portfolioPicker .portfolio-entry-info strong {font-size:18px;letter-spacing:-.3px}
+#portfolioPicker .portfolio-entry-action {grid-column:3;grid-row:1;gap:0;margin:0;padding:0;border:0;border-radius:0;background:none;transition:none}
+#portfolioPicker .portfolio-entry-action>span:first-child {display:none}
+#portfolioPicker .portfolio-entry-arrow {font-size:19px}
+#portfolioPicker .portfolio-entry:hover {transform:none;background:#f7fafd;border-color:#92aec5;box-shadow:0 2px 8px #1f456706}
+#portfolioPicker .portfolio-entry:hover .portfolio-entry-action {background:none}
