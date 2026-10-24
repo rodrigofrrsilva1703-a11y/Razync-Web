@@ -7,6 +7,7 @@ on:
     paths:
       - "index.html"
       - "assets/**"
+      - "tools/build_frontend.py"
       - "tests/frontend/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
@@ -43,11 +44,7 @@ jobs:
 
       - name: Prepare static site
         run: |
-          rm -rf _site
-          mkdir -p _site
-          cp index.html _site/
-          cp -R assets _site/
-          touch _site/.nojekyll
+          python3 tools/build_frontend.py --output _site
 
       - name: Smoke test frontend runtime
         run: |
@@ -57,8 +54,11 @@ jobs:
           cp tests/frontend/help-drag-smoke.js _smoke/assets/js/help-drag-smoke.js
           python3 - <<'PY'
           from pathlib import Path
+          import re
           page = Path("_smoke/index.html")
           html = page.read_text(encoding="utf-8")
+          # Only the disposable offline fixture; published artifact remains _site.
+          html = re.sub(r'<script[^>]+src="\./assets/js/operating-hours\.js[^"]*"[^>]*></script>', "", html)
           assert html.count("</body>") == 1
           page.write_text(html.replace("</body>", '<script src="./assets/js/help-drag-smoke.js"></script>\n</body>'), encoding="utf-8")
           PY

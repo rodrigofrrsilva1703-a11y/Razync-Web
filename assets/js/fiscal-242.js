@@ -2472,7 +2472,7 @@
     setMessage("Analisando acumuladores e lançamentos do Razão…", "loading");
     try {
       const response = await fetch(API() + "/api/v1/conferencia-fiscal/preview", {
-        method:"POST", body, signal: controller.signal
+        method:"POST", body, signal: controller.signal, headers:{"X-Razync-Reuse":"1"}
       });
       if (!response.ok) throw new Error(await responseError(response));
       const report = await response.json();
@@ -2499,9 +2499,9 @@
     download.disabled = true;
     setMessage("Preparando relatório Excel…", "loading");
     try {
-      const response = await fetch(API() + "/api/v1/conferencia-fiscal/exportar", {
-        method:"POST", body
-      });
+      const response = globalThis.RazyncResults
+        ? await RazyncResults.downloadResponse(data.report_token, API() + "/api/v1/conferencia-fiscal/exportar", {method:"POST",body})
+        : await fetch(API() + "/api/v1/conferencia-fiscal/exportar", {method:"POST",body});
       if (!response.ok) throw new Error(await responseError(response));
       if (previewBody !== body) return;
       const nome = String(data.empresa_nome || "GERAL")

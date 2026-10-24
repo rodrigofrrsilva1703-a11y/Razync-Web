@@ -1120,7 +1120,7 @@ form.addEventListener("submit", async (event) => {
     submitButton.classList.add("is-loading");
     setProcessStage("processing", "Gerando prévia…");
     $("#workflowPreview").replaceChildren();
-    const response = await fetch(endpoint, { method: "POST", body: data, signal:controller.signal });
+    const response = await fetch(endpoint, { method: "POST", body: data, signal:controller.signal, headers:{"X-Razync-Preview":["reports","preview"].includes(event.submitter?.dataset.output) ? "0" : "1"} });
     if (currentVersion !== previewVersion) return;
     if (!response.ok) throw new Error(await responseError(response));
     if (event.submitter?.dataset.output === "preview") {
@@ -1137,20 +1137,19 @@ form.addEventListener("submit", async (event) => {
       setProcessStage("review", "Relatórios gerados", "Os arquivos foram preparados e baixados com sucesso.");
       return;
     }
-    const workbook = await response.blob();
-    const previewData = new FormData();
-    previewData.append("file", workbook, "modelo.xlsx");
-    const previewResponse = await fetch(`${API()}/api/v1/modelo-preview`, {method:"POST", body:previewData, signal:controller.signal});
-    if (!previewResponse.ok) throw new Error(await responseError(previewResponse));
+    const prepared = await RazyncResults.workbookPreview(response, {endpoint, snapshot:data,
+      signal:controller.signal, filename:`RAZYNC_${companyCode}_MODELO_DOMINIO.xlsx`});
     if (selected?.codigo !== companyCode || currentVersion !== previewVersion) return;
-    const previewResult = await previewResponse.json();
-    if (selected?.codigo !== companyCode || currentVersion !== previewVersion) return;
-    showWorkflowPreview(previewResult);
+    showWorkflowPreview(prepared.preview);
     const download = document.createElement("button");
     download.type = "button";
     download.textContent = "Baixar Modelo Domínio";
-    const disposition = response.headers.get("content-disposition");
-    download.addEventListener("click", () => downloadBlob(new Response(workbook, {headers:disposition ? {"Content-Disposition":disposition} : {}}), `RAZYNC_${companyCode}_MODELO_DOMINIO.xlsx`));
+    download.addEventListener("click", async () => {
+      download.disabled=true;
+      try { await prepared.download(); }
+      catch (error) { if (error.name !== "AbortError" && selected?.codigo === companyCode) processMessage.textContent=error.message; }
+      finally { download.disabled=false; }
+    });
     download.className = "preview-download";
     ($("#workflowPreview .preview-primary-actions") || $("#workflowPreview")).append(download);
     processMessage.textContent = "";
@@ -1296,22 +1295,25 @@ classifyForm.addEventListener("submit", async (event) => {
   data.append("options_json", JSON.stringify(classifyOptions));
   $("#classifyMessage").textContent = "Classificando…";
   try {
-    const response = await fetch(`${API()}/api/v1/base-inteligente/${companyCode}/classificar`, {method:"POST", body:data, signal:controller.signal});
+    const response = await fetch(`${API()}/api/v1/base-inteligente/${companyCode}/classificar`, {method:"POST", body:data, signal:controller.signal, headers:{"X-Razync-Preview":"1"}});
     if (!response.ok) throw new Error(await responseError(response));
     const raw = response.headers.get("x-razync-summary");
     const summary = raw ? JSON.parse(raw) : {};
-    const workbook = await response.blob();
-    const previewData = new FormData(); previewData.append("file",workbook,"classificado.xlsx");
-    const preview = await fetch(`${API()}/api/v1/modelo-preview`,{method:"POST",body:previewData,signal:controller.signal});
-    if (!preview.ok) throw new Error(await responseError(preview));
-    const result = await preview.json();
+    const prepared = await RazyncResults.workbookPreview(response, {
+      endpoint:`${API()}/api/v1/base-inteligente/${companyCode}/classificar`, snapshot:data,
+      signal:controller.signal, filename:`RAZYNC_${companyCode}_CLASSIFICADO.xlsx`});
+    const result = prepared.preview;
     if (controller.signal.aborted || selected?.codigo !== companyCode) return;
     showWorkflowPreview(result,target);
     renderClassificationCoverage(summary.cobertura);
     const download = document.createElement("button");download.type="button";download.className="preview-download";
     download.textContent="Baixar Excel classificado";
-    const disposition=response.headers.get("content-disposition");
-    download.addEventListener("click",()=>downloadBlob(new Response(workbook,{headers:disposition ? {"Content-Disposition":disposition} : {}}),`RAZYNC_${companyCode}_CLASSIFICADO.xlsx`));
+    download.addEventListener("click", async () => {
+      download.disabled=true;
+      try { await prepared.download(); }
+      catch (error) { if (error.name !== "AbortError" && selected?.codigo === companyCode) $("#classifyMessage").textContent=error.message; }
+      finally { download.disabled=false; }
+    });
     target.querySelector(".preview-primary-actions").append(download);
     $("#classifyMessage").textContent = "Classificação concluída. Confira as linhas classificadas, as pendências e a prévia antes de baixar.";
   } catch (error) {
@@ -1447,7 +1449,7 @@ reconcileForm.addEventListener("submit",async event => {
       : `${API()}/api/v1/conferencia-extrato/${companyCode}/multi/preview`;
     const previewBody = snapshot;
     const response = await fetch(previewEndpoint,{
-      method:"POST",body:previewBody,signal:controller.signal
+      method:"POST",body:previewBody,signal:controller.signal,headers:{"X-Razync-Reuse":"1"}
     });
     if (!response.ok) throw new Error(await responseError(response));
     const result = await response.json();
@@ -1461,13 +1463,20 @@ reconcileForm.addEventListener("submit",async event => {
         const reportEndpoint = state.banks.length === 1
           ? `${API()}/api/v1/conferencia-extrato/${companyCode}`
           : `${API()}/api/v1/conferencia-extrato/${companyCode}/multi`;
-        const report = await fetch(reportEndpoint,{method:"POST",body:snapshot,signal:controller.signal});
+        const report = globalThis.RazyncResults
+          ? await RazyncResults.downloadResponse(result.report_token, reportEndpoint, {method:"POST",body:snapshot,signal:controller.signal})
+          : await fetch(reportEndpoint,{method:"POST",body:snapshot,signal:controller.signal});
         if (!report.ok) throw new Error(await responseError(report));
         if (!isCurrent()) return;
         await downloadBlob(report,`RAZYNC_${companyCode}_CONFERENCIA_EXTRATO.xlsx`);
       }
     });
 
+    if (globalThis.RazyncAssets) {
+      try { await RazyncAssets.load("investments"); }
+      catch (error) { $("#reconcileMessage").textContent=error.message; return; }
+    }
+    if (!isCurrent()) return;
     globalThis.RazyncInvestments?.mount({
       target:$("#reconcileResult"),company:companyCode,
       banks:state.banks.map(bank=>({code:bank,label:bankName(bank),account:selected?.capabilities?.banks?.[bank] || ""})),
@@ -1566,7 +1575,17 @@ checkApi();
 enhanceFileInputs(document);
 
 
-function showGlobalView(name) {
+let navigationVersion = 0;
+async function showGlobalView(name) {
+  const version = ++navigationVersion;
+  if (name === "fiscal" && globalThis.RazyncAssets) {
+    const trigger = document.querySelector('.main-nav-btn[data-view="fiscal"]');
+    trigger?.setAttribute("aria-busy","true");
+    try { await RazyncAssets.load("fiscal"); }
+    catch (error) { apiStatus.textContent=error.message; return; }
+    finally { trigger?.removeAttribute("aria-busy"); }
+    if (version !== navigationVersion) return;
+  }
   closeCompanyToolHelp();
   $("#companyToolHelp").hidden = true;
   cancelReconcilePreview();
@@ -1750,7 +1769,7 @@ $("#ledgerForm")?.addEventListener("submit", async event => {
   msg.textContent = "Conferindo movimentos por dia…";
   try {
     const response = await fetch(`${API()}/api/v1/conciliacao-razao/preview`, {
-      method:"POST", body:snapshot, signal:controller.signal
+      method:"POST", body:snapshot, signal:controller.signal,headers:{"X-Razync-Reuse":"1"}
     });
     if (!response.ok) throw new Error(await responseError(response));
     const result = await response.json();
@@ -1761,7 +1780,9 @@ $("#ledgerForm")?.addEventListener("submit", async event => {
       kind:"razao",
       download:async () => {
         if (controller.signal.aborted) return;
-        const report = await fetch(`${API()}/api/v1/conciliacao-razao`, {method:"POST",body:snapshot,signal:controller.signal});
+        const report = globalThis.RazyncResults
+          ? await RazyncResults.downloadResponse(result.report_token, `${API()}/api/v1/conciliacao-razao`, {method:"POST",body:snapshot,signal:controller.signal})
+          : await fetch(`${API()}/api/v1/conciliacao-razao`, {method:"POST",body:snapshot,signal:controller.signal});
         if (!report.ok) throw new Error(await responseError(report));
         if (controller.signal.aborted) return;
         await downloadBlob(report,"RAZYNC_CONCILIACAO_RAZAO.xlsx");
