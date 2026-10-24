@@ -4,7 +4,7 @@ import re
 
 
 def test_bundles_preserve_css_order_scripts_and_production_schedule(tmp_path):
-    root=Path(__file__).resolve().parents[2]
+    root=Path(__file__).resolve().parents[1]
     spec=importlib.util.spec_from_file_location('frontend_build',root/'tools/build_frontend.py')
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
     target=tmp_path/'site';module.build(target)
@@ -23,3 +23,9 @@ def test_bundles_preserve_css_order_scripts_and_production_schedule(tmp_path):
     assert 'operating-hours.js?' in compiled
     assert (target/'assets/js/operating-hours.js').read_bytes()==(root/'assets/js/operating-hours.js').read_bytes()
     assert len(re.findall(r'<link rel="stylesheet"',compiled))==3
+
+if __name__ == '__main__':
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix='razync-build-check-') as temporary:
+        test_bundles_preserve_css_order_scripts_and_production_schedule(Path(temporary))
+    print('Build: cascata CSS, scripts e expediente preservados.')
