@@ -1,6 +1,7 @@
 /* Recursos opcionais carregam uma vez; falhas permitem nova tentativa. */
 globalThis.RazyncAssets = (() => {
   const pending = new Map();
+  const completed = new Set();
   function loadElement(marker) {
     if (marker.dataset.loaded === 'true') return Promise.resolve();
     return new Promise((resolve,reject) => {
@@ -23,9 +24,10 @@ globalThis.RazyncAssets = (() => {
     const scripts=markers.filter(item=>item.tagName==='SCRIPT');
     const promise=Promise.all(styles.map(loadElement)).then(async()=> {
       for (const script of scripts) await loadElement(script);
+      completed.add(tool);
     }).catch(error=> {pending.delete(tool);throw error;});
     pending.set(tool,promise);
     return promise;
   }
-  return {load};
+  return {load,isLoaded:tool=>completed.has(tool)};
 })();

@@ -37,7 +37,9 @@ test('carregamento opcional compartilha solicitação, mantém ordem e permite r
  const context={document:{querySelectorAll:()=>[style,script],createElement:()=>({handlers:{},addEventListener(name,fn){this.handlers[name]=fn;},remove(){}}),
  body:{appendChild(el){events.push('script');queueMicrotask(()=>{if(fail){fail=false;el.handlers.error();}else el.handlers.load();});}}}};
  vm.createContext(context);vm.runInContext(fs.readFileSync('assets/js/lazy-assets.js','utf8'),context);
+ assert.equal(context.RazyncAssets.isLoaded('fiscal'),false);
  const first=context.RazyncAssets.load('fiscal');assert.equal(first,context.RazyncAssets.load('fiscal'));
  await assert.rejects(first);await context.RazyncAssets.load('fiscal');await context.RazyncAssets.load('fiscal');
+ assert.equal(context.RazyncAssets.isLoaded('fiscal'),true);
  assert.deepEqual(events,['style','script','script']);assert.equal(script.dataset.loaded,'true');
 });

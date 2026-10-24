@@ -1578,7 +1578,7 @@ enhanceFileInputs(document);
 let navigationVersion = 0;
 async function showGlobalView(name) {
   const version = ++navigationVersion;
-  if (name === "fiscal" && globalThis.RazyncAssets) {
+  if (name === "fiscal" && globalThis.RazyncAssets && !RazyncAssets.isLoaded("fiscal")) {
     const trigger = document.querySelector('.main-nav-btn[data-view="fiscal"]');
     trigger?.setAttribute("aria-busy","true");
     try { await RazyncAssets.load("fiscal"); }
