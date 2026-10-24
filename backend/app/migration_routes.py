@@ -41,25 +41,34 @@ def workbook_preview(content):
         for sheet in book:
             if sheet.title.casefold() == 'principal':
                 continue
-            rows = list(sheet.iter_rows(values_only=True))
-            header = next((i for i, row in enumerate(rows) if any(str(c or '').strip().upper() == 'HISTÓRICO' for c in row)), None)
-            if header is None:
-                continue
-            columns = [str(c or '') for c in rows[header]]
-            values = [r for r in rows[header+1:] if any(c is not None for c in r)]
-            index = next((i for i,c in enumerate(columns) if c.strip().upper() == 'VALOR'), None)
-            amounts = [float(r[index]) for r in values if index is not None and isinstance(r[index], (int,float))]
-            date_index = next((i for i,c in enumerate(columns) if c.strip().upper() == 'DATA'), None)
-            display = []
-            for row in values[:500]:
-                formatted = []
-                for i,c in enumerate(row):
-                    if i == date_index and isinstance(c,(int,float)):
-                        c = from_excel(c, book.epoch)
-                    formatted.append(c.strftime('%d/%m/%Y') if isinstance(c,(datetime.datetime,datetime.date)) else c)
-                display.append(formatted)
-            sheets.append({'name':sheet.title,'count':len(values),'columns':columns,'rows':display,
-                'entradas':round(sum(v for v in amounts if v > 0),2),'saidas':round(-sum(v for v in amounts if v < 0),2)})
+            columns = None
+            display, count = [], 0
+            incoming, outgoing = 0, 0
+            for row in sheet.iter_rows(values_only=True):
+                if columns is None:
+                    if not any(str(c or '').strip().upper() == 'HISTÓRICO' for c in row):
+                        continue
+                    columns = [str(c or '') for c in row]
+                    index = next((i for i,c in enumerate(columns) if c.strip().upper() == 'VALOR'), None)
+                    date_index = next((i for i,c in enumerate(columns) if c.strip().upper() == 'DATA'), None)
+                    continue
+                if not any(c is not None for c in row):
+                    continue
+                count += 1
+                if index is not None and isinstance(row[index], (int,float)):
+                    amount = float(row[index])
+                    if amount > 0: incoming += amount
+                    if amount < 0: outgoing += amount
+                if len(display) < 500:
+                    formatted = []
+                    for i,c in enumerate(row):
+                        if i == date_index and isinstance(c,(int,float)):
+                            c = from_excel(c, book.epoch)
+                        formatted.append(c.strftime('%d/%m/%Y') if isinstance(c,(datetime.datetime,datetime.date)) else c)
+                    display.append(formatted)
+            if columns is not None:
+                sheets.append({'name':sheet.title,'count':count,'columns':columns,'rows':display,
+                    'entradas':round(incoming,2),'saidas':round(-outgoing,2)})
     finally:
         book.close()
     return sheets

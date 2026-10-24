@@ -33,7 +33,11 @@ from app.attachments import upload_group
 from app.global_tools import processar_arquivo, processar_razao, conciliar_razao
 from app.tasks import dashboard as task_dashboard, set_company_status, create_task, update_task, delete_task
 
+from app.result_artifacts import router as result_router, workbook_response, reconciliation_response
+
 app = FastAPI(title="Razync Web API", version="0.4.0")
+
+app.include_router(result_router)
 
 origins = [
     "https://rodrigofrrsilva1703-a11y.github.io",
@@ -211,6 +215,7 @@ def _sheet_name(bank: str) -> str:
 
 @app.post("/api/v1/modelo-dominio/{company_code}")
 async def modelo_dominio(
+    request: Request,
     company_code: int,
     bank: str = Form(""),
     files: list[UploadFile] = File(...),
@@ -241,13 +246,14 @@ async def modelo_dominio(
         if df.empty:
             raise ValueError('Nenhum lançamento no período selecionado.')
         workbook = await run_in_threadpool(_original_export, company_code, {_sheet_name(bank): df})
-        return _download(workbook, f"RAZYNC_{company_code}_{(bank or 'BANCO').upper()}_MODELO_DOMINIO.xlsx")
+        return await run_in_threadpool(workbook_response, workbook, f"RAZYNC_{company_code}_{(bank or 'BANCO').upper()}_MODELO_DOMINIO.xlsx", request.headers.get("x-razync-preview") == "1")
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post("/api/v1/modelo-dominio/{company_code}/multi")
 async def modelo_dominio_multi(
+    request: Request,
     company_code: int,
     banks_json: str = Form(...),
     files: list[UploadFile] = File(...),
@@ -276,13 +282,15 @@ async def modelo_dominio_multi(
         }
         if all(frame.empty for frame in sheets.values()):
             raise ValueError('Nenhum lançamento no período selecionado.')
-        return _download(await run_in_threadpool(_original_export, company_code, sheets), f"RAZYNC_{company_code}_MODELO_DOMINIO.xlsx")
+        workbook = await run_in_threadpool(_original_export, company_code, sheets)
+        return await run_in_threadpool(workbook_response, workbook, f"RAZYNC_{company_code}_MODELO_DOMINIO.xlsx", request.headers.get("x-razync-preview") == "1")
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post("/api/v1/workflow/{company_code}")
 async def advanced_workflow(
+    request: Request,
     company_code: int,
     roles_json: str = Form(...),
     options_json: str = Form("{}"),
@@ -300,7 +308,7 @@ async def advanced_workflow(
         roles.setdefault(str(role), []).append((upload.filename or "arquivo", await upload.read()))
     try:
         workbook, filename = await run_in_threadpool(migrated_workflow, company_code, roles, options if isinstance(options, dict) else {})
-        return _download(workbook, filename)
+        return await run_in_threadpool(workbook_response, workbook, filename, request.headers.get("x-razync-preview") == "1")
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -334,7 +342,10 @@ async def intelligent_base_learn(
 
 
 @app.post("/api/v1/base-inteligente/{company_code}/classificar")
-async def intelligent_base_classify(company_code: int, file: list[UploadFile] = File(...), options_json: str = Form('{}')):
+async def intelligent_base_classify(
+    request: Request,
+    company_code: int, file: list[UploadFile] = File(...), options_json: str = Form('{}'),
+):
     file = await upload_group(file, model=True)
     try:
         options = json.loads(options_json)
@@ -342,7 +353,7 @@ async def intelligent_base_classify(company_code: int, file: list[UploadFile] = 
             raise ValueError('Opções de classificação inválidas.')
         workbook, summary = await run_in_threadpool(base_classify_with_coverage, company_code, await file.read(), file.filename or "modelo.xlsx", options)
         headers = {"X-Razync-Summary": json.dumps(summary, ensure_ascii=False)}
-        response = _download(workbook, f"RAZYNC_{company_code}_CLASSIFICADO.xlsx")
+        response = await run_in_threadpool(workbook_response, workbook, f"RAZYNC_{company_code}_CLASSIFICADO.xlsx", request.headers.get("x-razync-preview") == "1")
         response.headers.update(headers)
         return response
     except Exception as exc:
@@ -411,6 +422,7 @@ def _reconcile_multi(company_code: int, banks: list[str], model: bytes, files: l
 
 @app.post("/api/v1/conferencia-extrato/{company_code}/multi/preview")
 async def conferencia_extrato_multi_preview(
+    request: Request,
     company_code: int,
     banks_json: str = Form(...),
     file_banks_json: str = Form(...),
@@ -430,11 +442,14 @@ async def conferencia_extrato_multi_preview(
         prepared = []
         for bank, upload in zip(file_banks, files):
             prepared.append((str(bank), upload.filename or "extrato", await upload.read()))
-        summary, rows, _ = await run_in_threadpool(
+        summary, rows, sheets = await run_in_threadpool(
             _reconcile_multi, company_code, [str(bank) for bank in banks],
             await model_file.read(), prepared, options
         )
-        return {"summary": summary, "rows": rows}
+        if summary.get("errors"):
+            sheets["Avisos"] = pd.DataFrame(summary["errors"])
+        return await run_in_threadpool(reconciliation_response, summary, rows, sheets,
+            f"RAZYNC_{company_code}_CONFERENCIA_EXTRATO.xlsx", request.headers.get("x-razync-reuse") == "1")
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -466,7 +481,7 @@ async def conferencia_extrato_multi(
         )
         if summary.get("errors"):
             sheets["Avisos"] = pd.DataFrame(summary["errors"])
-        report = _excel_report(sheets)
+        report = await run_in_threadpool(_excel_report, sheets)
         response = _download(report, f"RAZYNC_{company_code}_CONFERENCIA_EXTRATO.xlsx")
         response.headers["X-Razync-Summary"] = json.dumps(summary, ensure_ascii=False)
         return response
@@ -476,6 +491,7 @@ async def conferencia_extrato_multi(
 
 @app.post("/api/v1/conferencia-extrato/{company_code}/preview")
 async def conferencia_extrato_preview(
+    request: Request,
     company_code: int,
     bank: str = Form(...),
     model_file: list[UploadFile] = File(...),
@@ -492,7 +508,8 @@ async def conferencia_extrato_preview(
             reconcile, company_code, bank, await model_file.read(), statements, options
         )
         diario = sheets.get("Conferência diária", pd.DataFrame()).copy()
-        return {"summary": resumo, "rows": _preview_records(diario)}
+        return await run_in_threadpool(reconciliation_response, resumo, _preview_records(diario), sheets,
+            f"RAZYNC_{company_code}_CONFERENCIA_EXTRATO.xlsx", request.headers.get("x-razync-reuse") == "1")
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -512,7 +529,7 @@ async def conferencia_extrato(
         statements = [(upload.filename or 'extrato', await upload.read()) for upload in statement_files]
         bank = _validated_bank(company_code, bank)
         resumo, sheets = await run_in_threadpool(reconcile, company_code, bank, await model_file.read(), statements, options)
-        report = _excel_report(sheets)
+        report = await run_in_threadpool(_excel_report, sheets)
         response = _download(report, f"RAZYNC_{company_code}_CONFERENCIA_EXTRATO.xlsx")
         response.headers["X-Razync-Summary"] = json.dumps(resumo, ensure_ascii=False)
         return response
@@ -522,6 +539,7 @@ async def conferencia_extrato(
 
 @app.post("/api/v1/conferencia-fiscal/preview")
 async def conferencia_fiscal_universal_preview(
+    request: Request,
     acumuladores: list[UploadFile] = File(...),
     razao: list[UploadFile] = File(...),
     filial: str = Form(""),
@@ -542,6 +560,7 @@ async def conferencia_fiscal_universal_preview(
             await razao.read(), razao.filename or "razao.xlsx",
             int(empresa_codigo) if empresa_codigo else None,
             filial or None,
+            **({"incluir_exportacao":True} if request.headers.get("x-razync-reuse") == "1" else {}),
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -564,7 +583,7 @@ async def conferencia_fiscal_universal_exportar(
     try:
         from razync.conferencia_fiscal import processar_conferencia, gerar_relatorio_excel
         from app.fiscal_242 import _csv_para_excel
-        razao_bytes, razao_nome = _csv_para_excel(
+        razao_bytes, razao_nome = await run_in_threadpool(_csv_para_excel,
             await razao.read(), razao.filename or "razao.xlsx"
         )
         resultado = await run_in_threadpool(
@@ -749,7 +768,7 @@ async def conversor_extratos(
             raise ValueError("Nenhum arquivo foi processado.")
         consolidado = pd.concat(frames, ignore_index=True).sort_values("DATA", kind="stable")
         sheets = {"Consolidado": consolidado, **sheets}
-        return _download(gerar_modelo_abas(sheets), "RAZYNC_CONVERSOR_EXTRATOS_MODELO_DOMINIO.xlsx")
+        return _download(await run_in_threadpool(gerar_modelo_abas, sheets), "RAZYNC_CONVERSOR_EXTRATOS_MODELO_DOMINIO.xlsx")
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -764,6 +783,7 @@ async def _parse_upload_frames(uploads, parser):
 
 @app.post("/api/v1/conciliacao-razao/preview")
 async def conciliacao_razao_preview(
+    request: Request,
     extrato: list[UploadFile] = File(...),
     razao: list[UploadFile] = File(...),
     data_inicial: str = Form(""),
@@ -774,8 +794,10 @@ async def conciliacao_razao_preview(
         df_raz = await _parse_upload_frames(razao, processar_razao)
         df_ext = _filter_period_frame(df_ext, data_inicial, data_final)
         df_raz = _filter_period_frame(df_raz, data_inicial, data_final)
-        diario, resumo = conciliar_razao(df_ext, df_raz)
-        return {"summary": resumo, "rows": _preview_records(diario)}
+        diario, resumo = await run_in_threadpool(conciliar_razao, df_ext, df_raz)
+        return await run_in_threadpool(reconciliation_response, resumo, _preview_records(diario), {
+            "Resumo":pd.DataFrame([resumo]), "Conciliação diária":diario, "Extrato":df_ext, "Razão":df_raz,
+        }, "RAZYNC_CONCILIACAO_RAZAO.xlsx", request.headers.get("x-razync-reuse") == "1")
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -792,8 +814,8 @@ async def conciliacao_razao(
         df_raz = await _parse_upload_frames(razao, processar_razao)
         df_ext = _filter_period_frame(df_ext, data_inicial, data_final)
         df_raz = _filter_period_frame(df_raz, data_inicial, data_final)
-        diario, resumo = conciliar_razao(df_ext, df_raz)
-        report = _excel_report({
+        diario, resumo = await run_in_threadpool(conciliar_razao, df_ext, df_raz)
+        report = await run_in_threadpool(_excel_report, {
             "Resumo": pd.DataFrame([resumo]),
             "Conciliação diária": diario,
             "Extrato": df_ext,

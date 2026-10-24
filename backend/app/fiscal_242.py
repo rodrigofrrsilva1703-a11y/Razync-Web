@@ -116,7 +116,7 @@ def conferencia_fiscal_preview(
     acumuladores_bytes: bytes, acumuladores_nome: str,
     razao_bytes: bytes, razao_nome: str,
     codigo_empresa: int | None = None, filial_alvo: str | None = None,
-    *, incluir_razao_completo: bool = False,
+    *, incluir_razao_completo: bool = False, incluir_exportacao: bool = False,
 ) -> dict:
     if not acumuladores_nome.lower().endswith((".xls", ".xlsx")):
         raise ValueError("Envie o Resumo por Acumulador em XLS ou XLSX.")
@@ -244,7 +244,7 @@ def conferencia_fiscal_preview(
                 "debito": round(float(mov.get("DÉBITO", 0) or 0), 2),
                 "credito": round(float(mov.get("CRÉDITO", 0) or 0), 2),
             })
-    return {
+    response = {
         **({"_razao_completo": full_ledger} if incluir_razao_completo else {}),
         "empresa": codigo_empresa,
         "empresa_nome": nome_empresa,
@@ -262,3 +262,15 @@ def conferencia_fiscal_preview(
         "lancamentos": movimentos,
         "avisos": avisos,
     }
+    if incluir_exportacao:
+        try:
+            from razync.conferencia_fiscal import gerar_relatorio_excel
+            from app.result_artifacts import store
+            name = re.sub(r"[^A-Z0-9]+", "_", _normalizar(resultado.get("empresa_nome", ""))).strip("_")[:60] or "GERAL"
+            token = store(gerar_relatorio_excel(resultado), f"RAZYNC_{name}_CONFERENCIA_FISCAL.xlsx")
+            if token:
+                response["report_token"] = token
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning('Exportação temporária indisponível: %s', type(exc).__name__)
+    return response

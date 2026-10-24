@@ -13,7 +13,7 @@ def _excel_report(sheets: dict[str, pd.DataFrame]) -> bytes:
     out = io.BytesIO()
     with pd.ExcelWriter(out, engine="openpyxl") as writer:
         for name, df in sheets.items():
-            frame = df.copy() if isinstance(df, pd.DataFrame) else pd.DataFrame(df)
+            frame = df if isinstance(df, pd.DataFrame) else pd.DataFrame(df)
             frame.to_excel(writer, sheet_name=str(name)[:31], index=False)
     return out.getvalue()
 
@@ -51,9 +51,9 @@ def _filter_period_frame(frame: pd.DataFrame, data_inicial: str = "", data_final
 def _preview_records(frame: pd.DataFrame):
     """Convert a reconciliation dataframe to compact JSON-safe rows."""
     rows = []
-    for record in frame.to_dict("records"):
+    for values in frame.itertuples(index=False, name=None):
         item = {}
-        for key, value in record.items():
+        for key, value in zip(frame.columns, values):
             if value is None or (not isinstance(value, str) and pd.isna(value)):
                 item[str(key)] = None
             elif isinstance(value, pd.Timestamp):
