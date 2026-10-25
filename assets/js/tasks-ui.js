@@ -100,6 +100,7 @@ function initializeTaskUI() {
 function populateTaskCompanies(items) {
   const select = document.querySelector("#taskCompany");
   if (!select) return;
+  const previous = select.value;
   const empty = document.createElement("option");
   empty.value = "";
   empty.textContent = "Sem empresa específica";
@@ -110,4 +111,5 @@ function populateTaskCompanies(items) {
     option.textContent = `${company.codigo} · ${company.nome}`;
     select.appendChild(option);
   }
+  if (items.some(company => String(company.codigo) === previous)) select.value = previous;
 }

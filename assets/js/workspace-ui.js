@@ -147,6 +147,7 @@ function initializeCompanyControls() {
       if (!response.ok) throw new Error(await responseError(response));
       const company = await response.json();
       companies = [...companies.filter(item => Number(item.codigo) !== Number(company.codigo)), company];
+      try { localStorage.setItem(`razync:companies:v1:${API()}`, JSON.stringify(companies)); } catch { /* Cache opcional. */ }
       if (dialog.open) {
         search.value = ""; document.querySelector("#regimeFilter").value = ""; companyFilter = "all";
         document.querySelectorAll(".company-filter").forEach(item => { item.classList.toggle("active", item.dataset.filter === "all"); item.setAttribute("aria-pressed", String(item.dataset.filter === "all")); });

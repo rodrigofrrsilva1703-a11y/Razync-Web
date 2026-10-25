@@ -1544,17 +1544,40 @@ async function fetchAfterWake(url) {
 }
 
 async function loadCompanies() {
+  // O catálogo já consultado permite abrir a carteira enquanto a API acorda.
+  // A resposta do servidor continua sendo a fonte das atualizações.
+  const cacheKey = `razync:companies:v1:${API()}`;
+  const validCatalog = items => Array.isArray(items) && items.length > 0 &&
+    items.every(item => item && Number.isFinite(Number(item.codigo)) && typeof item.nome === "string");
+  function applyCatalog(items) {
+    if (!validCatalog(items)) throw new Error("Catálogo inválido");
+    if (JSON.stringify(companies) === JSON.stringify(items)) return;
+    companies = items;
+    renderPortfolios();
+    populateTaskCompanies(companies);
+    if (activePortfolio) filterCompanies();
+  }
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
+    if (validCatalog(cached)) applyCatalog(cached);
+  } catch { /* Armazenamento indisponível ou cache antigo: consultar normalmente. */ }
   try {
     const response = await fetchAfterWake(`${API()}/api/v1/companies`);
     if (!response.ok) throw new Error();
-    companies = await response.json();
+    const items = await response.json();
+    applyCatalog(items);
+    try { localStorage.setItem(cacheKey, JSON.stringify(items)); } catch { /* Cache opcional. */ }
   } catch {
-    const response = await fetch("./assets/data/companies.json");
-    companies = await response.json();
+    if (companies.length) return;
+    try {
+      const response = await fetch("./assets/data/companies.json");
+      if (!response.ok) throw new Error();
+      applyCatalog(await response.json());
+    } catch {
+      const message = document.querySelector("#portfolioList [role=status]");
+      if (message) message.textContent = "Não foi possível carregar as carteiras. Recarregue a página para tentar novamente.";
+    }
   }
-  renderPortfolios();
-  populateTaskCompanies(companies);
-  if (activePortfolio) filterCompanies();
 }
 
 async function checkApi() {
