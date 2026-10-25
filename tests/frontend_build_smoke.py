@@ -20,6 +20,7 @@ def test_bundles_preserve_css_order_scripts_and_production_schedule(tmp_path):
         return ''.join(chunks).replace('\n','').replace('\r','')
     assert styles(root,original)==styles(target,compiled)
     assert re.findall(r'<script[^>]+src="([^"]+)',original)==re.findall(r'<script[^>]+src="([^"]+)',compiled)
+    assert (target/'indisponivel.html').read_bytes()==(root/'indisponivel.html').read_bytes()
     assert 'operating-hours.js?' in compiled
     assert (target/'assets/js/operating-hours.js').read_bytes()==(root/'assets/js/operating-hours.js').read_bytes()
     assert len(re.findall(r'<link rel="stylesheet"',compiled))==3

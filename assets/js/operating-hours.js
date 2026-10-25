@@ -6,10 +6,7 @@
     const hour = Number(new Intl.DateTimeFormat("en-GB", {
       timeZone: "America/Sao_Paulo", hour: "2-digit", hourCycle: "h23",
     }).format(now));
-    const weekday = new Intl.DateTimeFormat("en-US", {
-      timeZone: "America/Sao_Paulo", weekday: "long",
-    }).format(now);
-    return weekday === "Sunday" || hour < 7;
+    return hour < 7;
   }
   function checkSchedule() {
     if (isClosed()) {

@@ -27,9 +27,9 @@
     <div class="brand"><img src="./assets/razync-icon.png" alt="">Razync</div>
     <div class="label"><span class="signal"></span>Fora do horário de funcionamento</div>
     <h1>Retornamos no próximo expediente.</h1>
-    <p>O Razync pausa o acesso durante a madrugada e aos domingos para reduzir o consumo de recursos. Seus arquivos e dados permanecem preservados.</p>
+    <p>O Razync pausa o acesso durante a madrugada para reduzir o consumo de recursos. Seus arquivos e dados permanecem preservados.</p>
     <div class="hours">07h às 00h</div>
-    <p class="timezone">Segunda a sábado · Horário de Brasília</p>
+    <p class="timezone">Todos os dias · Horário de Brasília</p>
     <div class="foot">A página será aberta automaticamente no próximo horário de funcionamento.</div>
   </main>
   <script>
@@ -38,10 +38,7 @@
         timeZone: "America/Sao_Paulo", hour: "2-digit", hourCycle: "h23"
       }).format(new Date()));
       const update = () => {
-        const weekday = new Intl.DateTimeFormat("en-US", {
-          timeZone: "America/Sao_Paulo", weekday: "long"
-        }).format(new Date());
-        if (weekday !== "Sunday" && hour() >= 7) window.location.replace("./");
+        if (hour() >= 7) window.location.replace("./");
       };
       update();
       setInterval(update, 15000);

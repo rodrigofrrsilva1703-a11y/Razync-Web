@@ -13,6 +13,7 @@ def build(output):
         raise ValueError('A pasta de saída deve ser nova.')
     output.mkdir(parents=True)
     shutil.copytree(ROOT / 'assets', output / 'assets')
+    shutil.copyfile(ROOT / 'indisponivel.html', output / 'indisponivel.html')
     html = (ROOT / 'index.html').read_text(encoding='utf-8')
     pattern = re.compile(r'(?P<run><link\b[^>]*href="\./assets/css/[^\"]+"[^>]*>(?:\s*<link\b[^>]*href="\./assets/css/[^\"]+"[^>]*>)*)')
     index = 0

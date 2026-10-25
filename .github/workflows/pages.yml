@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "index.html"
+      - "indisponivel.html"
       - "assets/**"
       - "tools/build_frontend.py"
       - "tests/frontend/**"

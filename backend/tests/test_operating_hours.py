@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from fastapi.testclient import TestClient
@@ -45,17 +45,17 @@ def test_durante_expediente_api_libera_fluxo(monkeypatch):
     assert response.status_code == 200
 
 
-def test_domingo_fechado_o_dia_inteiro():
-    for hour in (0, 6, 7, 12, 23):
-        assert not operating_hours.is_open(datetime(2026, 10, 18, hour, 0, tzinfo=BRT))
-    assert operating_hours.is_open(datetime(2026, 10, 17, 23, 59, tzinfo=BRT))
-    assert operating_hours.is_open(datetime(2026, 10, 19, 7, 0, tzinfo=BRT))
+def test_domingo_abre_no_mesmo_horario_dos_outros_dias():
+    for day in range(19, 26):
+        assert not operating_hours.is_open(datetime(2026, 10, day, 6, 59, tzinfo=BRT))
+        assert operating_hours.is_open(datetime(2026, 10, day, 7, 0, tzinfo=BRT))
+        assert operating_hours.is_open(datetime(2026, 10, day, 23, 59, tzinfo=BRT))
 
 
-def test_domingo_reabre_apenas_segunda_as_sete():
+def test_domingo_reabre_no_proprio_domingo_as_sete():
     assert operating_hours.seconds_until_open(
-        datetime(2026, 10, 18, 0, 0, tzinfo=BRT)) == 31 * 3600
+        datetime(2026, 10, 25, 0, 0, tzinfo=BRT)) == 7 * 3600
     assert operating_hours.seconds_until_open(
-        datetime(2026, 10, 18, 12, 0, tzinfo=BRT)) == 19 * 3600
+        datetime(2026, 10, 25, 6, 59, tzinfo=BRT)) == 60
     assert operating_hours.seconds_until_open(
-        datetime(2026, 10, 19, 6, 59, tzinfo=BRT)) == 60
+        datetime(2026, 10, 25, 12, 0, tzinfo=BRT)) == 0
