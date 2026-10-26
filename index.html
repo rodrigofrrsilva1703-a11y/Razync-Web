@@ -23,7 +23,7 @@
   <link rel="razync-lazy-stylesheet" data-lazy-tool="fiscal" href="./assets/css/fiscal-ai-reader.css?v=comparison-20261019-1">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="fiscal" href="./assets/css/fiscal-account-dialog.css?v=20261020-11">
   <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=rectangle-20261023-7">
-  <link rel="stylesheet" href="./assets/css/base-maintenance.css?v=two-columns-20261023-2">
+  <link rel="stylesheet" href="./assets/css/base-maintenance.css?v=saved-periods-20261026-1">
   <link rel="stylesheet" href="./assets/css/admin-auth.css?v=20261023-1">
   <link rel="stylesheet" href="./assets/css/tool-preparation.css?v=20261023-1">
 </head>
@@ -480,6 +480,11 @@
                 <span><b aria-hidden="true">✓</b> Mantém revisão antes de aplicar</span>
               </div>
               <div id="baseStats" class="mini-metrics"></div>
+              <section id="baseSavedPeriods" class="base-saved-periods" aria-labelledby="savedPeriodsTitle" aria-busy="false">
+                <div class="saved-periods-heading"><strong id="savedPeriodsTitle">Períodos gravados</strong><button id="loadSavedPeriods" type="button" class="secondary-action">Consultar períodos</button></div>
+                <p id="savedPeriodsMessage" role="status">Consulte os meses já aprendidos antes de adicionar novos arquivos.</p>
+                <div id="savedPeriodsList" hidden></div>
+              </section>
             </div>
             <div class="stack-forms">
               <form id="learnForm" class="modern-form compact-form preparation-form">
@@ -668,10 +673,11 @@
   <script src="./assets/js/admin-auth.js?v=20261023-1"></script>
   <script src="./assets/js/lazy-assets.js?v=20261024-2"></script>
   <script src="./assets/js/workbook-result.js?v=20261024-1"></script>
-  <script src="./assets/js/app.js?v=catalog-cache-20261025-1"></script>
+  <script src="./assets/js/app.js?v=saved-periods-20261026-1"></script>
   <script src="./assets/js/migration.js?v=admin-modal-20261021-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=performance-20261024-1"></script>
-  <script src="./assets/js/base-maintenance.js?v=20261021-3"></script>
+  <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>
+  <script src="./assets/js/base-periods.js?v=20261026-1"></script>
   <script src="./assets/js/motion.js?v=20261020-2"></script>
 </body>
 </html>

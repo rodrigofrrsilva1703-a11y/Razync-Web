@@ -1187,6 +1187,7 @@ learnForm.addEventListener("submit", async (event) => {
       const errors = (result.errors || []).join("; ");
       $("#learnMessage").textContent = `${result.learned} padrão(ões) processado(s).${errors ? ` Alguns arquivos não foram importados: ${errors}` : ""}`;
       refreshBaseStats(result);
+      window.refreshSavedBasePeriods?.();
     }
   } catch (error) {
     if (current()) $("#learnMessage").textContent = error.message;

@@ -42,6 +42,7 @@
     try {
       const result=await request('recortes');if(!result)return;
       slices=result.data.banks;
+      window.updateSavedBasePeriods?.(result.company,slices);
       options(bank,slices.map(item=>[item.bank,label(item.bank)+(item.account?' · conta '+item.account:'')]),'Selecione o banco');
       if(!keepMessage)message.textContent=slices.length?'Selecione o banco e o período que deseja remover.':'Esta empresa não tem períodos salvos na base.';
     } catch(error){if(version===revision){options(bank,[],'Carregue novamente');report(error);}}
