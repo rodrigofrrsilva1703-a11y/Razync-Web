@@ -90,6 +90,11 @@ def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
     with engine.processing_context(slug(code)):
+        # Na 1529, valida o PDF Consultas sem alterar leitores das outras empresas.
+        if code == 1529 and bank in {'banco_brasil', 'bb'} and str(filename).lower().endswith('.pdf'):
+            from app.bb_consultas import parece_extrato_bb_consultas, ler_extrato_bb_consultas
+            if parece_extrato_bb_consultas(content):
+                return pd.DataFrame(ler_extrato_bb_consultas(content), columns=COLUNAS)
         if code == 734:
             from app.bank_734 import read_bank_pdf
             return read_bank_pdf(bank, content, filename)
