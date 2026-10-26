@@ -446,9 +446,14 @@ def _workflow(code, roles, options):
         if code == 1529:
             from razync.nibo import processar_extrato_nibo_pdf
             from app.bb_consultas import parece_extrato_bb_consultas
+            from app.organizer_jobs import progress
+            current_file = 0
+            total_files = sum(len(roles.get(bank, [])) for bank in ('itau', 'banco_brasil'))
             frames = []
             for bank, description in [('itau', 'BANCO ITAÚ'), ('banco_brasil', 'BANCO DO BRASIL')]:
                 for filename, content in roles.get(bank, []):
+                    current_file += 1
+                    progress(current_file, total_files)
                     # O extrato original do BB tem colunas diferentes do Nibo.
                     # Use o mesmo leitor validado da conferência; erros de saldo
                     # precisam interromper a geração, sem tentar OCR como fallback.

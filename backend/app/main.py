@@ -38,6 +38,8 @@ from app.result_artifacts import router as result_router, workbook_response, rec
 app = FastAPI(title="Razync Web API", version="0.4.0")
 
 app.include_router(result_router)
+from app.organizer_jobs import router as organizer_router
+app.include_router(organizer_router)
 
 origins = [
     "https://rodrigofrrsilva1703-a11y.github.io",
@@ -307,8 +309,14 @@ async def advanced_workflow(
     for role, upload in zip(role_names, files):
         roles.setdefault(str(role), []).append((upload.filename or "arquivo", await upload.read()))
     try:
+        if request.headers.get("x-razync-background") == "1":
+            from app.organizer_jobs import submit
+            return submit(lambda: migrated_workflow(company_code, roles, options if isinstance(options, dict) else {}),
+                          sum(len(content) for uploads in roles.values() for _, content in uploads), len(files))
         workbook, filename = await run_in_threadpool(migrated_workflow, company_code, roles, options if isinstance(options, dict) else {})
         return await run_in_threadpool(workbook_response, workbook, filename, request.headers.get("x-razync-preview") == "1")
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

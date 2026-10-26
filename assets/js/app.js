@@ -1009,7 +1009,9 @@ function clearToolResult(id) {
 let autoPreviewTimer;
 let previewController;
 let previewVersion = 0;
+let organizerRunning = false;
 function cancelAutomaticPreview() {
+  organizerRunning = false;
   clearTimeout(autoPreviewTimer);
   previewController?.abort();
   previewVersion++;
@@ -1050,6 +1052,11 @@ function scheduleAutomaticPreview() {
     setProcessStage("error", "Confira o período", error.message);
     return;
   }
+  const fileCount = inputs.reduce((count,input) => count + (input.disabled ? 0 : input.files.length),0);
+  if (fileCount > 1 || workflow === "advanced") {
+    setProcessStage("upload", `${fileCount} arquivo(s) prontos`, "Termine de anexar os documentos e clique em Gerar prévia para processar o lote uma única vez.");
+    return;
+  }
   setProcessStage("upload", "Preparando prévia automática", "Os arquivos estão prontos. A prévia será atualizada em instantes.");
   autoPreviewTimer = setTimeout(() => form.requestSubmit(processButton), 800);
 }
@@ -1057,7 +1064,7 @@ form.addEventListener("change", scheduleAutomaticPreview);
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (!selected) return;
+  if (!selected || organizerRunning) return;
   clearTimeout(autoPreviewTimer);
   previewController?.abort();
   const controller = new AbortController();
@@ -1116,11 +1123,21 @@ form.addEventListener("submit", async (event) => {
     }
 
     processMessage.textContent = "";
+    organizerRunning = true;
     submitButton.disabled = true;
     submitButton.classList.add("is-loading");
     setProcessStage("processing", "Gerando prévia…");
     $("#workflowPreview").replaceChildren();
-    const response = await fetch(endpoint, { method: "POST", body: data, signal:controller.signal, headers:{"X-Razync-Preview":["reports","preview"].includes(event.submitter?.dataset.output) ? "0" : "1"} });
+    let response = await fetch(endpoint, { method: "POST", body: data, signal:controller.signal, headers:{
+      "X-Razync-Preview":["reports","preview"].includes(event.submitter?.dataset.output) ? "0" : "1",
+      "X-Razync-Background":workflow === "advanced" && !event.submitter?.dataset.output ? "1" : "0"
+    } });
+    if (currentVersion !== previewVersion) return;
+    response = await RazyncOrganizer.wait(response, {signal:controller.signal, onProgress:status => {
+      if (currentVersion !== previewVersion) return;
+      const detail = status.current ? `Lendo arquivo ${status.current} de ${status.total}.` : "Seu lote será processado sem reenviar os documentos.";
+      setProcessStage("processing", status.state === "queued" ? "Lote na fila…" : status.state === "reconnecting" ? "Reconectando…" : "Organizando arquivos…", detail);
+    }});
     if (currentVersion !== previewVersion) return;
     if (!response.ok) throw new Error(await responseError(response));
     if (event.submitter?.dataset.output === "preview") {
@@ -1161,6 +1178,7 @@ form.addEventListener("submit", async (event) => {
     setProcessStage("error", "Não foi possível processar", error.message);
   } finally {
     if (currentVersion === previewVersion) {
+      organizerRunning = false;
       submitButton.disabled = false;
       submitButton.classList.remove("is-loading");
     }
