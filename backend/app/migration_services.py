@@ -445,14 +445,21 @@ def _workflow(code, roles, options):
             return engine.gerar_excel_nova_geracao(groups, _template_bytes()), 'UP_PACK_1096_MODELO_DOMINIO.xlsx'
         if code == 1529:
             from razync.nibo import processar_extrato_nibo_pdf
+            from app.bb_consultas import parece_extrato_bb_consultas
             frames = []
             for bank, description in [('itau', 'BANCO ITAÚ'), ('banco_brasil', 'BANCO DO BRASIL')]:
-                for _, content in roles.get(bank, []):
-                    frame = processar_extrato_nibo_pdf(content)[COLUNAS].copy()
+                for filename, content in roles.get(bank, []):
+                    # O extrato original do BB tem colunas diferentes do Nibo.
+                    # Use o mesmo leitor validado da conferência; erros de saldo
+                    # precisam interromper a geração, sem tentar OCR como fallback.
+                    if bank == 'banco_brasil' and parece_extrato_bb_consultas(content):
+                        frame = statement(code, bank, content, filename)[COLUNAS].copy()
+                    else:
+                        frame = processar_extrato_nibo_pdf(content)[COLUNAS].copy()
                     frame['DESCRIÇÃO'] = description
                     frames.append(frame)
             if not frames:
-                raise ValueError('Envie PDF Nibo do Itaú e/ou Banco do Brasil.')
+                raise ValueError('Envie PDF Nibo do Itaú e/ou Banco do Brasil, ou o extrato original BB Consultas.')
             frame = pd.concat(frames, ignore_index=True)
             frame['_DATA_ORDEM'] = pd.to_datetime(frame['DATA'], dayfirst=True, errors='coerce')
             frame = frame.sort_values(['_DATA_ORDEM','DESCRIÇÃO'], kind='stable').drop(columns=['_DATA_ORDEM']).reset_index(drop=True)

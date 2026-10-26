@@ -81,3 +81,61 @@ def test_preview_da_conferencia_recebe_todos_os_movimentos_sem_eliminar_repetido
     assert summary['extrato']==6
     assert summary['planilha']==6
     assert summary['ok'] is True
+
+
+def test_organizador_bb_usa_leitor_do_banco_e_exporta_movimentos_com_saldo_na_mesma_linha(monkeypatch):
+    import razync.nibo as nibo
+    from app.migration_services import workflow
+
+    def unexpected_nibo(_):
+        raise AssertionError('Extrato BB Consultas não pode passar pelo OCR Nibo')
+    monkeypatch.setattr(nibo, 'processar_extrato_nibo_pdf', unexpected_nibo)
+    content, _ = workflow(1529, {'banco_brasil': [('extrato.pdf', pdf())]}, {})
+    from app.migration_routes import workbook_preview
+    sheets = workbook_preview(content)
+    assert sum(sheet['count'] for sheet in sheets) == 6
+    records = [dict(zip(sheet['columns'], row)) for sheet in sheets for row in sheet['rows']]
+    rende = [row for row in records if 'BB Rende Fácil' in row['HISTÓRICO']]
+    assert [row['VALOR'] for row in rende] == [-50, 40]
+    assert all(not row['DÉBITO'] and not row['CRÉDITO'] for row in records)
+
+
+def test_organizador_bb_invalido_nao_cai_no_ocr_nibo(monkeypatch):
+    import razync.nibo as nibo
+    from app.migration_services import workflow
+    monkeypatch.setattr(nibo, 'processar_extrato_nibo_pdf', lambda _: pytest.fail('Não deve ignorar erro de saldo'))
+    with pytest.raises(ValueError):
+        workflow(1529, {'banco_brasil': [('extrato.pdf', pdf(invalid_balance=True))]}, {})
+
+
+@pytest.mark.parametrize('bank', ['itau', 'banco_brasil'])
+def test_organizador_preserva_pdf_nibo_no_banco_correspondente(monkeypatch, bank):
+    import razync.nibo as nibo
+    from app.migration_services import workflow
+    from app.migration_routes import workbook_preview
+    doc = fitz.open()
+    doc.new_page().insert_text((25,25),'Contas e Extratos Nibo')
+    content = doc.tobytes()
+    doc.close()
+    calls = []
+    def original_nibo(data):
+        calls.append(data)
+        return pd.DataFrame([{'DESCRIÇÃO':'NIBO','DATA':pd.Timestamp('2026-03-03'),'VALOR':123.45,'DÉBITO':'','CRÉDITO':'','HISTÓRICO':'MOVIMENTO NIBO'}])
+    monkeypatch.setattr(nibo, 'processar_extrato_nibo_pdf', original_nibo)
+    result, _ = workflow(1529, {bank: [('nibo.pdf', content)]}, {})
+    assert calls == [content]
+    sheets = workbook_preview(result)
+    assert sum(sheet['count'] for sheet in sheets) == 1
+    assert sum(sheet['entradas'] for sheet in sheets) == 123.45
+
+
+def test_api_organizador_exporta_bb_consultas_e_aplica_filtro_de_periodo():
+    response = TestClient(app).post('/api/v1/workflow/1529/preview',
+        data={'roles_json':'["banco_brasil"]', 'options_json':'{"data_inicial":"2026-03-04","data_final":"2026-03-04"}'},
+        files=[('files', ('extrato.pdf', pdf(), 'application/pdf'))])
+    assert response.status_code == 200, response.text
+    sheets = response.json()['sheets']
+    assert sum(sheet['count'] for sheet in sheets) == 2
+    records = [dict(zip(sheet['columns'], row)) for sheet in sheets for row in sheet['rows']]
+    assert all(row['DATA'] == '04/03/2026' for row in records)
+    assert [row['VALOR'] for row in records] == [-40, 40]

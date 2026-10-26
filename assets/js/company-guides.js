@@ -117,8 +117,8 @@
       extrato:"Confira o Modelo Domínio da filial contra o extrato Itaú 512. Não confunda com as contas da matriz 242."
     },
     1529: {
-      intro:"A Dias e Pereira utiliza extratos gerados pelo Nibo em PDF, de Itaú e/ou Banco do Brasil.",
-      note:"Envie o PDF Nibo no campo do banco correspondente: Itaú 508 ou Banco do Brasil 8."
+      intro:"A Dias e Pereira aceita relatórios Nibo em PDF e o extrato original do Banco do Brasil no formato Consultas.",
+      note:"Envie cada PDF no banco correspondente: Itaú 508 ou Banco do Brasil 8. No BB Consultas, os movimentos de Rende Fácil são separados do saldo."
     },
     1530: {
       intro:"A empresa 1530 utiliza o extrato Itaú para gerar o Modelo Domínio.",
