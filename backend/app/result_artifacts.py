@@ -9,7 +9,7 @@ import time
 from collections import OrderedDict
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-from app.report_helpers import _download, _excel_report
+from app.report_helpers import _download, _excel_report, _preview_records
 
 TTL_SECONDS = 900
 MAX_BYTES = 32 * 1024 * 1024
@@ -72,6 +72,22 @@ def workbook_response(data, filename, inline=False):
 
 def reconciliation_response(summary, rows, sheets, filename, reuse=False):
     result = {'summary':summary, 'rows':rows}
+    # Expõe os movimentos do próprio upload para auditoria da leitura na tela.
+    # A conferência diária e o Excel continuam usando os mesmos dados.
+    movements = []
+    labels = list(dict.fromkeys(str(row.get('BANCO') or '') for row in rows))
+    for name, frame in sheets.items():
+        if 'Extrato analis' not in str(name) or frame is None or frame.empty:
+            continue
+        if not {'DATA', 'VALOR', 'HISTÓRICO'}.issubset(frame.columns):
+            continue
+        prefix = str(name).split(' - ', 1)[0] if ' - ' in str(name) else ''
+        bank_label = next((label for label in labels if label and label.startswith(prefix)), prefix) if prefix else ''
+        for row in _preview_records(frame):
+            movements.append({'BANCO':bank_label or str(row.get('DESCRIÇÃO') or ''),
+                              'DATA':row['DATA'], 'VALOR':row['VALOR'], 'HISTÓRICO':row['HISTÓRICO']})
+    if movements:
+        result['statement_movements'] = movements
     if reuse:
         try:
             token = store(_excel_report(sheets), filename)

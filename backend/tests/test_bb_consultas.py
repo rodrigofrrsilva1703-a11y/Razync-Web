@@ -60,16 +60,24 @@ def test_layout_e_reconhecido_antes_do_leitor_especifico_de_outro_formato(compan
     assert frame.VALOR.tolist()==[150,-50,-50,-50,-40,40]
 
 
-def test_preview_da_conferencia_recebe_todos_os_movimentos_sem_eliminar_repetidos():
+@pytest.mark.parametrize('multi',[False,True])
+def test_preview_da_conferencia_recebe_todos_os_movimentos_sem_eliminar_repetidos(multi):
     rows=ler_extrato_bb_consultas(pdf())
     stream=io.BytesIO()
     pd.DataFrame(rows).to_excel(stream,index=False,sheet_name='Banco do Brasil')
-    response=TestClient(app).post('/api/v1/conferencia-extrato/1529/preview',
-        data={'bank':'banco_brasil','options_json':'{}'},
+    endpoint='/api/v1/conferencia-extrato/1529/'+('multi/preview' if multi else 'preview')
+    data={'banks_json':'["banco_brasil"]','file_banks_json':'["banco_brasil"]','options_json':'{}'} if multi else {'bank':'banco_brasil','options_json':'{}'}
+    response=TestClient(app).post(endpoint,
+        data=data,
         files=[('model_file',('modelo.xlsx',stream.getvalue(),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')),
-               ('statement_files',('extrato.pdf',pdf(),'application/pdf'))])
+               ('files' if multi else 'statement_files',('extrato.pdf',pdf(),'application/pdf'))])
     assert response.status_code==200,response.text
-    summary=response.json()['summary']
+    parsed=response.json()
+    movements=parsed['statement_movements']
+    assert len(movements)==6
+    assert [row['VALOR'] for row in movements if 'BB Rende Fácil' in row['HISTÓRICO']]==[-50,40]
+    assert all(row['BANCO'] for row in movements)
+    summary=parsed['summary']['by_bank']['banco_brasil'] if multi else parsed['summary']
     assert summary['extrato']==6
     assert summary['planilha']==6
     assert summary['ok'] is True

@@ -1458,6 +1458,7 @@ reconcileForm.addEventListener("submit",async event => {
 
     renderDailyReconciliation($("#reconcileResult"),{
       rows:result.rows || [],
+      movements:result.statement_movements || [],
       kind:"modelo",
       download:async () => {
         if (!isCurrent()) return;

@@ -46,3 +46,18 @@
  #companyPanel .preparation-form .standard-period-card .period-fields {gap:8px;}
  #companyPanel .preparation-form .period-fields input[type="date"] {min-height:44px;padding:9px 7px!important;}
 }
+
+/* Auditoria da leitura, separada da tabela de conferência diária. */
+.statement-reading {margin-top:16px;padding:14px 16px;border:1px solid #dbe5ef;border-radius:12px;background:#fff;min-width:0;}
+.statement-reading>summary {font-size:12px;font-weight:600;color:#456780;cursor:pointer;line-height:1.6;}
+.statement-reading>p {font-size:11px!important;color:#7a8da1;line-height:1.7;margin:12px 0;}
+.statement-reading-controls {display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0;}
+.statement-reading-controls input {flex:1;min-width:180px;min-height:40px;padding:9px 12px;border:1px solid #cfdde9;border-radius:8px;font-size:12px;background:#fafcfe;}
+.statement-reading-count {font-size:11px;color:#75899d;}
+.statement-reading-scroll {max-height:420px;overflow:auto;border:1px solid #e1e8f0;border-radius:8px;}
+.statement-reading-table {width:100%;min-width:720px;border-collapse:collapse;font-size:12px;}
+.statement-reading-table th,.statement-reading-table td {padding:10px 12px;border-bottom:1px solid #e8edf3;text-align:left;line-height:1.6;}
+.statement-reading-table th {position:sticky;top:0;background:#f0f5fa;color:#4a637b;font-size:11px;z-index:1;}
+.statement-reading-table td.numeric {text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.statement-reading>summary:focus-visible,.statement-reading-controls input:focus-visible {outline:2px solid #5d83a5;outline-offset:3px;}
+@media(max-width:600px){.statement-reading {padding:12px;}.statement-reading-controls input {min-height:44px;}}
