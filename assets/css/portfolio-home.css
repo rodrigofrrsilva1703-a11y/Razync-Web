@@ -206,3 +206,43 @@
  #portfolioPicker .portfolio-entry:hover .portfolio-entry-arrow {translate:3px 0}
  #portfolioPicker .portfolio-entry:active {transform:scale(.99)}
 }
+
+/* A visible flow makes the home feel alive without moving reading targets. */
+#portfolioPicker .home-ambient {position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;border-radius:inherit}
+#portfolioPicker .home-ambient i {position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,#88bdff26,transparent 70%);right:5%;top:-75px}
+#portfolioPicker .home-ambient i + i {width:220px;height:220px;right:40%;top:auto;bottom:-140px;background:radial-gradient(circle,#88bdff20,transparent 70%)}
+#portfolioPicker .home-live-flow {display:flex;align-items:center;gap:12px;flex-wrap:nowrap;margin-top:24px;color:#d5e6fa;max-width:430px}
+#portfolioPicker .home-flow-node {display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:500;white-space:nowrap}
+#portfolioPicker .home-flow-node svg {flex:none;width:18px;height:18px;fill:none;stroke:#a8ceff;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#portfolioPicker .home-flow-track {position:relative;height:1px;width:36px;flex:1;min-width:18px;max-width:36px;background:#accce536}
+#portfolioPicker .home-flow-track::after {content:"";position:absolute;top:-2px;left:50%;width:5px;height:5px;margin-left:-2px;border-radius:50%;background:#b9d7ff;box-shadow:0 0 9px #88baff70}
+html[data-theme="dark"] #portfolioPicker .home-live-flow {color:#b8cbe5}
+@keyframes homeOrbFloat {0%,100%{transform:translate3d(-20px,0,0) scale(.95)}50%{transform:translate3d(35px,35px,0) scale(1.12)}}
+@keyframes homeIconFloat {0%,100%{translate:0 0}50%{translate:0 -4px}}
+@keyframes homeFlowTravel {0%{transform:translateX(-18px);opacity:0}18%,80%{opacity:1}100%{transform:translateX(18px);opacity:0}}
+@keyframes homeFlowBeat {0%,15%,100%{transform:scale(1);opacity:.65}25%,45%{transform:scale(1.14);opacity:1}}
+@keyframes homeArrowInvite {0%,65%,100%{translate:0 0}75%{translate:4px 0}85%{translate:0 0}92%{translate:3px 0}}
+@media(prefers-reduced-motion:no-preference) {
+ #portfolioPicker .home-ambient i {animation:homeOrbFloat 10s ease-in-out infinite}
+ #portfolioPicker .home-ambient i + i {animation-delay:-5s;animation-duration:14s}
+ #portfolioPicker .portfolio-heading::after {animation-duration:8s}
+ #portfolioPicker .home-live-flow {animation:homeReveal .65s .36s ease-out backwards}
+ #portfolioPicker .home-flow-track::after {animation:homeFlowTravel 2.8s ease-in-out infinite}
+ #portfolioPicker .home-flow-track:nth-of-type(2)::after {animation-delay:1.4s}
+ #portfolioPicker .home-flow-node svg {animation:homeFlowBeat 5.6s ease-in-out infinite}
+ #portfolioPicker .home-flow-node:nth-of-type(2) svg {animation-delay:1.4s}
+ #portfolioPicker .home-flow-node:nth-of-type(3) svg {animation-delay:2.8s}
+ #portfolioPicker .portfolio-feature-icon svg {animation:homeIconFloat 4s ease-in-out infinite}
+ #portfolioPicker .portfolio-feature:nth-of-type(2) .portfolio-feature-icon svg {animation-delay:-1.3s}
+ #portfolioPicker .portfolio-feature:nth-of-type(3) .portfolio-feature-icon svg {animation-delay:-2.6s}
+ #portfolioPicker .portfolio-avatar {animation:homeIconFloat 5s ease-in-out infinite}
+ #portfolioPicker .portfolio-entry-arrow {animation:homeArrowInvite 4.5s ease-in-out infinite}
+ #portfolioPicker .portfolio-entry:hover .portfolio-entry-arrow {animation:none;translate:4px 0}
+}
+@media(max-width:760px) {
+ #portfolioPicker .home-live-flow {gap:6px;margin-top:20px}
+ #portfolioPicker .home-flow-node {gap:5px;font-size:10px}
+ #portfolioPicker .home-flow-node svg {width:15px;height:15px}
+ #portfolioPicker .home-flow-track {min-width:0}
+ #portfolioPicker .home-ambient i {width:180px;height:180px}
+}
