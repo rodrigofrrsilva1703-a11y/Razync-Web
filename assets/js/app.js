@@ -1552,7 +1552,7 @@ async function fetchAfterWake(url, {onRetry} = {}) {
   // para nunca deixar a interface indefinidamente em "carregando".
   for (let attempt = 0; attempt < 4; attempt++) {
     try {
-      const signal = typeof AbortSignal?.timeout === "function"
+      const signal = typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"
         ? AbortSignal.timeout(14000) : undefined;
       const response = await fetch(url, {signal});
       if (response.ok || ![502, 503, 504].includes(response.status) || attempt === 3) {
@@ -1622,7 +1622,7 @@ function setApiConnectionState(state, detail = "") {
 }
 
 let apiCheckPending = null;
-function checkApi() {
+async function checkApi() {
   if (apiCheckPending) return apiCheckPending;
   if (!API()) { setApiConnectionState("unconfigured"); return Promise.resolve(); }
   setApiConnectionState("checking");
