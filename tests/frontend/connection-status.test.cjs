@@ -60,9 +60,9 @@ test('falha exibe opção de tentar novamente; clique recupera conexão', async 
   assert.match(h.label.textContent,/tentar/);
   success = true;
   h.listeners.click();
-  // A ação de clique é síncrona, mas o retorno da API é assíncrono.
-  await Promise.resolve();
-  await Promise.resolve();
+  // A ação de clique inicia o processamento; aguarda a conclusão real,
+  // incluindo o callback final de limpeza de solicitação em andamento.
+  await new Promise(resolve => setImmediate(resolve));
   assert.equal(h.indicator.dataset.connection,'online');
   assert.equal(count,2);
 });
