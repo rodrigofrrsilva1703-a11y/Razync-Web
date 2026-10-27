@@ -153,13 +153,22 @@
       const wrapper=document.querySelector(selector);
       if(!wrapper)throw Error('Contêiner de teste ausente: '+selector);
       const style=getComputedStyle(wrapper);
-      if(style.backgroundColor!=='rgba(0, 0, 0, 0)' || style.borderTopWidth!==(selector==='#companyPanel .tool-card'?'1px':'0px')) {
+      if(style.backgroundColor!=='rgba(0, 0, 0, 0)' || style.borderTopWidth!=='0px') {
         throw Error('O modo escuro pintou um contêiner transparente: '+selector);
       }
     }
     document.querySelectorAll('#companyPanel .file-drop-shell,#companyPanel .reconcile-bank-file,#fiscalView .fiscal-upload-item').forEach(upload=>{
       const style=getComputedStyle(upload);
       if(style.borderTopWidth!=='1px' || style.borderTopStyle==='none')throw Error('O campo de anexo perdeu sua borda.');
+    });
+    document.querySelectorAll('#companyPanel .tool-intro,#companyPanel .modern-form').forEach(panel=>{
+      if(getComputedStyle(panel).borderTopWidth!=='1px')throw Error('Um painel da ferramenta perdeu seu contorno.');
+    });
+    const selectedBank=document.querySelector('#companyPanel .bank-choice.selected');
+    if(selectedBank && getComputedStyle(selectedBank).backgroundColor!=='rgb(23, 36, 58)')throw Error('O banco selecionado perdeu o destaque.');
+    document.querySelectorAll('#companyPanel .panel-quick-info > span,#companyPanel .tool-feature-list b,#companyPanel .tool-flow span b').forEach(marker=>{
+      const channels=(getComputedStyle(marker).backgroundColor.match(/\d+/g)||[]).slice(0,3).map(Number);
+      if(channels.length===3 && Math.min(...channels)>150)throw Error('Etiqueta ou etapa ainda usa fundo claro.');
     });
     document.querySelectorAll('#companyPanel .tool-flow').forEach(flow=>{
       if(getComputedStyle(flow).backgroundColor!=='rgba(0, 0, 0, 0)')throw Error('A faixa de etapas ganhou fundo no modo escuro.');

@@ -27,7 +27,7 @@ html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(h1,
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(p,small,.helper,.eyebrow,.company-row-meta,.company-row-action,.portfolio-date,.portfolio-eyebrow,.portfolio-access-kicker,.portfolio-entry-label,.portfolio-entry-quantity,.file-drop-hint,.preview-note,.preview-subtitle,.form-card-header small,.topbar-title,.directory-heading p,.tool-feature-list,.period-help,.base-cleanup,.fiscal-ai-card-description,.fiscal-ai-inline-status,.fiscal-ai-executive-kicker,.fiscal-ai-executive-coverage,.fiscal-ai-source,.fiscal-summary-top,.fiscal-workflow-button,.fiscal-account-resolution-heading,.bank-investments-note) {color:var(--dark-muted)!important}
 html[data-theme="dark"] :is(main,dialog) :where(*) {border-color:var(--border)!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.search-card,.directory-controls,.overview-card,.panel-head,.tool-card,.modern-form,.preview-sheet,.preview-results,.preview-table-scroll,.daily-table-scroll,.daily-review,.daily-table,.report-result,.result-card,.summary-card,.company-card,.portfolio-entry,.company-dialog,.preview-dialog,.admin-auth-dialog,.bank-investments,.fiscal-setup,.fiscal-results-card,.fiscal-summary,.fiscal-detail,.fiscal-investigation,.fiscal-ai,.fiscal-ai-account,.fiscal-account-dialog,.fiscal-account-dialog-body,.fiscal-ai-source,.fiscal-ai-evidence,.fiscal-account-resolution,.fiscal-document-panel,.fiscal-evidence-card) {background:var(--surface)!important;color:var(--text)!important;box-shadow:0 4px 20px #00000012}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.tool-intro,.tool-card > div:first-child,.period-card,.bank-selector,.bank-choice,.file-drop-shell,.preview-sheet-head,.preview-commandbar,.preview-table-tools,.daily-toolbar,.daily-summary,.preview-summary-item,.mini-metrics > span,.summary-metric,.form-card-icon,.tool-visual-icon,.overview-icon,.company-row-code,.company-row-action b,.portfolio-avatar,.portfolio-feature-icon,.portfolio-entry-action,.portfolio-entry-arrow,.file-selection,.file-selection-item,.tool-flow,.upload-progress,.upload-visual-status,.base-cleanup-confirmation,.base-periods,.base-period-bank,.base-period-item,.fiscal-next-step,.fiscal-summary-pending,.fiscal-review-toolbar,.fiscal-detail-metric-difference,.fiscal-ai-icon,.fiscal-ai-source-panel,.fiscal-ai-account-nav,.fiscal-ai-executive,.fiscal-ai-evidence,.fiscal-ai-account-resolution,.fiscal-ai-source.is-ready,.fiscal-ai-heading-tools .fiscal-ai-provider,.fiscal-ai-local-note,.fiscal-ai-method,.fiscal-ai-context,.fiscal-ai-document-summary) {background:var(--surface-2)!important;color:var(--dark-accent)!important;box-shadow:none!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.tool-intro,.period-card,.bank-selector,.bank-choice,.file-drop-shell,.preview-sheet-head,.preview-commandbar,.preview-table-tools,.daily-toolbar,.daily-summary,.preview-summary-item,.mini-metrics > span,.summary-metric,.form-card-icon,.tool-visual-icon,.overview-icon,.company-row-code,.company-row-action b,.portfolio-avatar,.portfolio-feature-icon,.portfolio-entry-action,.portfolio-entry-arrow,.file-selection,.file-selection-item,.tool-flow,.upload-progress,.upload-visual-status,.base-cleanup-confirmation,.base-periods,.base-period-bank,.base-period-item,.fiscal-next-step,.fiscal-summary-pending,.fiscal-review-toolbar,.fiscal-detail-metric-difference,.fiscal-ai-icon,.fiscal-ai-source-panel,.fiscal-ai-account-nav,.fiscal-ai-executive,.fiscal-ai-evidence,.fiscal-ai-account-resolution,.fiscal-ai-source.is-ready,.fiscal-ai-heading-tools .fiscal-ai-provider,.fiscal-ai-local-note,.fiscal-ai-method,.fiscal-ai-context,.fiscal-ai-document-summary) {background:var(--surface-2)!important;color:var(--dark-accent)!important;box-shadow:none!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {background:#0d0d0d!important;color:var(--text)!important;border-color:#424242!important;caret-color:#8ab8ff;box-shadow:none}
 html[data-theme="dark"] :is(input,textarea)::placeholder {color:#969696!important;opacity:1}
 html[data-theme="dark"] input::file-selector-button {background:#252525;color:#e2e2e2;border:1px solid #505050;border-radius:7px;padding:7px 11px;margin-right:10px}
@@ -134,7 +134,7 @@ html[data-theme="dark"] #companiesView .directory-controls .search-wrap:focus-wi
 /* Quiet, consistent edges for preparation surfaces, without changing result layouts. */
 html #companyPanel :is(.panel-head,.tool-card,.modern-form,.tool-intro) {border-radius:16px!important}
 html #companyPanel .modern-form :is(.field-group,.bank-selector,.period-card) {border-radius:12px!important}
-html[data-theme="dark"] #companyPanel :is(.panel-head,.tool-card,.modern-form,.tool-intro) {border:1px solid #2e2e2e!important;box-shadow:none!important}
+html[data-theme="dark"] #companyPanel :is(.panel-head,.tool-card,.modern-form,.tool-intro) {border-color:#383838!important;box-shadow:none!important}
 html[data-theme="dark"] #companyPanel .modern-form :is(.field-group,.bank-selector,.period-card) {border-color:#303030!important;box-shadow:none!important}
 html[data-theme="dark"] #companyPanel .modern-form .field-group:focus-within {border-color:#303030!important;box-shadow:none!important}
 html[data-theme="dark"] #companyPanel .modern-form .file-drop-shell {border-color:#414141!important;box-shadow:none!important;border-radius:11px!important}
@@ -183,24 +183,35 @@ html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) :is(.daily-to
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.preview-sheet-head,.preview-commandbar,.preview-table-tools,.preview-intro,.form-card-header,.tool-flow) {background:transparent!important;background-image:none!important;box-shadow:none!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) th {background:var(--surface)!important}
 
-/* Uploads keep their outlines without adding painted backgrounds. */
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.modern-form .file-drop-shell,.file-drop-shell,.field-group:has(.file-drop-shell),.fiscal-upload-item,.reconcile-bank-file),
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.modern-form .file-drop-shell,.file-drop-shell,.field-group:has(.file-drop-shell),.fiscal-upload-item,.reconcile-bank-file):hover,
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.modern-form .file-drop-shell,.file-drop-shell,.field-group:has(.file-drop-shell),.fiscal-upload-item,.reconcile-bank-file):focus-within {background:transparent!important;background-image:none!important;box-shadow:none!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.modern-form input[type=file],input[type=file]),
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.modern-form input[type=file],input[type=file]):focus-visible {background:transparent!important;border-width:0!important;outline:none!important;box-shadow:none!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) .file-drop-shell:has(input[type=file]:focus-visible),
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) .file-drop-shell.is-dragging {outline:1px solid #7198ce!important;outline-offset:2px}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) .file-drop-shell :is(.file-selection,.file-selection-item,.file-selection-summary) {background:transparent!important;box-shadow:none!important}
-
-/* Match light-theme transparency on layout wrappers; only actual cards have fills. */
-html[data-theme="dark"] #companyPanel .tool-tabs,
-html[data-theme="dark"] #companiesView :is(.grid,.directory-controls) {background:transparent!important;background-image:none!important;border-width:0!important;box-shadow:none!important}
-html[data-theme="dark"] .app-shell #companyPanel .tool-card .tool-flow {background:transparent!important;background-image:none!important;box-shadow:none!important}
-
-/* Visible boundaries for tools and attachments, independent of their fill. */
-html[data-theme="dark"] #companyPanel .tool-card {background:transparent!important;background-image:none!important;border:1px solid #383838!important;box-shadow:none!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.modern-form .file-drop-shell,.file-drop-shell) {border:1px dashed #454545!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.field-group:has(.file-drop-shell),.fiscal-upload-item,.reconcile-bank-file) {border:1px solid #383838!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.modern-form .file-drop-shell,.file-drop-shell,.fiscal-upload-item,.reconcile-bank-file):hover {border-color:#606060!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.modern-form .file-drop-shell,.file-drop-shell,.fiscal-upload-item,.reconcile-bank-file):focus-within {border-color:#7198ce!important}
+/* Preserve component boundaries; transparent wrappers never become extra cards. */
+html[data-theme="dark"] #companyPanel :is(.tool-card,.tool-tabs),
+html[data-theme="dark"] #companiesView :is(.grid,.directory-controls) {background:transparent!important;background-image:none!important;box-shadow:none!important}
+html[data-theme="dark"] #companyPanel .tool-card {border:0!important}
+html[data-theme="dark"] .app-shell #companyPanel .tool-card :is(.tool-intro,.tool-flow) {background:transparent!important;background-image:none!important;box-shadow:none!important}
+/* The dropzone owns the dashed edge; its native input has no second box. */
+html[data-theme="dark"] .app-shell :is(#companyPanel,#ledgerView,#fiscalView) :is(.file-drop-shell,.reconcile-bank-file,.fiscal-upload-item,.field-group:has(.file-drop-shell)) {background:transparent!important;background-image:none!important;box-shadow:none!important;border-color:#454545!important}
+html[data-theme="dark"] .app-shell :is(#companyPanel,#ledgerView,#fiscalView) .file-drop-shell:hover {background:transparent!important;border-color:#666!important}
+html[data-theme="dark"] .app-shell :is(#companyPanel,#ledgerView,#fiscalView) .file-drop-shell:focus-within,
+html[data-theme="dark"] .app-shell :is(#companyPanel,#ledgerView,#fiscalView) .file-drop-shell.is-dragging {border-color:#7198ce!important;outline:2px solid #7198ce;outline-offset:2px}
+html[data-theme="dark"] .app-shell :is(#companyPanel,#ledgerView,#fiscalView) input[type=file] {background:transparent!important;border:0!important;outline:none!important;box-shadow:none!important}
+html[data-theme="dark"] .app-shell .file-drop-shell :is(.file-selection,.file-selection-item,.file-selection-summary) {background:transparent!important;box-shadow:none!important}
+/* Small labels, progress markers and decorative icons need their own dark colors. */
+html[data-theme="dark"] .app-shell :is(.company-code,.bank-selector-head > span,.period-card .optional,.reconcile-bank-file .optional,.directory-count,.portfolio-context) {color:#b2b2b2!important}
+html[data-theme="dark"] .app-shell .panel-quick-info > span {background:transparent!important;color:#bdbdbd!important;border-color:#454545!important}
+html[data-theme="dark"] .app-shell .tool-feature-list span {color:var(--muted)!important}
+html[data-theme="dark"] .app-shell .tool-feature-list b {background:#16382f!important;color:var(--dark-success)!important}
+html[data-theme="dark"] .app-shell .tool-flow span {color:var(--muted)!important}
+html[data-theme="dark"] .app-shell .tool-flow span b {background:#202020!important;color:#c8c8c8!important;border-color:#484848!important}
+html[data-theme="dark"] .app-shell .tool-flow span.active {color:#b9d3ff!important}
+html[data-theme="dark"] .app-shell .tool-flow span.active b {background:#2864d7!important;color:#fff!important;border-color:#7198ce!important}
+html[data-theme="dark"] .app-shell .tool-flow span.completed b {background:#16382f!important;color:var(--dark-success)!important;border-color:#396858!important}
+html[data-theme="dark"] .app-shell .tool-flow i {background:#3a3a3a!important}
+html[data-theme="dark"] .app-shell .tool-flow span.completed + i {background:#396858!important}
+html[data-theme="dark"] .app-shell :is(.form-card-icon,.form-card-header::after) {background:transparent!important;color:var(--dark-accent)!important}
+html[data-theme="dark"] .app-shell #companyPanel .bank-choice.selected {background:#17243a!important;border-color:#507db6!important}
+html[data-theme="dark"] .app-shell #companyPanel .bank-choice input {accent-color:#8cbcf3!important}
+html[data-theme="dark"] .app-shell :is(.file-drop-hint,.tool-feature-list span) {font-size:11px;line-height:1.6}
+html[data-theme="dark"] .app-shell #companiesView :is(.company-row-status,.directory-count,.directory-context) {color:var(--muted)!important}
+/* Keep table sorting controls visually inside the column heading. */
+html[data-theme="dark"] .app-shell th button {background:transparent!important;color:inherit!important;border-color:transparent!important}
+html[data-theme="dark"] .app-shell th button:hover:not(:disabled) {background:#242424!important;border-color:transparent!important}
