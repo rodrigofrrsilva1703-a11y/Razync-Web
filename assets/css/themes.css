@@ -13,7 +13,7 @@ html[data-theme="dark"] .theme-sun {display:block}
 #portfolioPicker .portfolio-entry-arrow {background:#dfeaf4}
 #portfolioPicker .portfolio-entry:hover .portfolio-entry-action {background:#e5eff8}
 html[data-theme="dark"] {
- color-scheme:dark;--bg:#080808;--surface:#141414;--surface-2:#1e1e1e;--surface-soft:#101010;
+ color-scheme:dark;--bg:#080808;--surface:#141414;--surface-2:#141414;--surface-soft:#101010;
  --border:#333333;--line:#333333;--text:#ededed;--ink:#ededed;--muted:#ababab;--ink-muted:#ababab;
  --accent:#8cbcf3;--accent-soft:#17243a;--action:#2864d7;--tool-accent:#8cbcf3;--panel-shadow:0 6px 24px #00000018;
  --dark-text:#ededed;--dark-muted:#ababab;--dark-accent:#8ab8ff;--dark-success:#87d8b9;--dark-error:#f3a6ad;--dark-warning:#e5c391;
@@ -159,7 +159,7 @@ html[data-theme="dark"] :is(#reconcileResult,#ledgerResult,.preview-dialog) .ban
 
 /* Fiscal styles use theme-aware colors even when loaded after document reading. */
 html[data-theme="dark"] #fiscalView {
- --fiscal-surface:#141414;--fiscal-soft:#1e1e1e;--fiscal-line:#353535;
+ --fiscal-surface:#141414;--fiscal-soft:#141414;--fiscal-line:#353535;
  --fiscal-copy:#dedede;--fiscal-muted:#b2b2b2;
  --fiscal-success:#87d8b9;--fiscal-error:#f3a6ad;--fiscal-warning:#e5c391;
  --fw-shadow:none;
@@ -174,3 +174,11 @@ html[data-theme="dark"] #fiscalView :is(.fiscal-ai-loading-meter > span,.fiscal-
 html[data-theme="dark"] #fiscalView .fiscal-account-dialog [role=tab][aria-selected=true] {background:transparent!important;color:#b9d3ff!important;border-bottom-color:#80adff!important;box-shadow:none!important}
 html[data-theme="dark"] #fiscalView .fiscal-account-dialog .fiscal-account-analysis-button {background:#2864d7!important;color:#fff!important;border-color:#417de8!important}
 html[data-theme="dark"] #fiscalView .fiscal-account-dialog .fiscal-account-analysis-button:hover:not(:disabled) {background:#245ac0!important}
+
+/* Flat interiors: headings and explanatory rows belong to their parent panel. */
+html[data-theme="dark"] :is(.global-view,#companyPanel,#fiscalView,dialog) .tool-card > div:first-child,
+html[data-theme="dark"] #companyPanel .tool-card > .tool-intro,
+html[data-theme="dark"] #fiscalView :is(.fiscal-account-dialog-header,.fiscal-account-dialog-footer,.fiscal-comparison-bridge,.fiscal-detail-metrics,.fiscal-difference-reading,.fiscal-next-step,.fiscal-summary-pending),
+html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) :is(.daily-toolbar,.daily-rule),
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.preview-sheet-head,.preview-commandbar,.preview-table-tools,.preview-intro,.form-card-header,.tool-flow) {background:transparent!important;background-image:none!important;box-shadow:none!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) th {background:var(--surface)!important}
