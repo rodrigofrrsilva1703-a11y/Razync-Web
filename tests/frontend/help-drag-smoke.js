@@ -153,10 +153,14 @@
       const wrapper=document.querySelector(selector);
       if(!wrapper)throw Error('Contêiner de teste ausente: '+selector);
       const style=getComputedStyle(wrapper);
-      if(style.backgroundColor!=='rgba(0, 0, 0, 0)' || style.borderTopWidth!=='0px') {
+      if(style.backgroundColor!=='rgba(0, 0, 0, 0)' || style.borderTopWidth!==(selector==='#companyPanel .tool-card'?'1px':'0px')) {
         throw Error('O modo escuro pintou um contêiner transparente: '+selector);
       }
     }
+    document.querySelectorAll('#companyPanel .file-drop-shell,#companyPanel .reconcile-bank-file,#fiscalView .fiscal-upload-item').forEach(upload=>{
+      const style=getComputedStyle(upload);
+      if(style.borderTopWidth!=='1px' || style.borderTopStyle==='none')throw Error('O campo de anexo perdeu sua borda.');
+    });
     document.querySelectorAll('#companyPanel .tool-flow').forEach(flow=>{
       if(getComputedStyle(flow).backgroundColor!=='rgba(0, 0, 0, 0)')throw Error('A faixa de etapas ganhou fundo no modo escuro.');
     });
