@@ -1547,18 +1547,21 @@ $$('.company-filter').forEach(button=>button.addEventListener('click',()=>{
 }));
 backButton.addEventListener("click", closeCompany);
 
-async function fetchAfterWake(url) {
-  // Serverless pode devolver 502/503 enquanto inicia o contêiner.
-  // Repetir apenas essas consultas iniciais evita falso aviso de offline.
+async function fetchAfterWake(url, {onRetry} = {}) {
+  // Railway em repouso pode demorar a responder. Limite cada tentativa
+  // para nunca deixar a interface indefinidamente em "carregando".
   for (let attempt = 0; attempt < 4; attempt++) {
     try {
-      const response = await fetch(url);
+      const signal = typeof AbortSignal?.timeout === "function"
+        ? AbortSignal.timeout(14000) : undefined;
+      const response = await fetch(url, {signal});
       if (response.ok || ![502, 503, 504].includes(response.status) || attempt === 3) {
         return response;
       }
     } catch (error) {
       if (attempt === 3) throw error;
     }
+    if (onRetry) onRetry(attempt + 1);
     await new Promise(resolve => setTimeout(resolve, [1500, 3000, 5000][attempt]));
   }
 }
@@ -1600,17 +1603,49 @@ async function loadCompanies() {
   }
 }
 
-async function checkApi() {
-  if (!API()) return apiStatus.textContent = "API não configurada";
-  try {
-    const response = await fetchAfterWake(`${API()}/health`);
-    if (!response.ok) throw new Error();
-    apiStatus.textContent = "Sistema online";
-    apiStatus.classList.add("online");
-  } catch {
-    apiStatus.textContent = "API temporariamente indisponível";
-  }
+function setApiConnectionState(state, detail = "") {
+  const messages = {
+    checking: ["Conectando…", "Verificando a conexão com o servidor."],
+    waking: ["Iniciando servidor…", "O servidor estava em repouso. A conexão está sendo restabelecida. Você pode consultar as empresas enquanto isso."],
+    online: ["Sistema online", "Servidor conectado. Clique para verificar novamente."],
+    offline: ["Sem conexão · tentar", "Não foi possível conectar ao servidor. Clique aqui para tentar novamente."],
+    unconfigured: ["API não configurada", "É necessário configurar o endereço do servidor."],
+  };
+  const [label, hint] = messages[state] || messages.offline;
+  const text = apiStatus.querySelector(".connection-label");
+  if (text) text.textContent = detail || label;
+  apiStatus.dataset.connection = state;
+  apiStatus.classList.toggle("online", state === "online");
+  apiStatus.title = hint;
+  apiStatus.setAttribute("aria-label", (detail || label) + ". " + hint);
+  apiStatus.setAttribute("aria-busy", String(state === "checking" || state === "waking"));
 }
+
+let apiCheckPending = null;
+function checkApi() {
+  if (apiCheckPending) return apiCheckPending;
+  if (!API()) { setApiConnectionState("unconfigured"); return Promise.resolve(); }
+  setApiConnectionState("checking");
+  apiCheckPending = (async () => {
+    const wakeNotice = setTimeout(() => setApiConnectionState("waking"), 1800);
+    try {
+      const response = await fetchAfterWake(`${API()}/health`, {
+        onRetry: () => setApiConnectionState("waking"),
+      });
+      if (!response.ok) throw new Error("Healthcheck indisponível");
+      clearTimeout(wakeNotice);
+      setApiConnectionState("online");
+    } catch {
+      clearTimeout(wakeNotice);
+      setApiConnectionState("offline");
+    }
+  })().finally(() => { apiCheckPending = null; });
+  return apiCheckPending;
+}
+apiStatus.addEventListener("click", () => {
+  checkApi();
+  if (!companies.length) loadCompanies();
+});
 
 initializeTaskUI();
 loadCompanies();
@@ -1625,7 +1660,7 @@ async function showGlobalView(name) {
     const trigger = document.querySelector('.main-nav-btn[data-view="fiscal"]');
     trigger?.setAttribute("aria-busy","true");
     try { await RazyncAssets.load("fiscal"); }
-    catch (error) { apiStatus.textContent=error.message; return; }
+    catch (error) { setApiConnectionState("offline", "Erro ao abrir ferramenta"); console.error(error); return; }
     finally { trigger?.removeAttribute("aria-busy"); }
     if (version !== navigationVersion) return;
   }
