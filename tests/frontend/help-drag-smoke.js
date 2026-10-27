@@ -211,6 +211,23 @@
     fiscalThemeProbe.innerHTML='<div class="fiscal-summary"><div class="fiscal-summary-card">Totais fiscais</div></div><section class="fiscal-account-dialog"><header class="fiscal-account-dialog-header">Detalhe da conta</header><div class="fiscal-account-dialog-body"><div class="fiscal-account-opinion-conclusion">Conclusão</div><div class="fiscal-ai-case">Explicação da análise</div></div></section>';
     fiscalPane.append(fiscalThemeProbe);
     fiscalThemeProbe.querySelectorAll('.fiscal-summary-card,.fiscal-account-dialog-header,.fiscal-account-opinion-conclusion,.fiscal-ai-case').forEach(assertDarkSurface);
+    // Inline account controls must not paint rectangles over alternating rows.
+    const fiscalRows=document.querySelector('#fiscal242Rows');
+    const inlineRows=[0,1].map(()=>{
+      const row=document.createElement('tr');row.className='fiscal-result-row';
+      row.innerHTML='<td><button type="button" class="fiscal-account-link">2221</button><span class="fiscal-account-type">ENTRADAS</span></td><td><span class="fiscal-accum-tag">1153</span></td><td><span class="fiscal-difference-number">-100,00</span></td><td><span class="fiscal-status fiscal-status-review">Divergência</span></td>';
+      fiscalRows.append(row);return row;
+    });
+    for(const row of inlineRows){
+      for(const selected of [false,true]){
+        row.classList.toggle('selected',selected);
+        row.querySelectorAll('.fiscal-account-link,.fiscal-account-type,.fiscal-accum-tag,.fiscal-difference-number').forEach(inline=>{
+          if(getComputedStyle(inline).backgroundColor!=='rgba(0, 0, 0, 0)')throw Error('Resultado fiscal com fundo sobreposto: '+inline.className);
+        });
+        if(getComputedStyle(row.querySelector('.fiscal-status')).backgroundColor==='rgba(0, 0, 0, 0)')throw Error('O aviso fiscal perdeu seu destaque.');
+      }
+      row.remove();
+    }
     fiscalThemeProbe.remove();
     previewProbe.remove();
     if(initialTheme!=="dark")themeButton.click();
