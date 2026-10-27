@@ -13,11 +13,11 @@ html[data-theme="dark"] .theme-sun {display:block}
 #portfolioPicker .portfolio-entry-arrow {background:#dfeaf4}
 #portfolioPicker .portfolio-entry:hover .portfolio-entry-action {background:#e5eff8}
 html[data-theme="dark"] {
- color-scheme:dark;--bg:#0e1724;--surface:#172333;--surface-2:#1d2c3e;--surface-soft:#142131;
- --border:#304155;--line:#304155;--text:#e4edf7;--ink:#e4edf7;--muted:#a7b8cb;--ink-muted:#a7b8cb;
- --accent:#8cbcf3;--accent-soft:#223b55;--action:#376eae;--tool-accent:#8cbcf3;--panel-shadow:0 6px 24px #00000018;
- --dark-text:#e4edf7;--dark-muted:#a7b8cb;--dark-accent:#a7cef5;--dark-success:#87d8b9;--dark-error:#f3a6ad;--dark-warning:#e5c391;
- background:var(--bg);scrollbar-color:#4b6179 var(--bg);
+ color-scheme:dark;--bg:#080808;--surface:#141414;--surface-2:#1e1e1e;--surface-soft:#101010;
+ --border:#333333;--line:#333333;--text:#ededed;--ink:#ededed;--muted:#ababab;--ink-muted:#ababab;
+ --accent:#8cbcf3;--accent-soft:#17243a;--action:#2864d7;--tool-accent:#8cbcf3;--panel-shadow:0 6px 24px #00000018;
+ --dark-text:#ededed;--dark-muted:#ababab;--dark-accent:#8ab8ff;--dark-success:#87d8b9;--dark-error:#f3a6ad;--dark-warning:#e5c391;
+ background:var(--bg);scrollbar-color:#505050 var(--bg);
 }
 html[data-theme="dark"] body {background:var(--bg);color:var(--text)}
 html[data-theme="dark"] ::selection {background:#386292;color:#fff}
@@ -28,54 +28,54 @@ html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(p,s
 html[data-theme="dark"] :is(main,dialog) :where(*) {border-color:var(--border)!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.search-card,.directory-controls,.overview-card,.panel-head,.tool-card,.modern-form,.preview-sheet,.preview-results,.preview-table-scroll,.daily-table-scroll,.daily-review,.daily-table,.report-result,.result-card,.summary-card,.company-card,.portfolio-entry,.company-dialog,.preview-dialog,.admin-auth-dialog,.bank-investments,.fiscal-setup,.fiscal-results-card,.fiscal-summary,.fiscal-detail,.fiscal-investigation,.fiscal-ai,.fiscal-ai-account,.fiscal-account-dialog,.fiscal-account-dialog-body,.fiscal-ai-source,.fiscal-ai-evidence,.fiscal-account-resolution,.fiscal-document-panel,.fiscal-evidence-card) {background:var(--surface)!important;color:var(--text)!important;box-shadow:0 4px 20px #00000012}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.tool-intro,.tool-card > div:first-child,.period-card,.bank-selector,.bank-choice,.file-drop-shell,.preview-sheet-head,.preview-commandbar,.preview-table-tools,.daily-toolbar,.daily-summary,.preview-summary-item,.mini-metrics > span,.summary-metric,.form-card-icon,.tool-visual-icon,.overview-icon,.company-row-code,.company-row-action b,.portfolio-avatar,.portfolio-feature-icon,.portfolio-entry-action,.portfolio-entry-arrow,.file-selection,.file-selection-item,.tool-flow,.upload-progress,.upload-visual-status,.base-cleanup-confirmation,.base-periods,.base-period-bank,.base-period-item,.fiscal-next-step,.fiscal-summary-pending,.fiscal-review-toolbar,.fiscal-detail-metric-difference,.fiscal-ai-icon,.fiscal-ai-source-panel,.fiscal-ai-account-nav,.fiscal-ai-executive,.fiscal-ai-evidence,.fiscal-ai-account-resolution,.fiscal-ai-source.is-ready,.fiscal-ai-heading-tools .fiscal-ai-provider,.fiscal-ai-local-note,.fiscal-ai-method,.fiscal-ai-context,.fiscal-ai-document-summary) {background:var(--surface-2)!important;color:var(--dark-accent)!important;box-shadow:none!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {background:#101c2b!important;color:var(--text)!important;border-color:#3c5067!important;caret-color:#a7cef5;box-shadow:none}
-html[data-theme="dark"] :is(input,textarea)::placeholder {color:#8c9fb4!important;opacity:1}
-html[data-theme="dark"] input::file-selector-button {background:#263e58;color:#dbeafa;border:1px solid #4b6582;border-radius:7px;padding:7px 11px;margin-right:10px}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {background:#0d0d0d!important;color:var(--text)!important;border-color:#424242!important;caret-color:#8ab8ff;box-shadow:none}
+html[data-theme="dark"] :is(input,textarea)::placeholder {color:#969696!important;opacity:1}
+html[data-theme="dark"] input::file-selector-button {background:#252525;color:#e2e2e2;border:1px solid #505050;border-radius:7px;padding:7px 11px;margin-right:10px}
 html[data-theme="dark"] :is(input[type=checkbox],input[type=radio]) {accent-color:#8cbcf3}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(input,select,textarea,button,a,summary):focus-visible {outline:2px solid #91c6ff!important;outline-offset:3px;box-shadow:none!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(button,.secondary-action,.preview-expand) {background:var(--surface-2)!important;color:#b7d6f5!important;border-color:#3a5068!important;box-shadow:none!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(button,.secondary-action,.preview-expand):hover:not(:disabled) {background:#29415c!important;border-color:#6488ad!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(button[type=submit]:not(.secondary-action),.preview-download,.daily-download,.bank-investments-download,.fiscal-ai-primary,#adminAuthConfirm) {background:#376eae!important;color:#fff!important;border-color:#5789c2!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(button[type=submit]:not(.secondary-action),.preview-download,.daily-download,.bank-investments-download,.fiscal-ai-primary,#adminAuthConfirm):hover:not(:disabled) {background:#467fbf!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.tool-tab.active,.main-nav-btn.active,.company-filter.active,.bank-choice.selected,[aria-pressed=true],.is-selected,.is-current) {background:#264462!important;color:#c6e1ff!important;border-color:#688eb5!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(button,.secondary-action,.preview-expand) {background:var(--surface-2)!important;color:#dddddd!important;border-color:#3d3d3d!important;box-shadow:none!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(button,.secondary-action,.preview-expand):hover:not(:disabled) {background:#292929!important;border-color:#626262!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(button[type=submit]:not(.secondary-action),.preview-download,.daily-download,.bank-investments-download,.fiscal-ai-primary,#adminAuthConfirm) {background:#2864d7!important;color:#fff!important;border-color:#417de8!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(button[type=submit]:not(.secondary-action),.preview-download,.daily-download,.bank-investments-download,.fiscal-ai-primary,#adminAuthConfirm):hover:not(:disabled) {background:#3474e5!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.tool-tab.active,.main-nav-btn.active,.company-filter.active,.bank-choice.selected,[aria-pressed=true],.is-selected,.is-current) {background:#17243a!important;color:#c2d8ff!important;border-color:#507db6!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) button:disabled {opacity:.48;cursor:not-allowed}
 /* Tables: headers, zebra rows, hover, editors and semantic balance colors. */
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(table,tbody,td) {background:var(--surface)!important;color:#d8e5f3!important;box-shadow:none}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) th {background:#23364b!important;color:#c8dbed!important;border-color:#3e536c!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) tr:nth-child(even) td {background:#1a293b!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) tbody tr:hover td {background:#263b52!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(table,tbody,td) {background:var(--surface)!important;color:#dedede!important;box-shadow:none}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) th {background:#232323!important;color:#d8d8d8!important;border-color:#3d3d3d!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) tr:nth-child(even) td {background:#191919!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) tbody tr:hover td {background:#292929!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.is-success,.is-success p,.is-success strong,.status-success,.fiscal-status-ok,.daily-balance.is-balanced,.match-ok,.positive,.online) {color:var(--dark-success)!important;background:#16382f!important;border-color:#396858!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.is-warning,.is-warning p,.is-warning strong,.preview-row-warning,.preview-pending-summary,.fiscal-warnings,.accounts-pending,.status-warning) {color:var(--dark-warning)!important;background:#3a3023!important;border-color:#6e5940!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.is-error,.is-error p,.is-error strong,.base-stat-error,.is-different,.daily-balance.is-different,.negative,.status-error,.fiscal-account-resolution-error,[role=alert]) {color:var(--dark-error)!important;background:#3b252e!important;border-color:#76434f!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(#confirmBaseCleanup,.danger-action) {background:#853e50!important;color:#fff!important;border-color:#b66677!important}
 /* AI tokens also apply when the fiscal styles are loaded after theme selection. */
-html[data-theme="dark"] #fiscalView {--fw-ink:#e4edf7;--fw-text:#c1d2e4;--fw-muted:#a7b8cb;--fw-border:#304155;--fw-light:#1d2c3e;--fw-accent:#9ac4f2;--fw-focus:#91c6ff;--studio-line:#304155;--studio-blue:#9ac4f2}
-html[data-theme="dark"] #fiscalView .fiscal-ai {--ai-ink:#e4edf7;--ai-muted:#a7b8cb;--ai-blue:#a7cef5;--ai-line:#304155}
-html[data-theme="dark"] #fiscalView :is(.fiscal-ai-value strong,.fiscal-detail-metric strong,.fiscal-ai-card-description,.fiscal-ai-nav-account,.fiscal-ai-value small,.fiscal-ai-source-title,.fiscal-ai-executive-kicker,.fiscal-ai-card-description) {color:#bcd6ef!important}
+html[data-theme="dark"] #fiscalView {--fw-ink:#ededed;--fw-text:#d2d2d2;--fw-muted:#ababab;--fw-border:#333333;--fw-light:#1e1e1e;--fw-accent:#9ac4f2;--fw-focus:#91c6ff;--studio-line:#333333;--studio-blue:#9ac4f2}
+html[data-theme="dark"] #fiscalView .fiscal-ai {--ai-ink:#ededed;--ai-muted:#ababab;--ai-blue:#8ab8ff;--ai-line:#333333}
+html[data-theme="dark"] #fiscalView :is(.fiscal-ai-value strong,.fiscal-detail-metric strong,.fiscal-ai-card-description,.fiscal-ai-nav-account,.fiscal-ai-value small,.fiscal-ai-source-title,.fiscal-ai-executive-kicker,.fiscal-ai-card-description) {color:#d4d4d4!important}
 html[data-theme="dark"] #fiscalView :is(.fiscal-ai-value,.fiscal-ai-account-summary,.fiscal-ai-toolbar,.fiscal-company-result,.fiscal-workflow-nav,.fiscal-detail-metric,.fiscal-account-dialog-header,.fiscal-account-dialog-footer) {background:transparent!important;border-color:var(--border)!important}
 html[data-theme="dark"] :is(dialog,.company-dialog,.admin-auth-dialog,.fiscal-account-dialog) {background:var(--surface)!important;color:var(--text)!important;border-color:var(--border)!important;box-shadow:0 24px 90px #0008!important}
-html[data-theme="dark"] dialog::backdrop {background:#050b14b3;backdrop-filter:blur(4px)}
-html[data-theme="dark"] .topbar {border-color:#29394d}
-html[data-theme="dark"] .topbar :is(.sidebar-toggle,.theme-toggle) {background:#1d2c3e!important;color:#bfd3e9!important;border-color:#3a5068!important}
-html[data-theme="dark"] .topbar .status-pill {background:#172333;color:#acbed2;border-color:#304155}
+html[data-theme="dark"] dialog::backdrop {background:#000000b3;backdrop-filter:blur(4px)}
+html[data-theme="dark"] .topbar {border-color:#2d2d2d}
+html[data-theme="dark"] .topbar :is(.sidebar-toggle,.theme-toggle) {background:#1e1e1e!important;color:#d6d6d6!important;border-color:#3d3d3d!important}
+html[data-theme="dark"] .topbar .status-pill {background:#141414;color:#ababab;border-color:#333333}
 html[data-theme="dark"] .topbar .status-pill.online {background:#16382f!important;color:#87d8b9!important;border-color:#396858!important}
-html[data-theme="dark"] .topbar-title strong {color:#dfebf8}
-html[data-theme="dark"] footer {color:#9cadc1;border-color:#29394d}
-html[data-theme="dark"] #portfolioPicker :is(.portfolio-brand,.portfolio-brand>span,.portfolio-section-title,.portfolio-tools-heading h2) {color:#e4edf7!important}
-html[data-theme="dark"] #portfolioPicker .portfolio-heading {background:linear-gradient(115deg,#182f47,#24445f);border-color:#3c5871!important}
+html[data-theme="dark"] .topbar-title strong {color:#ededed}
+html[data-theme="dark"] footer {color:#a3a3a3;border-color:#2d2d2d}
+html[data-theme="dark"] #portfolioPicker :is(.portfolio-brand,.portfolio-brand>span,.portfolio-section-title,.portfolio-tools-heading h2) {color:#ededed!important}
+html[data-theme="dark"] #portfolioPicker .portfolio-heading {background:linear-gradient(115deg,#191919,#0e0e0e);border-color:#383838!important}
 html[data-theme="dark"] #portfolioPicker .portfolio-heading h1 {color:#fff!important}
-html[data-theme="dark"] #portfolioPicker h1 em {color:#a8cce5}
-html[data-theme="dark"] #portfolioPicker .portfolio-heading p {color:#c0d2e2!important}
-html[data-theme="dark"] #portfolioPicker .portfolio-home-summary>span {background:#ffffff06;border-color:#cde2f526!important}
+html[data-theme="dark"] #portfolioPicker h1 em {color:#8ab8ff}
+html[data-theme="dark"] #portfolioPicker .portfolio-heading p {color:#bdbdbd!important}
+html[data-theme="dark"] #portfolioPicker .portfolio-home-summary>span {background:#ffffff06;border-color:#ffffff20!important}
 html[data-theme="dark"] #portfolioPicker .portfolio-home-summary strong {color:#fff!important}
-html[data-theme="dark"] #portfolioPicker .portfolio-feature:hover,html[data-theme="dark"] #portfolioPicker .portfolio-feature[open] {background:#172333}
-html[data-theme="dark"] #portfolioPicker .portfolio-feature {border-color:#304155}
-html[data-theme="dark"] #portfolioPicker .portfolio-entry:hover {background:#1c2e42!important}
-html[data-theme="dark"] #portfolioPicker .portfolio-entry-action {background:#243c55!important}
-html[data-theme="dark"] #portfolioPicker .portfolio-entry-action>span:first-child {color:#bad9f6}
-html[data-theme="dark"] #portfolioPicker .portfolio-feature-toggle {color:#a3bbd2}
-html[data-theme="dark"] :is(.company-card,.file-drop-shell):hover {background:#23384f!important}
-html[data-theme="dark"] a {color:#a7cef5}
+html[data-theme="dark"] #portfolioPicker .portfolio-feature:hover,html[data-theme="dark"] #portfolioPicker .portfolio-feature[open] {background:#141414}
+html[data-theme="dark"] #portfolioPicker .portfolio-feature {border-color:#333333}
+html[data-theme="dark"] #portfolioPicker .portfolio-entry:hover {background:#202020!important}
+html[data-theme="dark"] #portfolioPicker .portfolio-entry-action {background:#202020!important}
+html[data-theme="dark"] #portfolioPicker .portfolio-entry-action>span:first-child {color:#a9caff}
+html[data-theme="dark"] #portfolioPicker .portfolio-feature-toggle {color:#a6a6a6}
+html[data-theme="dark"] :is(.company-card,.file-drop-shell):hover {background:#242424!important}
+html[data-theme="dark"] a {color:#8ab8ff}
 @media(prefers-reduced-motion:reduce) {.theme-toggle{transition:none}}
 html[data-theme="dark"] .availability-page main {background:var(--surface);color:var(--text);border-color:var(--border);box-shadow:0 12px 40px #0003}
 html[data-theme="dark"] .availability-page :is(h1,.brand,.hours) {color:var(--text)}
@@ -85,13 +85,13 @@ html[data-theme="dark"] .availability-page :is(p,.label,.foot) {color:var(--mute
 html[data-theme="dark"] #fiscalView :is(.fiscal-form,.fiscal-setup-heading,.fiscal-upload-item,.fiscal-company-auto,.fiscal-table-count,.fiscal-reading-guide,.fiscal-unmapped,.fiscal-ai-no-results,.fiscal-ai-documentary,.fiscal-ai-case,.fiscal-ai-cases-more,.fiscal-doc-reader,.fiscal-doc-stage,.fiscal-doc-empty,.fiscal-doc-accounts,.fiscal-inline-host,.fiscal-detail-table,.fiscal-account-analysis,.fiscal-account-analysis.is-docked) {background:var(--surface)!important;color:var(--text)!important}
 html[data-theme="dark"] #fiscalView :is(.fiscal-setup-filetype,.fiscal-step-index,.fiscal-upload-symbol,.fiscal-form-actions,.fiscal-summary-icon,.fiscal-progress,.fiscal-investigation-step,.fiscal-investigation-metric,.fiscal-ai-loading,.fiscal-ai-loading-orbit,.fiscal-ai-loading-time,.fiscal-ai-loading-meter,#fiscal242AIMessage,.fiscal-usage-footer,.fiscal-account-type,.fiscal-accum-tag,.fiscal-difference-number,.fiscal-ai-account-chevron,.fiscal-ai-conclusion,.fiscal-ai-document-summary,.fiscal-ai-case-strength,.fiscal-ai-case-action,.fiscal-doc-totals > div,.fiscal-doc-badge,.fiscal-doc-balance,.fiscal-doc-search-totals,.fiscal-doc-pagination,.fiscal-doc-account,.fiscal-account-opinion-conclusion,.fiscal-account-opinion-hypothesis,.fiscal-account-opinion-local,.fiscal-account-situation-symbol,.fiscal-ai-executive-coverage) {background:var(--surface-2)!important;color:var(--dark-accent)!important}
 html[data-theme="dark"] #fiscalView :is(.fiscal-ai-checklist li,.fiscal-ai-finding-list li,.fiscal-ai-step-documents > li,.fiscal-difference-reading,.fiscal-accum-breakdown,.fiscal-detail-metrics) {background:var(--surface-2)!important;color:var(--text)!important}
-html[data-theme="dark"] #fiscalView :is(.fiscal-ai-checklist > li,.fiscal-account-opinion-steps > li,.fiscal-ai-loading-stages li)::before {background:#2c4c6b;color:#c4dff8}
-html[data-theme="dark"] #fiscalView input[type=file]::file-selector-button {background:#263e58!important;color:#dbeafa!important;border:1px solid #4b6582!important}
+html[data-theme="dark"] #fiscalView :is(.fiscal-ai-checklist > li,.fiscal-account-opinion-steps > li,.fiscal-ai-loading-stages li)::before {background:#242424;color:#d4d4d4}
+html[data-theme="dark"] #fiscalView input[type=file]::file-selector-button {background:#252525!important;color:#e2e2e2!important;border:1px solid #505050!important}
 html[data-theme="dark"] #fiscalView :is(.fiscal-status-ok,.fiscal-doc-badge-conciliado,.fiscal-ai-status-conciliado) {background:#16382f!important;color:#87d8b9!important}
 html[data-theme="dark"] #fiscalView :is(.fiscal-status-review,.fiscal-status-alert,.fiscal-ai-status-alerta,.fiscal-doc-badge-valor_diferente,.fiscal-doc-badge-conta_diferente) {background:#3a3023!important;color:#e5c391!important}
 html[data-theme="dark"] #fiscalView #fiscal242Rows > .fiscal-result-row {background:var(--surface)!important;color:var(--text)!important}
-html[data-theme="dark"] #fiscalView #fiscal242Rows > .fiscal-result-row:nth-child(even) {background:#1a293b!important}
-html[data-theme="dark"] #fiscalView #fiscal242Rows > .fiscal-result-row:hover,html[data-theme="dark"] #fiscalView #fiscal242Rows > .fiscal-result-row.selected {background:#263b52!important}
+html[data-theme="dark"] #fiscalView #fiscal242Rows > .fiscal-result-row:nth-child(even) {background:#191919!important}
+html[data-theme="dark"] #fiscalView #fiscal242Rows > .fiscal-result-row:hover,html[data-theme="dark"] #fiscalView #fiscal242Rows > .fiscal-result-row.selected {background:#292929!important}
 
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.saved-period-bank,.saved-period-months>span,.preview-metric,.preview-intro,.preview-sheet-badge,.preview-sheet-switcher,.preview-mini-meta,.file-selection-summary,.base-stat-chip,.base-stat,.task-metric,.admin-auth-badge) {background:var(--surface-2)!important;color:var(--dark-accent)!important}
 
@@ -108,3 +108,13 @@ html[data-theme="dark"] .company-tool-guide-index,html[data-theme="dark"] #compa
 html[data-theme="dark"] #fiscalView :is(.fiscal-ai-audit,.fiscal-doc-total-difference,.fiscal-doc-lookup-difference) {color:var(--dark-accent)!important}
 html[data-theme="dark"] #fiscalView :is(.fiscal-ai-audit,.fiscal-doc-total-difference,.fiscal-doc-lookup-difference) {background:var(--surface-2)!important}
 html[data-theme="dark"] #fiscalView .fiscal-warnings p {background:#3a3023!important;color:#e5c391!important;border-color:#6e5940!important}
+
+/* Neutral black surfaces; blue identifies actions and the current location. */
+html[data-theme="dark"] .sidebar {background:#101010!important;border-right-color:#303030!important;color:var(--text)}
+html[data-theme="dark"] .sidebar :is(.brand,.brand strong) {color:var(--text)}
+html[data-theme="dark"] .sidebar :is(.nav-caption,.sidebar-note,.sidebar-note small) {color:var(--muted);border-color:var(--border)}
+html[data-theme="dark"] .sidebar .main-nav-btn {color:#c9c9c9;background:transparent;border-color:transparent}
+html[data-theme="dark"] .sidebar .main-nav-btn:hover {background:#242424;border-color:#3d3d3d;color:#fff}
+html[data-theme="dark"] .sidebar .main-nav-btn.active {background:#17243a;border-color:#36547c;color:#d5e4ff;box-shadow:inset 3px 0 #80adff}
+html[data-theme="dark"] .statement-reading {background:var(--surface);border-color:var(--border);color:var(--text)}
+html[data-theme="dark"] .statement-reading :is(p,.statement-reading-count) {color:var(--muted)}

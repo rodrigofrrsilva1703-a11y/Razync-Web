@@ -18,7 +18,7 @@
       document.querySelector("#themeToggleLabel").textContent = dark ? "Escuro" : "Claro";
     }
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = theme === "dark" ? "#0e1724" : "#f4f7fb";
+    if (meta) meta.content = theme === "dark" ? "#080808" : "#f4f7fb";
   }
   const current = () => valid(preference) ? preference : system.matches ? "dark" : "light";
   apply(current());
