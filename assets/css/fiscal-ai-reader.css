@@ -1,87 +1,87 @@
 /* Leitura de pareceres: conclusão, prioridade e evidências em níveis distintos. */
 #fiscalView .fiscal-ai {
   --ai-ink:#19344d;--ai-muted:#526b82;--ai-blue:#315f94;--ai-line:#dfe7f0;
-  background:#fff;border:1px solid var(--ai-line);border-radius:18px;padding:28px;
+  background:var(--fiscal-surface,#fff);border:1px solid var(--ai-line);border-radius:18px;padding:28px;
   box-shadow:0 8px 30px rgba(30,54,79,.035);
 }
 #fiscalView .fiscal-ai-heading {
   display:flex;align-items:flex-start;gap:16px;padding:0 0 24px;margin:0 0 22px;
-  border-bottom:1px solid #e8edf3;background:none;
+  border-bottom:1px solid var(--fiscal-line,#e8edf3);background:none;
 }
-#fiscalView .fiscal-ai-icon {display:grid;place-items:center;flex:0 0 46px;height:46px;border-radius:14px;background:#edf3fb;color:#376ca5;font-size:24px;border:1px solid #dbe7f5;}
-#fiscalView .fiscal-ai-eyebrow {font-size:10px;letter-spacing:.14em;color:#66819e;font-weight:700;}
+#fiscalView .fiscal-ai-icon {display:grid;place-items:center;flex:0 0 46px;height:46px;border-radius:14px;background:var(--fiscal-soft,#edf3fb);color:var(--fiscal-muted,#376ca5);font-size:24px;border:1px solid var(--fiscal-line,#dbe7f5);}
+#fiscalView .fiscal-ai-eyebrow {font-size:10px;letter-spacing:.14em;color:var(--fiscal-muted,#66819e);font-weight:700;}
 #fiscalView .fiscal-ai-heading h3 {font-size:27px;letter-spacing:-.045em;color:var(--ai-ink);margin:5px 0 7px;}
 #fiscalView .fiscal-ai-heading p {max-width:620px;color:var(--ai-muted);font-size:13px;line-height:1.65;}
 #fiscalView .fiscal-ai-heading-tools {margin-left:auto;align-items:flex-end;gap:8px;}
-#fiscalView .fiscal-ai-heading-tools .fiscal-ai-provider {font-size:10px;background:#f2f6fb;border:1px solid #e0e9f3;color:#54718e;border-radius:20px;padding:6px 10px;}
-#fiscalView .fiscal-ai-source-panel {display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:0 0 18px;padding:16px 18px;border:1px solid #e3eaf2;background:#f8fafc;border-radius:12px;}
-#fiscalView .fiscal-ai-source-title {font-size:11px;font-weight:700;letter-spacing:.02em;color:#496781;}
+#fiscalView .fiscal-ai-heading-tools .fiscal-ai-provider {font-size:10px;background:var(--fiscal-soft,#f2f6fb);border:1px solid var(--fiscal-line,#e0e9f3);color:var(--fiscal-muted,#54718e);border-radius:20px;padding:6px 10px;}
+#fiscalView .fiscal-ai-source-panel {display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:0 0 18px;padding:16px 18px;border:1px solid var(--fiscal-line,#e3eaf2);background:var(--fiscal-soft,#f8fafc);border-radius:12px;}
+#fiscalView .fiscal-ai-source-title {font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--fiscal-copy,#496781);}
 #fiscalView .fiscal-ai-sources {display:flex;gap:7px;flex-wrap:wrap;}
-#fiscalView .fiscal-ai-source {background:#fff;border:1px solid #dde5ef;border-radius:7px;padding:6px 9px;font-size:11px;color:#75859a;}
-#fiscalView .fiscal-ai-source.is-ready {background:#edf4fb;color:#305c87;border-color:#cadbed;}
-#fiscalView #fiscal242AISourceNote {flex-basis:100%;margin:0;font-size:11px;line-height:1.7;color:#718397;}
+#fiscalView .fiscal-ai-source {background:var(--fiscal-surface,#fff);border:1px solid var(--fiscal-line,#dde5ef);border-radius:7px;padding:6px 9px;font-size:11px;color:var(--fiscal-muted,#75859a);}
+#fiscalView .fiscal-ai-source.is-ready {background:var(--fiscal-soft,#edf4fb);color:var(--fiscal-copy,#305c87);border-color:var(--fiscal-line,#cadbed);}
+#fiscalView #fiscal242AISourceNote {flex-basis:100%;margin:0;font-size:11px;line-height:1.7;color:var(--fiscal-muted,#718397);}
 #fiscalView .fiscal-ai-actions {display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 0;}
 #fiscalView .fiscal-ai-actions > button {border-radius:10px;padding:12px 17px;min-height:43px;font-weight:600;font-size:12px;transition:background .18s,box-shadow .18s;}
 #fiscalView .fiscal-ai-actions > .fiscal-ai-primary {background:#315f94;border:1px solid #315f94;color:#fff;box-shadow:0 3px 8px #315f9418;}
 #fiscalView .fiscal-ai-actions > .fiscal-ai-primary:hover:not(:disabled) {background:#274f7d;box-shadow:0 4px 13px #315f9426;}
 #fiscalView .fiscal-ai-actions > button:disabled {opacity:.48;box-shadow:none;cursor:not-allowed;}
-#fiscalView .fiscal-ai-inline-status {font-size:12px;color:#5f7690;line-height:1.7;}
-#fiscalView .fiscal-ai-processing-notes,#fiscalView .fiscal-ai-privacy {font-size:11px;color:#74869a;border:0;background:none;padding:7px 0;}
-#fiscalView .fiscal-ai-toolbar {margin-top:26px;padding:20px 0;border-top:1px solid #e6edf4;border-bottom:1px solid #e6edf4;background:none;border-radius:0;}
+#fiscalView .fiscal-ai-inline-status {font-size:12px;color:var(--fiscal-muted,#5f7690);line-height:1.7;}
+#fiscalView .fiscal-ai-processing-notes,#fiscalView .fiscal-ai-privacy {font-size:11px;color:var(--fiscal-muted,#74869a);border:0;background:none;padding:7px 0;}
+#fiscalView .fiscal-ai-toolbar {margin-top:26px;padding:20px 0;border-top:1px solid var(--fiscal-line,#e6edf4);border-bottom:1px solid var(--fiscal-line,#e6edf4);background:none;border-radius:0;}
 #fiscalView .fiscal-ai-toolbar h4 {font-size:19px;color:var(--ai-ink);letter-spacing:-.025em;}
-#fiscalView .fiscal-ai-toolbar-label {font-size:9px;letter-spacing:.13em;color:#8092a5;}
+#fiscalView .fiscal-ai-toolbar-label {font-size:9px;letter-spacing:.13em;color:var(--fiscal-muted,#8092a5);}
 #fiscalView .fiscal-ai-reader {gap:22px;margin-top:22px;}
-#fiscalView .fiscal-ai-account-nav {padding:0;background:#f8fafc;border:1px solid #e2eaf3;border-radius:10px;gap:0;}
-#fiscalView .fiscal-ai-nav-account {border:0;border-bottom:1px solid #e3eaf2;border-radius:0;padding:13px 14px;background:transparent;box-shadow:none;transition:background .18s,border-color .18s;}
-#fiscalView .fiscal-ai-nav-account:hover {background:#edf3fa;}
-#fiscalView .fiscal-ai-nav-account.is-selected {background:#eaf2fc;border-color:#dce6f2;box-shadow:inset 3px 0 #426e9e;}
-#fiscalView .fiscal-ai-account {border:1px solid var(--ai-line);border-radius:14px;background:#fff;padding:22px;box-shadow:none;}
-#fiscalView .fiscal-ai-account-summary {padding:0 0 18px;margin-bottom:4px;border-bottom:1px solid #e6edf4;}
+#fiscalView .fiscal-ai-account-nav {padding:0;background:var(--fiscal-soft,#f8fafc);border:1px solid var(--fiscal-line,#e2eaf3);border-radius:10px;gap:0;}
+#fiscalView .fiscal-ai-nav-account {border:0;border-bottom:1px solid var(--fiscal-line,#e3eaf2);border-radius:0;padding:13px 14px;background:transparent;box-shadow:none;transition:background .18s,border-color .18s;}
+#fiscalView .fiscal-ai-nav-account:hover {background:var(--fiscal-soft,#edf3fa);}
+#fiscalView .fiscal-ai-nav-account.is-selected {background:var(--fiscal-soft,#eaf2fc);border-color:var(--fiscal-line,#dce6f2);box-shadow:inset 3px 0 #426e9e;}
+#fiscalView .fiscal-ai-account {border:1px solid var(--ai-line);border-radius:14px;background:var(--fiscal-surface,#fff);padding:22px;box-shadow:none;}
+#fiscalView .fiscal-ai-account-summary {padding:0 0 18px;margin-bottom:4px;border-bottom:1px solid var(--fiscal-line,#e6edf4);}
 #fiscalView .fiscal-ai-card-title h4 {font-size:23px;letter-spacing:-.035em;color:var(--ai-ink);}
-#fiscalView .fiscal-ai-card-description {color:#678096;font-size:12px;line-height:1.5;}
+#fiscalView .fiscal-ai-card-description {color:var(--fiscal-muted,#678096);font-size:12px;line-height:1.5;}
 #fiscalView .fiscal-ai-account-compact strong {font-size:26px;letter-spacing:-.035em;}
 #fiscalView .fiscal-ai-account-content > .fiscal-ai-values {gap:0;border:0;padding:18px 0;}
-#fiscalView .fiscal-ai-value {padding:2px 16px;background:none;border:0;border-right:1px solid #e3eaf2;border-radius:0;}
-#fiscalView .fiscal-ai-value small {font-size:12px;color:#526b82;font-weight:500;}
-#fiscalView .fiscal-ai-value strong {font-size:16px;color:#284866;letter-spacing:-.025em;margin-top:5px;}
-#fiscalView .fiscal-ai-executive {background:#f2f6fb;border:0;border-left:3px solid #7b9fc5;border-radius:0 8px 8px 0;padding:20px;margin:4px 0 12px;}
+#fiscalView .fiscal-ai-value {padding:2px 16px;background:none;border:0;border-right:1px solid var(--fiscal-line,#e3eaf2);border-radius:0;}
+#fiscalView .fiscal-ai-value small {font-size:12px;color:var(--fiscal-copy,#526b82);font-weight:500;}
+#fiscalView .fiscal-ai-value strong {font-size:16px;color:var(--fiscal-copy,#284866);letter-spacing:-.025em;margin-top:5px;}
+#fiscalView .fiscal-ai-executive {background:var(--fiscal-soft,#f2f6fb);border:0;border-left:3px solid #7b9fc5;border-radius:0 8px 8px 0;padding:20px;margin:4px 0 12px;}
 #fiscalView .fiscal-ai-executive-top {display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
-#fiscalView .fiscal-ai-executive-kicker {font-size:11px;letter-spacing:.08em;font-weight:700;color:#526e8e;}
-#fiscalView .fiscal-ai-executive-coverage {font-size:10px;color:#5d7691;background:#fff9;border:1px solid #dce6f2;padding:5px 8px;border-radius:6px;}
-#fiscalView .fiscal-ai-executive-title {font-size:19px;color:#23476c;letter-spacing:-.035em;margin:13px 0 7px;}
-#fiscalView .fiscal-ai-executive-conclusion {font-size:14px;line-height:1.8;color:#44627f;margin:0;}
-#fiscalView .fiscal-ai-executive-next {border-top:1px solid #dce6f2;margin-top:17px;padding-top:15px;}
-#fiscalView .fiscal-ai-executive-next-label {display:block;font-size:11px;letter-spacing:.06em;color:#526e8e;font-weight:700;margin-bottom:7px;}
-#fiscalView .fiscal-ai-executive-next > strong {display:block;font-size:13px;color:#315777;line-height:1.6;}
-#fiscalView .fiscal-ai-executive-next p {font-size:13px;line-height:1.75;margin:5px 0;color:#50677e;}
-#fiscalView .fiscal-ai-executive-next small {display:block;font-size:11px;color:#6586a6;margin-top:8px;line-height:1.6;}
-#fiscalView .fiscal-ai-diagnostic-caption {font-size:11px;line-height:1.75;color:#798b9f;margin:9px 2px 20px;}
+#fiscalView .fiscal-ai-executive-kicker {font-size:11px;letter-spacing:.08em;font-weight:700;color:var(--fiscal-muted,#526e8e);}
+#fiscalView .fiscal-ai-executive-coverage {font-size:10px;color:var(--fiscal-muted,#5d7691);background:#fff9;border:1px solid var(--fiscal-line,#dce6f2);padding:5px 8px;border-radius:6px;}
+#fiscalView .fiscal-ai-executive-title {font-size:19px;color:var(--fiscal-copy,#23476c);letter-spacing:-.035em;margin:13px 0 7px;}
+#fiscalView .fiscal-ai-executive-conclusion {font-size:14px;line-height:1.8;color:var(--fiscal-copy,#44627f);margin:0;}
+#fiscalView .fiscal-ai-executive-next {border-top:1px solid var(--fiscal-line,#dce6f2);margin-top:17px;padding-top:15px;}
+#fiscalView .fiscal-ai-executive-next-label {display:block;font-size:11px;letter-spacing:.06em;color:var(--fiscal-muted,#526e8e);font-weight:700;margin-bottom:7px;}
+#fiscalView .fiscal-ai-executive-next > strong {display:block;font-size:13px;color:var(--fiscal-copy,#315777);line-height:1.6;}
+#fiscalView .fiscal-ai-executive-next p {font-size:13px;line-height:1.75;margin:5px 0;color:var(--fiscal-copy,#50677e);}
+#fiscalView .fiscal-ai-executive-next small {display:block;font-size:11px;color:var(--fiscal-muted,#6586a6);margin-top:8px;line-height:1.6;}
+#fiscalView .fiscal-ai-diagnostic-caption {font-size:11px;line-height:1.75;color:var(--fiscal-muted,#798b9f);margin:9px 2px 20px;}
 #fiscalView .fiscal-ai-finding-list {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
-#fiscalView .fiscal-ai-finding-list li {padding:11px 13px;border:1px solid #e5ecf4;background:#fafbfd;border-radius:8px;font-size:12px;line-height:1.7;color:#526b84;}
+#fiscalView .fiscal-ai-finding-list li {padding:11px 13px;border:1px solid var(--fiscal-line,#e5ecf4);background:var(--fiscal-surface,#fafbfd);border-radius:8px;font-size:12px;line-height:1.7;color:var(--fiscal-copy,#526b84);}
 #fiscalView .fiscal-ai-finding-list li::before {display:none;}
 #fiscalView .fiscal-ai-finding-list li:last-child {grid-column:1/-1;}
-#fiscalView .fiscal-ai-review {padding:20px 0;margin-top:5px;border-top:1px solid #e7edf4;background:none;}
-#fiscalView .fiscal-ai-reading .fiscal-ai-review {border:0;border-top:1px solid #e7edf4;padding:20px 0;background:none;}
+#fiscalView .fiscal-ai-review {padding:20px 0;margin-top:5px;border-top:1px solid var(--fiscal-line,#e7edf4);background:none;}
+#fiscalView .fiscal-ai-reading .fiscal-ai-review {border:0;border-top:1px solid var(--fiscal-line,#e7edf4);padding:20px 0;background:none;}
 #fiscalView .fiscal-ai-checklist {counter-reset:review-step;list-style:none;padding:0;display:grid;gap:12px;}
-#fiscalView .fiscal-ai-checklist > li {counter-increment:review-step;display:flex;align-items:flex-start;gap:12px;padding:16px 0;border:0;border-bottom:1px solid #e7edf4;border-radius:0;background:none;margin:0;}
-#fiscalView .fiscal-ai-checklist > li::before {content:counter(review-step,decimal-leading-zero);position:static;display:grid;place-items:center;flex:0 0 29px;height:29px;background:#edf3fa;border:1px solid #dce7f4;border-radius:9px;color:#547aa2;font-size:10px;font-weight:700;}
+#fiscalView .fiscal-ai-checklist > li {counter-increment:review-step;display:flex;align-items:flex-start;gap:12px;padding:16px 0;border:0;border-bottom:1px solid var(--fiscal-line,#e7edf4);border-radius:0;background:none;margin:0;}
+#fiscalView .fiscal-ai-checklist > li::before {content:counter(review-step,decimal-leading-zero);position:static;display:grid;place-items:center;flex:0 0 29px;height:29px;background:var(--fiscal-soft,#edf3fa);border:1px solid var(--fiscal-line,#dce7f4);border-radius:9px;color:var(--fiscal-muted,#547aa2);font-size:10px;font-weight:700;}
 #fiscalView .fiscal-ai-checklist > li > div {min-width:0;flex:1;}
-#fiscalView .fiscal-ai-checklist > li.fiscal-ai-grouped-step {background:none;border:0;border-bottom:1px solid #e7edf4;padding:16px 0;}
-#fiscalView .fiscal-ai-checklist strong {font-size:13px;line-height:1.75;color:#31526f;}
+#fiscalView .fiscal-ai-checklist > li.fiscal-ai-grouped-step {background:none;border:0;border-bottom:1px solid var(--fiscal-line,#e7edf4);padding:16px 0;}
+#fiscalView .fiscal-ai-checklist strong {font-size:13px;line-height:1.75;color:var(--fiscal-copy,#31526f);}
 #fiscalView .fiscal-ai-step-documents {margin:12px 0;padding:0;list-style:none;}
-#fiscalView .fiscal-ai-step-documents > li {display:flex;flex-direction:column;gap:4px;padding:10px 12px;background:#f7f9fc;border-left:2px solid #c9d9ec;border-radius:0 7px 7px 0;margin:6px 0;font-size:11px;line-height:1.7;}
+#fiscalView .fiscal-ai-step-documents > li {display:flex;flex-direction:column;gap:4px;padding:10px 12px;background:var(--fiscal-soft,#f7f9fc);border-left:2px solid var(--fiscal-line,#c9d9ec);border-radius:0 7px 7px 0;margin:6px 0;font-size:11px;line-height:1.7;}
 #fiscalView .fiscal-ai-checklist .fiscal-ai-step-documents > li::before,#fiscalView .fiscal-ai-checklist .fiscal-ai-step-documents > li::marker {display:none;content:none;}
-#fiscalView .fiscal-ai-step-documents span {color:#72859a;}
-#fiscalView .fiscal-ai-decision {margin-top:13px;padding-top:11px;border-top:1px solid #e7edf4;color:#58728c;font-size:11px;line-height:1.75;}
-#fiscalView .fiscal-ai-decision > summary {cursor:pointer;font-weight:600;color:#47719a;}
+#fiscalView .fiscal-ai-step-documents span {color:var(--fiscal-muted,#72859a);}
+#fiscalView .fiscal-ai-decision {margin-top:13px;padding-top:11px;border-top:1px solid var(--fiscal-line,#e7edf4);color:var(--fiscal-copy,#58728c);font-size:11px;line-height:1.75;}
+#fiscalView .fiscal-ai-decision > summary {cursor:pointer;font-weight:600;color:var(--fiscal-muted,#47719a);}
 #fiscalView .fiscal-ai-decision > strong {display:block;margin-top:12px;font-size:11px;}
 #fiscalView .fiscal-ai-decision > p {margin:4px 0;}
 #fiscalView .fiscal-ai-open-question {padding:12px 0;border:0;border-radius:0;background:none;line-height:1.85;font-size:13px;}
-#fiscalView .fiscal-ai-evidence-group,#fiscalView .fiscal-ai-limits {border-top:1px solid #e7edf4;padding-top:18px;margin-top:20px;}
-#fiscalView .fiscal-ai-data-scroll {border-radius:9px;border:1px solid #e3eaf3;}
-#fiscalView .fiscal-ai-data-table th {font-size:10px;font-weight:650;color:#6a8099;background:#f5f8fc;padding:11px 12px;}
-#fiscalView .fiscal-ai-data-table td {padding:11px 12px;border-color:#ecf0f6;font-size:11px;}
-#fiscalView .fiscal-ai-status-alerta {background:#eef3fa;color:#567291;}
+#fiscalView .fiscal-ai-evidence-group,#fiscalView .fiscal-ai-limits {border-top:1px solid var(--fiscal-line,#e7edf4);padding-top:18px;margin-top:20px;}
+#fiscalView .fiscal-ai-data-scroll {border-radius:9px;border:1px solid var(--fiscal-line,#e3eaf3);}
+#fiscalView .fiscal-ai-data-table th {font-size:10px;font-weight:650;color:var(--fiscal-muted,#6a8099);background:var(--fiscal-soft,#f5f8fc);padding:11px 12px;}
+#fiscalView .fiscal-ai-data-table td {padding:11px 12px;border-color:var(--fiscal-line,#ecf0f6);font-size:11px;}
+#fiscalView .fiscal-ai-status-alerta {background:var(--fiscal-soft,#eef3fa);color:var(--fiscal-muted,#567291);}
 @media(max-width:1000px) {#fiscalView .fiscal-ai-heading-tools {margin-left:0;}#fiscalView .fiscal-ai-heading {flex-wrap:wrap;}#fiscalView .fiscal-ai-heading-tools {flex-direction:row;align-items:center;}}
 @media(max-width:680px) {
   #fiscalView .fiscal-ai {padding:16px;border-radius:13px;}
@@ -115,18 +115,18 @@
 #fiscalView .fiscal-ai-account {padding:18px;}
 #fiscalView .fiscal-ai-executive {padding:16px;margin-top:6px;}
 #fiscalView .fiscal-ai-executive-next {margin-top:12px;padding-top:11px;}
-#fiscalView .fiscal-ai-impact-details {padding:18px 0;margin:16px 0;border:0;border-top:1px solid #e3eaf2;border-radius:0;background:none;}
-#fiscalView .fiscal-ai-impact-details h5 {margin:0 0 10px;font-size:14px;color:#31526f;}
+#fiscalView .fiscal-ai-impact-details {padding:18px 0;margin:16px 0;border:0;border-top:1px solid var(--fiscal-line,#e3eaf2);border-radius:0;background:none;}
+#fiscalView .fiscal-ai-impact-details h5 {margin:0 0 10px;font-size:14px;color:var(--fiscal-copy,#31526f);}
 #fiscalView .fiscal-ai-impact-details ul {margin:0;padding:0;list-style:none;display:grid;gap:0;}
 #fiscalView .fiscal-ai-impact-details li {display:flex;justify-content:space-between;gap:16px;padding:10px 0;font-size:13px;line-height:1.6;}
 #fiscalView .fiscal-ai-impact-details strong {white-space:nowrap;font-variant-numeric:tabular-nums;}
 #fiscalView .fiscal-ai-decision {margin-top:10px;line-height:1.65;font-size:12px;}
-#fiscalView .fiscal-ai-decision > strong {font-size:11px;color:#486680;}
-#fiscalView .fiscal-ai-decision p {margin:3px 0 9px;color:#50677e;}
-#fiscalView .fiscal-ai-documentary {padding:18px 0;margin:16px 0;border:0;border-top:1px solid #e3eaf2;border-radius:0;background:none;}
+#fiscalView .fiscal-ai-decision > strong {font-size:11px;color:var(--fiscal-copy,#486680);}
+#fiscalView .fiscal-ai-decision p {margin:3px 0 9px;color:var(--fiscal-copy,#50677e);}
+#fiscalView .fiscal-ai-documentary {padding:18px 0;margin:16px 0;border:0;border-top:1px solid var(--fiscal-line,#e3eaf2);border-radius:0;background:none;}
 #fiscalView .fiscal-ai-data-table td {font-size:12px;line-height:1.6;}
 #fiscalView .fiscal-ai-data-table th {font-size:11px;}
-#fiscalView .fiscal-ai-documentary-coverage,#fiscalView #fiscal242AISourceNote {font-size:12px;color:#526b82;}
+#fiscalView .fiscal-ai-documentary-coverage,#fiscalView #fiscal242AISourceNote {font-size:12px;color:var(--fiscal-copy,#526b82);}
 #fiscalView .fiscal-ai-open-question {line-height:1.75;}
 #fiscalView .fiscal-ai-checklist > li {padding:14px 0;}
 @media(max-width:680px) {
@@ -141,15 +141,15 @@
 #fiscalView .fiscal-ai-value:first-child {padding-left:0;}
 #fiscalView .fiscal-ai-value:last-child {border-right:0;padding-right:0;}
 #fiscalView .fiscal-ai-nav-account:last-child {border-bottom:0;}
-#fiscalView .fiscal-ai-nav-account > strong {font-size:14px;color:#274866;}
-#fiscalView .fiscal-ai-nav-description {font-size:12px;line-height:1.5;color:#526b82;}
-#fiscalView .fiscal-ai-nav-meta small {font-size:11px;color:#526b82;}
-#fiscalView .fiscal-ai-account-difference small {font-size:12px;color:#526b82;}
+#fiscalView .fiscal-ai-nav-account > strong {font-size:14px;color:var(--fiscal-copy,#274866);}
+#fiscalView .fiscal-ai-nav-description {font-size:12px;line-height:1.5;color:var(--fiscal-copy,#526b82);}
+#fiscalView .fiscal-ai-nav-meta small {font-size:11px;color:var(--fiscal-copy,#526b82);}
+#fiscalView .fiscal-ai-account-difference small {font-size:12px;color:var(--fiscal-copy,#526b82);}
 #fiscalView .fiscal-ai-nav-account:focus-visible {outline:2px solid #426e9e;outline-offset:-3px;}
-#fiscalView .fiscal-ai-section-heading h5 {font-size:14px;color:#31526f;}
+#fiscalView .fiscal-ai-section-heading h5 {font-size:14px;color:var(--fiscal-copy,#31526f);}
 #fiscalView .fiscal-ai-documentary-summary {font-size:13px;line-height:1.7;}
-#fiscalView .fiscal-ai-data-scroll {border:0;border-top:1px solid #e3eaf2;border-bottom:1px solid #e3eaf2;border-radius:0;}
-#fiscalView #fiscal242Rows .fiscal-table-secondary {font-size:12px;color:#526b82;line-height:1.5;}
+#fiscalView .fiscal-ai-data-scroll {border:0;border-top:1px solid var(--fiscal-line,#e3eaf2);border-bottom:1px solid var(--fiscal-line,#e3eaf2);border-radius:0;}
+#fiscalView #fiscal242Rows .fiscal-table-secondary {font-size:12px;color:var(--fiscal-copy,#526b82);line-height:1.5;}
 @media(max-width:680px) {
   #fiscalView .fiscal-ai-value {padding:2px 9px;}
   #fiscalView .fiscal-ai-value small {font-size:11px;}
@@ -159,21 +159,21 @@
 /* Primeira conferência: base comparada, seleção e motivo junto aos valores. */
 #fiscalView #fiscal242Rows .fiscal-comparison-total,
 #fiscalView #fiscal242Rows .fiscal-comparison-selection,
-#fiscalView #fiscal242Rows .fiscal-comparison-reason {display:block;white-space:normal;font-size:11px;font-weight:400;line-height:1.5;color:#526b82;margin-top:6px;}
-#fiscalView #fiscal242Rows .fiscal-comparison-selection {color:#315777;font-weight:600;}
+#fiscalView #fiscal242Rows .fiscal-comparison-reason {display:block;white-space:normal;font-size:11px;font-weight:400;line-height:1.5;color:var(--fiscal-copy,#526b82);margin-top:6px;}
+#fiscalView #fiscal242Rows .fiscal-comparison-selection {color:var(--fiscal-copy,#315777);font-weight:600;}
 #fiscalView #fiscal242Rows .fiscal-situation-cell {min-width:140px;white-space:normal;}
 #fiscalView #fiscal242Rows .fiscal-money-accounting {min-width:170px;}
 #fiscalView .fiscal-detail-metrics.fiscal-comparison-metrics {grid-template-columns:repeat(3,minmax(0,1fr));}
-#fiscalView .fiscal-comparison-metrics .fiscal-detail-metric-difference strong {font-size:23px;color:#234e7c;}
-#fiscalView .fiscal-comparison-bridge {padding:18px 0;border-bottom:1px solid #e3eaf2;}
-#fiscalView .fiscal-comparison-bridge h4 {margin:0 0 14px;font-size:14px;color:#31526f;}
+#fiscalView .fiscal-comparison-metrics .fiscal-detail-metric-difference strong {font-size:23px;color:var(--fiscal-copy,#234e7c);}
+#fiscalView .fiscal-comparison-bridge {padding:18px 0;border-bottom:1px solid var(--fiscal-line,#e3eaf2);}
+#fiscalView .fiscal-comparison-bridge h4 {margin:0 0 14px;font-size:14px;color:var(--fiscal-copy,#31526f);}
 #fiscalView .fiscal-comparison-bridge-values {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:0;}
-#fiscalView .fiscal-comparison-bridge-values > div {padding-left:14px;border-left:2px solid #e0e8f1;min-width:0;}
+#fiscalView .fiscal-comparison-bridge-values > div {padding-left:14px;border-left:2px solid var(--fiscal-line,#e0e8f1);min-width:0;}
 #fiscalView .fiscal-comparison-bridge-values > div:last-child {border-color:#7b9fc5;}
-#fiscalView .fiscal-comparison-bridge dt {font-size:12px;line-height:1.5;color:#526b82;}
-#fiscalView .fiscal-comparison-bridge dd {margin:6px 0 0;font-size:16px;font-weight:650;font-variant-numeric:tabular-nums;color:#284866;}
-#fiscalView .fiscal-comparison-bridge p {font-size:12px;line-height:1.6;color:#526b82;margin:14px 0 0;}
-#fiscalView .fiscal-detail-explanation {font-size:12px;line-height:1.7;color:#526b82;}
+#fiscalView .fiscal-comparison-bridge dt {font-size:12px;line-height:1.5;color:var(--fiscal-copy,#526b82);}
+#fiscalView .fiscal-comparison-bridge dd {margin:6px 0 0;font-size:16px;font-weight:650;font-variant-numeric:tabular-nums;color:var(--fiscal-copy,#284866);}
+#fiscalView .fiscal-comparison-bridge p {font-size:12px;line-height:1.6;color:var(--fiscal-copy,#526b82);margin:14px 0 0;}
+#fiscalView .fiscal-detail-explanation {font-size:12px;line-height:1.7;color:var(--fiscal-copy,#526b82);}
 @media(max-width:680px) {
   #fiscalView .fiscal-comparison-bridge-values {grid-template-columns:1fr;gap:14px;}
   #fiscalView .fiscal-detail-metrics.fiscal-comparison-metrics {grid-template-columns:1fr;}

@@ -156,3 +156,18 @@ html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) .daily-filter
 html[data-theme="dark"] :is(#reconcileResult,#ledgerResult,.preview-dialog) .bank-investments :is(.bank-investments-note,.bank-investments-rule,.bank-investments-preview-totals) {background:var(--surface-2)!important;color:var(--muted)!important;border-color:var(--border)!important}
 html[data-theme="dark"] :is(#reconcileResult,#ledgerResult,.preview-dialog) .bank-investments :is(input,select,input:read-only) {background:#0d0d0d!important;color:var(--text)!important;border-color:#424242!important}
 html[data-theme="dark"] :is(#reconcileResult,#ledgerResult,.preview-dialog) .bank-investments label {color:var(--text)!important}
+
+/* Fiscal styles use theme-aware colors even when loaded after document reading. */
+html[data-theme="dark"] #fiscalView {
+ --fiscal-surface:#141414;--fiscal-soft:#1e1e1e;--fiscal-line:#353535;
+ --fiscal-copy:#dedede;--fiscal-muted:#b2b2b2;
+ --fiscal-success:#87d8b9;--fiscal-error:#f3a6ad;--fiscal-warning:#e5c391;
+ --fw-shadow:none;
+}
+html[data-theme="dark"] #fiscalView :is(.fiscal-account-dialog-header,.fiscal-account-dialog-footer,.fiscal-account-opinion,.fiscal-account-opinion-conclusion,.fiscal-comparison-bridge,.fiscal-reading-guide,.fiscal-summary-pending) {background:var(--surface-2)!important;border-color:var(--border)!important;color:var(--text)!important}
+html[data-theme="dark"] #fiscalView :is(.fiscal-result-row,.fiscal-document-row,.fiscal-ai-nav-account):hover {background:#242424!important}
+html[data-theme="dark"] #fiscalView :is(.fiscal-result-row.selected,.fiscal-ai-nav-account.is-selected,.fiscal-workflow-button.active,.fiscal-account-review-filter[aria-pressed=true]) {background:#17243a!important;color:#c2d8ff!important;border-color:#507db6!important}
+html[data-theme="dark"] #fiscalView :is(input,select,textarea):focus-visible {outline:none!important;border-color:#7198ce!important;box-shadow:0 0 0 2px #8ab8ff20!important}
+html[data-theme="dark"] #fiscalView :is(.fiscal-summary,.fiscal-results-card,.fiscal-account-dialog,.fiscal-ai-account) {box-shadow:none!important;border-color:#333!important}
+html[data-theme="dark"] #fiscalView :is(.fiscal-ai-loading-meter,.fiscal-progress) {background:#292929!important}
+html[data-theme="dark"] #fiscalView :is(.fiscal-ai-loading-meter > span,.fiscal-progress-matches) {background:#7198ce!important}

@@ -180,6 +180,11 @@
     assertDarkSurface(expandedHeader);
     previewProbe.querySelectorAll('.daily-summary > div,.daily-rule').forEach(assertDarkSurface);
     expandedProbe.remove();
+    const fiscalThemeProbe=document.createElement('div');
+    fiscalThemeProbe.innerHTML='<div class="fiscal-summary"><div class="fiscal-summary-card">Totais fiscais</div></div><section class="fiscal-account-dialog"><header class="fiscal-account-dialog-header">Detalhe da conta</header><div class="fiscal-account-dialog-body"><div class="fiscal-account-opinion-conclusion">Conclusão</div><div class="fiscal-ai-case">Explicação da análise</div></div></section>';
+    fiscalPane.append(fiscalThemeProbe);
+    fiscalThemeProbe.querySelectorAll('.fiscal-summary-card,.fiscal-account-dialog-header,.fiscal-account-opinion-conclusion,.fiscal-ai-case').forEach(assertDarkSurface);
+    fiscalThemeProbe.remove();
     previewProbe.remove();
     if(initialTheme!=="dark")themeButton.click();
     state("ok");
