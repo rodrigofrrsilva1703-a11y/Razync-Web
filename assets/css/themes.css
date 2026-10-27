@@ -9,9 +9,9 @@ html[data-theme="dark"] .theme-moon {display:none}
 html[data-theme="dark"] .theme-sun {display:block}
 @media(max-width:760px) {.topbar-actions{gap:6px}.theme-toggle{min-width:38px;padding:8px}#themeToggleLabel{display:none}.topbar .status-pill{max-width:145px;text-align:center;line-height:1.4}}
 /* A restrained refinement of the portfolio action, in both themes. */
-#portfolioPicker .portfolio-entry-action {padding:11px 13px;border:0;border-radius:9px;background:#eff5fa}
+#portfolioPicker .portfolio-entry-action {padding:0;border:0;border-radius:0;background:transparent}
 #portfolioPicker .portfolio-entry-arrow {background:#dfeaf4}
-#portfolioPicker .portfolio-entry:hover .portfolio-entry-action {background:#e5eff8}
+#portfolioPicker .portfolio-entry:hover .portfolio-entry-action {background:transparent}
 html[data-theme="dark"] {
  color-scheme:dark;--bg:#080808;--surface:#141414;--surface-2:#141414;--surface-soft:#101010;
  --border:#333333;--line:#333333;--text:#ededed;--ink:#ededed;--muted:#ababab;--ink-muted:#ababab;
@@ -66,12 +66,12 @@ html[data-theme="dark"] #portfolioPicker .portfolio-heading {background:linear-g
 html[data-theme="dark"] #portfolioPicker .portfolio-heading h1 {color:#fff!important}
 html[data-theme="dark"] #portfolioPicker h1 em {color:#8ab8ff}
 html[data-theme="dark"] #portfolioPicker .portfolio-heading p {color:#bdbdbd!important}
-html[data-theme="dark"] #portfolioPicker .portfolio-home-summary>span {background:#ffffff06;border-color:#ffffff20!important}
+html[data-theme="dark"] #portfolioPicker .portfolio-home-summary>span {background:transparent;border-color:transparent!important}
 html[data-theme="dark"] #portfolioPicker .portfolio-home-summary strong {color:#fff!important}
 html[data-theme="dark"] #portfolioPicker .portfolio-feature:hover,html[data-theme="dark"] #portfolioPicker .portfolio-feature[open] {background:#141414}
 html[data-theme="dark"] #portfolioPicker .portfolio-feature {border-color:#333333}
 html[data-theme="dark"] #portfolioPicker .portfolio-entry:hover {background:#202020!important}
-html[data-theme="dark"] #portfolioPicker .portfolio-entry-action {background:#202020!important}
+html[data-theme="dark"] #portfolioPicker .portfolio-entry-action {background:transparent!important}
 html[data-theme="dark"] #portfolioPicker .portfolio-entry-action>span:first-child {color:#a9caff}
 html[data-theme="dark"] #portfolioPicker .portfolio-feature-toggle {color:#a6a6a6}
 html[data-theme="dark"] :is(.company-card,.file-drop-shell):hover {background:#242424!important}
