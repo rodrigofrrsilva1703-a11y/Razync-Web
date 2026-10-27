@@ -171,3 +171,6 @@ html[data-theme="dark"] #fiscalView :is(input,select,textarea):focus-visible {ou
 html[data-theme="dark"] #fiscalView :is(.fiscal-summary,.fiscal-results-card,.fiscal-account-dialog,.fiscal-ai-account) {box-shadow:none!important;border-color:#333!important}
 html[data-theme="dark"] #fiscalView :is(.fiscal-ai-loading-meter,.fiscal-progress) {background:#292929!important}
 html[data-theme="dark"] #fiscalView :is(.fiscal-ai-loading-meter > span,.fiscal-progress-matches) {background:#7198ce!important}
+html[data-theme="dark"] #fiscalView .fiscal-account-dialog [role=tab][aria-selected=true] {background:transparent!important;color:#b9d3ff!important;border-bottom-color:#80adff!important;box-shadow:none!important}
+html[data-theme="dark"] #fiscalView .fiscal-account-dialog .fiscal-account-analysis-button {background:#2864d7!important;color:#fff!important;border-color:#417de8!important}
+html[data-theme="dark"] #fiscalView .fiscal-account-dialog .fiscal-account-analysis-button:hover:not(:disabled) {background:#245ac0!important}
