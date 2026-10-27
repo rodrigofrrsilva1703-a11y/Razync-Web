@@ -265,3 +265,14 @@ html[data-theme="dark"] .topbar .connection-pill[data-connection="offline"] {col
 @media(prefers-reduced-motion:reduce) {
   .topbar .connection-pill,.topbar .connection-indicator {animation:none!important;transition:none!important}
 }
+
+
+/* Higher specificity than the generic dark-mode button rule. */
+html[data-theme="dark"] .app-shell .topbar #apiStatus.connection-pill {
+  background:#171717!important;border-color:#393939!important;
+  color:#c4c4c4!important;box-shadow:none!important;
+}
+html[data-theme="dark"] .app-shell .topbar #apiStatus[data-connection="online"] {color:#9bdabc!important}
+html[data-theme="dark"] .app-shell .topbar #apiStatus[data-connection="checking"],
+html[data-theme="dark"] .app-shell .topbar #apiStatus[data-connection="waking"] {color:#b5cdf1!important}
+html[data-theme="dark"] .app-shell .topbar #apiStatus[data-connection="offline"] {color:#ddc292!important}
