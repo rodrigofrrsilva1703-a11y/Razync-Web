@@ -179,9 +179,9 @@ html[data-theme="dark"] #portfolioPicker .portfolio-feature-number {color:#858f9
  #portfolioPicker .home-visual {animation:homeReveal .7s .15s ease-out backwards}
  #portfolioPicker .home-flow-track::after {animation:homeFlowTravel 2.8s ease-in-out infinite}
  #portfolioPicker .home-flow-track:nth-of-type(2)::after {animation-delay:1.4s}
- #portfolioPicker .home-flow-node svg {animation:homeFlowBeat 5.6s ease-in-out infinite}
- #portfolioPicker .home-flow-node:nth-of-type(2) svg {animation-delay:1.4s}
- #portfolioPicker .home-flow-node:nth-of-type(3) svg {animation-delay:2.8s}
+ #portfolioPicker .home-flow-node svg {animation:homeFlowBeat 7.2s ease-in-out infinite}
+ #portfolioPicker .home-flow-node:nth-of-type(2) svg {animation-delay:2.4s}
+ #portfolioPicker .home-flow-node:nth-of-type(3) svg {animation-delay:4.8s}
  #portfolioPicker .portfolio-access,#portfolioPicker .portfolio-capabilities {animation:homeReveal .6s .2s ease-out backwards}
  #portfolioPicker .portfolio-feature-icon svg,#portfolioPicker .portfolio-avatar {animation:homeIconFloat 4s ease-in-out infinite}
  #portfolioPicker .portfolio-feature:nth-of-type(2) svg {animation-delay:-1.3s}
@@ -223,4 +223,42 @@ html[data-theme="dark"] #portfolioPicker .portfolio-feature-number {color:#858f9
 }
 @media(prefers-reduced-motion:reduce) {
  #portfolioPicker .portfolio-entry:hover,#portfolioPicker .portfolio-entry:active,#portfolioPicker .portfolio-feature[open] .portfolio-feature-toggle {transform:none}
+}
+
+/* A looping illustration of the workflow; it never represents a running job. */
+#portfolioPicker .home-flow-node {position:relative;isolation:isolate}
+#portfolioPicker .home-flow-symbol {position:relative;display:inline-flex;flex:none}
+#portfolioPicker .home-flow-node::before {content:"";position:absolute;z-index:-1;inset:-4px -9px;border-radius:11px;background:linear-gradient(90deg,#91beff16,transparent);opacity:0;pointer-events:none}
+#portfolioPicker .home-flow-node::after {content:"";position:absolute;right:1px;width:4px;height:4px;border-radius:50%;background:#a8ceff;box-shadow:0 0 9px #a8ceff70;opacity:.2;pointer-events:none}
+#portfolioPicker .home-flow-node:first-of-type .home-flow-symbol::after {content:"";position:absolute;left:10px;right:10px;top:10px;height:1px;background:#c4dfff;box-shadow:0 0 7px #9ac5ff;opacity:0;pointer-events:none}
+#portfolioPicker h1 em {position:relative;display:inline-block}
+#portfolioPicker h1 em::after {content:"";position:absolute;bottom:-8px;left:0;width:100%;height:2px;border-radius:3px;background:linear-gradient(90deg,#91beff80,#c1dcff,transparent);transform-origin:left;opacity:.6;pointer-events:none}
+#portfolioPicker .portfolio-feature {position:relative;transition:transform .22s ease,border-color .22s ease}
+#portfolioPicker .portfolio-feature::before {content:"";position:absolute;z-index:1;left:12%;right:12%;top:0;height:1px;background:linear-gradient(90deg,transparent,#8ab8ff80,transparent);opacity:.3;pointer-events:none}
+@keyframes homeStageGlow {0%,6%,60%,100%{opacity:0}15%,40%{opacity:1}}
+@keyframes homeStageDot {0%,60%,100%{opacity:.2;transform:scale(1)}15%,40%{opacity:1;transform:scale(1.3)}}
+@keyframes homeDocumentScan {0%,7%,44%,100%{opacity:0;transform:translateY(0)}12%{opacity:1}35%{opacity:1;transform:translateY(17px)}}
+@keyframes homeCheckDraw {0%,7%{stroke-dashoffset:55;opacity:.3}30%,65%{stroke-dashoffset:0;opacity:1}85%,100%{stroke-dashoffset:0;opacity:.7}}
+@keyframes homeTitleLine {0%,100%{transform:scaleX(.72);opacity:.35}50%{transform:scaleX(1);opacity:.85}}
+@keyframes homeEdgeLight {0%,100%{opacity:.2;translate:-12% 0}50%{opacity:.8;translate:12% 0}}
+@media(prefers-reduced-motion:no-preference) {
+ #portfolioPicker .home-flow-node::before {animation:homeStageGlow 7.2s ease-in-out infinite}
+ #portfolioPicker .home-flow-node::after {animation:homeStageDot 7.2s ease-in-out infinite}
+ #portfolioPicker .home-flow-node:nth-of-type(2)::before,#portfolioPicker .home-flow-node:nth-of-type(2)::after {animation-delay:2.4s}
+ #portfolioPicker .home-flow-node:nth-of-type(3)::before,#portfolioPicker .home-flow-node:nth-of-type(3)::after {animation-delay:4.8s}
+ #portfolioPicker .home-flow-node:first-of-type .home-flow-symbol::after {animation:homeDocumentScan 7.2s ease-in-out infinite}
+ #portfolioPicker .home-flow-node:nth-of-type(2) svg path,#portfolioPicker .home-flow-node:nth-of-type(3) svg path {stroke-dasharray:55;animation:homeCheckDraw 7.2s ease-in-out infinite}
+ #portfolioPicker .home-flow-node:nth-of-type(2) svg path {animation-delay:2.4s}
+ #portfolioPicker .home-flow-node:nth-of-type(3) svg path {animation-delay:4.8s}
+ #portfolioPicker h1 em::after {animation:homeTitleLine 5s ease-in-out infinite}
+ #portfolioPicker .portfolio-feature::before {animation:homeEdgeLight 6s ease-in-out infinite}
+ #portfolioPicker .portfolio-feature:nth-of-type(2)::before {animation-delay:-2s}
+ #portfolioPicker .portfolio-feature:nth-of-type(3)::before {animation-delay:-4s}
+ #portfolioPicker .home-visual-dots i {animation:homeStageDot 2.4s ease-in-out infinite}
+ #portfolioPicker .home-visual-dots i:nth-child(2) {animation-delay:.4s}
+ #portfolioPicker .home-visual-dots i:nth-child(3) {animation-delay:.8s}
+}
+@media(hover:hover) and (prefers-reduced-motion:no-preference) {
+ #portfolioPicker .portfolio-feature:hover {transform:translateY(-3px);border-color:#7198ce!important}
+ #portfolioPicker .portfolio-feature:hover .portfolio-feature-icon svg {animation:none;translate:0 -2px}
 }
