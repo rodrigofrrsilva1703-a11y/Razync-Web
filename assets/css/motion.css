@@ -4,6 +4,34 @@
   to { opacity:1; translate:0 0; }
 }
 @keyframes razyncSpin { to { rotate:360deg; } }
+@keyframes razyncToolEnter {
+  from { opacity:0; translate:0 8px; }
+  to { opacity:1; translate:0 0; }
+}
+@keyframes razyncFileEnter {
+  from { opacity:0; translate:0 4px; scale:.985; }
+  to { opacity:1; translate:0 0; scale:1; }
+}
+/* Animate small groups, never hundreds of transaction rows. */
+#companyPanel .tool-pane.active .tool-intro,
+.global-view.active :is(.page-head,.fiscal-page-head) {
+  animation:razyncToolEnter 280ms cubic-bezier(.22,1,.36,1) both;
+}
+#companyPanel .tool-pane.active .modern-form,
+.global-view.active :is(#ledgerForm,.fiscal-setup) {
+  animation:razyncToolEnter 320ms 35ms cubic-bezier(.22,1,.36,1) both;
+}
+#companyPanel .tool-pane.active .stack-forms > .modern-form:nth-child(2) {animation-delay:70ms}
+.file-selection-item:nth-child(-n+9) {animation:razyncFileEnter 200ms ease-out both}
+.tool-result:not([hidden]) :is(.preview-commandbar,.preview-summary-grid,.daily-summary),
+.fiscal-section-panel:not([hidden]),.fiscal-ai-account[open] .fiscal-ai-account-content {
+  animation:razyncToolEnter 260ms ease-out both;
+}
+@media(hover:hover) and (prefers-reduced-motion:no-preference) {
+  .tool-tab:hover {translate:0 -1px}
+  .file-drop-shell:focus-within {translate:0 -1px}
+  :is(.preview-download,.daily-download):hover:not(:disabled) {translate:0 -2px}
+}
 .company-card, .tool-tab, .file-drop-shell, .preview-download, .daily-download {
   transition:background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, translate 180ms ease !important;
 }
