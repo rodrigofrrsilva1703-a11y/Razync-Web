@@ -203,7 +203,7 @@ def test_1408_extrato_is_primary_when_recebidos_is_also_uploaded(monkeypatch):
     actual,_=workflow(1408,{'extrato':[('itau.pdf',b'pdf')],'recebidos':[('recebidos.xls',raw)]},{'ano':2026})
     assert workbook_signature(actual)==workbook_signature(expected)
 
-def test_nibo_bank_descriptions_order_and_unclassified_accounts_match_original(monkeypatch):
+def test_nibo_bank_tabs_preserve_original_values_and_unclassified_accounts(monkeypatch):
     from razync import nibo
     from test_migration import model
     from openpyxl import load_workbook
@@ -213,7 +213,15 @@ def test_nibo_bank_descriptions_order_and_unclassified_accounts_match_original(m
     ref=reference_engine();monkeypatch.chdir(engine.TEMPLATE.parent)
     expected=ref.gerar_excel_modelo_dominio(combined)
     actual,_=workflow(1529,{'itau':[('nibo.pdf',b'pdf')],'banco_brasil':[('nibo-bb.pdf',b'pdf')]},{})
-    assert workbook_signature(actual)==workbook_signature(expected)
+    book=load_workbook(io.BytesIO(actual),data_only=True)
+    assert book.sheetnames == ['Itaú','Banco do Brasil']
+    from app.migration_routes import workbook_preview
+    sheets=workbook_preview(actual)
+    original=workbook_preview(expected)[0]
+    assert sum(sheet['count'] for sheet in sheets)==original['count']
+    original_rows=sorted(original['rows'],key=lambda row:str(row[0]))
+    actual_rows=sorted([row for sheet in sheets for row in sheet['rows']],key=lambda row:str(row[0]))
+    assert actual_rows==original_rows
 
 def test_francesinhas_endpoint_preserves_emitido_em_and_original_tabs(monkeypatch):
     from test_original_eletro_forte_francesinhas import TEXTO_508,TEXTO_509,_zip_teste

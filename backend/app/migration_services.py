@@ -449,8 +449,9 @@ def _workflow(code, roles, options):
             from app.organizer_jobs import progress
             current_file = 0
             total_files = sum(len(roles.get(bank, [])) for bank in ('itau', 'banco_brasil'))
-            frames = []
+            groups = {}
             for bank, description in [('itau', 'BANCO ITAÚ'), ('banco_brasil', 'BANCO DO BRASIL')]:
+                frames = []
                 for filename, content in roles.get(bank, []):
                     current_file += 1
                     progress(current_file, total_files)
@@ -463,12 +464,15 @@ def _workflow(code, roles, options):
                         frame = processar_extrato_nibo_pdf(content)[COLUNAS].copy()
                     frame['DESCRIÇÃO'] = description
                     frames.append(frame)
-            if not frames:
+                if frames:
+                    frame = pd.concat(frames, ignore_index=True)
+                    frame['_DATA_ORDEM'] = pd.to_datetime(frame['DATA'], dayfirst=True, errors='coerce')
+                    frame = frame.sort_values('_DATA_ORDEM', kind='stable').drop(columns=['_DATA_ORDEM']).reset_index(drop=True)
+                    frame = filter_frame(frame, options)
+                    groups['Itaú' if bank == 'itau' else 'Banco do Brasil'] = engine.padronizar_historicos_modelo(frame)
+            if not groups:
                 raise ValueError('Envie PDF Nibo do Itaú e/ou Banco do Brasil, ou o extrato original BB Consultas.')
-            frame = pd.concat(frames, ignore_index=True)
-            frame['_DATA_ORDEM'] = pd.to_datetime(frame['DATA'], dayfirst=True, errors='coerce')
-            frame = frame.sort_values(['_DATA_ORDEM','DESCRIÇÃO'], kind='stable').drop(columns=['_DATA_ORDEM']).reset_index(drop=True)
-            return engine.gerar_excel_modelo_dominio(filter_frame(frame, options)), 'DIAS_PEREIRA_1529_MODELO_DOMINIO.xlsx'
+            return gerar_modelo_abas(groups), 'DIAS_PEREIRA_1529_MODELO_DOMINIO.xlsx'
         if code == 968:
             from razync.radani import analisar_desmembramentos, consolidar_comprovantes_sispag
             from razync.bradesco_radani import processar_extrato_bradesco_radani

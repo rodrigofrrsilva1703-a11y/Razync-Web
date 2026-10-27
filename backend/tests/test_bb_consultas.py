@@ -139,3 +139,26 @@ def test_api_organizador_exporta_bb_consultas_e_aplica_filtro_de_periodo():
     records = [dict(zip(sheet['columns'], row)) for sheet in sheets for row in sheet['rows']]
     assert all(row['DATA'] == '04/03/2026' for row in records)
     assert [row['VALOR'] for row in records] == [-40, 40]
+
+
+def test_1529_abas_por_banco_reunem_varios_arquivos_e_filtram_periodo(monkeypatch):
+    import razync.nibo as nibo
+    from app.migration_services import workflow
+    from app.migration_routes import workbook_preview
+    def nibo_frame(data):
+        return pd.DataFrame([{'DESCRIÇÃO':'NIBO','DATA':pd.Timestamp(date),'VALOR':value,'DÉBITO':'','CRÉDITO':'','HISTÓRICO':'Recebido: NIBO TESTE'}
+            for date,value in ({b'itau-a':[('2026-03-04',20),('2026-02-01',10)], b'itau-b':[('2026-03-03',30)]}[data])])
+    monkeypatch.setattr(nibo,'processar_extrato_nibo_pdf',nibo_frame)
+    content,_=workflow(1529,{'itau':[('a.pdf',b'itau-a'),('b.pdf',b'itau-b')],
+        'banco_brasil':[('bb.pdf',pdf())]}, {'data_inicial':'2026-03-01','data_final':'2026-03-31'})
+    sheets=workbook_preview(content)
+    assert [sheet['name'] for sheet in sheets]==['Itaú','Banco do Brasil']
+    itau,bb=sheets
+    assert itau['count']==2 and bb['count']==6
+    itau_rows=[dict(zip(itau['columns'],row)) for row in itau['rows']]
+    bb_rows=[dict(zip(bb['columns'],row)) for row in bb['rows']]
+    assert [row['VALOR'] for row in itau_rows]==[30,20]
+    assert [row['DATA'] for row in itau_rows]==['03/03/2026','04/03/2026']
+    assert all(row['DESCRIÇÃO']=='BANCO ITAÚ' for row in itau_rows)
+    assert all(row['DESCRIÇÃO']=='BANCO DO BRASIL' for row in bb_rows)
+    assert [row['VALOR'] for row in bb_rows if 'BB Rende Fácil' in row['HISTÓRICO']]==[-50,40]
