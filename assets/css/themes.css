@@ -192,3 +192,7 @@ html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.mo
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) .file-drop-shell:has(input[type=file]:focus-visible),
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) .file-drop-shell.is-dragging {outline:1px solid #7198ce!important;outline-offset:2px}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) .file-drop-shell :is(.file-selection,.file-selection-item,.file-selection-summary) {background:transparent!important;box-shadow:none!important}
+
+/* Match light-theme transparency on layout wrappers; only actual cards have fills. */
+html[data-theme="dark"] #companyPanel :is(.tool-card,.tool-tabs),
+html[data-theme="dark"] #companiesView :is(.grid,.directory-controls) {background:transparent!important;background-image:none!important;border-width:0!important;box-shadow:none!important}

@@ -149,6 +149,14 @@
     const themeButton=document.querySelector('#themeToggle');
     const initialTheme=document.documentElement.dataset.theme;
     if(initialTheme!=="dark")themeButton.click();
+    for(const selector of ['#companyPanel .tool-card','#companyPanel .tool-tabs','#companiesView .directory-controls','#companiesView .grid']) {
+      const wrapper=document.querySelector(selector);
+      if(!wrapper)throw Error('Contêiner de teste ausente: '+selector);
+      const style=getComputedStyle(wrapper);
+      if(style.backgroundColor!=='rgba(0, 0, 0, 0)' || style.borderTopWidth!=='0px') {
+        throw Error('O modo escuro pintou um contêiner transparente: '+selector);
+      }
+    }
     const formStyle=getComputedStyle(fiscalForm);
     const darkChannels=(formStyle.backgroundColor.match(/\d+/g)||[]).slice(0,3).map(Number);
     if(darkChannels.length!==3 || Math.max(...darkChannels)>45 || Math.max(...darkChannels)-Math.min(...darkChannels)>8) {
