@@ -50,7 +50,7 @@ function renderPortfolios() {
     const action = document.createElement("span");
     action.className = "portfolio-entry-action";
     const actionLabel = document.createElement("span");
-    actionLabel.textContent = "Entrar na carteira";
+    actionLabel.textContent = "Entrar";
     action.append(actionLabel, arrow);
     const label = document.createElement("span");
     label.className = "portfolio-entry-label";

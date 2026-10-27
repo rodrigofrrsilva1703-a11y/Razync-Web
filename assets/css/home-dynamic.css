@@ -62,3 +62,32 @@
  #portfolioPicker .portfolio-entry::after {display:none}
  #portfolioPicker .home-flow-symbol::after {display:none}
 }
+
+/* Portfolio selection: a clear action and pointer/keyboard parity. */
+#portfolioPicker .portfolio-entry {grid-template-columns:46px minmax(0,1fr) 82px;gap:7px 14px}
+#portfolioPicker .portfolio-entry-label {grid-column:2;grid-row:1;letter-spacing:1px}
+#portfolioPicker .portfolio-avatar {grid-column:1;grid-row:1/3;width:46px;height:46px;border-radius:13px}
+#portfolioPicker .portfolio-entry-info {grid-column:2;grid-row:2}
+#portfolioPicker .portfolio-entry-action {grid-column:3;grid-row:1/3;gap:8px;justify-content:flex-end}
+#portfolioPicker .portfolio-entry-action > span:first-child {display:block;font-size:11px;font-weight:600;white-space:nowrap}
+#portfolioPicker .portfolio-entry::before {inset:0;width:auto;height:auto;border-radius:inherit;background:radial-gradient(260px circle at var(--pointer-x,50%) var(--pointer-y,50%),#83b7ed20,transparent 75%);pointer-events:none;z-index:-1}
+#portfolioPicker .portfolio-entry:is(:hover,:focus-visible)::before {opacity:1}
+#portfolioPicker .home-visual {transition:transform .24s ease-out,border-color .3s,box-shadow .3s}
+#portfolioPicker .portfolio-home-summary > span {transition:translate .25s}
+#portfolioPicker .home-ambient::after {content:"";position:absolute;inset:0;opacity:.18;background-image:radial-gradient(circle,#b2d4ff88 1px,transparent 1.6px);background-size:74px 74px;mask-image:linear-gradient(110deg,transparent 35%,#000);pointer-events:none}
+@keyframes homeConstellation {from{transform:translate3d(0,0,0)}to{transform:translate3d(8px,-12px,0)}}
+@media(prefers-reduced-motion:no-preference) {
+ #portfolioPicker .home-ambient::after {animation:homeConstellation 14s ease-in-out infinite alternate}
+}
+#portfolioPicker[data-motion="paused"] .home-ambient::after {animation-play-state:paused!important}
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
+ #portfolioPicker .portfolio-entry:hover {transform:perspective(800px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)) translateY(-2px)}
+ #portfolioPicker .home-visual:hover {transform:perspective(1000px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg))}
+ #portfolioPicker .portfolio-home-summary > span:hover {translate:0 -2px}
+}
+@media(max-width:420px) {
+ #portfolioPicker .portfolio-entry {grid-template-columns:40px minmax(0,1fr) 68px;gap:7px 10px;padding-inline:14px}
+ #portfolioPicker .portfolio-avatar {width:40px;height:40px;border-radius:11px}
+ #portfolioPicker .portfolio-entry-action {gap:5px}
+ #portfolioPicker .portfolio-entry-action > span:first-child {font-size:10px}
+}
