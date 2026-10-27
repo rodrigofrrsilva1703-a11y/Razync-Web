@@ -141,3 +141,18 @@ html[data-theme="dark"] #companyPanel .modern-form .file-drop-shell {border-colo
 html[data-theme="dark"] #companyPanel .modern-form .file-drop-shell:focus-within {border-color:#7198ce!important;box-shadow:0 0 0 2px #8ab8ff18!important}
 html[data-theme="dark"] #companyPanel .modern-form :is(input:not([type=file]):not([type=checkbox]):not([type=radio]),select,textarea):focus-visible {outline:none!important;border-color:#7198ce!important;box-shadow:0 0 0 2px #8ab8ff18!important}
 html[data-theme="dark"] #companyPanel .modern-form input[type=file]:focus-visible {outline:none!important;border-color:transparent!important;box-shadow:none!important}
+
+/* Result cards are created after the upload; cover their inner surfaces too. */
+html[data-theme="dark"] .daily-reconciliation .daily-summary {background:transparent!important}
+html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) :is(.daily-summary > div,.daily-rule),
+html[data-theme="dark"] .preview-dialog-header,
+html[data-theme="dark"] #companyPanel :is(.tool-result-metrics > span,#baseStats > span) {background:var(--surface-2)!important;color:var(--text)!important;border-color:var(--border)!important;box-shadow:none!important}
+html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) :is(.daily-summary small,.daily-rule span) {color:var(--muted)!important}
+html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) :is(.daily-summary strong,.daily-rule strong,.daily-rule b) {color:var(--text)!important}
+html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) .daily-status.is-ok,
+html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) .daily-table td.daily-balance.is-zero {background:#16382f!important;color:var(--dark-success)!important}
+html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) .daily-status.is-review {background:#3a3023!important;color:var(--dark-warning)!important}
+html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) .daily-filter.active {background:#17243a!important;color:#c2d8ff!important;border-color:#507db6!important}
+html[data-theme="dark"] :is(#reconcileResult,#ledgerResult,.preview-dialog) .bank-investments :is(.bank-investments-note,.bank-investments-rule,.bank-investments-preview-totals) {background:var(--surface-2)!important;color:var(--muted)!important;border-color:var(--border)!important}
+html[data-theme="dark"] :is(#reconcileResult,#ledgerResult,.preview-dialog) .bank-investments :is(input,select,input:read-only) {background:#0d0d0d!important;color:var(--text)!important;border-color:#424242!important}
+html[data-theme="dark"] :is(#reconcileResult,#ledgerResult,.preview-dialog) .bank-investments label {color:var(--text)!important}

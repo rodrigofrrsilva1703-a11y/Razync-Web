@@ -165,6 +165,21 @@
     };
     const light=[luminance(cellStyle.color),luminance(cellStyle.backgroundColor)].sort((a,b)=>b-a);
     if((light[0]+.05)/(light[1]+.05)<4.5)throw Error("Contraste insuficiente na prévia escura.");
+    // Exercise dynamically mounted daily cards, then the same result in a dialog.
+    renderDailyReconciliation(previewProbe,{rows:[{DATA:'2026-10-27','ENTRADAS PLANILHA':100,'ENTRADAS EXTRATO':100}]});
+    const assertDarkSurface=element=>{
+      const style=getComputedStyle(element);
+      if(luminance(style.backgroundColor)>.05)throw Error('Resultado ficou claro no tema escuro: '+element.className);
+      const levels=[luminance(style.color),luminance(style.backgroundColor)].sort((a,b)=>b-a);
+      if((levels[0]+.05)/(levels[1]+.05)<4.5)throw Error('Contraste insuficiente no card da conferência.');
+    };
+    previewProbe.querySelectorAll('.daily-summary > div,.daily-rule').forEach(assertDarkSurface);
+    const expandedProbe=document.createElement('dialog');expandedProbe.className='preview-dialog';
+    const expandedHeader=document.createElement('div');expandedHeader.className='preview-dialog-header';
+    expandedHeader.textContent='Prévia de teste';expandedProbe.append(expandedHeader,previewProbe);document.body.append(expandedProbe);
+    assertDarkSurface(expandedHeader);
+    previewProbe.querySelectorAll('.daily-summary > div,.daily-rule').forEach(assertDarkSurface);
+    expandedProbe.remove();
     previewProbe.remove();
     if(initialTheme!=="dark")themeButton.click();
     state("ok");
