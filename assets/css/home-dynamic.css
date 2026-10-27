@@ -1,0 +1,64 @@
+/* Decorative workflow choreography. Transforms never change the page dimensions. */
+#portfolioPicker .home-visual {perspective:900px;transition:box-shadow .3s,border-color .3s}
+#portfolioPicker .home-document-deck {position:absolute;z-index:-1;right:20%;top:-21px;width:82px;height:82px;pointer-events:none}
+#portfolioPicker .home-paper {position:absolute;inset:0;display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid #b3d4ff40;border-radius:10px;background:linear-gradient(145deg,#3a5a78,#203d58);box-shadow:0 6px 18px #07152420;color:#d5e8ff;font-size:8px;letter-spacing:1px}
+#portfolioPicker .home-paper i {display:block;width:90%;height:2px;border-radius:2px;background:#c2ddff33}
+#portfolioPicker .home-paper i:last-child {width:60%}
+#portfolioPicker .home-paper:nth-child(1) {transform:translate(-23px,3px) rotate(-17deg);opacity:.5}
+#portfolioPicker .home-paper:nth-child(2) {transform:translate(20px,0) rotate(14deg);opacity:.7}
+#portfolioPicker .home-paper:nth-child(3) {transform:translate(0,-8px) rotate(-2deg)}
+#portfolioPicker .home-live-flow {grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr) 16px minmax(0,1fr);align-items:start;gap:0}
+#portfolioPicker .home-flow-node {flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:10px;min-width:0;min-height:124px;padding:12px 9px;border:1px solid #b4d0f11a;border-radius:12px;background:#b4d0f106;font-size:11px;line-height:1.5}
+#portfolioPicker .home-flow-node::before {inset:-1px;background:linear-gradient(150deg,#a1caff20,transparent 80%);border:1px solid #b5d6ff38;border-radius:inherit}
+#portfolioPicker .home-flow-node::after {top:11px;right:8px;width:3px;height:3px}
+#portfolioPicker .home-flow-node small {font-size:9px;line-height:1.5;margin-top:4px}
+#portfolioPicker .home-flow-symbol {position:relative;transform-origin:center}
+#portfolioPicker .home-flow-symbol::after {content:"";position:absolute;left:9px;right:9px;top:9px;height:1px;background:#c5e0ff;box-shadow:0 0 8px #a5d2ff77;opacity:0;pointer-events:none}
+#portfolioPicker .home-flow-track {width:100%;height:1px;margin:30px 0 0;background:#abc9ee40}
+#portfolioPicker .home-flow-track::after {left:0;top:-1px;width:3px;height:3px;box-shadow:0 0 7px #b2daff88}
+#portfolioPicker .portfolio-entry {isolation:isolate;overflow:hidden}
+#portfolioPicker .portfolio-entry::after {content:"";position:absolute;z-index:-1;inset:-70% auto -70% -40%;width:26%;background:linear-gradient(90deg,transparent,#9fc7ef16,transparent);transform:rotate(20deg) translateX(-200%);pointer-events:none}
+#portfolioPicker h1 em {position:relative;display:inline-block}
+#portfolioPicker h1 em::after {content:"";position:absolute;left:0;bottom:-8px;width:100%;height:2px;border-radius:2px;background:linear-gradient(90deg,#b9d8ff99,#b9d8ff11);transform-origin:left;pointer-events:none}
+@keyframes homeHorizontalSignal {0%,5%,100%{opacity:0;transform:translateX(0)}12%{opacity:1}30%{opacity:0;transform:translateX(16px)}}
+@keyframes homeSymbolLevitate {0%,100%{translate:0 0}50%{translate:0 -4px}}
+@keyframes homePaperHover {0%,100%{translate:0 0}50%{translate:0 -6px}}
+@keyframes homeIconScan {0%,10%,45%,100%{opacity:0;translate:0 0}15%{opacity:.8}38%{opacity:0;translate:0 19px}}
+@keyframes homeCardSweep {0%,70%{transform:rotate(20deg) translateX(-200%)}100%{transform:rotate(20deg) translateX(1600%)}}
+@keyframes homeAccentBreath {0%,100%{opacity:.4;scale:.8 1}50%{opacity:.85;scale:1 1}}
+@media(prefers-reduced-motion:no-preference) {
+ #portfolioPicker .home-flow-track::after {animation-name:homeHorizontalSignal}
+ #portfolioPicker .home-flow-symbol {animation:homeSymbolLevitate 5.5s ease-in-out infinite}
+ #portfolioPicker .home-flow-node:nth-of-type(2) .home-flow-symbol {animation-delay:-1.8s}
+ #portfolioPicker .home-flow-node:nth-of-type(3) .home-flow-symbol {animation-delay:-3.6s}
+ #portfolioPicker .home-flow-symbol::after {animation:homeIconScan 9s ease-in-out infinite}
+ #portfolioPicker .home-flow-node:nth-of-type(2) .home-flow-symbol::after {animation-delay:3s}
+ #portfolioPicker .home-flow-node:nth-of-type(3) .home-flow-symbol::after {animation-delay:6s}
+ #portfolioPicker .home-paper {animation:homePaperHover 8s ease-in-out infinite}
+ #portfolioPicker .home-paper:nth-child(2) {animation-delay:-2.6s}
+ #portfolioPicker .home-paper:nth-child(3) {animation-delay:-5.2s}
+ #portfolioPicker .portfolio-entry::after {animation:homeCardSweep 10s ease-in-out infinite}
+ #portfolioPicker h1 em::after {animation:homeAccentBreath 7s ease-in-out infinite}
+}
+#portfolioPicker[data-motion="paused"] :is(.home-paper,.home-flow-symbol),
+#portfolioPicker[data-motion="paused"] .portfolio-entry::after,
+#portfolioPicker[data-motion="paused"] h1 em::after {animation-play-state:paused!important}
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
+ #portfolioPicker .home-visual:hover {border-color:#c0dbff55;box-shadow:0 18px 40px #04111c22}
+ #portfolioPicker .home-flow-node:hover {background:#b4d0f110}
+ #portfolioPicker .portfolio-entry:hover .portfolio-avatar {transform:rotate(-5deg);transition:transform .25s}
+}
+@media(min-width:1000px) and (max-height:640px) {
+ #portfolioPicker .home-flow-node {min-height:110px;padding:9px 7px;gap:7px;font-size:10px}
+ #portfolioPicker .home-flow-node small {font-size:9px;line-height:1.35;margin-top:3px}
+ #portfolioPicker .home-flow-track {height:1px;margin:24px 0 0}
+ #portfolioPicker .home-document-deck {width:65px;height:65px;top:-15px}
+}
+@media(max-width:760px) {
+ #portfolioPicker .home-flow-node {padding:10px 7px;gap:8px;font-size:11px}
+ #portfolioPicker .home-document-deck {right:14%;top:-16px;width:65px;height:65px}
+}
+@media(prefers-reduced-motion:reduce) {
+ #portfolioPicker .portfolio-entry::after {display:none}
+ #portfolioPicker .home-flow-symbol::after {display:none}
+}
