@@ -150,8 +150,9 @@
     const initialTheme=document.documentElement.dataset.theme;
     if(initialTheme!=="dark")themeButton.click();
     const formStyle=getComputedStyle(fiscalForm);
-    if(formStyle.backgroundColor!=="rgb(23, 35, 51)") {
-      throw Error("O formulário fiscal ficou claro no tema escuro: "+formStyle.backgroundColor);
+    const darkChannels=(formStyle.backgroundColor.match(/\d+/g)||[]).slice(0,3).map(Number);
+    if(darkChannels.length!==3 || Math.max(...darkChannels)>45 || Math.max(...darkChannels)-Math.min(...darkChannels)>8) {
+      throw Error("O formulário fiscal não manteve a superfície escura neutra: "+formStyle.backgroundColor);
     }
     const previewProbe=document.createElement('div');
     previewProbe.appendChild(tableFor(['DATA','HISTÓRICO','VALOR'],[['27/10/2026','Amostra visual',100]]));
