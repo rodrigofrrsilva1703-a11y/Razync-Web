@@ -226,3 +226,42 @@ html[data-theme="dark"] .app-shell th button:hover:not(:disabled) {background:#2
 html[data-theme="dark"] #fiscalView :is(.fiscal-account-type,.fiscal-accum-tag,.fiscal-difference-number) {background:transparent!important;color:var(--dark-accent)!important;box-shadow:none!important}
 html[data-theme="dark"] #fiscalView #fiscal242Rows .fiscal-account-link,
 html[data-theme="dark"] #fiscalView #fiscal242Rows .fiscal-account-link:hover:not(:disabled) {background:transparent!important;box-shadow:none!important}
+
+
+/* Compact connection state. Keeps topbar height unchanged. */
+.topbar .connection-pill {
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  min-height:34px;max-width:205px;padding:7px 10px;
+  cursor:pointer;white-space:nowrap;transition:background .2s,border-color .2s;
+  font-size:11px;line-height:1.25;
+}
+.topbar .connection-pill::before {display:none!important}
+.topbar .connection-indicator {
+  box-sizing:border-box;display:inline-block;flex:none;width:8px;height:8px;
+  border:1.5px solid currentColor;border-radius:50%;opacity:.75;
+}
+.topbar .connection-label {display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar .connection-pill[data-connection="checking"],
+.topbar .connection-pill[data-connection="waking"] {color:#496581;background:#f1f5fa;border-color:#d9e4f1}
+.topbar .connection-pill[data-connection="waking"] .connection-indicator {
+  width:11px;height:11px;border:2px solid #a2b6cb;border-top-color:#39699e;opacity:1;
+  animation:razyncConnectSpin 1.1s linear infinite;
+}
+.topbar .connection-pill[data-connection="offline"],
+.topbar .connection-pill[data-connection="unconfigured"] {color:#866535;background:#faf7f0;border-color:#e9dfcf}
+.topbar .connection-pill[data-connection="offline"] .connection-indicator {background:#ad8650;border-color:#ad8650}
+.topbar .connection-pill[data-connection="online"] .connection-indicator {background:#3e9b76;border-color:#3e9b76}
+.topbar .connection-pill:focus-visible {outline:2px solid #568ac7;outline-offset:2px}
+@keyframes razyncConnectSpin {to {transform:rotate(360deg)}}
+html[data-theme="dark"] .topbar .connection-pill {background:#1b1b1b!important;border-color:#393939!important;color:#c4c4c4!important}
+html[data-theme="dark"] .topbar .connection-pill[data-connection="online"] {color:#9bdabc!important}
+html[data-theme="dark"] .topbar .connection-pill[data-connection="waking"],
+html[data-theme="dark"] .topbar .connection-pill[data-connection="checking"] {color:#b5cdf1!important}
+html[data-theme="dark"] .topbar .connection-pill[data-connection="offline"] {color:#ddc292!important}
+@media(max-width:760px) {
+  .topbar .connection-pill {min-width:0;max-width:145px;padding:7px 8px;gap:5px}
+  .topbar .connection-label {max-width:114px;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce) {
+  .topbar .connection-pill,.topbar .connection-indicator {animation:none!important;transition:none!important}
+}
