@@ -182,3 +182,13 @@ html[data-theme="dark"] #fiscalView :is(.fiscal-account-dialog-header,.fiscal-ac
 html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) :is(.daily-toolbar,.daily-rule),
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.preview-sheet-head,.preview-commandbar,.preview-table-tools,.preview-intro,.form-card-header,.tool-flow) {background:transparent!important;background-image:none!important;box-shadow:none!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) th {background:var(--surface)!important}
+
+/* Uploads stay part of the panel instead of stacked painted boxes. */
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.modern-form .file-drop-shell,.file-drop-shell,.field-group:has(.file-drop-shell),.fiscal-upload-item,.reconcile-bank-file),
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.modern-form .file-drop-shell,.file-drop-shell,.field-group:has(.file-drop-shell),.fiscal-upload-item,.reconcile-bank-file):hover,
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.modern-form .file-drop-shell,.file-drop-shell,.field-group:has(.file-drop-shell),.fiscal-upload-item,.reconcile-bank-file):focus-within {background:transparent!important;background-image:none!important;border-width:0!important;box-shadow:none!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.modern-form input[type=file],input[type=file]),
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.modern-form input[type=file],input[type=file]):focus-visible {background:transparent!important;border-width:0!important;outline:none!important;box-shadow:none!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) .file-drop-shell:has(input[type=file]:focus-visible),
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) .file-drop-shell.is-dragging {outline:1px solid #7198ce!important;outline-offset:2px}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) .file-drop-shell :is(.file-selection,.file-selection-item,.file-selection-summary) {background:transparent!important;box-shadow:none!important}
