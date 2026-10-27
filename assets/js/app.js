@@ -191,13 +191,19 @@ function bankLabel(bank, account) {
 
 function render(items) {
   grid.innerHTML = "";
-  count.textContent = `${items.length} empresa(s)`;
   const current = companies.filter(companyBelongsToPortfolio);
-  $('#totalCompanies').textContent = current.length || '—';
+  count.textContent = `${items.length} de ${current.length} empresas`;
+  $('#totalCompanies').textContent = current.length;
   $('#organizerCompanies').textContent = current.filter(hasCompanyTools).length;
   $('#multiBankCompanies').textContent = current.filter(c=>Object.keys(c.capabilities?.banks || {}).length > 1).length;
   if (!items.length) {
-    grid.innerHTML = '<div class="empty-state">Nenhuma empresa encontrada.</div>';
+    const empty = document.createElement('div');
+    empty.className = 'empty-state directory-empty';
+    const title = document.createElement('strong');title.textContent=current.length ? 'Nenhuma empresa encontrada' : 'Esta carteira ainda não tem empresas';
+    const help = document.createElement('p');help.textContent=current.length ? 'Tente outro código ou nome, ou remova os filtros para ver sua carteira.' : 'Adicione uma empresa para começar.';
+    const reset = document.createElement('button');reset.type='button';reset.textContent='Limpar filtros';
+    reset.addEventListener('click',resetCompanyFilters);
+    empty.append(title,help);if(current.length)empty.appendChild(reset);grid.appendChild(empty);
     return;
   }
 
@@ -206,6 +212,7 @@ function render(items) {
     row.type = "button";
     row.className = "company-card company-card-button company-row";
     row.dataset.availability = company.capabilities?.status || 'unknown';
+    row.setAttribute('aria-label', `${company.codigo} · ${company.nome}. ${hasCompanyTools(company) ? 'Abrir ferramentas' : 'Ver empresa'}`);
     row.style.setProperty("--row-index", String(Math.min(index, 12)));
 
     const code = document.createElement("span");
@@ -224,7 +231,7 @@ function render(items) {
     regime.textContent = company.regime;
     const status = document.createElement("span");
     status.className = "mini-status";
-    status.textContent = statusFor(company);
+    status.textContent = hasCompanyTools(company) ? statusFor(company) : 'Sem ferramenta';
     meta.append(regime, status);
     main.append(name, meta);
 
@@ -1525,21 +1532,37 @@ reconcileForm.addEventListener("submit",async event => {
 });
 
 function filterCompanies() {
-  const query = normalize(search.value.trim());
+  const query = search.value.trim();
   const regime = $('#regimeFilter').value;
-  render(companies.filter(company =>
-    companyBelongsToPortfolio(company) &&
-    (!regime || company.regime === regime) &&
-    (companyFilter==='all' ||
-      (companyFilter==='organizer' && hasCompanyTools(company)) ||
-      (companyFilter==='multibank' && Object.keys(company.capabilities?.banks || {}).length > 1)) &&
-    (normalize(company.codigo).includes(query) ||
-    normalize(company.nome).includes(query) ||
-    normalize(company.regime).includes(query))
-  ));
+  const current = companies.filter(companyBelongsToPortfolio);
+  const clear = $('#companySearchClear');if(clear)clear.hidden=!query;
+  const reset = $('#companyReset');if(reset)reset.hidden=!(query || regime || companyFilter!=='all');
+  render(RazyncDirectory.select(current,{query,regime,filter:companyFilter,sort:$('#companySort')?.value || 'code'}));
+}
+function resetCompanyFilters() {
+  search.value='';$('#regimeFilter').value='';companyFilter='all';
+  $$('.company-filter').forEach(button=>{
+    const active=button.dataset.filter==='all';button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));
+  });
+  filterCompanies();
 }
 search.addEventListener("input", filterCompanies);
 $('#regimeFilter').addEventListener('change',filterCompanies);
+$('#companySort')?.addEventListener('change',filterCompanies);
+$('#companySearchClear')?.addEventListener('click',()=>{search.value='';filterCompanies();search.focus();});
+$('#companyReset')?.addEventListener('click',resetCompanyFilters);
+search.addEventListener('keydown',event=>{
+  if(event.key==='Escape' && !event.isComposing && search.value){event.preventDefault();search.value='';filterCompanies();}
+});
+function setCompanyView(view) {
+  const value=view==='list'?'list':'cards';grid.dataset.view=value;
+  $$('[data-company-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.companyView===value)));
+  try {localStorage.setItem('razync:directory-view',value);} catch { /* Optional preference. */ }
+}
+let initialCompanyView='cards';
+try {initialCompanyView=localStorage.getItem('razync:directory-view') || 'cards';} catch { /* Optional preference. */ }
+setCompanyView(initialCompanyView);
+$$('[data-company-view]').forEach(button=>button.addEventListener('click',()=>setCompanyView(button.dataset.companyView)));
 $$('.company-filter').forEach(button=>button.addEventListener('click',()=>{
   companyFilter=button.dataset.filter;
   $$('.company-filter').forEach(item=>{item.classList.toggle('active',item===button);item.setAttribute('aria-pressed',String(item===button));});

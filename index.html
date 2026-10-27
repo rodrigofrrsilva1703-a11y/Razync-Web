@@ -28,6 +28,7 @@
   <link rel="stylesheet" href="./assets/css/admin-auth.css?v=20261023-1">
   <link rel="stylesheet" href="./assets/css/tool-preparation.css?v=statement-reading-20261026-1">
   <link rel="stylesheet" href="./assets/css/home-dynamic.css?v=20261027-2">
+  <link rel="stylesheet" href="./assets/css/company-directory.css?v=20261027-1">
   <link rel="stylesheet" href="./assets/css/themes.css?v=connection-indicator-20261027-18">
 </head>
 <body class="sidebar-collapsed">
@@ -90,6 +91,7 @@
 
         </section>
         <section class="hero compact-hero" hidden>
+          <div class="portfolio-toolbar"><button id="backToPortfolios" type="button" class="portfolio-back">← Voltar às carteiras</button><span id="portfolioActiveName" class="portfolio-owner"></span></div>
           <div class="eyebrow">RAZYNC</div>
           <h1>Empresas</h1>
           <p>Pesquise uma empresa e acesse diretamente as ferramentas de organização, classificação e conferência.</p>
@@ -100,24 +102,26 @@
           <div class="overview-card"><span class="overview-icon" aria-hidden="true">⌘</span><div><strong id="multiBankCompanies">—</strong><span>Com múltiplos bancos</span></div></div>
         </div>
         <section class="workspace" hidden>
-          <div class="portfolio-toolbar"><button id="backToPortfolios" type="button" class="portfolio-back">← Voltar às carteiras</button><span id="portfolioActiveName" class="portfolio-owner"></span></div>
           <div class="search-card">
-            <div class="directory-heading"><div><h2>Encontre uma empresa</h2><p>Busque pelo nome ou código e escolha a ferramenta.</p></div><button id="addCompany" type="button" class="secondary-action">+ Adicionar empresa</button></div>
+            <div class="directory-heading"><div><h2>Encontre sua próxima empresa</h2><p>Pesquise, filtre e acesse as ferramentas da sua carteira.</p></div><button id="addCompany" type="button" class="secondary-action">+ Adicionar empresa</button></div>
             <label for="companySearch" class="visually-hidden">Pesquisar empresa</label>
             <div class="directory-controls">
             <div class="search-wrap">
-              <span aria-hidden="true">⌕</span>
-              <input id="companySearch" type="text" name="razync_company_lookup" placeholder="Código ou nome da empresa" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" data-lpignore="true" data-1p-ignore="true" readonly>
+              <span class="directory-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg></span>
+              <input id="companySearch" type="text" name="razync_company_lookup" placeholder="Código, nome ou regime…" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" data-lpignore="true" data-1p-ignore="true" readonly>
+              <button id="companySearchClear" class="directory-clear" type="button" aria-label="Limpar pesquisa" hidden>×</button>
             </div>
             <label for="regimeFilter" class="visually-hidden">Filtrar por regime</label><select id="regimeFilter"><option value="">Todos os regimes</option><option>LUCRO REAL</option><option>LUCRO PRESUMIDO</option><option>SIMPLES NACIONAL</option></select>
+            <label for="companySort" class="visually-hidden">Ordenar empresas</label><select id="companySort"><option value="code">Código crescente</option><option value="name">Nome de A a Z</option><option value="tools">Com ferramentas primeiro</option></select>
             </div>
-            <div class="company-filters" role="group" aria-label="Filtrar ferramentas"><button type="button" class="company-filter active" data-filter="all" aria-pressed="true">Todas</button><button type="button" class="company-filter" data-filter="organizer" aria-pressed="false">Com organizador</button><button type="button" class="company-filter" data-filter="multibank" aria-pressed="false">Múltiplos bancos</button></div>
+            <div class="company-filters" role="group" aria-label="Filtrar ferramentas"><button type="button" class="company-filter active" data-filter="all" aria-pressed="true">Todas</button><button type="button" class="company-filter" data-filter="organizer" aria-pressed="false">Com ferramentas</button><button type="button" class="company-filter" data-filter="multibank" aria-pressed="false">Múltiplos bancos</button><button type="button" class="company-filter" data-filter="catalog" aria-pressed="false">Sem ferramenta</button></div>
             <div class="search-meta">
-              <span id="companyCount">Carregando empresas…</span>
-              <span>Use código, nome ou regime para filtrar</span>
+              <span id="companyCount" role="status" aria-live="polite" aria-atomic="true">Carregando empresas…</span>
+              <button id="companyReset" class="directory-reset" type="button" hidden>Limpar filtros</button>
+              <div class="directory-views" role="group" aria-label="Visualização das empresas"><button type="button" data-company-view="cards" aria-pressed="true">Cartões</button><button type="button" data-company-view="list" aria-pressed="false">Lista</button></div>
             </div>
           </div>
-          <div class="grid" id="companyGrid" aria-live="polite"></div>
+          <div class="grid" id="companyGrid" data-view="cards" aria-label="Empresas da carteira"></div>
         </section>
       </section>
 
@@ -681,14 +685,15 @@
   <script src="./assets/js/dom-utils.js?v=20261020-1"></script>
   <script src="./assets/js/home-motion.js?v=20261027-2"></script>
   <script src="./assets/js/home-interactions.js?v=20261027-1"></script>
-  <script src="./assets/js/portfolios.js?v=home-motion-20261027-3"></script>
+  <script src="./assets/js/portfolios.js?v=directory-20261027-4"></script>
   <script src="./assets/js/reconciliation-preview.js?v=statement-reading-20261026-1"></script>
   <script src="./assets/js/tasks-ui.js?v=catalog-cache-20261025-1"></script>
   <script src="./assets/js/admin-auth.js?v=20261023-1"></script>
   <script src="./assets/js/lazy-assets.js?v=20261024-2"></script>
   <script src="./assets/js/workbook-result.js?v=20261024-1"></script>
   <script src="./assets/js/organizer-jobs.js?v=20261026-1"></script>
-  <script src="./assets/js/app.js?v=server-wakeup-20261027-2"></script>
+  <script src="./assets/js/company-directory.js?v=20261027-1"></script>
+  <script src="./assets/js/app.js?v=directory-20261027-1"></script>
   <script src="./assets/js/migration.js?v=admin-modal-20261021-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=performance-20261024-1"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>

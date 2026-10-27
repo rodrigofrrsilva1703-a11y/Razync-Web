@@ -113,9 +113,7 @@ function selectPortfolio(id) {
   $("#portfolioActiveName").textContent = "Carteira de " + portfolio.name;
   $(".hero h1").textContent = "Empresas de " + portfolio.name;
   $(".hero p").textContent = "Pesquise uma empresa e acesse suas ferramentas.";
-  search.value = "";
-  $('#regimeFilter').value = "";
-  filterCompanies();
+  resetCompanyFilters();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 

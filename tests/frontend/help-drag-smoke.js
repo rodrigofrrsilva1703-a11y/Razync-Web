@@ -19,6 +19,20 @@
     if (!document.querySelector(".company-row")) {
       throw Error("Pesquisa de empresas não abriu após selecionar a carteira.");
     }
+    const directorySearch=document.querySelector('#companySearch');
+    directorySearch.value='empresa inexistente zxq';
+    directorySearch.dispatchEvent(new Event('input',{bubbles:true}));
+    if(!document.querySelector('.directory-empty') || !document.querySelector('#companyCount').textContent.startsWith('0 de ')) {
+      throw Error('O diretório não informou uma pesquisa sem resultados.');
+    }
+    document.querySelector('#companyReset').click();
+    if(!document.querySelector('.company-row'))throw Error('Limpar filtros não recuperou as empresas.');
+    directorySearch.value='242';directorySearch.dispatchEvent(new Event('input',{bubbles:true}));
+    if(document.querySelector('.company-row-code')?.textContent!=='242')throw Error('Código exato não veio primeiro na pesquisa.');
+    document.querySelector('#companySearchClear').click();
+    document.querySelector('[data-company-view="list"]').click();
+    if(document.querySelector('#companyGrid').dataset.view!=='list')throw Error('A visualização em lista não foi aplicada.');
+    document.querySelector('[data-company-view="cards"]').click();
     const company = {
       codigo:266, nome:"NOVA GERACAO COMERCIAL ELETRICA LTDA",
       regime:"LUCRO PRESUMIDO",
