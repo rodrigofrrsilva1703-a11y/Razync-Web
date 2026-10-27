@@ -145,6 +145,27 @@
     };
     openCompany(withoutTools);
     if(!wrapper.hidden)throw Error("Botão apareceu em empresa sem ferramentas");
+    // Real browser cascade: dark theme must survive the lazy fiscal styles.
+    const themeButton=document.querySelector('#themeToggle');
+    const initialTheme=document.documentElement.dataset.theme;
+    if(initialTheme!=="dark")themeButton.click();
+    const formStyle=getComputedStyle(fiscalForm);
+    if(formStyle.backgroundColor!=="rgb(23, 35, 51)") {
+      throw Error("O formulário fiscal ficou claro no tema escuro: "+formStyle.backgroundColor);
+    }
+    const previewProbe=document.createElement('div');
+    previewProbe.appendChild(tableFor(['DATA','HISTÓRICO','VALOR'],[['27/10/2026','Amostra visual',100]]));
+    document.querySelector('#companyPanel').appendChild(previewProbe);
+    const cellStyle=getComputedStyle(previewProbe.querySelector('td'));
+    const luminance=color=>{
+      const c=color.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>v/255)
+        .map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
+      return c[0]*.2126+c[1]*.7152+c[2]*.0722;
+    };
+    const light=[luminance(cellStyle.color),luminance(cellStyle.backgroundColor)].sort((a,b)=>b-a);
+    if((light[0]+.05)/(light[1]+.05)<4.5)throw Error("Contraste insuficiente na prévia escura.");
+    previewProbe.remove();
+    if(initialTheme!=="dark")themeButton.click();
     state("ok");
   } catch(error) {
     state("failed",String(error.message||error).slice(0,400));
