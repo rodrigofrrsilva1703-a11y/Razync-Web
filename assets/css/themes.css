@@ -104,3 +104,7 @@ html[data-theme="dark"] :is(.company-tool-guide,.company-tool-guide-heading) {ba
 html[data-theme="dark"] .company-tool-guide strong {color:var(--text)!important}
 html[data-theme="dark"] .company-tool-guide :is(p,small) {color:var(--muted)!important}
 html[data-theme="dark"] .company-tool-guide-index,html[data-theme="dark"] #companyToolGuideClose {background:var(--surface-2)!important;color:var(--dark-accent)!important}
+
+html[data-theme="dark"] #fiscalView :is(.fiscal-ai-audit,.fiscal-doc-total-difference,.fiscal-doc-lookup-difference) {color:var(--dark-accent)!important}
+html[data-theme="dark"] #fiscalView :is(.fiscal-ai-audit,.fiscal-doc-total-difference,.fiscal-doc-lookup-difference) {background:var(--surface-2)!important}
+html[data-theme="dark"] #fiscalView .fiscal-warnings p {background:#3a3023!important;color:#e5c391!important;border-color:#6e5940!important}
