@@ -180,3 +180,29 @@
  #portfolioPicker .portfolio-entry,#portfolioPicker .portfolio-entry-arrow,#portfolioPicker .portfolio-feature,#portfolioPicker .portfolio-feature-toggle {transition:none}
  #portfolioPicker .portfolio-entry:hover,#portfolioPicker .portfolio-entry:active,#portfolioPicker .portfolio-feature[open] .portfolio-feature-toggle {transform:none}
 }
+
+/* Home motion: staged arrivals, a quiet moving accent and direct card feedback. */
+@keyframes homeReveal {from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes homeAccentDrift {from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(-30px,22px,0) scale(1.06)}}
+@keyframes homeDetailReveal {from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:no-preference) {
+ #portfolioPicker .portfolio-home-topline {animation:homeReveal .45s ease-out backwards}
+ #portfolioPicker .portfolio-heading {animation:homeReveal .6s .06s cubic-bezier(.22,1,.36,1) backwards}
+ #portfolioPicker .portfolio-heading::after {animation:homeAccentDrift 12s ease-in-out infinite alternate}
+ #portfolioPicker .home-intro-copy > :is(.portfolio-eyebrow,h1,p) {animation:homeReveal .6s cubic-bezier(.22,1,.36,1) backwards}
+ #portfolioPicker .home-intro-copy .portfolio-eyebrow {animation-delay:.12s}
+ #portfolioPicker .home-intro-copy h1 {animation-delay:.2s}
+ #portfolioPicker .home-intro-copy p {animation-delay:.28s}
+ #portfolioPicker .portfolio-home-summary > span {animation:homeReveal .6s .3s cubic-bezier(.22,1,.36,1) backwards}
+ #portfolioPicker .portfolio-home-summary > span:nth-child(2) {animation-delay:.38s}
+ #portfolioPicker .portfolio-access {animation:homeReveal .6s .22s cubic-bezier(.22,1,.36,1) backwards}
+ #portfolioPicker .portfolio-capabilities {animation:homeReveal .6s .3s cubic-bezier(.22,1,.36,1) backwards}
+ #portfolioPicker .portfolio-entry {animation:homeReveal .55s .3s cubic-bezier(.22,1,.36,1) backwards}
+ #portfolioPicker .portfolio-feature {animation:homeReveal .5s .36s cubic-bezier(.22,1,.36,1) backwards}
+ #portfolioPicker .portfolio-feature:nth-of-type(2) {animation-delay:.43s}
+ #portfolioPicker .portfolio-feature:nth-of-type(3) {animation-delay:.5s}
+ #portfolioPicker .portfolio-feature[open] p {animation:homeDetailReveal .25s ease-out backwards}
+ #portfolioPicker .portfolio-entry-arrow {transition:translate .22s ease,background .2s,color .2s}
+ #portfolioPicker .portfolio-entry:hover .portfolio-entry-arrow {translate:3px 0}
+ #portfolioPicker .portfolio-entry:active {transform:scale(.99)}
+}

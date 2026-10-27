@@ -80,6 +80,27 @@ function renderPortfolios() {
     portfolioList.appendChild(btn);
   }
   portfolioList.setAttribute("aria-busy", "false");
+  animatePortfolioTotals(companies.length, portfolios.length);
+}
+
+// Counts are already present before animation; motion never blocks access.
+function animatePortfolioTotals(companyTotal, walletTotal) {
+  if (typeof window === "undefined" || !window.requestAnimationFrame) return;
+  if (animatePortfolioTotals.frame) window.cancelAnimationFrame(animatePortfolioTotals.frame);
+  const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const totals = [[$("#portfolioCompanyTotal"), companyTotal], [$("#portfolioWalletTotal"), walletTotal]];
+  const finish = () => totals.forEach(([element, value]) => { element.textContent = value.toLocaleString("pt-BR"); });
+  if (motion.matches) { finish(); return; }
+  let start;
+  const tick = time => {
+    if (portfolioPicker.hidden || document.hidden || motion.matches) { finish(); animatePortfolioTotals.frame = null; return; }
+    if (start === undefined) start = time;
+    const progress = Math.min((time - start) / 800, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    totals.forEach(([element, value]) => { element.textContent = Math.round(value * eased).toLocaleString("pt-BR"); });
+    animatePortfolioTotals.frame = progress < 1 ? window.requestAnimationFrame(tick) : null;
+  };
+  animatePortfolioTotals.frame = window.requestAnimationFrame(tick);
 }
 
 function selectPortfolio(id) {
