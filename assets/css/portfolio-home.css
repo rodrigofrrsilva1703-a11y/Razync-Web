@@ -325,3 +325,10 @@ html[data-theme="dark"] #portfolioPicker .portfolio-feature-number {color:#858f9
  #portfolioPicker .portfolio-eyebrow {margin-bottom:10px}
  #portfolioPicker h1 {font-size:32px}
 }
+
+/* The workflow is introduced once; the remaining space belongs to access. */
+#portfolioPicker .portfolio-access {grid-column:1/-1}
+@media(min-width:761px) {
+ #portfolioPicker .portfolio-access {display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,400px);align-items:center;gap:30px}
+ #portfolioPicker .portfolio-access-heading {margin:0!important}
+}
