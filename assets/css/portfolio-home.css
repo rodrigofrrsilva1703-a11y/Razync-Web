@@ -332,3 +332,69 @@ html[data-theme="dark"] #portfolioPicker .portfolio-feature-number {color:#858f9
  #portfolioPicker .portfolio-access {display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,400px);align-items:center;gap:30px}
  #portfolioPicker .portfolio-access-heading {margin:0!important}
 }
+
+
+/* Ambient file-to-result motion: overlays only; zero extra layout height. */
+#portfolioPicker .home-visual {position:relative;overflow:hidden}
+#portfolioPicker .home-visual-scanner {
+  position:absolute;pointer-events:none;z-index:0;left:20px;right:20px;top:22%;
+  height:1px;background:linear-gradient(90deg,transparent,#9fc6f947 40%,#d0e3ff65 52%,transparent);
+  opacity:0;box-shadow:0 0 12px #99c9ff26;
+}
+#portfolioPicker .home-data-packet {
+  position:absolute;display:grid;place-items:center;width:48px;height:22px;
+  border:1px solid #a8c9f528;border-radius:7px;
+  background:#a8c9f50b;color:#d6e7ff70;
+  font-size:8px;font-weight:650;letter-spacing:.8px;pointer-events:none;
+  will-change:transform;
+}
+#portfolioPicker .packet-one {right:45%;top:9%;transform:rotate(12deg)}
+#portfolioPicker .packet-one::before {content:"PDF"}
+#portfolioPicker .packet-two {left:2%;bottom:13%;transform:rotate(-12deg)}
+#portfolioPicker .packet-two::before {content:"XLSX"}
+#portfolioPicker .packet-three {right:4%;bottom:13%;transform:rotate(7deg)}
+#portfolioPicker .packet-three::before {content:"✓";font-size:13px}
+#portfolioPicker .home-data-orbit {
+  position:absolute;top:-75px;right:12%;width:185px;height:185px;
+  border:1px dashed #9cc4ef20;border-radius:50%;pointer-events:none;
+}
+#portfolioPicker .home-flow-node::before {transition:opacity .25s}
+#portfolioPicker .home-flow-symbol svg {transform-origin:center}
+#portfolioPicker .portfolio-entry {overflow:hidden}
+#portfolioPicker .portfolio-entry::after {
+  content:"";position:absolute;z-index:0;top:-50%;left:-50%;
+  width:38%;height:200%;background:linear-gradient(90deg,transparent,#a0c8eb1f,transparent);
+  transform:skewX(-22deg) translateX(-230%);pointer-events:none;
+}
+#portfolioPicker .portfolio-entry:hover::after {animation:homeCardGleam .65s ease-out 1}
+@keyframes homeCardGleam {
+  from {transform:skewX(-22deg) translateX(-230%)}
+  to {transform:skewX(-22deg) translateX(1000%)}
+}
+@keyframes homePacketFloat {
+  0%,100% {translate:0 0;opacity:.28}
+  50% {translate:10px -12px;opacity:.68}
+}
+@keyframes homeOrbitRotate {to {transform:rotate(360deg)}}
+@keyframes homeScanGlide {
+  0%,12% {top:18%;opacity:0}
+  22% {opacity:.42}
+  62% {opacity:.27}
+  82%,100% {top:78%;opacity:0}
+}
+@media(prefers-reduced-motion:no-preference) {
+  #portfolioPicker .home-data-packet {animation:homePacketFloat 8s ease-in-out infinite}
+  #portfolioPicker .packet-two {animation-delay:-2.6s}
+  #portfolioPicker .packet-three {animation-delay:-5.2s}
+  #portfolioPicker .home-data-orbit {animation:homeOrbitRotate 48s linear infinite}
+  #portfolioPicker .home-visual-scanner {animation:homeScanGlide 8s ease-in-out infinite}
+}
+@media(prefers-reduced-motion:reduce) {
+  #portfolioPicker :is(.home-data-packet,.home-data-orbit,.home-visual-scanner) {animation:none!important;will-change:auto}
+  #portfolioPicker .portfolio-entry:hover::after {animation:none}
+}
+@media(max-width:760px) {
+  #portfolioPicker .packet-one {right:14%;top:5%}
+  #portfolioPicker .packet-two {bottom:5%}
+  #portfolioPicker .packet-three {right:4%;bottom:6%}
+}
