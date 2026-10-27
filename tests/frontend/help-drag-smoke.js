@@ -176,6 +176,7 @@
     document.querySelectorAll('#companyPanel .tool-flow').forEach(flow=>{
       if(getComputedStyle(flow).backgroundColor!=='rgba(0, 0, 0, 0)')throw Error('A faixa de etapas ganhou fundo no modo escuro.');
     });
+    await pause(250); // allow the sidebar's 180ms theme color transition to settle
     document.querySelectorAll('#mainSidebar .main-nav-btn,#mainSidebar .sidebar-close').forEach(control=>{
       const style=getComputedStyle(control);
       if(style.borderTopColor!=='rgba(0, 0, 0, 0)')throw Error('O menu escuro ganhou uma borda extra: '+control.className);
