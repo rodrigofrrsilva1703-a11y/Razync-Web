@@ -246,9 +246,17 @@
     homeFrame.srcdoc='<!doctype html><html data-theme="dark"><head>'+homeStyles+'<style>*,*::before,*::after{animation:none!important;transition:none!important}</style></head><body class="sidebar-collapsed">'+homeLayoutMarkup+'</body></html>';
     document.body.append(homeFrame);await homeLoaded;
     const homeDoc=homeFrame.contentDocument;
-    if(homeDoc.documentElement.scrollHeight>652 || homeDoc.documentElement.scrollWidth>1366) {
-      throw Error('O início não cabe em 1366 × 650: '+homeDoc.documentElement.scrollWidth+' × '+homeDoc.documentElement.scrollHeight);
+    for (const [width,height] of [[1366,650],[1280,720],[1024,600]]) {
+      homeFrame.style.width=width+'px';homeFrame.style.height=height+'px';
+      if(homeDoc.documentElement.scrollHeight>height+2 || homeDoc.documentElement.scrollWidth>width) {
+        throw Error('O início não cabe em '+width+' × '+height+': '+homeDoc.documentElement.scrollWidth+' × '+homeDoc.documentElement.scrollHeight);
+      }
+      if(homeDoc.querySelector('.portfolio-entry').getBoundingClientRect().bottom>height+2 || getComputedStyle(homeDoc.body).overflowY==='hidden') {
+        throw Error('A carteira foi cortada para simular encaixe na tela.');
+      }
     }
+    homeFrame.style.width='390px';homeFrame.style.height='844px';
+    if(homeDoc.documentElement.scrollWidth>390)throw Error('O início tem corte lateral no celular.');
     homeFrame.remove();
     state("ok");
   } catch(error) {

@@ -90,10 +90,10 @@ function animatePortfolioTotals(companyTotal, walletTotal) {
   const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const totals = [[$("#portfolioCompanyTotal"), companyTotal], [$("#portfolioWalletTotal"), walletTotal]];
   const finish = () => totals.forEach(([element, value]) => { element.textContent = value.toLocaleString("pt-BR"); });
-  if (motion.matches) { finish(); return; }
+  if (motion.matches || portfolioPicker.dataset.motion === 'paused') { finish(); return; }
   let start;
   const tick = time => {
-    if (portfolioPicker.hidden || document.hidden || motion.matches) { finish(); animatePortfolioTotals.frame = null; return; }
+    if (portfolioPicker.hidden || document.hidden || motion.matches || portfolioPicker.dataset.motion === 'paused') { finish(); animatePortfolioTotals.frame = null; return; }
     if (start === undefined) start = time;
     const progress = Math.min((time - start) / 800, 1);
     const eased = 1 - Math.pow(1 - progress, 3);
