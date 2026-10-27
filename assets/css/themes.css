@@ -196,3 +196,4 @@ html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) .file-d
 /* Match light-theme transparency on layout wrappers; only actual cards have fills. */
 html[data-theme="dark"] #companyPanel :is(.tool-card,.tool-tabs),
 html[data-theme="dark"] #companiesView :is(.grid,.directory-controls) {background:transparent!important;background-image:none!important;border-width:0!important;box-shadow:none!important}
+html[data-theme="dark"] .app-shell #companyPanel .tool-card .tool-flow {background:transparent!important;background-image:none!important;box-shadow:none!important}

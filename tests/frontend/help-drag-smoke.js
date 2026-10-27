@@ -157,6 +157,9 @@
         throw Error('O modo escuro pintou um contêiner transparente: '+selector);
       }
     }
+    document.querySelectorAll('#companyPanel .tool-flow').forEach(flow=>{
+      if(getComputedStyle(flow).backgroundColor!=='rgba(0, 0, 0, 0)')throw Error('A faixa de etapas ganhou fundo no modo escuro.');
+    });
     const formStyle=getComputedStyle(fiscalForm);
     const darkChannels=(formStyle.backgroundColor.match(/\d+/g)||[]).slice(0,3).map(Number);
     if(darkChannels.length!==3 || Math.max(...darkChannels)>45 || Math.max(...darkChannels)-Math.min(...darkChannels)>8) {
