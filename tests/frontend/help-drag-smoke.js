@@ -13,6 +13,7 @@
     }
     const portfolio = document.querySelector(".portfolio-entry");
     if (!portfolio) throw Error("Carteira inicial não foi renderizada.");
+    const homeLayoutMarkup=document.querySelector('.app-shell').outerHTML;
     portfolio.click();
     await pause(100);
     if (!document.querySelector(".company-row")) {
@@ -237,6 +238,18 @@
     fiscalThemeProbe.remove();
     previewProbe.remove();
     if(initialTheme!=="dark")themeButton.click();
+    // A real narrow-height desktop viewport: every collapsed home section must fit.
+    const homeFrame=document.createElement('iframe');
+    homeFrame.style.cssText='position:fixed;left:-2000px;top:0;width:1366px;height:650px;border:0';
+    const homeLoaded=new Promise(resolve=>homeFrame.onload=resolve);
+    const homeStyles=Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(link=>'<link rel="stylesheet" href="'+link.href+'">').join('');
+    homeFrame.srcdoc='<!doctype html><html data-theme="dark"><head>'+homeStyles+'<style>*,*::before,*::after{animation:none!important;transition:none!important}</style></head><body class="sidebar-collapsed">'+homeLayoutMarkup+'</body></html>';
+    document.body.append(homeFrame);await homeLoaded;
+    const homeDoc=homeFrame.contentDocument;
+    if(homeDoc.documentElement.scrollHeight>652 || homeDoc.documentElement.scrollWidth>1366) {
+      throw Error('O início não cabe em 1366 × 650: '+homeDoc.documentElement.scrollWidth+' × '+homeDoc.documentElement.scrollHeight);
+    }
+    homeFrame.remove();
     state("ok");
   } catch(error) {
     state("failed",String(error.message||error).slice(0,400));
