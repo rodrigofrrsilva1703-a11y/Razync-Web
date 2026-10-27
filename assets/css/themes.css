@@ -122,3 +122,22 @@ html[data-theme="dark"] #companyPanel :is(.field-group,.tool-tabs) {background:v
 html[data-theme="dark"] #companyPanel .field-group:focus-within {border-color:#507db6!important;box-shadow:0 0 0 2px #8ab8ff1c}
 html[data-theme="dark"] .sidebar-backdrop {background:#00000070}
 html[data-theme="dark"] dialog::backdrop {background:#000000b3!important}
+
+/* The search wrapper owns its border and focus ring, including keyboard focus. */
+html #companiesView .directory-controls .search-wrap {border:1px solid #ced8e4!important;border-radius:11px!important;background:#fafbfd;box-shadow:none!important;transition:border-color .16s ease,box-shadow .16s ease}
+html #companiesView .directory-controls .search-wrap:focus-within {border-color:#507cbb!important;box-shadow:0 0 0 2px #507cbb1f!important}
+html #companiesView .directory-controls #companySearch,
+html #companiesView .directory-controls #companySearch:focus,
+html #companiesView .directory-controls #companySearch:focus-visible {border:0!important;border-radius:0!important;outline:none!important;box-shadow:none!important;background:transparent!important}
+html[data-theme="dark"] #companiesView .directory-controls .search-wrap {border-color:#3b3b3b!important;background:#101010!important}
+html[data-theme="dark"] #companiesView .directory-controls .search-wrap:focus-within {border-color:#7198ce!important;box-shadow:0 0 0 2px #8ab8ff18!important}
+/* Quiet, consistent edges for preparation surfaces, without changing result layouts. */
+html #companyPanel :is(.panel-head,.tool-card,.modern-form,.tool-intro) {border-radius:16px!important}
+html #companyPanel .modern-form :is(.field-group,.bank-selector,.period-card) {border-radius:12px!important}
+html[data-theme="dark"] #companyPanel :is(.panel-head,.tool-card,.modern-form,.tool-intro) {border:1px solid #2e2e2e!important;box-shadow:none!important}
+html[data-theme="dark"] #companyPanel .modern-form :is(.field-group,.bank-selector,.period-card) {border-color:#303030!important;box-shadow:none!important}
+html[data-theme="dark"] #companyPanel .modern-form .field-group:focus-within {border-color:#303030!important;box-shadow:none!important}
+html[data-theme="dark"] #companyPanel .modern-form .file-drop-shell {border-color:#414141!important;box-shadow:none!important;border-radius:11px!important}
+html[data-theme="dark"] #companyPanel .modern-form .file-drop-shell:focus-within {border-color:#7198ce!important;box-shadow:0 0 0 2px #8ab8ff18!important}
+html[data-theme="dark"] #companyPanel .modern-form :is(input:not([type=file]):not([type=checkbox]):not([type=radio]),select,textarea):focus-visible {outline:none!important;border-color:#7198ce!important;box-shadow:0 0 0 2px #8ab8ff18!important}
+html[data-theme="dark"] #companyPanel .modern-form input[type=file]:focus-visible {outline:none!important;border-color:transparent!important;box-shadow:none!important}
