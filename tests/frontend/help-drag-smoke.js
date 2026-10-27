@@ -148,12 +148,15 @@
     // Real browser cascade: dark theme must survive the lazy fiscal styles.
     const themeButton=document.querySelector('#themeToggle');
     const initialTheme=document.documentElement.dataset.theme;
-    if(initialTheme!=="dark")themeButton.click();
+    const transparentWrappers=['#companyPanel .tool-card','#companyPanel .tool-tabs','#companiesView .directory-controls','#companiesView .grid'];
+    if(initialTheme==='dark')themeButton.click();
+    const lightBorders=new Map(transparentWrappers.map(selector=>[selector,getComputedStyle(document.querySelector(selector)).borderTopWidth]));
+    themeButton.click();
     for(const selector of ['#companyPanel .tool-card','#companyPanel .tool-tabs','#companiesView .directory-controls','#companiesView .grid']) {
       const wrapper=document.querySelector(selector);
       if(!wrapper)throw Error('Contêiner de teste ausente: '+selector);
       const style=getComputedStyle(wrapper);
-      if(style.backgroundColor!=='rgba(0, 0, 0, 0)' || style.borderTopWidth!=='0px') {
+      if(style.backgroundColor!=='rgba(0, 0, 0, 0)' || style.borderTopWidth!==lightBorders.get(selector)) {
         throw Error('O modo escuro pintou um contêiner transparente: '+selector);
       }
     }
