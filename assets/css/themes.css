@@ -118,3 +118,7 @@ html[data-theme="dark"] .sidebar .main-nav-btn:hover {background:#242424;border-
 html[data-theme="dark"] .sidebar .main-nav-btn.active {background:#17243a;border-color:#36547c;color:#d5e4ff;box-shadow:inset 3px 0 #80adff}
 html[data-theme="dark"] .statement-reading {background:var(--surface);border-color:var(--border);color:var(--text)}
 html[data-theme="dark"] .statement-reading :is(p,.statement-reading-count) {color:var(--muted)}
+html[data-theme="dark"] #companyPanel :is(.field-group,.tool-tabs) {background:var(--surface)!important;border-color:var(--border)!important;color:var(--text)!important}
+html[data-theme="dark"] #companyPanel .field-group:focus-within {border-color:#507db6!important;box-shadow:0 0 0 2px #8ab8ff1c}
+html[data-theme="dark"] .sidebar-backdrop {background:#00000070}
+html[data-theme="dark"] dialog::backdrop {background:#000000b3!important}
