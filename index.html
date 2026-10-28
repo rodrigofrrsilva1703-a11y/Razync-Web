@@ -44,6 +44,7 @@
 
     <nav class="main-nav" aria-label="Navegação principal">
       <button class="main-nav-btn active" data-view="companies" aria-label="Empresas"><span class="nav-label">Empresas</span></button>
+      <button class="main-nav-btn" data-view="converter" aria-label="Converter Extratos"><span class="nav-label">Converter Extratos</span></button>
       <button class="main-nav-btn" data-view="ledger" aria-label="Conciliação com Razão"><span class="nav-label">Conciliação com Razão</span></button>
       <button class="main-nav-btn" data-view="fiscal" aria-label="Conferência Fiscal × Contábil"><span class="nav-label">Conferência Fiscal × Contábil</span></button>
     </nav>
@@ -124,6 +125,22 @@
           </div>
           <div class="grid" id="companyGrid" data-view="cards" aria-label="Empresas da carteira"></div>
         </section>
+      </section>
+
+      <section id="converterView" class="global-view">
+        <div class="page-head"><span class="company-code">FERRAMENTA GLOBAL · MODELO DOMÍNIO</span><h1>Converter extratos</h1><p>Transforme extratos bancários em Modelo Domínio, com prévia antes do download. Sem vincular automaticamente contas contábeis.</p></div>
+        <div class="tool-card single-card">
+          <div><h3>Extratos bancários</h3><p>Envie um ou vários PDFs, OFX, CSV ou arquivos Excel. O sistema identifica o formato e utiliza os leitores disponíveis.</p></div>
+          <form id="globalConverterForm">
+            <label for="globalConverterFiles">Extratos para converter</label>
+            <input id="globalConverterFiles" type="file" accept=".pdf,.ofx,.csv,.xls,.xlsx" multiple required>
+            <fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="globalConverterStart">De</label><input id="globalConverterStart" type="date"></div><div><label for="globalConverterEnd">Até</label><input id="globalConverterEnd" type="date"></div></div></fieldset>
+            <button type="submit" id="globalConverterPreviewButton">Visualizar lançamentos</button>
+            <p id="globalConverterMessage" class="helper" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+        <div id="globalConverterResult" class="preview-results" hidden></div>
+        <button type="button" id="globalConverterDownload" class="preview-download" hidden>Baixar Modelo Domínio (.xlsx)</button>
       </section>
 
       <section id="ledgerView" class="global-view">
@@ -694,6 +711,7 @@
   <script src="./assets/js/workbook-result.js?v=20261024-1"></script>
   <script src="./assets/js/organizer-jobs.js?v=20261026-1"></script>
   <script src="./assets/js/company-directory.js?v=20261027-1"></script>
+  <script src="./assets/js/converter-global.js?v=20261028-1"></script>
   <script src="./assets/js/app.js?v=directory-20261027-1"></script>
   <script src="./assets/js/migration.js?v=admin-modal-20261021-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=performance-20261024-1"></script>
