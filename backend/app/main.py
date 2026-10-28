@@ -757,6 +757,23 @@ async def conferencia_fiscal(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+def _historicos_modelo_dominio(frame: pd.DataFrame) -> pd.DataFrame:
+    """Garante Pago:/Recebido: na prévia e exportação sem prefixos repetidos."""
+    out = frame.copy()
+    if "HISTÓRICO" not in out.columns or "VALOR" not in out.columns:
+        raise ValueError("O leitor não retornou histórico e valor.")
+    def prefixar(row):
+        from math import isnan
+        import re
+        valor = float(row["VALOR"])
+        raw = row["HISTÓRICO"]
+        historico = "" if pd.isna(raw) else str(raw).strip()
+        historico = re.sub(r"^(?:(?:Pago|Recebido)\s*:\s*)+", "", historico, flags=re.I).strip()
+        return ("Recebido: " if valor > 0 else "Pago: ") + (historico or "MOVIMENTO BANCÁRIO")
+    out["HISTÓRICO"] = out.apply(prefixar, axis=1)
+    return out
+
+
 @app.post("/api/v1/conversor-extratos/preview")
 async def conversor_extratos_preview(
     files: list[UploadFile] = File(...),
@@ -773,6 +790,7 @@ async def conversor_extratos_preview(
         for idx, upload in enumerate(files, start=1):
             name = upload.filename or f"arquivo_{idx}"
             frame = await run_in_threadpool(processar_arquivo, await upload.read(), name)
+            frame = _historicos_modelo_dominio(frame)
             frame = _filter_period_frame(frame, data_inicial, data_final)
             frames.append(frame)
             sheets[f"{idx:02d} {Path(name).stem[:24]}"[:31]] = frame
@@ -796,6 +814,7 @@ async def conversor_extratos(
         frames = []
         for idx, upload in enumerate(files, start=1):
             df = await run_in_threadpool(processar_arquivo, await upload.read(), upload.filename or f"arquivo_{idx}")
+            df = _historicos_modelo_dominio(df)
             df = _filter_period_frame(df, data_inicial, data_final)
             frames.append(df)
             nome = Path(upload.filename or f"Arquivo {idx}").stem[:24]
