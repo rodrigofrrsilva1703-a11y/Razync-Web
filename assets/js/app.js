@@ -1690,7 +1690,7 @@ async function showGlobalView(name) {
   closeCompanyToolHelp();
   $("#companyToolHelp").hidden = true;
   cancelReconcilePreview();
-  $('#currentSection').textContent = {companies:'Empresas',ledger:'Conciliação com Razão',fiscal:'Conferência Fiscal × Contábil'}[name];
+  $('#currentSection').textContent = {companies:'Empresas',converter:'Converter Extratos',ledger:'Conciliação com Razão',fiscal:'Conferência Fiscal × Contábil'}[name];
   panel.hidden = true;
   selected = null;
   if (name === "companies") {
