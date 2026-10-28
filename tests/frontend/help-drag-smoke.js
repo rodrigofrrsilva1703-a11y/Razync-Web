@@ -163,10 +163,18 @@
     // Real browser cascade: dark theme must survive the lazy fiscal styles.
     const themeButton=document.querySelector('#themeToggle');
     const initialTheme=document.documentElement.dataset.theme;
+    const toggleTheme=async expected=>{
+      themeButton.click();
+      for(let attempt=0;attempt<60;attempt++) {
+        if(document.documentElement.dataset.theme===expected && !document.documentElement.dataset.themeTransition)return;
+        await pause(20);
+      }
+      throw Error('A transição de tema não terminou em '+expected);
+    };
     const transparentWrappers=['#companyPanel .tool-card','#companyPanel .tool-tabs','#companiesView .directory-controls','#companiesView .grid'];
-    if(initialTheme==='dark')themeButton.click();
+    if(initialTheme==='dark')await toggleTheme('light');
     const lightBorders=new Map(transparentWrappers.map(selector=>[selector,getComputedStyle(document.querySelector(selector)).borderTopWidth]));
-    themeButton.click();
+    await toggleTheme('dark');
     for(const selector of ['#companyPanel .tool-card','#companyPanel .tool-tabs','#companiesView .directory-controls','#companiesView .grid']) {
       const wrapper=document.querySelector(selector);
       if(!wrapper)throw Error('Contêiner de teste ausente: '+selector);
