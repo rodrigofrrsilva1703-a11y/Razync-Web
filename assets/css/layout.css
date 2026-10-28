@@ -61,3 +61,11 @@ html[data-theme="dark"] .app-shell > .topbar { background: var(--bg, #080808); }
   .app-shell { padding-top: 62px; }
   .app-shell > .topbar { left: 20px; right: 20px; height: 62px; margin: 0; }
 }
+
+/* Home já usa topbar compacta: reservar a altura real, não os 82px internos. */
+@media (min-width: 1000px) {
+  .app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) { padding-top: 56px; }
+}
+@media (min-width: 1000px) and (max-height: 640px) {
+  .app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) { padding-top: 48px; }
+}
