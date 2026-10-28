@@ -209,3 +209,30 @@ def test_bb_consultas_nao_inventa_valores_quando_linha_nao_tem_cd():
     doc.close()
     with pytest.raises(ValueError, match="não reconhecido"):
         ler_extrato_bb_consultas(pdf_bytes)
+
+
+def test_bb_consultas_documento_colado_ao_valor_preserva_movimentos():
+    """Reproduz extrato BB abril/2026, usando somente dados fictícios."""
+    doc = fitz.open()
+    page = doc.new_page(width=1100, height=430)
+    lines = [
+        "Consultas - Extrato de conta corrente",
+        "Lançamentos",
+        "Dt. balancete Dt. movimento Ag. origem Lote Histórico Documento Valor R$ Saldo",
+        "30/03/2026 0000 00000 000 Saldo Anterior 0,00 C",
+        "08/04/2026 0000 14173 900 Resgate Depósito Judicial 89.765.425 41.023,11 C",
+        "08/04/2026 0301 99015 470 Transferência enviada 551.189.000.037.27327.892,06 D",
+        "08/04 15:12 FAVORECIDO TESTE A",
+        "08/04/2026 0301 99015 470 Transferência enviada 556.844.000.017.80013.131,05 D",
+        "30/04/2026 0000 00000 999 S A L D O 0,00 C",
+    ]
+    for i, line in enumerate(lines):
+        page.insert_text((24, 30 + i * 25), line, fontsize=10)
+    content = doc.tobytes()
+    doc.close()
+    records = ler_extrato_bb_consultas(content)
+    assert len(records) == 3
+    assert [record["VALOR"] for record in records] == [41023.11, -27892.06, -13131.05]
+    assert "551.189.000.037.273" in records[1]["HISTÓRICO"]
+    assert "556.844.000.017.800" in records[2]["HISTÓRICO"]
+    assert sum(Decimal(str(record["VALOR"])) for record in records) == 0
