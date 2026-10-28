@@ -10,7 +10,7 @@ function setup(saved=null,osDark=false,blocked=false) {
   const label={},meta={};
   const system={matches:osDark,addEventListener:(key,fn)=>events.media=fn};
   const stored=new Map([['razync:theme',saved]]);
-  const context={document:{documentElement:root,
+  const context={setTimeout,clearTimeout,document:{documentElement:root,
     querySelector:q=>q==='#themeToggle'?button:q==='#themeToggleLabel'?label:meta,
     addEventListener:(key,fn)=>listeners[key]=fn},
     localStorage:{getItem:key=>{if(blocked)throw Error('blocked');return stored.get(key);},

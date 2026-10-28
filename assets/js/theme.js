@@ -46,12 +46,25 @@
       apply(theme);
       return;
     }
+    // Snapshot capture can stall in background tabs or under rendering pressure.
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      active.skipTransition();
+      apply(current());
+      if (transition === active) {
+        transition = undefined;
+        delete root.dataset.themeTransition;
+      }
+    }, 900);
     active.ready.then(() => {
+      if (timedOut) return;
       root.animate({clipPath:[`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`]}, {
         duration:460, easing:"cubic-bezier(.22,1,.36,1)", pseudoElement:"::view-transition-new(root)"
       });
     }).catch(() => { /* Skipped transitions still apply the selected theme. */ });
     active.finished.catch(() => {}).finally(() => {
+      clearTimeout(timeout);
       if (transition === active) {
         transition = undefined;
         delete root.dataset.themeTransition;
