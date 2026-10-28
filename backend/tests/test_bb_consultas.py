@@ -162,3 +162,50 @@ def test_1529_abas_por_banco_reunem_varios_arquivos_e_filtram_periodo(monkeypatc
     assert all(row['DESCRIÇÃO']=='BANCO ITAÚ' for row in itau_rows)
     assert all(row['DESCRIÇÃO']=='BANCO DO BRASIL' for row in bb_rows)
     assert [row['VALOR'] for row in bb_rows if 'BB Rende Fácil' in row['HISTÓRICO']]==[-50,40]
+
+
+def test_bb_consultas_aceita_lancamento_sem_documento_e_conciliacao_fecha():
+    """Documento é opcional no PDF; data, códigos, valor e saldo continuam obrigatórios."""
+    doc = fitz.open()
+    pg = doc.new_page(width=1040, height=450)
+    rows = [
+        "Consultas - Extrato de conta corrente",
+        "Cliente - Conta atual",
+        "Lançamentos",
+        "Dt. balancete Dt. movimento Ag. origem Lote Histórico Documento Valor R$ Saldo",
+        "30/09/2026 0000 00000 000 Saldo Anterior 500,00 C",
+        "02/10/2026 0000 13105 144 Pix - Recebido sem documento 1.000,00 C",
+        "02/10/2026 0000 13105 144 Pix - Enviado 123.456 400,00 D",
+        "03/10/2026 0000 13113 435 Tarifa avulsa 10,00 D 1.090,00 C",
+        "31/10/2026 0000 00000 999 S A L D O 1.090,00 C",
+    ]
+    for i, row in enumerate(rows):
+        pg.insert_text((24, 30 + i * 22), row, fontsize=10)
+    pdf_bytes = doc.tobytes()
+    doc.close()
+    result = ler_extrato_bb_consultas(pdf_bytes)
+    assert len(result) == 3
+    assert [x["VALOR"] for x in result] == [1000.0, -400.0, -10.0]
+    assert "sem documento" in result[0]["HISTÓRICO"]
+    assert "(Doc." not in result[0]["HISTÓRICO"]
+    assert "(Doc. 123.456)" in result[1]["HISTÓRICO"]
+    assert result[2]["HISTÓRICO"] == "Tarifa avulsa"
+
+
+def test_bb_consultas_nao_inventa_valores_quando_linha_nao_tem_cd():
+    doc = fitz.open()
+    pg = doc.new_page(width=1000, height=350)
+    rows = [
+        "Consultas - Extrato de conta corrente",
+        "Lançamentos",
+        "Dt. balancete Dt. movimento Ag. origem Lote Histórico Documento Valor R$ Saldo",
+        "01/09/2026 0000 00000 000 Saldo Anterior 0,00 C",
+        "01/09/2026 0000 13105 144 Pix - Recebido 1.000,00",
+        "30/09/2026 0000 00000 999 S A L D O 1.000,00 C",
+    ]
+    for i, row in enumerate(rows):
+        pg.insert_text((24, 30 + i * 22), row, fontsize=10)
+    pdf_bytes = doc.tobytes()
+    doc.close()
+    with pytest.raises(ValueError, match="não reconhecido"):
+        ler_extrato_bb_consultas(pdf_bytes)
