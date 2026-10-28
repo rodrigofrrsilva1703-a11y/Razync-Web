@@ -8,13 +8,22 @@ from decimal import Decimal
 
 from pypdf import PdfReader
 
-_MONEY = r"\d{1,3}(?:\.\d{3})*,\d{2}"
+_MONEY = r"(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}"
 _DATE = r"\d{2}/\d{2}/\d{4}"
 _ROW = re.compile(
     rf"^(?P<data>{_DATE})\s+(?:{_DATE}\s+)?\d{{4}}\s+\d{{5}}\s+\d{{3}}\s+"
     rf"(?P<historico>.+?)\s*(?P<documento>[\d.\-/]+)\s+"
     rf"(?P<valor>{_MONEY})\s*(?P<natureza>[CD])"
     rf"(?:\s*(?P<saldo>{_MONEY})\s*(?P<saldo_natureza>[CD]))?\s*$", re.I,
+)
+# Algumas versões do BB Consultas deixam o documento vazio.
+# Nesses casos as colunas de data, códigos, valor e natureza continuam obrigatórias.
+_ROW_NO_DOCUMENT = re.compile(
+    rf"^(?P<data>{_DATE})\s+(?:{_DATE}\s+)?"
+    rf"\d{{1,5}}\s+\d{{1,6}}\s+\d{{1,3}}\s+"
+    rf"(?P<historico>.+?)\s+(?P<valor>{_MONEY})\s*(?P<natureza>[CD])"
+    rf"(?:\s*(?P<saldo>{_MONEY})\s*(?P<saldo_natureza>[CD]))?\s*$",
+    re.I,
 )
 _START = re.compile(rf"^{_DATE}\s")
 _END = re.compile(rf"(?P<valor>{_MONEY})\s*(?P<natureza>[CD])\s*$", re.I)
@@ -77,9 +86,9 @@ def ler_extrato_bb_consultas(content: bytes) -> list[dict]:
                     raise ValueError('Banco do Brasil: saldo final não reconhecido.')
                 closing = _cents(match['valor'], match['natureza'])
                 break
-            match = _ROW.fullmatch(line)
+            match = _ROW.fullmatch(line) or _ROW_NO_DOCUMENT.fullmatch(line)
             if match is None:
-                raise ValueError('Banco do Brasil: uma linha de movimentação não foi reconhecida. Envie o PDF original completo.')
+                raise ValueError('Banco do Brasil: movimento de ' + line[:10] + ' não reconhecido. Confira o layout e a integridade deste PDF.')
             if running is None:
                 raise ValueError('Banco do Brasil: saldo anterior não encontrado.')
             cents = _cents(match['valor'], match['natureza'])
@@ -89,7 +98,7 @@ def ler_extrato_bb_consultas(content: bytes) -> list[dict]:
             current = {'DESCRIÇÃO':'BANCO DO BRASIL',
                        'DATA':datetime.strptime(match['data'], '%d/%m/%Y'),
                        'VALOR':cents / 100, 'DÉBITO':'', 'CRÉDITO':'',
-                       'HISTÓRICO':f"{match['historico']} (Doc. {match['documento']})"}
+                       'HISTÓRICO':(f"{match['historico']} (Doc. {match['documento']})" if match.groupdict().get('documento') else match['historico'])}
             records.append(current)
         elif current is not None:
             if (_TITLE.search(line) or line.startswith(('Dt. balancete', 'Cliente -', 'Agência ',
