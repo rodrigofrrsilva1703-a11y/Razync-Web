@@ -126,10 +126,16 @@
     if (document.querySelector("#fiscalEmpresaCodigo")) {
       throw Error("O código manual da empresa não deveria aparecer na conferência.");
     }
-    if(document.querySelector('.main-nav-btn[data-view="converter"]') ||
-       document.querySelector("#converterView")) {
-      throw Error("O Conversor de Extratos ainda aparece no site.");
+    const converterNav = document.querySelector('.main-nav-btn[data-view="converter"]');
+    const converterView = document.querySelector("#converterView");
+    if (!converterNav || !converterView || !document.querySelector("#globalConverterForm")) {
+      throw Error("O Conversor de Extratos global não está disponível.");
     }
+    converterNav.click();
+    if (!converterView.classList.contains("active")) {
+      throw Error("O Conversor de Extratos não abriu pelo menu lateral.");
+    }
+    fiscalNav.click();
     const fiscalSetup = document.querySelector("#fiscalView .fiscal-setup");
     const fiscalForm = document.querySelector("#fiscal242Form");
     const fiscalFile = document.querySelector("#fiscal242Razao");
