@@ -188,8 +188,11 @@ def processar_pdf(file_bytes: bytes, filename: str) -> pd.DataFrame:
         if parece_extrato_santander_empresarial(texto):
             return _prefixar(pd.DataFrame(processar_extrato_santander_empresarial_texto(texto)))
     if bank == "banco_brasil":
+        from app.bb_consultas import parece_extrato_bb_consultas, ler_extrato_bb_consultas
+        if parece_extrato_bb_consultas(file_bytes):
+            return _prefixar(pd.DataFrame(ler_extrato_bb_consultas(file_bytes)))
         from razync.bb_statement import parece_extrato_bb_autorizavel, processar_extrato_bb_autorizavel
-        if parece_extrato_bb_autorizavel(texto):
+        if parece_extrato_bb_autorizavel(file_bytes):
             return _prefixar(pd.DataFrame(processar_extrato_bb_autorizavel(file_bytes)))
         from razync.valean_625 import processar_bb_625
         return _prefixar(processar_bb_625(file_bytes))
