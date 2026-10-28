@@ -100,6 +100,33 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
     filters.appendChild(button);
   });
   toolbarLeft.appendChild(filters);
+
+  // Filtra somente a visualização; os cálculos da conferência permanecem intactos.
+  const periodFilter = document.createElement("div");
+  periodFilter.className = "daily-period-filter";
+  const startLabel = document.createElement("label");
+  startLabel.textContent = "De";
+  const startDate = document.createElement("input");
+  startDate.type = "date";
+  startDate.setAttribute("aria-label", "Data inicial da conferência");
+  startLabel.appendChild(startDate);
+  const endLabel = document.createElement("label");
+  endLabel.textContent = "Até";
+  const endDate = document.createElement("input");
+  endDate.type = "date";
+  endDate.setAttribute("aria-label", "Data final da conferência");
+  endLabel.appendChild(endDate);
+  const clearPeriod = document.createElement("button");
+  clearPeriod.type = "button";
+  clearPeriod.className = "daily-period-clear";
+  clearPeriod.textContent = "Limpar período";
+  clearPeriod.hidden = true;
+  periodFilter.append(startLabel, endLabel, clearPeriod);
+  toolbarLeft.appendChild(periodFilter);
+  const visibleCount = document.createElement("span");
+  visibleCount.className = "daily-visible-count";
+  visibleCount.setAttribute("role", "status");
+  toolbarLeft.appendChild(visibleCount);
   toolbar.appendChild(toolbarLeft);
 
   if (download) {
@@ -143,6 +170,11 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
     const tr = document.createElement("tr");
     tr.dataset.status = row.ok ? "ok" : "review";
     tr.dataset.bank = row.bank;
+    tr.dataset.date = /^\d{4}-\d{2}-\d{2}/.test(String(row.date || ""))
+      ? String(row.date).slice(0, 10)
+      : (/^\d{2}\/\d{2}\/\d{4}/.test(String(row.date || ""))
+        ? String(row.date).slice(6, 10) + "-" + String(row.date).slice(3, 5) + "-" + String(row.date).slice(0, 2)
+        : "");
     tr.className = row.ok ? "daily-ok" : "daily-review";
     const status = row.ok ? "Batendo" : "Divergente";
 
@@ -180,11 +212,18 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
   const applyFilters = () => {
     const activeStatus = filters.querySelector(".daily-filter.active")?.dataset.filter || "all";
     const selectedBank = toolbarLeft.querySelector(".daily-bank-filter")?.value || "";
+    let shown = 0;
     body.querySelectorAll("tr").forEach(row => {
+      const dateMatch = (!startDate.value || (row.dataset.date && row.dataset.date >= startDate.value))
+        && (!endDate.value || (row.dataset.date && row.dataset.date <= endDate.value));
       const statusMatch = activeStatus === "all" || row.dataset.status === activeStatus;
       const bankMatch = !selectedBank || row.dataset.bank === selectedBank;
-      row.hidden = !statusMatch || !bankMatch;
+      row.hidden = !statusMatch || !bankMatch || !dateMatch;
+      if (!row.hidden) shown++;
     });
+    clearPeriod.hidden = !startDate.value && !endDate.value;
+    const invalidRange = startDate.value && endDate.value && startDate.value > endDate.value;
+    visibleCount.textContent = invalidRange ? "Período inválido: data inicial posterior à final" : shown + " de " + normalized.length + " dias/bancos exibidos";
   };
 
   filters.addEventListener("click", event => {
@@ -194,6 +233,10 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
     applyFilters();
   });
   toolbarLeft.querySelector(".daily-bank-filter")?.addEventListener("change",applyFilters);
+  startDate.addEventListener("input", applyFilters);
+  endDate.addEventListener("input", applyFilters);
+  clearPeriod.addEventListener("click", () => { startDate.value = ""; endDate.value = ""; applyFilters(); });
+  applyFilters();
 
   scroll.appendChild(table);
   target.append(summary,rule,toolbar,scroll);
