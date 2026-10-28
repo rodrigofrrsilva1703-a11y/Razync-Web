@@ -37,3 +37,13 @@ body .razync-table .history-cell, #companyPanel .razync-table .history-cell { mi
  body .razync-table thead th, #companyPanel .razync-table thead th { padding:11px 12px !important; }
  body .razync-table tbody td, #companyPanel .razync-table tbody td { padding:11px 12px !important; }
 }
+
+/* Período de visualização dos resultados da Conferência com Extrato. */
+.daily-period-filter{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.daily-period-filter label{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500}
+.daily-period-filter input[type=date]{width:145px;max-width:100%;min-height:35px;padding:6px 8px;border:1px solid var(--border,#d4dce5);border-radius:8px;background:var(--surface,#fff);color:var(--text,#222);font:inherit;color-scheme:normal}
+html[data-theme=dark] .daily-period-filter input[type=date]{color-scheme:dark}
+.daily-period-clear{min-height:35px;padding:6px 10px;border:1px solid var(--border,#d4dce5);border-radius:8px;background:transparent;color:inherit;cursor:pointer;font-size:12px}
+.daily-visible-count{font-size:12px;color:var(--muted,#64748b)}
+.daily-table tr[hidden]{display:none!important}
+@media(max-width:680px){.daily-period-filter{width:100%}.daily-period-filter input[type=date]{width:130px}}
