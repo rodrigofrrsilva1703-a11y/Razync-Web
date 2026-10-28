@@ -757,6 +757,34 @@ async def conferencia_fiscal(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+@app.post("/api/v1/conversor-extratos/preview")
+async def conversor_extratos_preview(
+    files: list[UploadFile] = File(...),
+    data_inicial: str = Form(""),
+    data_final: str = Form(""),
+):
+    """Usa exatamente os leitores do conversor, sem mudar o Modelo Domínio."""
+    from app.migration_routes import workbook_preview
+    try:
+        if not files:
+            raise ValueError("Envie pelo menos um extrato.")
+        sheets = {}
+        frames = []
+        for idx, upload in enumerate(files, start=1):
+            name = upload.filename or f"arquivo_{idx}"
+            frame = await run_in_threadpool(processar_arquivo, await upload.read(), name)
+            frame = _filter_period_frame(frame, data_inicial, data_final)
+            frames.append(frame)
+            sheets[f"{idx:02d} {Path(name).stem[:24]}"[:31]] = frame
+        if not any(not frame.empty for frame in frames):
+            raise ValueError("Nenhum lançamento encontrado no período selecionado.")
+        consolidated = pd.concat(frames, ignore_index=True).sort_values("DATA", kind="stable")
+        workbook = await run_in_threadpool(gerar_modelo_abas, {"Consolidado": consolidated, **sheets})
+        return {"sheets": await run_in_threadpool(workbook_preview, workbook)}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 @app.post("/api/v1/conversor-extratos")
 async def conversor_extratos(
     files: list[UploadFile] = File(...),
