@@ -56,15 +56,11 @@
         transition = undefined;
         delete root.dataset.themeTransition;
       }
-    }, 1000);
+    }, 900);
     active.ready.then(() => {
       if (timedOut) return;
-      root.animate({
-        clipPath:[`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`],
-        opacity:[0.84,1]
-      }, {
-        duration:380, easing:"cubic-bezier(.25,.8,.25,1)", fill:"both",
-        pseudoElement:"::view-transition-new(root)"
+      root.animate({clipPath:[`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`]}, {
+        duration:460, easing:"cubic-bezier(.22,1,.36,1)", pseudoElement:"::view-transition-new(root)"
       });
     }).catch(() => { /* Skipped transitions still apply the selected theme. */ });
     active.finished.catch(() => {}).finally(() => {
