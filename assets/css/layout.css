@@ -40,16 +40,24 @@ main { max-width:1500px; }
  .hero.compact-hero h1, .global-view .page-head h1 { font-size:25px; }
 }
 
-/* Cabeçalho persistente durante a rolagem da área de trabalho. */
+/* Cabeçalho realmente fixo na viewport; espaço reservado evita cobrir a página. */
+.app-shell { padding-top: 82px; }
 .app-shell > .topbar {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 50;
-  flex-shrink: 0;
+  left: 40px;
+  right: 40px;
+  width: auto;
+  max-width: 1480px;
+  height: 82px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  z-index: 70;
   background: var(--bg, #f4f7fb);
   isolation: isolate;
 }
 html[data-theme="dark"] .app-shell > .topbar { background: var(--bg, #080808); }
-@supports (top: env(safe-area-inset-top)) {
-  .app-shell > .topbar { top: env(safe-area-inset-top, 0px); }
+@media (max-width: 760px) {
+  .app-shell { padding-top: 62px; }
+  .app-shell > .topbar { left: 20px; right: 20px; height: 62px; margin: 0; }
 }
