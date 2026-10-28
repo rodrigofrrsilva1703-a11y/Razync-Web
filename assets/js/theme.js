@@ -21,13 +21,50 @@
     if (meta) meta.content = theme === "dark" ? "#080808" : "#f4f7fb";
   }
   const current = () => valid(preference) ? preference : system.matches ? "dark" : "light";
+  let transition;
+  function changeTheme(theme, button) {
+    // A second click wins immediately, including while a snapshot is being prepared.
+    if (transition) {
+      transition.skipTransition();
+      apply(theme);
+      return;
+    }
+    if (!document.startViewTransition || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      apply(theme);
+      return;
+    }
+    const bounds = button.getBoundingClientRect();
+    const x = bounds.left + bounds.width / 2, y = bounds.top + bounds.height / 2;
+    const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+    root.dataset.themeTransition = "active";
+    let active;
+    try {
+      active = document.startViewTransition(() => apply(current()));
+      transition = active;
+    } catch {
+      delete root.dataset.themeTransition;
+      apply(theme);
+      return;
+    }
+    active.ready.then(() => {
+      root.animate({clipPath:[`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`]}, {
+        duration:460, easing:"cubic-bezier(.22,1,.36,1)", pseudoElement:"::view-transition-new(root)"
+      });
+    }).catch(() => { /* Skipped transitions still apply the selected theme. */ });
+    active.finished.catch(() => {}).finally(() => {
+      if (transition === active) {
+        transition = undefined;
+        delete root.dataset.themeTransition;
+      }
+    });
+  }
   apply(current());
   document.addEventListener("DOMContentLoaded", () => {
     apply(current());
     document.querySelector("#themeToggle")?.addEventListener("click", () => {
       preference = root.dataset.theme === "dark" ? "light" : "dark";
       try { localStorage.setItem(key, preference); } catch { /* Still works for this visit. */ }
-      apply(preference);
+      changeTheme(preference, document.querySelector("#themeToggle"));
     });
   });
   system.addEventListener("change", () => { if (!valid(preference)) apply(current()); });

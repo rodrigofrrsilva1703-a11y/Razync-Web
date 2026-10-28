@@ -3,6 +3,16 @@
 .theme-toggle {display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:8px 11px;border:1px solid #dbe4ee;border-radius:11px;background:#ffffffa6;color:#526c84;cursor:pointer;font-size:11px;font-weight:550}
 .theme-toggle:hover {background:#eaf1f8;border-color:#b7cadc}
 .theme-toggle:focus-visible {outline:2px solid #5286bf;outline-offset:3px}
+/* Reveal a single theme snapshot rather than transitioning every table cell. */
+html[data-theme-transition="active"]::view-transition-old(root),
+html[data-theme-transition="active"]::view-transition-new(root) {animation:none;mix-blend-mode:normal}
+html[data-theme-transition="active"]::view-transition-old(root) {z-index:1}
+html[data-theme-transition="active"]::view-transition-new(root) {z-index:2}
+html[data-theme-transition="active"]::view-transition-group(root) {animation-duration:460ms}
+@media(prefers-reduced-motion:no-preference) {
+ .theme-toggle svg {animation:themeIconAppear .32s ease-out}
+ @keyframes themeIconAppear {from{opacity:.3;transform:rotate(-35deg) scale(.7)}to{opacity:1;transform:none}}
+}
 .theme-toggle svg {width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .theme-sun {display:none}
 html[data-theme="dark"] .theme-moon {display:none}

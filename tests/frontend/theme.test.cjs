@@ -15,10 +15,39 @@ function setup(saved=null,osDark=false,blocked=false) {
     addEventListener:(key,fn)=>listeners[key]=fn},
     localStorage:{getItem:key=>{if(blocked)throw Error('blocked');return stored.get(key);},
       setItem:(key,value)=>{if(blocked)throw Error('blocked');stored.set(key,value);}},
-    window:{matchMedia:()=>system,addEventListener:(key,fn)=>events[key]=fn}};
+    window:{matchMedia:query=>query.includes('reduced-motion')?{matches:false}:system,innerWidth:1280,innerHeight:720,addEventListener:(key,fn)=>events[key]=fn}};
   vm.runInNewContext(source,context);
-  return {root,attrs,label,meta,stored,events,system,ready:()=>listeners.DOMContentLoaded(),click:()=>buttonEvents.click()};
+  return {root,attrs,label,meta,stored,events,system,document:context.document,window:context.window,button,ready:()=>listeners.DOMContentLoaded(),click:()=>buttonEvents.click()};
 }
+
+test('revelação parte do botão, preserva cliques rápidos e limpa o estado temporário',async()=>{
+  const h=setup();h.ready();
+  h.button.getBoundingClientRect=()=>({left:1100,top:10,width:100,height:40});
+  let finish,skipped=0,animation;
+  h.root.animate=(frames,options)=>{animation={frames,options};};
+  h.document.startViewTransition=update=>{
+    update();
+    return {ready:Promise.resolve(),finished:new Promise(resolve=>finish=resolve),skipTransition(){skipped++;}};
+  };
+  h.click();await Promise.resolve();
+  assert.equal(h.root.dataset.theme,'dark');
+  assert.equal(animation.frames.clipPath[0],'circle(0px at 1150px 30px)');
+  assert.equal(animation.options.pseudoElement,'::view-transition-new(root)');
+  h.click();assert.equal(skipped,1);assert.equal(h.root.dataset.theme,'light');
+  finish();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(h.root.dataset.themeTransition,undefined);
+});
+
+test('movimento reduzido e falha da API mantêm a troca de tema funcional',()=>{
+  const h=setup();h.ready();
+  h.document.startViewTransition=()=>{throw Error('unsupported');};
+  h.window.matchMedia=()=>({matches:true});
+  h.click();assert.equal(h.root.dataset.theme,'dark');
+  h.window.matchMedia=()=>({matches:false});
+  h.button.getBoundingClientRect=()=>({left:0,top:0,width:40,height:40});
+  h.click();assert.equal(h.root.dataset.theme,'light');
+  assert.equal(h.root.dataset.themeTransition,undefined);
+});
 test('tema salvo é aplicado antes do DOM e prevalece sobre o sistema',()=>{
   const h=setup('light',true);assert.equal(h.root.dataset.theme,'light');assert.equal(h.root.style.colorScheme,'light');
   h.ready();assert.equal(h.attrs['aria-label'],'Ativar modo escuro');
