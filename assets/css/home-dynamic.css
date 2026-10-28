@@ -91,3 +91,41 @@
  #portfolioPicker .portfolio-entry-action {gap:5px}
  #portfolioPicker .portfolio-entry-action > span:first-child {font-size:10px}
 }
+
+/* A more expressive entrance and a soft, continuous frame around the illustration. */
+#portfolioPicker .home-edge-orbit {position:absolute;inset:-1px;width:calc(100% + 2px);height:calc(100% + 2px);border-radius:inherit;overflow:visible;pointer-events:none}
+#portfolioPicker .home-edge-orbit rect {fill:none;stroke:#a7d3ff;stroke-width:1.3px;vector-effect:non-scaling-stroke;stroke-dasharray:7 93;stroke-linecap:round;opacity:.65}
+#portfolioPicker .home-sparks {position:absolute;inset:0;pointer-events:none}
+#portfolioPicker .home-sparks b {position:absolute;width:3px;height:3px;border-radius:50%;background:#c7e0ff;box-shadow:0 0 8px #97c6ff66;opacity:0}
+#portfolioPicker .home-sparks b:nth-child(1) {left:9%;top:68%}
+#portfolioPicker .home-sparks b:nth-child(2) {left:30%;top:23%}
+#portfolioPicker .home-sparks b:nth-child(3) {left:47%;top:81%}
+#portfolioPicker .home-sparks b:nth-child(4) {left:61%;top:18%}
+#portfolioPicker .home-sparks b:nth-child(5) {left:77%;top:72%}
+#portfolioPicker .home-sparks b:nth-child(6) {left:92%;top:37%}
+@keyframes homeCopyReveal {from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes homeTileReveal {from{opacity:0;transform:translateY(8px) rotateX(8deg)}to{opacity:1;transform:none}}
+@keyframes homeEdgeTravel {from{stroke-dashoffset:0}to{stroke-dashoffset:-100}}
+@keyframes homeSparkRise {0%,100%{opacity:0;transform:translateY(14px) scale(.5)}35%{opacity:.55;transform:translateY(0) scale(1)}80%{opacity:0;transform:translateY(-28px) scale(.6)}}
+@keyframes homePaperFan {0%,100%{rotate:-3deg}50%{rotate:4deg}}
+@media(prefers-reduced-motion:no-preference) {
+ #portfolioPicker .home-intro-copy > .portfolio-eyebrow {animation:homeCopyReveal .4s .1s ease-out backwards}
+ #portfolioPicker .home-intro-copy > h1 {animation:homeCopyReveal .5s .18s cubic-bezier(.22,1,.36,1) backwards}
+ #portfolioPicker .home-intro-copy > p {animation:homeCopyReveal .5s .26s ease-out backwards}
+ #portfolioPicker .home-flow-node {animation:homeTileReveal .55s .2s cubic-bezier(.22,1,.36,1) backwards}
+ #portfolioPicker .home-flow-node:nth-of-type(2) {animation-delay:.29s}
+ #portfolioPicker .home-flow-node:nth-of-type(3) {animation-delay:.38s}
+ #portfolioPicker .home-edge-orbit rect {animation:homeEdgeTravel 11s linear infinite}
+ #portfolioPicker .home-sparks b {animation:homeSparkRise 7s ease-in-out infinite}
+ #portfolioPicker .home-sparks b:nth-child(2) {animation-delay:-1.2s}
+ #portfolioPicker .home-sparks b:nth-child(3) {animation-delay:-2.4s}
+ #portfolioPicker .home-sparks b:nth-child(4) {animation-delay:-3.6s}
+ #portfolioPicker .home-sparks b:nth-child(5) {animation-delay:-4.8s}
+ #portfolioPicker .home-sparks b:nth-child(6) {animation-delay:-6s}
+ #portfolioPicker .home-paper {animation-name:homePaperHover,homePaperFan;animation-duration:8s,12s;animation-timing-function:ease-in-out;animation-iteration-count:infinite}
+}
+#portfolioPicker[data-motion="paused"] .home-edge-orbit rect,
+#portfolioPicker[data-motion="paused"] .home-sparks b {animation-play-state:paused!important}
+@media(prefers-reduced-motion:reduce) {
+ #portfolioPicker :is(.home-edge-orbit,.home-sparks) {display:none}
+}
