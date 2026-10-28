@@ -102,24 +102,28 @@ body.sidebar-collapsed .toggle-stroke:nth-child(3) { width:10px; }
 html { scrollbar-gutter:stable; }
 .app-shell,body.sidebar-collapsed .app-shell { margin-left:0; transition:none; }
 .sidebar-backdrop {
- position:fixed; inset:0; z-index:80; background:#152a4530; backdrop-filter:blur(3px);
- opacity:1; visibility:visible; transition:opacity 240ms ease,visibility 0s;
+ position:fixed; inset:0; z-index:80; background:#152a4540;
+ opacity:1; visibility:visible; transition:opacity 180ms ease,visibility 0s;
 }
-body.sidebar-collapsed .sidebar-backdrop { opacity:0; visibility:hidden; pointer-events:none; transition:opacity 220ms ease,visibility 0s 260ms; }
+body.sidebar-collapsed .sidebar-backdrop { opacity:0; visibility:hidden; pointer-events:none; transition:opacity 160ms ease,visibility 0s 180ms; }
 body.nav-drawer-open { overflow:hidden; }
+/* Avoid repainting the animated home behind the navigation overlay. */
+body.nav-drawer-open #portfolioPicker *,
+body.nav-drawer-open #portfolioPicker *::before,
+body.nav-drawer-open #portfolioPicker *::after { animation-play-state:paused!important; }
 #mainSidebar {
  position:fixed; inset:16px auto 16px 16px; z-index:90; width:280px; max-width:calc(100vw - 32px);
  max-height:none; padding:28px 18px 22px; border:1px solid #ffffff14; border-radius:20px;
  overflow-y:auto; overscroll-behavior:contain;
  background:linear-gradient(155deg,#203957,#14263f 68%);
  box-shadow:0 20px 70px #0a1a3330,inset 0 1px 0 #ffffff08;
- transform:none; opacity:1; visibility:visible;
- transition:transform 320ms cubic-bezier(.22,1,.36,1),opacity 220ms ease,visibility 0s;
+ transform:translate3d(0,0,0); opacity:1; visibility:visible; will-change:transform;
+ transition:transform 220ms cubic-bezier(.22,1,.36,1),opacity 160ms ease,visibility 0s;
 }
 body.sidebar-collapsed #mainSidebar {
- max-height:none; padding:28px 18px 22px; transform:translateX(calc(-100% - 32px)); opacity:0;
+ max-height:none; padding:28px 18px 22px; transform:translate3d(calc(-100% - 32px),0,0); opacity:0;
  visibility:hidden; pointer-events:none;
- transition:transform 280ms cubic-bezier(.4,0,1,1),opacity 220ms ease,visibility 0s 280ms;
+ transition:transform 180ms cubic-bezier(.4,0,1,1),opacity 140ms ease,visibility 0s 180ms;
 }
 #mainSidebar .brand { padding:4px 35px 30px 10px; gap:11px; }
 #mainSidebar .brand-logo { width:40px; height:40px; }

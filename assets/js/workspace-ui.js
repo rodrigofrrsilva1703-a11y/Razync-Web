@@ -98,10 +98,10 @@ function initializeSidebarControls() {
     toggle.setAttribute("aria-expanded", String(open));
     toggle.setAttribute("aria-label", open ? "Fechar menu lateral" : "Abrir menu lateral");
     toggle.title = open ? "Fechar menu lateral" : "Abrir menu lateral";
-    if (!open && moveFocus) toggle.focus();
+    if (!open && moveFocus) toggle.focus({preventScroll:true});
     sidebar.inert = !open;
     sidebar.setAttribute("aria-hidden", String(!open));
-    if (open && moveFocus) sidebar.querySelector(".main-nav-btn.active, .main-nav-btn")?.focus();
+    if (open && moveFocus) sidebar.querySelector(".main-nav-btn.active, .main-nav-btn")?.focus({preventScroll:true});
   }
   setOpen(false, false);
   toggle.addEventListener("click", () => setOpen(!open));
