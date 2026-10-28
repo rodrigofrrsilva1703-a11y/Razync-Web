@@ -129,3 +129,32 @@
 @media(prefers-reduced-motion:reduce) {
  #portfolioPicker :is(.home-edge-orbit,.home-sparks) {display:none}
 }
+
+/* Brand motion stays inside the existing header footprint. */
+#portfolioPicker .portfolio-brand {gap:13px}
+#portfolioPicker .portfolio-brand > .brand-mark {position:relative;display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;isolation:isolate}
+#portfolioPicker .brand-mark::before {content:"";position:absolute;z-index:-1;inset:-5px;border-radius:15px;background:radial-gradient(circle,#6aaaff26,transparent 72%);pointer-events:none}
+#portfolioPicker .brand-mark img {display:block;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+#portfolioPicker .brand-orbit {position:absolute;inset:-6px;width:44px;height:44px;overflow:visible;pointer-events:none}
+#portfolioPicker .brand-orbit rect {fill:none;stroke:#4d8fcf;stroke-width:1;stroke-dasharray:16 84;stroke-linecap:round;opacity:.65}
+#portfolioPicker .brand-wordmark {display:block}
+#portfolioPicker .brand-name {position:relative;display:block;width:fit-content;overflow:hidden;line-height:1.15}
+#portfolioPicker .brand-name::after {content:"";position:absolute;inset:-20% auto -20% -50%;width:25%;background:linear-gradient(90deg,transparent,#fff9,transparent);transform:skewX(-18deg) translateX(-200%);pointer-events:none}
+@keyframes brandLightTravel {to{stroke-dashoffset:-100}}
+@keyframes brandHaloBreath {0%,100%{opacity:.4;transform:scale(.9)}50%{opacity:1;transform:scale(1.12)}}
+@keyframes brandNameShine {0%,65%{transform:skewX(-18deg) translateX(-200%)}100%{transform:skewX(-18deg) translateX(850%)}}
+@media(prefers-reduced-motion:no-preference) {
+ #portfolioPicker .brand-wordmark {animation:homeCopyReveal .65s .08s ease-out backwards}
+ #portfolioPicker .brand-orbit rect {animation:brandLightTravel 7s linear infinite}
+ #portfolioPicker .brand-mark::before {animation:brandHaloBreath 4.5s ease-in-out infinite}
+ #portfolioPicker .brand-name::after {animation:brandNameShine 8s ease-in-out infinite}
+}
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
+ #portfolioPicker .portfolio-brand:hover .brand-mark img {transform:translateY(-2px) rotate(-7deg) scale(1.05)}
+}
+#portfolioPicker[data-motion="paused"] :is(.brand-wordmark,.brand-orbit rect),
+#portfolioPicker[data-motion="paused"] .brand-mark::before,
+#portfolioPicker[data-motion="paused"] .brand-name::after {animation-play-state:paused!important}
+@media(prefers-reduced-motion:reduce) {
+ #portfolioPicker .brand-name::after,#portfolioPicker .brand-orbit {display:none}
+}
