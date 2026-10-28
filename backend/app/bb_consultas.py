@@ -65,6 +65,12 @@ def ler_extrato_bb_consultas(content: bytes) -> list[dict]:
     in_table = False
     for original in text.splitlines():
         line = re.sub(r'\s+', ' ', original).strip()
+        # O texto extraído de alguns PDFs BB cola documento e valor (sem espaço).
+        # Restaura a separação somente para documentos pontuados e valores com C/D.
+        line = re.sub(
+            r'(\d{2,3}(?:\.\d{3}){2,4})(\d{1,3}(?:\.\d{3})*,\d{2})(?=\s*[CD](?:\s|$))',
+            r'\1 \2', line,
+        )
         if not line:
             continue
         if line == 'Lançamentos':
