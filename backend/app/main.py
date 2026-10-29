@@ -43,6 +43,8 @@ app.include_router(organizer_router)
 
 origins = [
     "https://rodrigofrrsilva1703-a11y.github.io",
+    "https://razync.com.br",
+    "https://www.razync.com.br",
     "http://localhost:5173",
     "http://localhost:8000",
 ]
