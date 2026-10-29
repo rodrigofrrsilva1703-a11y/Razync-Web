@@ -14,14 +14,14 @@
 :is(#converterView,#ledgerView) .file-drop-hint {justify-content:center;text-align:center;font-size:11px;line-height:1.6;max-width:46ch}
 :is(#converterView,#ledgerView) .file-selection {justify-self:stretch;width:100%;box-sizing:border-box;text-align:left}
 :is(#converterView,#ledgerView) .global-tool-controls {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:24px;padding-top:18px;border-top:1px solid #e7edf4}
-:is(#converterView,#ledgerView) .global-tool-controls .standard-period-card {min-width:0;width:100%;max-width:480px;margin:0;padding:12px 14px;border:1px solid #dce5ef;border-radius:10px;background:#fafcfe;box-sizing:border-box}
+:is(#converterView,#ledgerView) .global-tool-controls .standard-period-card {min-width:0;width:100%;max-width:480px;grid-column:1;grid-row:1;margin:0;padding:12px 14px;border:1px solid #dce5ef;border-radius:10px;background:#fafcfe;box-sizing:border-box}
 :is(#converterView,#ledgerView) .global-tool-controls legend {font-size:12px;font-weight:600}
 :is(#converterView,#ledgerView) .global-tool-controls legend span {font-size:11px;font-weight:400;color:var(--muted)}
 :is(#converterView,#ledgerView) .global-tool-controls .period-fields {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 :is(#converterView,#ledgerView) .global-tool-controls .period-fields > div {display:grid;gap:6px;min-width:0}
 :is(#converterView,#ledgerView) .global-tool-controls input[type=date] {width:100%;min-width:0;min-height:42px;box-sizing:border-box;border:1px solid #ccd9e7;border-radius:8px;background:#fff;padding:9px 10px;font-size:12px;color:var(--text)}
 :is(#converterView,#ledgerView) .global-tool-controls .standard-period-card p {margin:9px 0 0;font-size:11px;line-height:1.5;color:var(--muted)}
-:is(#converterView,#ledgerView) .global-tool-action {display:grid;min-width:220px;align-self:end}
+:is(#converterView,#ledgerView) .global-tool-action {display:grid;grid-column:2;grid-row:1;min-width:220px;align-self:end}
 :is(#converterView,#ledgerView) .global-tool-action > button[type=submit] {width:100%;min-height:44px;margin:0;padding:12px 20px;border:1px solid #2864d7;border-radius:9px;background:#2864d7;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
 :is(#converterView,#ledgerView) .global-tool-action > button[type=submit]:hover:not(:disabled) {background:#2157bd}
 :is(#globalConverterForm,#ledgerForm) > .helper {margin:0;font-size:12px;line-height:1.6}
@@ -36,6 +36,6 @@ html[data-theme=dark] .app-shell :is(#globalConverterForm,#ledgerForm) input[typ
  :is(#converterView,#ledgerView) .global-upload-grid {grid-template-columns:minmax(0,1fr);gap:18px}
  :is(#converterView,#ledgerView) .global-upload-field .file-drop-shell {min-height:116px;padding:16px 12px}
  :is(#converterView,#ledgerView) .global-tool-controls {grid-template-columns:minmax(0,1fr);gap:18px}
- :is(#converterView,#ledgerView) .global-tool-controls .standard-period-card {max-width:none}
- :is(#converterView,#ledgerView) .global-tool-action {min-width:0;width:100%}
+ :is(#converterView,#ledgerView) .global-tool-controls .standard-period-card {grid-column:1;grid-row:auto;max-width:none}
+ :is(#converterView,#ledgerView) .global-tool-action {grid-column:1;grid-row:auto;min-width:0;width:100%}
 }
