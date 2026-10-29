@@ -26,33 +26,21 @@ test('movimento reduzido e aba oculta suspendem a demonstração',()=>{
  h.doc.hidden=true;h.events.visibilitychange();assert.equal(h.timers.size,0);
  h.doc.hidden=false;h.events.visibilitychange();assert.equal(h.timers.size,1);
 });
-test('mouse, foco, menu e entrada na carteira suspendem a demonstração',()=>{
- const h=setup();h.scene.events.pointerenter({pointerType:'mouse'});assert.equal(h.timers.size,0);
- h.scene.events.pointerleave();assert.equal(h.timers.size,1);
- h.scene.events.focusin();assert.equal(h.timers.size,0);
- h.scene.events.focusout({relatedTarget:null});assert.equal(h.timers.size,1);
+test('cliques mantêm o avanço automático, sem bloqueio por mouse ou foco',()=>{
+ const h=setup();
+ assert.equal(h.scene.events.pointerenter,undefined);
+ assert.equal(h.scene.events.focusin,undefined);
+ h.buttons[2].events.click();
+ assert.equal(h.scene.dataset.artMotion,'playing');
+ assert.equal(h.timers.size,1);
+ h.advance();
+ assert.equal(h.scene.dataset.stage,'0');
+ assert.equal(h.timers.size,1);
+});
+test('menu e saída da tela suspendem trabalho invisível e retomam automaticamente',()=>{
+ const h=setup();
  h.classes.add('nav-drawer-open');h.observers[0]();assert.equal(h.timers.size,0);
  h.classes.clear();h.observers[0]();assert.equal(h.timers.size,1);
  h.home.hidden=true;h.observers[0]();assert.equal(h.timers.size,0);
  h.home.hidden=false;h.observers[0]();assert.equal(h.timers.size,1);
-});
-test('pausa manual persiste e retoma sem duplicar temporizadores',()=>{
- const h=setup();h.pause.events.click();assert.equal(h.timers.size,0);assert.equal(h.pause.attributes['aria-pressed'],'true');
- h.events.visibilitychange();h.observers[0]();assert.equal(h.timers.size,0);
- h.pause.events.click();assert.equal(h.timers.size,1);assert.equal(h.pause.attributes['aria-label'],'Pausar demonstração');
-});
-
-test('pausar preserva o tempo restante em vez de reiniciar a etapa',()=>{
- const h=setup();h.elapse(1700);h.scene.events.pointerenter({pointerType:'mouse'});assert.equal(h.timers.size,0);
- h.elapse(8000);h.scene.events.pointerleave();assert.equal(h.delay(),3900);
- h.buttons[0].events.click();assert.equal(h.delay(),3900);
- h.advance();assert.equal(h.scene.dataset.stage,'1');assert.equal(h.delay(),5600);
-});
-
-test('mouse pausa apenas a troca da etapa; pausa explícita também para a arte',()=>{
- const h=setup();h.scene.events.pointerenter({pointerType:'mouse'});
- assert.equal(h.scene.dataset.playing,'false');assert.equal(h.scene.dataset.artMotion,'playing');
- h.pause.events.click();assert.equal(h.scene.dataset.artMotion,'paused');
- h.pause.events.click();assert.equal(h.scene.dataset.artMotion,'playing');
- h.media.matches=true;h.events.media();assert.equal(h.scene.dataset.artMotion,'paused');
 });
