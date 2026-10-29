@@ -23,7 +23,7 @@ test('movimentos são agrupados em um frame e medem o cartão uma única vez',()
   assert.equal(h.styles.get('--pointer-x'),'49.5%');assert.equal(h.styles.get('--pointer-y'),'20.0%');
 });
 test('sair, clicar ou mudar tamanho limpa efeito e frame pendente',()=>{
-  for(const event of ['pointerleave','click','resize','blur']) {
+  for(const event of ['pointerleave','click','resize','blur','scroll']) {
     const h=setup();h.move(110,70);h.flush();h.move(210,120);h.events[event]();
     assert.equal(h.frames.size,0);assert.equal(h.styles.size,0);
   }

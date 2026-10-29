@@ -23,7 +23,7 @@
   }
   home.addEventListener('pointermove', event => {
     if (!allowed.matches || event.pointerType !== 'mouse') return;
-    const target = event.target.closest('.portfolio-entry,.home-visual');
+    const target = event.target.closest('.portfolio-entry,.portfolio-heading');
     if (!target || !home.contains(target)) { reset(); return; }
     if (target !== active) {
       reset(); active = target; bounds = target.getBoundingClientRect();
@@ -36,6 +36,7 @@
   home.addEventListener('click', reset);
   window.addEventListener('resize', reset);
   window.addEventListener('blur', reset);
+  window.addEventListener('scroll', reset, {passive:true});
   document.addEventListener('visibilitychange', () => { if (document.hidden) reset(); });
   allowed.addEventListener('change', reset);
 })();
