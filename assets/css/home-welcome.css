@@ -168,3 +168,5 @@ html[data-theme="dark"] #companiesView #portfolioPicker .portfolio-entry-arrow {
  #companiesView #portfolioPicker .portfolio-avatar {width:46px;height:46px}
  #companiesView #portfolioPicker .portfolio-entry-info strong {font-size:18px}
 }
+
+html[data-theme="dark"] #companiesView #portfolioPicker .portfolio-entry-action {background:transparent!important;box-shadow:none!important}
