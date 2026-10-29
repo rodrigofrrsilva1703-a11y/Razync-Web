@@ -143,3 +143,56 @@ html[data-theme="dark"] #companiesView #portfolioPicker .portfolio-entry-label {
  #companiesView #portfolioPicker :is(.welcome-perimeter,.home-sparks) {display:none}
  #companiesView #portfolioPicker .portfolio-entry::after,#companiesView #portfolioPicker .home-flow-symbol::after {display:none}
 }
+
+/* Title choreography and a compact, luminous portfolio card. */
+@property --wallet-angle {syntax:"<angle>";initial-value:0deg;inherits:false}
+#companiesView #portfolioPicker h1 {position:relative}
+#companiesView #portfolioPicker .welcome-title-line {display:block}
+#companiesView #portfolioPicker h1 em {display:block;background:none;color:var(--wb);animation:none}
+#companiesView #portfolioPicker h1 em::after {display:none}
+#companiesView #portfolioPicker .welcome-word {display:inline-block;transform-origin:50% 100%}
+#companiesView #portfolioPicker .welcome-title-stroke {position:absolute;left:0;bottom:-15px;width:min(330px,95%);height:18px;overflow:visible;pointer-events:none}
+#companiesView #portfolioPicker .welcome-title-stroke path {stroke:var(--wb);stroke-width:1.7;stroke-linecap:round;opacity:.5}
+#companiesView #portfolioPicker .welcome-title-stroke path+path {stroke-width:1;opacity:.25}
+#companiesView #portfolioPicker .portfolio-entry {isolation:isolate;overflow:visible;transform-style:preserve-3d;transition:transform .4s cubic-bezier(.2,.8,.2,1),box-shadow .4s,border-color .3s}
+#companiesView #portfolioPicker .portfolio-entry::before {content:"";display:block;position:absolute;inset:0;z-index:-1;border-radius:inherit;background:radial-gradient(240px circle at var(--pointer-x,50%) var(--pointer-y,50%),#78a8ff1c,transparent 75%);opacity:0;transition:opacity .4s;pointer-events:none}
+#companiesView #portfolioPicker .portfolio-entry::after {content:"";display:block;position:absolute;inset:-1px;width:auto;padding:1px;border-radius:inherit;z-index:0;transform:none;background:conic-gradient(from var(--wallet-angle),transparent 0deg 245deg,#76a7ff15 270deg,#4889f0cc 310deg,#a0c6ff55 330deg,transparent 355deg);mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;pointer-events:none;opacity:.8}
+#companiesView #portfolioPicker .portfolio-avatar {position:relative;isolation:isolate;overflow:visible;transition:transform .4s,box-shadow .4s}
+#companiesView #portfolioPicker .portfolio-avatar::before,#companiesView #portfolioPicker .portfolio-avatar::after {content:"";position:absolute;z-index:-1;inset:2px;border:1px solid #6698ec40;border-radius:8px;background:var(--wt);pointer-events:none;transform-origin:center 80%}
+#companiesView #portfolioPicker .portfolio-avatar::before {transform:translate(-3px,2px) rotate(-8deg);opacity:.65}
+#companiesView #portfolioPicker .portfolio-avatar::after {transform:translate(3px,-2px) rotate(8deg);opacity:.5}
+#companiesView #portfolioPicker .portfolio-entry-info,#companiesView #portfolioPicker .portfolio-entry-action {position:relative;transition:translate .35s}
+@keyframes welcomeWordReveal {from{opacity:0;transform:translateY(24px) rotateX(25deg);filter:blur(5px)}to{opacity:1;transform:none;filter:blur(0)}}
+@keyframes welcomeSignature {0%,8%{stroke-dashoffset:100;opacity:0}22%,85%{stroke-dashoffset:0;opacity:.5}100%{stroke-dashoffset:0;opacity:0}}
+@keyframes welcomeWalletBorder {to{--wallet-angle:360deg}}
+@keyframes welcomeWalletLift {0%,100%{translate:0 0}50%{translate:0 -3px}}
+@keyframes welcomeWalletFanLeft {0%,100%{transform:translate(-3px,2px) rotate(-8deg)}50%{transform:translate(-5px,1px) rotate(-15deg)}}
+@keyframes welcomeWalletFanRight {0%,100%{transform:translate(3px,-2px) rotate(8deg)}50%{transform:translate(5px,-3px) rotate(15deg)}}
+@media(prefers-reduced-motion:no-preference) {
+ #companiesView #portfolioPicker .home-intro-copy > h1 {animation:none}
+ #companiesView #portfolioPicker .welcome-word {animation:welcomeWordReveal .9s cubic-bezier(.16,1,.3,1) both}
+ #companiesView #portfolioPicker .welcome-title-line .welcome-word:first-child {animation-delay:.12s}
+ #companiesView #portfolioPicker .welcome-title-line .welcome-word:nth-child(2) {animation-delay:.24s}
+ #companiesView #portfolioPicker h1 em .welcome-word:first-child {animation-delay:.36s}
+ #companiesView #portfolioPicker h1 em .welcome-word:nth-child(2) {animation-delay:.48s}
+ #companiesView #portfolioPicker h1 em .welcome-word {color:transparent;background:linear-gradient(110deg,var(--wb) 15%,#6395ed 45%,var(--wb) 75%);background-size:220% 100%;background-clip:text;-webkit-background-clip:text;animation-name:welcomeWordReveal,welcomeGradient;animation-duration:.9s,7s;animation-timing-function:cubic-bezier(.16,1,.3,1),ease-in-out;animation-iteration-count:1,infinite;animation-fill-mode:both,none}
+ #companiesView #portfolioPicker .welcome-title-stroke path {stroke-dasharray:100;animation:welcomeSignature 10s .4s ease-in-out infinite}
+ #companiesView #portfolioPicker .welcome-title-stroke path+path {animation-delay:1s}
+ #companiesView #portfolioPicker .portfolio-entry::after {animation:welcomeWalletBorder 6s linear infinite}
+ #companiesView #portfolioPicker .portfolio-avatar {animation:welcomeWalletLift 5s ease-in-out infinite}
+ #companiesView #portfolioPicker .portfolio-avatar::before {animation:welcomeWalletFanLeft 6s ease-in-out infinite}
+ #companiesView #portfolioPicker .portfolio-avatar::after {animation:welcomeWalletFanRight 6s ease-in-out infinite}
+}
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
+ #companiesView #portfolioPicker .portfolio-entry:hover {transform:perspective(850px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)) translateY(-3px);box-shadow:0 12px 30px #2864d714}
+ #companiesView #portfolioPicker .portfolio-entry:hover::before {opacity:1}
+ #companiesView #portfolioPicker .portfolio-entry:hover::after {animation-duration:2.5s;opacity:1}
+ #companiesView #portfolioPicker .portfolio-entry:hover .portfolio-avatar {box-shadow:0 0 0 5px #649bff09}
+ #companiesView #portfolioPicker .portfolio-entry:hover .portfolio-entry-info {translate:2px 0}
+}
+#companiesView #portfolioPicker .portfolio-entry:focus-visible {outline:2px solid var(--wb);outline-offset:5px}
+#companiesView #portfolioPicker .portfolio-entry:focus-visible::before {opacity:1}
+@media(prefers-reduced-motion:reduce) {
+ #companiesView #portfolioPicker .portfolio-entry::after {display:none}
+ #companiesView #portfolioPicker .welcome-word {filter:none;transform:none;opacity:1}
+}
