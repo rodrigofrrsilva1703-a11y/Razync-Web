@@ -475,3 +475,39 @@ html[data-theme=dark] #companiesView #portfolioPicker .showcase-step > i {backgr
  #companiesView #portfolioPicker .showcase-steps {gap:10px}
  #companiesView #portfolioPicker .showcase-playback {padding-inline:0}
 }
+
+/* Keep the wallet and its totals together; readable controls on an open canvas. */
+#companiesView #portfolioPicker {--home-muted:#586b80}
+html[data-theme=dark] #companiesView #portfolioPicker {--home-muted:#a1abb9}
+#companiesView #portfolioPicker .portfolio-access-heading {flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:5px}
+#companiesView #portfolioPicker .portfolio-access-kicker {font-size:9px;letter-spacing:1.15px}
+#companiesView #portfolioPicker .portfolio-section-title {font-size:14px}
+#companiesView #portfolioPicker .portfolio-access .portfolio-home-summary {display:flex;flex-wrap:wrap;justify-content:flex-start;gap:10px 24px;margin:14px 0 0}
+#companiesView #portfolioPicker .portfolio-home-summary > span+span {justify-content:flex-start}
+#companiesView #portfolioPicker .portfolio-home-summary strong {font-size:16px}
+#companiesView #portfolioPicker .portfolio-home-summary :is(.home-stat-label,#portfolioWalletLabel) {font-size:11px}
+#companiesView #portfolioPicker .showcase-mark {font-size:11px}
+#companiesView #portfolioPicker .scene-index {font-size:10px;letter-spacing:1.1px;color:var(--home-muted)}
+#companiesView #portfolioPicker .showcase-copy p {font-size:13px;line-height:1.7}
+#companiesView #portfolioPicker .home-showcase .showcase-step {font-size:12px}
+#companiesView #portfolioPicker .home-showcase .showcase-step > span {font-size:10px;opacity:1}
+#companiesView #portfolioPicker .showcase-playback {font-size:11px}
+#companiesView #portfolioPicker .home-showcase .showcase-pause {font-size:11px;min-height:30px;color:var(--home-muted)}
+#companiesView #portfolioPicker .home-showcase .showcase-step:focus-visible,
+#companiesView #portfolioPicker .home-showcase .showcase-pause:focus-visible {outline:2px solid var(--home-blue);outline-offset:4px}
+@media(min-width:1000px) and (min-height:761px) {
+ #companiesView #portfolioPicker .portfolio-heading {min-height:clamp(440px,calc(100svh - 260px),640px);padding-top:0}
+}
+@media(min-width:1000px) and (max-height:760px) {
+ #companiesView #portfolioPicker .portfolio-access {margin-top:22px}
+ #companiesView #portfolioPicker .portfolio-access-heading {gap:3px;margin-bottom:9px!important}
+ #companiesView #portfolioPicker .portfolio-access .portfolio-home-summary {margin-top:10px}
+ #companiesView #portfolioPicker .showcase-copy p {font-size:12px}
+ #companiesView #portfolioPicker .home-showcase .showcase-step {font-size:11px}
+ #companiesView #portfolioPicker .showcase-playback,
+ #companiesView #portfolioPicker .home-showcase .showcase-pause {font-size:10px}
+}
+@media(max-width:760px) {
+ #companiesView #portfolioPicker .portfolio-access {max-width:100%}
+ #companiesView #portfolioPicker .showcase-copy {min-height:100px}
+}
