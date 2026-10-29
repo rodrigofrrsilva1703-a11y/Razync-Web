@@ -7,7 +7,8 @@ from fastapi.concurrency import run_in_threadpool
 from app.attachments import upload_group
 from app import fiscal_ai_sessions as sessions
 from app.fiscal_242 import conferencia_fiscal_preview
-from app.fiscal_documentos import preparar_relatorio_pendencias_para_ia
+from app.fiscal_documentos import investigar_documentos, recortar_acumulador_ia
+from app import fiscal_hybrid
 
 router = APIRouter(prefix="/api/v1/conferencia-fiscal/ia/conta")
 
@@ -33,6 +34,7 @@ async def analyze_account(acumuladores: list[UploadFile] = File(...), razao: lis
                           conta: str = Form(...), tipo: str = Form(...),
                           origem: str = Form("resumo"), acumulador: str = Form(""),
                           filial: str = Form(""), empresa_codigo: str = Form(""),
+                          usar_ia: bool = Form(True),
                           entradas: list[UploadFile] | None = File(None), saidas: list[UploadFile] | None = File(None)):
     acumuladores = await upload_group(acumuladores)
     razao = await upload_group(razao)
@@ -49,30 +51,47 @@ async def analyze_account(acumuladores: list[UploadFile] = File(...), razao: lis
     try:
         args = (await acumuladores.read(), acumuladores.filename or "resumo.xls",
                 await razao.read(), razao.filename or "razao.xls")
+        preview = await run_in_threadpool(conferencia_fiscal_preview, *args,
+            int(empresa_codigo) if empresa_codigo else None, filial or None, incluir_razao_completo=True)
+        selected = [r for r in preview["contas"] if str(r["conta"]) == conta and r["tipo"] == tipo]
+        if len(selected) != 1:
+            raise ValueError("A conta e o tipo selecionados não foram encontrados nesta conferência.")
+        documentary = None
+        contents = [args[0], args[2]]
         if origem == "documentos":
             attachment = entradas if tipo == "ENTRADAS" else saidas
             content = (await attachment.read(), attachment.filename or "documentos.xls")
-            report = await run_in_threadpool(preparar_relatorio_pendencias_para_ia, *args,
+            contents.append(content[0])
+            investigation = await run_in_threadpool(investigar_documentos, *args,
                 content if tipo == "ENTRADAS" else None, content if tipo == "SAÍDAS" else None, filial,
-                conta_alvo=conta, tipo_alvo=tipo, acumulador_alvo=acumulador)
-            if report["contas"]:
-                report = scope_account(report, conta, tipo)
-        else:
-            report = await run_in_threadpool(conferencia_fiscal_preview, *args,
-                int(empresa_codigo) if empresa_codigo else None, filial or None)
-            report = scope_account(report, conta, tipo)
+                completo=True, preview=preview)
+            documentary = next((r for r in investigation["contas"] if str(r["conta"]) == conta and r["tipo"] == tipo), None)
+            preview = dict(preview, avisos=[*preview.get("avisos", []), *investigation.get("avisos", [])])
+            if acumulador:
+                if not documentary:
+                    raise ValueError("Sem detalhamento documental para recortar este acumulador.")
+                documentary, selected_row = recortar_acumulador_ia(documentary, selected[0], acumulador)
+                selected = [selected_row]
+        # Keep global record positions for the documentary R-n references.
+        report = dict(preview, contas=selected)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     scope = {"conta": conta, "tipo": tipo, "acumulador": acumulador, "origem": origem}
-    context_id = review_context(report, scope, filial, empresa_codigo)
-    if not report["contas"] or all(r["situacao"] == "CONFERE" for r in report["contas"]):
-        return {"analises": [], "provedor": "local", "gratuito": True, "escopo": scope, "contexto_revisao": context_id,
-                "aviso": "Não há pendências nesta seleção para enviar à IA. A igualdade dos totais não substitui a conferência dos documentos."}
-    manifest = await run_in_threadpool(sessions.prepare, report)
+    def blob_hash(value):
+        if isinstance(value, bytes):
+            return hashlib.sha256(value).hexdigest()
+        if isinstance(value, (list, tuple)):
+            return [blob_hash(v) for v in value]
+        return str(value)
+    # Raw file hashes invalidate the cache even if an unrelated report row changes.
+    source_hash = json.dumps({"files": blob_hash(contents), "empresa": empresa_codigo, "filial": filial}, sort_keys=True)
+    context_id = review_context(dict(report, documentary=documentary, source_hash=source_hash,
+        regras=fiscal_hybrid.RULES_VERSION), scope, filial, empresa_codigo)
     try:
-        results = [await run_in_threadpool(sessions.process, manifest["sessao"], lot["id"]) for lot in manifest["lotes"]]
-        if len(results) != 1 or len(results[0].get("analises", [])) != 1:
-            raise HTTPException(502, "A análise não retornou exclusivamente a conta selecionada.")
-        return dict(results[0], escopo=scope, contexto_revisao=context_id)
-    finally:
-        sessions.discard(manifest["sessao"])
+        result = await run_in_threadpool(fiscal_hybrid.run, report, scope, documentary,
+                                        source_hash=source_hash, use_ai=usar_ia)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return {"analises": [result], "provedor": result["provedor"], "gratuito": True,
+            "cache_reutilizado": result.get("cache_reutilizado", False), "escopo": scope,
+            "contexto_revisao": context_id, "aviso": "Investigação somente de leitura; nenhuma alteração contábil foi executada."}

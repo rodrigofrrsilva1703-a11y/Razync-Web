@@ -48,7 +48,7 @@ def post(data):
     return TestClient(app).post('/api/v1/conferencia-fiscal/ia/conta',data=data,files={"acumuladores":("f.xls",b"test"),"razao":("r.xls",b"test")})
 
 
-def test_endpoint_so_prepara_uma_conta_e_reaproveita_cache(monkeypatch):
+def test_endpoint_investiga_uma_conta_localmente_e_reaproveita_cache(monkeypatch):
     source=report();calls=[]
     monkeypatch.setattr(account_ai,"conferencia_fiscal_preview",lambda *a,**k:copy.deepcopy(source))
     monkeypatch.setattr(sessions,"free_providers",lambda:["groq"])
@@ -57,7 +57,11 @@ def test_endpoint_so_prepara_uma_conta_e_reaproveita_cache(monkeypatch):
     sessions._completed_cache.clear();data={"conta":"470","tipo":"ENTRADAS"}
     first=post(data);assert first.status_code==200,first.text
     again=post(data);assert again.status_code==200,again.text
-    assert len(calls)==1 and len(calls[0]["contas"])==len(calls[0]["lancamentos"])==1
+    assert not calls  # Summary-only investigation does not transmit raw ledger records.
+    assert again.json()["cache_reutilizado"]
+    local=first.json()["analises"][0]["investigacao_hibrida"]
+    assert local["contagens"]["lancamentos_examinados"]==1
+    assert local["resumo"]["conta"]=="470" and local["resumo"]["tipo"]=="ENTRADAS"
     assert first.json()["escopo"]==dict(data,origem="resumo",acumulador="")
     assert len(first.json()["contexto_revisao"]) == 64
     assert first.json()["contexto_revisao"] == again.json()["contexto_revisao"]
@@ -69,6 +73,27 @@ def test_totais_iguais_sem_pendencias_nao_gastam_ia(monkeypatch):
     monkeypatch.setattr(sessions,"prepare",lambda r:pytest.fail("Não deve preparar chamada de IA"))
     response=post({"conta":"470","tipo":"ENTRADAS"})
     assert response.status_code==200 and response.json()["provedor"]=="local"
+
+
+def test_investigador_hibrido_com_planilhas_reais_sinteticas_e_filial_isolada(monkeypatch):
+    from test_fiscal_documentos import initial, detail
+    from app import fiscal_hybrid_ai
+    monkeypatch.setattr(fiscal_hybrid_ai,"choose_provider",lambda:None)
+    fiscal,ledger=initial()
+    response=TestClient(app).post('/api/v1/conferencia-fiscal/ia/conta',data={
+        "conta":"508","tipo":"ENTRADAS","origem":"documentos","filial":"242","empresa_codigo":"242","usar_ia":"false"},
+        files={"acumuladores":("Resumo.xlsx",fiscal),"razao":("Razao.xlsx",ledger),"entradas":("Entradas.xlsx",detail())})
+    assert response.status_code==200,response.text
+    result=response.json()["analises"][0]["investigacao_hibrida"]
+    assert result["resumo"]["filial"]=="242"
+    assert result["resumo"]["fiscal"]=="1800.00"
+    assert result["resumo"]["contabil"]=="1250.00"
+    assert result["resumo"]["diferenca"]=="-550.00"
+    assert result["contagens"]["lancamentos_examinados"]==2
+    assert result["contagens"]["documentos_examinados"]==3
+    assert result["contagens"]["correspondencias"]==1
+    assert {h["categoria"] for h in result["hipoteses"]}>={"ausente","valor_diferente"}
+    assert result["ia"]["chamadas"]==0
 
 
 @pytest.mark.parametrize('data',[{"conta":"470","tipo":"SERVIÇOS"},{"conta":"470","tipo":"ENTRADAS","acumulador":"1403"},{"conta":"470","tipo":"ENTRADAS","origem":"documentos"}])

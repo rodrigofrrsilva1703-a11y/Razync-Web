@@ -1292,6 +1292,26 @@ def gerar_excel_analise(payload: dict) -> bytes:
     formato(grounded, 1, set(), [17, 17, 60, 82, 82, 48, 42])
     formato(case_sheet, 1, {7, 8, 9}, [17, 17, 20, 20, 25, 80, 20, 20, 20, 40, 80, 80, 80, 80, 80])
     formato(case_sources, 1, {9}, [17, 17, 20, 20, 20, 20, 100, 20, 20])
+    hybrid = [item for item in analises if item.get("investigacao_hibrida")]
+    if hybrid:
+        investigation_sheet = book.create_sheet("Investigação híbrida")
+        investigation_sheet.append(["Conta", "Tipo", "Indício", "Categoria", "Explicação local", "Referências", "Falta confirmar", "Limite"])
+        sources_sheet = book.create_sheet("Fontes da investigação")
+        sources_sheet.append(["Conta", "Referência", "Origem", "Data", "Nota", "Série", "Acumulador", "Histórico", "Valor"])
+        for item in hybrid:
+            investigation = item["investigacao_hibrida"]
+            if not isinstance(investigation, dict) or len(investigation.get("hipoteses", [])) > 80 or len(investigation.get("evidencias", [])) > 120:
+                raise ValueError("Investigação inválida para exportação.")
+            for hypothesis in investigation.get("hipoteses", []):
+                investigation_sheet.append([texto(item.get("conta")), texto(item.get("tipo")), texto(hypothesis.get("titulo")),
+                    texto(hypothesis.get("categoria")), texto(hypothesis.get("explicacao")), texto(", ".join(hypothesis.get("referencias", []))),
+                    texto(hypothesis.get("falta_confirmar")), "Hipótese para revisão humana; não comprova causa contábil."])
+            for evidence in investigation.get("evidencias", []):
+                sources_sheet.append([texto(item.get("conta")), texto(evidence.get("referencia")), texto(evidence.get("origem")),
+                    texto(evidence.get("data")), texto(evidence.get("nota")), texto(evidence.get("serie")), texto(evidence.get("acumulador")),
+                    texto(evidence.get("historico")), numero(evidence.get("valor"))])
+        formato(investigation_sheet, 1, set(), [16, 16, 48, 24, 90, 42, 90, 60])
+        formato(sources_sheet, 1, {9}, [16, 18, 24, 18, 22, 15, 18, 90, 22])
     manual = payload.get("acompanhamento_manual") or []
     if not isinstance(manual, list) or len(manual) > 1000:
         raise ValueError("Acompanhamento manual inválido.")
