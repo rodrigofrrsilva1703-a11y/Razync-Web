@@ -442,3 +442,31 @@
 #fiscalView .fiscal-ai-data-table td {font-size:12px;line-height:1.65;}
 
 #fiscalView .fiscal-ai-account-content > .fiscal-ai-organized-analysis > h5:first-child {margin-top:0;}
+
+/* Compact preparation: a single drop boundary and optional context after files. */
+#fiscalView #fiscalSetup .fiscal-setup-heading {padding:17px 22px}
+#fiscalView #fiscalSetup .fiscal-step {padding:18px 22px}
+#fiscalView #fiscalSetup .fiscal-step-heading {margin-bottom:13px}
+#fiscalView #fiscalSetup .fiscal-upload-grid {gap:24px}
+#fiscalView #fiscalSetup .fiscal-upload-item {padding:0;border:0!important;background:transparent!important;box-shadow:none!important}
+#fiscalView #fiscalSetup .fiscal-upload-label {margin-bottom:10px}
+#fiscalView #fiscalSetup .file-drop-shell {padding:12px 14px;border:1px dashed var(--fiscal-line,#c7d5e4)!important;border-radius:10px;background:transparent!important;box-shadow:none!important}
+#fiscalView #fiscalSetup .file-drop-shell input[type=file] {padding:0;min-height:36px;border:0!important;outline-offset:4px;background:transparent!important;box-shadow:none!important;border-radius:0}
+#fiscalView #fiscalSetup .file-drop-hint {margin-top:8px;font-size:11px;line-height:1.6;color:var(--fiscal-muted,#607287)}
+#fiscalView #fiscalSetup .fiscal-file-selected {margin-top:8px;font-size:11px}
+#fiscalView #fiscalSetup .fiscal-upload-label small,
+#fiscalView #fiscalSetup .fiscal-field small,
+#fiscalView #fiscalSetup .fiscal-company-auto p {font-size:12px;line-height:1.6}
+#fiscalView #fiscalSetup .fiscal-context-grid {align-items:center;gap:24px}
+#fiscalView #fiscalSetup .fiscal-company-auto {padding:0;border:0!important;border-radius:0;background:transparent!important;box-shadow:none!important}
+#fiscalView #fiscalSetup .fiscal-company-auto strong {font-size:12px}
+#fiscalView #fiscalSetup .fiscal-company-auto p {margin:6px 0 0}
+#fiscalView #fiscalSetup .fiscal-form-actions {padding:15px 22px}
+#fiscalView #fiscalSetup .file-drop-shell:focus-within {border-color:var(--studio-blue,#275f97)!important}
+@media(max-width:700px) {
+ #fiscalView #fiscalSetup .fiscal-step,
+ #fiscalView #fiscalSetup .fiscal-setup-heading,
+ #fiscalView #fiscalSetup .fiscal-form-actions {padding:16px}
+ #fiscalView #fiscalSetup .fiscal-context-grid,
+ #fiscalView #fiscalSetup .fiscal-upload-grid {grid-template-columns:1fr;gap:18px}
+}
