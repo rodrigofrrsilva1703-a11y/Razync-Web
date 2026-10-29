@@ -419,3 +419,59 @@ html[data-theme=dark] #companiesView #portfolioPicker .portfolio-entry:hover {ba
  #companiesView #portfolioPicker .showcase-panel:not([hidden]) .scene-source {animation:showcasePaperSway 4.8s ease-in-out infinite}
  #companiesView #portfolioPicker .showcase-panel:not([hidden]) .scene-model {animation:showcaseModelSway 4.8s -.8s ease-in-out infinite}
 }
+
+/* An open composition: no frame, painted panels or boxed stage navigation. */
+#companiesView #portfolioPicker .home-showcase,
+html[data-theme=dark] #companiesView #portfolioPicker .home-showcase {overflow:visible;border:0!important;border-radius:0;background:transparent!important;background-image:none!important;box-shadow:none!important;transform:none}
+#companiesView #portfolioPicker .showcase-top,
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-top {height:38px;padding:0;border:0!important;background:transparent!important}
+#companiesView #portfolioPicker .showcase-title {font-size:13px;font-weight:550;letter-spacing:-.15px}
+#companiesView #portfolioPicker .showcase-mark {padding:0;border:0!important;border-radius:0;background:transparent;color:var(--home-muted);font-size:9px}
+#companiesView #portfolioPicker .showcase-panels {padding:7px 0 5px}
+#companiesView #portfolioPicker .showcase-copy {min-height:92px}
+#companiesView #portfolioPicker .showcase-copy h2 {font-size:21px;line-height:1.35}
+#companiesView #portfolioPicker .showcase-copy p {max-width:39ch}
+#companiesView #portfolioPicker .showcase-steps,
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-steps {gap:14px;margin:0;padding:0;border:0!important;border-radius:0;background:transparent!important;box-shadow:none}
+#companiesView #portfolioPicker .home-showcase .showcase-step {min-height:40px;padding:9px 0 11px;border-radius:0;font-size:11px;gap:6px;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--home-muted)}
+#companiesView #portfolioPicker .home-showcase .showcase-step[aria-pressed=true] {background:transparent!important;box-shadow:none!important;color:var(--home-blue);font-weight:600}
+#companiesView #portfolioPicker .home-showcase .showcase-step[aria-pressed=true] > span {color:var(--home-blue)}
+#companiesView #portfolioPicker .showcase-step > i {bottom:0;left:0;right:0;height:2px;border-radius:2px;background:#c6d4e52e}
+#companiesView #portfolioPicker .showcase-step > i::after {background:#739bd7}
+#companiesView #portfolioPicker .showcase-playback,
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-playback {padding:9px 0 0;border:0!important;background:transparent!important;font-size:9px}
+#companiesView #portfolioPicker .home-showcase .showcase-pause {padding-inline:0;background:transparent!important;border:0!important;box-shadow:none!important;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;transition:text-decoration-color .2s}
+#companiesView #portfolioPicker .home-showcase .showcase-pause:hover {text-decoration-color:currentColor;background:transparent!important}
+#companiesView #portfolioPicker .portfolio-home-summary {margin:17px 0 0;padding:0;border:0;background:transparent}
+html[data-theme=dark] .app-shell #companiesView #portfolioPicker .home-showcase .showcase-step,
+html[data-theme=dark] .app-shell #companiesView #portfolioPicker .home-showcase .showcase-step[aria-pressed=true],
+html[data-theme=dark] .app-shell #companiesView #portfolioPicker .home-showcase .showcase-step:hover,
+html[data-theme=dark] .app-shell #companiesView #portfolioPicker .home-showcase .showcase-pause:hover {background:transparent!important;border:0!important;box-shadow:none!important}
+html[data-theme=dark] .app-shell #companiesView #portfolioPicker .home-showcase .showcase-step {color:#92a1b6!important}
+html[data-theme=dark] .app-shell #companiesView #portfolioPicker .home-showcase .showcase-step[aria-pressed=true] {color:#b7cef0!important}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-step > i {background:#51678324}
+@media(hover:hover) and (pointer:fine) {
+ #companiesView #portfolioPicker .home-showcase .showcase-step:hover {color:var(--home-blue)}
+ html[data-theme=dark] .app-shell #companiesView #portfolioPicker .home-showcase .showcase-step:hover {color:#c0d4ef!important}
+}
+@media(min-width:1000px) and (max-height:760px) {
+ #companiesView #portfolioPicker .showcase-top {height:32px}
+ #companiesView #portfolioPicker .showcase-panels {padding:4px 0 3px}
+ #companiesView #portfolioPicker .showcase-copy {min-height:80px}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:19px}
+ #companiesView #portfolioPicker .showcase-steps {gap:12px;margin:0;padding:0}
+ #companiesView #portfolioPicker .home-showcase .showcase-step {min-height:36px;padding:8px 0 10px;font-size:10px}
+ #companiesView #portfolioPicker .showcase-playback {padding:6px 0 0}
+ #companiesView #portfolioPicker .portfolio-home-summary {margin-top:12px}
+}
+@media(min-width:1000px) and (max-height:600px) {
+ #companiesView #portfolioPicker .showcase-copy {min-height:75px}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:18px}
+}
+@media(max-width:760px) {
+ #companiesView #portfolioPicker .showcase-top {padding:0}
+ #companiesView #portfolioPicker .showcase-panels {padding-inline:0}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:20px}
+ #companiesView #portfolioPicker .showcase-steps {gap:10px}
+ #companiesView #portfolioPicker .showcase-playback {padding-inline:0}
+}
