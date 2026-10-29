@@ -39,3 +39,5 @@ html[data-theme=dark] .app-shell :is(#globalConverterForm,#ledgerForm) input[typ
  :is(#converterView,#ledgerView) .global-tool-controls .standard-period-card {grid-column:1;grid-row:auto;max-width:none}
  :is(#converterView,#ledgerView) .global-tool-action {grid-column:1;grid-row:auto;min-width:0;width:100%}
 }
+
+html[data-theme=dark] :is(#globalConverterForm,#ledgerForm) input[type=file]::file-selector-button {background:#252525;color:#e2e2e2;border-color:#505050}
