@@ -170,6 +170,14 @@ def test_optional_ai_unavailable_does_not_remove_local_evidence(monkeypatch):
     assert result["investigacao_hibrida"]["evidencias"]
 
 
+def test_equal_totals_with_local_alerts_still_do_not_spend_ai(monkeypatch):
+    report=ambiguous_report();report["contas"][0]["fiscal"]=100
+    monkeypatch.setattr(ai,"interpret",lambda *a:pytest.fail("Totals agree; retain local alerts"))
+    result=hybrid.run(report,scope(),documentary())
+    assert result["investigacao_hibrida"]["hipoteses"]
+    assert result["investigacao_hibrida"]["ia"]["chamadas"]==0
+
+
 @contextmanager
 def slot(*args):
     yield lambda raw:None

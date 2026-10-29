@@ -57,8 +57,15 @@ def interpret(investigation):
         return base
     provider, model, key = option
     # No names, histories, tax identifiers, dates, values or account/company codes leave the server.
+    selected, seen = [], set()
+    for hypothesis in investigation["hipoteses"]:
+        if hypothesis["categoria"] not in seen:
+            selected.append(hypothesis)
+            seen.add(hypothesis["categoria"])
+    selected_ids = {h["id"] for h in selected}
+    selected.extend(h for h in investigation["hipoteses"] if h["id"] not in selected_ids)
     hypotheses = [{"id": h["id"], "categoria": h["categoria"], "quantidade_referencias": len(h["referencias"]),
-                   "grau": h["grau"]} for h in investigation["hipoteses"][:8]]
+                   "grau": h["grau"]} for h in selected[:8]]
     context = {"hipoteses": hypotheses, "documentos_presentes": investigation["contagens"]["documentos_examinados"] > 0,
                "tem_limitacoes": bool(investigation["limitacoes"])}
     text = json.dumps(context, ensure_ascii=False, separators=(",", ":"))

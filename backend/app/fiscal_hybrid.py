@@ -258,7 +258,7 @@ def run(report, scope, documentary=None, *, source_hash="", use_ai=True):
         _inflight.add(digest)
     try:
         result = investigate(report, scope, documentary)
-        if use_ai and len({h["categoria"] for h in result["hipoteses"]}) > 1 and documentary:
+        if use_ai and cents(result["resumo"]["diferenca"]) != 0 and len({h["categoria"] for h in result["hipoteses"]}) > 1 and documentary:
             result["ia"] = interpret(result)
         elif not use_ai:
             result["ia"].update(estado="desativada", motivo="Interpretação externa desativada nesta seleção.")
