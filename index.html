@@ -30,9 +30,8 @@
   <link rel="stylesheet" href="./assets/css/company-directory.css?v=20261027-1">
   <link rel="stylesheet" href="./assets/css/themes.css?v=original-theme-20261028-1">
   <link rel="stylesheet" href="./assets/css/sidebar-motion.css?v=20261029-1">
-  <link rel="stylesheet" href="./assets/css/home-welcome.css?v=20261029-9">
+  <link rel="stylesheet" href="./assets/css/home-welcome.css?v=redesign-20261029-10">
   <link rel="stylesheet" href="./assets/css/global-tool-preparation.css?v=20261029-1">
-  <link rel="stylesheet" href="./assets/css/home-workflow.css?v=20261029-1">
 </head>
 <body class="sidebar-collapsed">
   <div class="app-shell">
@@ -57,43 +56,65 @@
 
     <main>
       <section id="companiesView" class="global-view active">
-        <section id="portfolioPicker" class="portfolio-picker" aria-label="Carteiras dos colaboradores">
+        <section id="portfolioPicker" class="portfolio-picker home-redesign" aria-label="Carteiras dos colaboradores">
           <div class="portfolio-home-topline">
-            <div class="portfolio-brand"><span class="brand-mark"><svg class="brand-orbit" viewBox="0 0 44 44" aria-hidden="true"><rect x="2" y="2" width="40" height="40" rx="13" pathLength="100"/></svg><img src="./assets/razync-logo-original.png" alt="" width="32" height="32"></span><span class="brand-wordmark"><span class="brand-name">Razync</span><small>AUTOMAÇÃO CONTÁBIL</small></span></div>
+            <div class="portfolio-brand"><span class="brand-mark"><img src="./assets/razync-logo-original.png" alt="" width="36" height="36"></span><span class="brand-wordmark"><span class="brand-name">Razync</span><small>AUTOMAÇÃO CONTÁBIL</small></span></div>
             <span id="portfolioDate" class="portfolio-date">Seu espaço de trabalho</span>
           </div>
           <div class="portfolio-heading">
-            <div class="welcome-art" aria-hidden="true"><i></i><i></i><i></i><svg class="welcome-spark" viewBox="0 0 32 32"><path d="M16 2c1 10 4 13 14 14-10 1-13 4-14 14C15 20 12 17 2 16 12 15 15 12 16 2Z"/></svg></div>
-            <div class="home-ambient" aria-hidden="true"><i></i><i></i><span class="home-sparks"><b></b><b></b><b></b><b></b><b></b><b></b></span></div>
-            <div class="welcome-floating-docs" aria-hidden="true"><span class="welcome-doc welcome-doc-pdf"><b>PDF</b><i></i><i></i><i></i></span><span class="welcome-doc welcome-doc-xlsx"><b>XLSX</b><i></i><i></i><i></i></span><span class="welcome-doc welcome-doc-done"><svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></svg><i></i><i></i><small>MODELO</small></span></div>
             <div class="home-intro-copy">
-            <span class="portfolio-eyebrow" id="portfolioGreeting">Boas-vindas ao seu espaço.</span>
-            <h1 aria-label="Sua rotina, mais leve."><span class="welcome-title-line">Sua rotina,</span> <em>mais leve.</em></h1>
-            <p>Organize extratos, confira saldos e classifique lançamentos.<br class="home-desktop-break"> Sua rotina contábil, em um só lugar.</p>
-
+              <span class="portfolio-eyebrow" id="portfolioGreeting">Boas-vindas ao seu espaço.</span>
+              <h1>Clareza para<br><em>a sua rotina.</em></h1>
+              <p>Do extrato à classificação, um caminho mais simples para o seu trabalho contábil.</p>
+              <div class="portfolio-access">
+                <div class="portfolio-access-heading"><span class="portfolio-access-kicker">SEU PRÓXIMO PASSO</span><h2 class="portfolio-section-title">Entre na sua carteira</h2></div>
+                <div id="portfolioList" class="portfolio-list" aria-busy="true"><p class="portfolio-loading" role="status">Carregando carteiras…</p></div>
+              </div>
             </div>
-            <div class="home-visual">
-              <div class="home-visual-heading"><span>DO ARQUIVO AO RESULTADO</span><span class="welcome-flow-caption">3 etapas conectadas</span></div>
-            <div class="home-live-flow" aria-label="Organizar, conferir e classificar">
-              <span class="home-flow-node"><span class="home-flow-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H6V3h1Zm7 0v5h4M9 12h6M9 16h4"/></svg></span><span>Organizar<small>Extratos no Modelo Domínio</small></span></span>
-              <i class="home-flow-track" aria-hidden="true"></i>
-              <span class="home-flow-node"><span class="home-flow-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="3"/><path d="M9 4V2h6v2M8 12l3 3 5-6"/></svg></span><span>Conferir<small>Saldos e lançamentos alinhados</small></span></span>
-              <i class="home-flow-track" aria-hidden="true"></i>
-              <span class="home-flow-node"><span class="home-flow-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v7c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 12v7c0 1.7 3.1 3 7 3s7-1.3 7-3v-7"/></svg></span><span>Classificar<small>Padrões da Base Inteligente</small></span></span>
-            </div>
+            <div class="showcase-wrap">
+              <div class="showcase-aura" aria-hidden="true"><i></i><i></i></div>
+              <section class="home-showcase" aria-label="Conheça o fluxo do Razync" data-stage="0" data-playing="false">
+                <div class="showcase-top"><span class="showcase-window-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>DO ARQUIVO AO RESULTADO</span><span class="showcase-mark" aria-hidden="true">RZ</span></div>
+                <div class="showcase-panels">
+                  <div class="showcase-panel" id="homeStageOrganize" data-panel="0">
+                    <div class="showcase-art scene-organize" aria-hidden="true">
+                      <span class="scene-paper scene-source"><span class="paper-format">PDF · OFX</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3h8l4 4v14H6V3Zm8 0v5h4M9 12h6M9 16h4"/></svg><i></i><i></i><i></i><small>Extrato bancário</small></span>
+                      <span class="scene-transfer"><svg viewBox="0 0 80 24"><path d="M2 12h70m-7-6 7 6-7 6"/></svg></span>
+                      <span class="scene-paper scene-model"><span class="paper-format">XLSX</span><span class="paper-mini-grid"><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="paper-check"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 12 4 4 8-9"/></svg></span><small>Modelo Domínio</small></span>
+                      <span class="scene-spark spark-one">✦</span><span class="scene-spark spark-two">✦</span>
+                    </div>
+                    <div class="showcase-copy"><span class="scene-index">01 / ORGANIZAR</span><h2>Arquivos no lugar certo.</h2><p>Transforme seus extratos em Modelo Domínio, com prévia antes de baixar.</p></div>
+                  </div>
+                  <div class="showcase-panel" id="homeStageReconcile" data-panel="1" hidden>
+                    <div class="showcase-art scene-reconcile" aria-hidden="true">
+                      <span class="scene-ledger ledger-left"><b>EXTRATO</b><i></i><i></i><i></i><i></i></span>
+                      <span class="scene-balance"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 12 4 4 8-9"/></svg></span>
+                      <span class="scene-ledger ledger-right"><b>RAZÃO</b><i></i><i></i><i></i><i></i></span>
+                      <span class="scene-connector"></span>
+                    </div>
+                    <div class="showcase-copy"><span class="scene-index">02 / CONFERIR</span><h2>Mais clareza na conferência.</h2><p>Compare os movimentos e encontre as diferenças por dia.</p></div>
+                  </div>
+                  <div class="showcase-panel" id="homeStageClassify" data-panel="2" hidden>
+                    <div class="showcase-art scene-classify" aria-hidden="true">
+                      <span class="scene-label label-one"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3h8l4 4v14H6V3Zm8 0v5h4M9 12h6M9 16h4"/></svg><span>Histórico</span></span><span class="scene-label label-two"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3h8l4 4v14H6V3Zm8 0v5h4M9 12h6M9 16h4"/></svg><span>Conta</span></span><span class="scene-label label-three"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3h8l4 4v14H6V3Zm8 0v5h4M9 12h6M9 16h4"/></svg><span>Natureza</span></span>
+                      <span class="scene-folder"><i></i><b>Base Inteligente</b><span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 12 4 4 8-9"/></svg></span></span>
+                    </div>
+                    <div class="showcase-copy"><span class="scene-index">03 / CLASSIFICAR</span><h2>O padrão vira agilidade.</h2><p>Aplique os aprendizados da Base Inteligente aos seus lançamentos.</p></div>
+                  </div>
+                </div>
+                <div class="showcase-steps" role="group" aria-label="Explorar etapas do fluxo">
+                  <button class="showcase-step" type="button" data-stage="0" aria-pressed="true" aria-controls="homeStageOrganize"><span>01</span> Organizar<i aria-hidden="true"></i></button>
+                  <button class="showcase-step" type="button" data-stage="1" aria-pressed="false" aria-controls="homeStageReconcile"><span>02</span> Conferir<i aria-hidden="true"></i></button>
+                  <button class="showcase-step" type="button" data-stage="2" aria-pressed="false" aria-controls="homeStageClassify"><span>03</span> Classificar<i aria-hidden="true"></i></button>
+                </div>
+                <div class="showcase-playback"><span>Uma ilustração do seu fluxo de trabalho</span><button type="button" class="showcase-pause" aria-label="Pausar demonstração" aria-pressed="false">Pausar</button></div>
+              </section>
               <div class="portfolio-home-summary" aria-label="Resumo das carteiras">
-                <span><span class="home-stat-label">SUAS EMPRESAS</span><strong id="portfolioCompanyTotal">—</strong><span>reunidas no Razync</span></span>
-                <span><span class="home-stat-label">SEU ESPAÇO</span><strong id="portfolioWalletTotal">—</strong><span id="portfolioWalletLabel">carteira disponível</span></span>
+                <span><strong id="portfolioCompanyTotal">—</strong><span class="home-stat-label">empresas no Razync</span></span>
+                <span><strong id="portfolioWalletTotal">—</strong><span id="portfolioWalletLabel">carteira disponível</span></span>
               </div>
             </div>
           </div>
-          <div class="portfolio-access">
-            <div class="portfolio-access-heading">
-              <div><span class="portfolio-access-kicker">CONTINUE POR AQUI</span><h2 class="portfolio-section-title">Acesse suas empresas</h2><p>Escolha uma carteira para continuar.</p></div>
-            </div>
-            <div id="portfolioList" class="portfolio-list" aria-busy="true"><p class="portfolio-loading" role="status">Carregando carteiras…</p></div>
-          </div>
-
         </section>
         <section class="hero compact-hero" hidden>
           <div class="portfolio-toolbar"><button id="backToPortfolios" type="button" class="portfolio-back">← Voltar às carteiras</button><span id="portfolioActiveName" class="portfolio-owner"></span></div>
@@ -702,6 +723,7 @@
   <script type="text/plain" data-lazy-tool="investments" src="./assets/js/bank-investments.js?v=20261020-8"></script>
   <script src="./assets/js/dom-utils.js?v=20261020-1"></script>
   <script src="./assets/js/home-motion.js?v=20261027-2"></script>
+  <script src="./assets/js/home-showcase.js?v=20261029-1"></script>
   <script src="./assets/js/home-interactions.js?v=screen-motion-20261029-5"></script>
   <script src="./assets/js/portfolios.js?v=wallet-folder-20261029-4"></script>
   <script src="./assets/js/reconciliation-preview.js?v=period-filter-20261027-1"></script>
