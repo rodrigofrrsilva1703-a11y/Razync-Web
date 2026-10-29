@@ -1645,11 +1645,13 @@ def processar_razao_dominio(file_bytes, filename):
         v_ent, v_sai = 0.0, 0.0
 
         if col_deb and col_cred:
-            v_sai = (
+            # Na conta bancária do Razão: débito aumenta o ativo (entrada),
+            # crédito reduz o ativo (saída). O extrato usa o sinal do movimento.
+            v_ent = (
                 abs(limpar_valor_monetario(row[col_deb]))
                 if pd.notna(row[col_deb]) else 0.0
             )
-            v_ent = (
+            v_sai = (
                 abs(limpar_valor_monetario(row[col_cred]))
                 if pd.notna(row[col_cred]) else 0.0
             )
