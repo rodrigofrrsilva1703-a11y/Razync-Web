@@ -30,7 +30,8 @@ function renderPortfolios() {
     const avatar = document.createElement("span");
     avatar.className = "portfolio-avatar";
     avatar.setAttribute("aria-hidden", "true");
-    avatar.textContent = portfolio.name.trim().slice(0, 1).toUpperCase();
+    // Static illustration; the accessible button name still identifies the owner.
+    avatar.innerHTML = '<svg class="wallet-folder" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path class="wallet-back" d="M7 15a4 4 0 0 1 4-4h10l4 4h12a4 4 0 0 1 4 4v17H7Z"/><rect class="wallet-sheet" x="14" y="10" width="21" height="24" rx="3"/><path class="wallet-lines" d="M19 17h11M19 22h8"/><path class="wallet-front" d="M6 24a4 4 0 0 1 4-4h28a4 4 0 0 1 4 4l-3 13H9Z"/></svg>';
     const info = document.createElement("span");
     info.className = "portfolio-entry-info";
     const name = document.createElement("strong");
