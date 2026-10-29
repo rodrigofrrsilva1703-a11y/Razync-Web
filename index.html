@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="./assets/css/motion.css?v=tools-20261027-2">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="fiscal" href="./assets/css/fiscal-242.css?v=theme-surfaces-20261027-5">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="fiscal" href="./assets/css/fiscal-results.css?v=theme-surfaces-20261027-5">
-  <link rel="razync-lazy-stylesheet" data-lazy-tool="fiscal" href="./assets/css/fiscal-studio.css?v=compact-setup-20261029-1">
+  <link rel="razync-lazy-stylesheet" data-lazy-tool="fiscal" href="./assets/css/fiscal-studio.css?v=refined-setup-20261029-2">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="fiscal" href="./assets/css/fiscal-ai-reader.css?v=theme-surfaces-20261027-5">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="fiscal" href="./assets/css/fiscal-account-dialog.css?v=hybrid-20261028-1">
   <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=home-composed-20261027-11">
@@ -207,8 +207,8 @@
           <form id="fiscal242Form" class="fiscal-form">
             <div class="fiscal-step">
               <div class="fiscal-step-heading">
-                <span class="fiscal-step-index" aria-hidden="true">01</span>
-                <div><h3>Arquivos da conferência</h3><p>Anexe um ou vários relatórios da mesma empresa. Os períodos serão conferidos em conjunto.</p></div>
+                
+                <div><h3>Anexe os relatórios</h3><p>Use arquivos da mesma empresa. Você pode conferir vários períodos juntos.</p></div>
               </div>
               <div class="fiscal-upload-grid">
                 <div class="fiscal-upload-item">
@@ -223,20 +223,17 @@
                 </div>
               </div>
             </div>
-            <div class="fiscal-step">
-              <div class="fiscal-step-heading">
-                <span class="fiscal-step-index" aria-hidden="true">02</span>
-                <div><h3>Empresa e filial</h3><p>Verificação automática de empresa e seleção de filial.</p></div>
-              </div>
+            <p class="fiscal-upload-guidance">Arraste os arquivos para os campos ou clique para selecionar. Você pode adicionar mais arquivos antes de conferir.</p>
+            <div class="fiscal-step fiscal-context-step">
               <div class="fiscal-context-grid">
                 <div class="fiscal-company-auto">
-                  <strong>Razão social identificada automaticamente</strong>
-                  <p>O nome será validado automaticamente após a leitura.</p>
+                  <strong>Identificação automática</strong>
+                  <p>A empresa será identificada nos relatórios durante a conferência.</p>
                 </div>
                 <div class="fiscal-field">
-                  <label for="fiscalFilialCodigo">Filial do Razão <span>(se houver várias)</span></label>
+                  <label for="fiscalFilialCodigo">Filtrar filial <span>(opcional)</span></label>
                   <input id="fiscalFilialCodigo" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Ex.: 242 ou 1408">
-                  <small>Se o Razão tiver só uma filial, ela será identificada automaticamente.</small>
+                  <small>Preencha apenas se quiser selecionar uma filial do Razão.</small>
                 </div>
               </div>
             </div>
