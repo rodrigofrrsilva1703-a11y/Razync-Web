@@ -378,6 +378,24 @@ html.fiscal-account-dialog-open {overflow:hidden;scrollbar-gutter:stable;}
 #fiscalView .fiscal-account-resolution-error:empty {display:none;}
 #fiscalView .fiscal-account-review-filter:focus-visible,#fiscalView .fiscal-account-resolution button:focus-visible,#fiscalView .fiscal-account-resolution textarea:focus-visible {outline:2px solid #7197c0;outline-offset:3px;}
 
+/* Hybrid investigation uses the existing modal and semantic theme colors. */
+#fiscalView .fiscal-hybrid-opinion {font-size:12px;line-height:1.65;min-width:0}
+#fiscalView .fiscal-hybrid-opinion h5 {margin:18px 0 7px;font-size:13px}
+#fiscalView .fiscal-hybrid-checks {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 24px;padding-left:18px}
+#fiscalView .fiscal-hybrid-hypotheses {padding-left:20px;margin:0}
+#fiscalView .fiscal-hybrid-hypotheses > li {padding:12px 0;border-bottom:1px solid var(--border,#dbe4ee)}
+#fiscalView .fiscal-hybrid-hypotheses p {margin:5px 0}
+#fiscalView .fiscal-hybrid-refs {font-size:11px;overflow-wrap:anywhere;color:var(--muted,#61758a)}
+#fiscalView .fiscal-hybrid-ai-status {padding:9px 12px;background:var(--surface-soft,#f4f7fb);border:1px solid var(--border,#dbe4ee);border-radius:9px;font-size:11px}
+#fiscalView .fiscal-hybrid-evidence-scroll {max-height:360px;overflow:auto;border:1px solid var(--border,#dbe4ee);border-radius:9px}
+#fiscalView .fiscal-hybrid-evidence-scroll table {min-width:640px;width:100%;font-size:11px}
+#fiscalView .fiscal-hybrid-evidence-scroll :is(td,th) {padding:8px 10px;vertical-align:top;overflow-wrap:anywhere}
+#fiscalView .fiscal-hybrid-evidence-scroll th {position:sticky;top:0;background:var(--surface,#f4f7fb)}
+#fiscalView .fiscal-hybrid-evidence-scroll td:nth-child(4) {min-width:200px;max-width:400px;white-space:normal}
+#fiscalView .fiscal-hybrid-ai-option {display:flex;gap:8px;align-items:flex-start;font-size:11px;font-weight:400;line-height:1.5;margin:8px 0}
+#fiscalView .fiscal-hybrid-ai-option input {flex:none;margin-top:2px}
+@media(max-width:760px){#fiscalView .fiscal-hybrid-checks {grid-template-columns:1fr}}
+
 /* Acumuladores × Razão acompanha a densidade dos resultados de Entradas e Saídas. */
 #fiscalView #fiscal242Detail {font-size:11px;line-height:1.45;}
 #fiscalView #fiscal242Detail .fiscal-comparison-metrics {margin:6px 0 10px;padding-bottom:10px;}

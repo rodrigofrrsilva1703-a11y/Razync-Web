@@ -52,6 +52,38 @@ test('recorte documental envia apenas o acompanhamento do tipo e preserva o acum
   await find(other,'fiscal-account-analysis-button').click();assert.equal(requests.length,2);
 });
 
+test('investigação permite desligar IA e invalida cache quando um arquivo auxiliar muda',async()=>{
+  const {context,requests,files,find,all}=setup();
+  const scope={origem:'documentos',conta:'470',tipo:'ENTRADAS'};
+  files.fiscal242Entradas.files=['primeiro.xls','segundo.xls'];
+  let root=context.createAccountAnalysis(scope);
+  const checkbox=all(root).find(el=>el.tag==='input' && el.type==='checkbox');
+  checkbox.checked=false;checkbox.events.change();
+  await find(root,'fiscal-account-analysis-button').click();
+  assert.equal(requests[0].options.body.get('usar_ia'),'false');
+  files.fiscal242Entradas.files=['primeiro.xls','outro.xls'];
+  root=context.createAccountAnalysis(scope);
+  await find(root,'fiscal-account-analysis-button').click();
+  assert.equal(requests.length,2);
+});
+
+test('parecer híbrido exibe evidências e limites sem HTML oriundo dos históricos',()=>{
+  const {context,all}=setup();context.money=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+  const result={analises:[{investigacao_hibrida:{
+    resumo:{empresa:242,filial:'1',conta:'470',tipo:'ENTRADAS',fiscal:'100.00',contabil:'90.00',diferenca:'-10.00'},
+    contagens:{lancamentos_examinados:1,documentos_examinados:0,correspondencias:0,evidencias_exibidas:1,evidencias_disponiveis:1},
+    ia:{estado:'dispensada',chamadas:0,motivo:'Sem chamada externa.'},verificacoes:['Precisão em centavos'],hipoteses:[],
+    conclusao:{grau:'inconclusiva',texto:'Causa não identificada'},limitacoes:['Faltam documentos'],
+    evidencias:[{referencia:'R-1',origem:'Razão',historico:'<img src=x onerror=delete_all()>',valor:'90.00'}]
+  }}]};
+  const root=context.renderAccountOpinion(result,{});
+  const nodes=all(root);
+  assert.ok(nodes.some(el=>el.textContent==='Causa inconclusiva'));
+  assert.ok(nodes.some(el=>el.textContent==='Faltam documentos'));
+  assert.ok(nodes.some(el=>el.textContent==='<img src=x onerror=delete_all()>'));
+  assert.ok(!nodes.some(el=>el.tag==='img'));
+});
+
 test('trocar arquivos invalida cache e resposta de outra conta nunca aparece',async()=>{
   const {context,requests,files,find}=setup();const scope={origem:'documentos',conta:'470',tipo:'ENTRADAS'};
   let root=context.createAccountAnalysis(scope);await find(root,'fiscal-account-analysis-button').click();

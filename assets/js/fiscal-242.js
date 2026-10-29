@@ -1180,7 +1180,63 @@
     paint(); return host;
   }
 
+  function renderHybridOpinion(item, cached) {
+    const report = item.investigacao_hibrida, summary = report.resumo, counts = report.contagens;
+    const content = node("div", "fiscal-account-opinion fiscal-hybrid-opinion");
+    const ai = report.ia || {};
+    content.appendChild(node("p", "fiscal-account-opinion-source", "Investigação em Python · somente leitura" + (cached ? " · resultado reaproveitado" : "")));
+    content.appendChild(node("p", "fiscal-account-analysis-context", [summary.empresa_nome || summary.empresa || "Empresa dos relatórios", "Filial " + (summary.filial || "não identificada"),
+      "Conta " + summary.conta, summary.tipo, "Acumulador " + (summary.acumulador || "não identificado"),
+      [summary.competencia?.inicio,summary.competencia?.fim].filter(Boolean).join(" a ")].join(" · ")));
+    const conclusion = node("section", "fiscal-account-opinion-conclusion");
+    const level = {sem_divergencia:"Totais conferem",hipotese:"Hipóteses a confirmar",inconclusiva:"Causa inconclusiva"}[report.conclusao.grau] || "Revisão necessária";
+    conclusion.append(node("h5", "", level), node("p", "", report.conclusao.texto));
+    const values = node("dl", "fiscal-account-opinion-values");
+    for (const [label,key] of [["Fiscal","fiscal"],["Razão considerado","contabil"],["Diferença","diferenca"]]) {
+      const entry=node("div", key === "diferenca" ? "is-difference" : "");
+      entry.append(node("dt","",label),node("dd","",money.format(Number(summary[key])))); values.appendChild(entry);
+    }
+    conclusion.appendChild(values); content.appendChild(conclusion);
+    content.append(node("h5", "", "Investigação realizada"),node("p", "fiscal-hybrid-coverage",
+      counts.lancamentos_examinados + " lançamentos examinados · " + counts.documentos_examinados + " linhas fiscais examinadas · " + counts.correspondencias + " linhas fiscais conciliadas"));
+    const checks=node("ul","fiscal-hybrid-checks"); report.verificacoes.forEach(text=>checks.appendChild(node("li","",text))); content.appendChild(checks);
+    const aiNames={groq:"Groq",gemini:"Gemini",openrouter:"OpenRouter"};
+    const aiStatus=node("p","fiscal-hybrid-ai-status");
+    aiStatus.textContent=(ai.estado === "concluida" ? "Prioridade assistida por " + (aiNames[ai.provedor] || "IA gratuita") + ". " : "") + ai.motivo +
+      " " + (cached ? "Nenhuma nova chamada nesta consulta." : (ai.chamadas || 0) + " chamada(s) externa(s).") + " Relatórios e históricos não foram enviados.";
+    content.appendChild(aiStatus);
+    if (report.hipoteses.length) {
+      content.appendChild(node("h5","","Indícios e confirmação necessária"));
+      const list=node("ol","fiscal-hybrid-hypotheses");
+      const priorities=ai.prioridades || [];
+      const ordered=[...report.hipoteses].sort((a,b)=>(priorities.includes(a.id)?priorities.indexOf(a.id):99)-(priorities.includes(b.id)?priorities.indexOf(b.id):99));
+      ordered.forEach(h=>{
+        const li=node("li"); li.append(node("strong","",h.id + " · " + h.titulo),node("p","",h.explicacao));
+        if(h.diferenca_documental != null)li.appendChild(node("p","","Diferença documental: " + money.format(Number(h.diferenca_documental))));
+        if(h.soma != null)li.appendChild(node("p","","Soma: " + money.format(Number(h.soma)) + " · Residual: " + money.format(Number(h.residual))));
+        if(h.criterio)li.appendChild(node("small","",h.criterio));
+        li.append(node("p","fiscal-hybrid-refs","Evidências: " + (h.referencias.join(", ") || "sem referência individual")),node("p","","Para confirmar: " + h.falta_confirmar));
+        list.appendChild(li);
+      }); content.appendChild(list);
+      if(counts.hipoteses_disponiveis > ordered.length)content.appendChild(node("p","",ordered.length + " de " + counts.hipoteses_disponiveis + " indícios exibidos; consulte o cruzamento documental para a relação integral."));
+    }
+    if(report.evidencias.length){
+      content.appendChild(node("h5","","Evidências dos arquivos"));
+      const scroll=node("div","fiscal-hybrid-evidence-scroll"); scroll.tabIndex=0; scroll.setAttribute("role","region");scroll.setAttribute("aria-label","Evidências da investigação");
+      const table=node("table","fiscal-table"); const head=node("thead"),header=node("tr"),body=node("tbody");
+      ["Referência / origem","Data","Documento / conta","Histórico","Valor"].forEach(text=>{const th=node("th","",text);th.setAttribute("scope","col");header.appendChild(th);});head.appendChild(header);
+      report.evidencias.forEach(e=>{const tr=node("tr"); [e.referencia + " · " + e.origem,e.data || "Não informada",
+        [e.nota && "Nota " + e.nota,e.serie && "Série " + e.serie,e.conta && "Conta " + e.conta,e.acumulador && "Acum. " + e.acumulador].filter(Boolean).join(" · ") || "Não identificado",
+        e.historico || "Sem histórico no relatório",e.valor == null ? "—" : money.format(Number(e.valor))].forEach(text=>tr.appendChild(node("td","",text)));body.appendChild(tr);});
+      table.append(head,body);scroll.appendChild(table);content.appendChild(scroll);
+      content.appendChild(node("small","",counts.evidencias_exibidas + " de " + counts.evidencias_disponiveis + " evidências exibidas. Os arquivos originais permanecem íntegros."));
+    }
+    if(report.limitacoes.length){const limits=node("ul","fiscal-hybrid-limits");report.limitacoes.forEach(text=>limits.appendChild(node("li","",text)));content.append(node("h5","","Limites e dados faltantes"),limits);}
+    content.appendChild(node("p","fiscal-account-opinion-limit","Nenhum lançamento foi incluído, excluído ou alterado. Confirme os documentos antes de qualquer correção."));
+    return content;
+  }
   function renderAccountOpinion(result, scope) {
+    if(result.analises?.[0]?.investigacao_hibrida)return renderHybridOpinion(result.analises[0],result.cache_reutilizado);
     const content = node("div", "fiscal-account-opinion");
     const item = result.analises?.[0];
     if (!item) {
@@ -1327,14 +1383,15 @@
     const key = [scope.origem, scope.conta, scope.tipo, scope.acumulador || ""].join(":");
     const fileId = scope.tipo === "SAÍDAS" ? "fiscal242Saidas" : "fiscal242Entradas";
     const file = scope.origem === "documentos" ? byId(fileId).files?.[0] : null;
+    const files = scope.origem === "documentos" ? Array.from(byId(fileId).files || []) : [];
     let state = accountAnalysisCache.get(key);
-    if (!state || state.source !== previewBody || state.file !== file) {
+    if (!state || state.source !== previewBody || state.file !== file || files.length !== state.files?.length || files.some((item,index)=>item !== state.files[index])) {
       state?.controller?.abort();
-      state = {source:previewBody, file, pending:false, result:null, error:"", expanded:false};
+      state = {source:previewBody, file, files, useAI:true, pending:false, result:null, error:"", expanded:false};
       accountAnalysisCache.set(key, state);
     }
     const area = node("section", "fiscal-account-analysis");
-    area.setAttribute("aria-label", "Análise da seleção com IA");
+    area.setAttribute("aria-label", "Investigação híbrida desta seleção");
     const bar = node("div", "fiscal-account-analysis-bar");
     const button = node("button", "fiscal-account-analysis-button"); button.type = "button";
     const cancel = node("button", "fiscal-account-analysis-cancel", "Cancelar espera"); cancel.type = "button";
@@ -1342,6 +1399,9 @@
       ? "Só este acumulador, nesta conta e tipo. Os filtros de nota não alteram a base da análise."
       : "Só esta conta e este tipo. O parecer é reaproveitado enquanto os arquivos forem os mesmos.");
     const status = node("p", "fiscal-account-analysis-status"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite");
+    const aiOption=node("label","fiscal-hybrid-ai-option"),aiToggle=node("input");aiToggle.type="checkbox";aiToggle.checked=state.useAI;
+    aiOption.append(aiToggle,node("span","","Permitir IA gratuita para priorizar indícios, sem enviar históricos ou identificação."));
+    aiToggle.addEventListener("change",()=>{state.useAI=aiToggle.checked;state.result=null;state.paint();});
     const exportButton = node("button", "fiscal-account-analysis-export", "Exportar parecer"); exportButton.type = "button";
     const body = node("div", "fiscal-account-analysis-body");
     const loading = node("section", "fiscal-account-loading"); loading.hidden = true;
@@ -1350,7 +1410,7 @@
     const orbit = node("span", "fiscal-account-loading-orbit"); orbit.setAttribute("aria-hidden", "true");
 
     const loadingCopy = node("div", "fiscal-account-loading-copy");
-    loadingCopy.appendChild(node("h5", "", "Analisando esta seleção…"));
+    loadingCopy.appendChild(node("h5", "", "Investigando esta seleção…"));
     const elapsed = node("span", "fiscal-account-loading-time"); elapsed.setAttribute("aria-hidden", "true");
     loadingHead.append(orbit, loadingCopy, elapsed);
     const meter = node("div", "fiscal-account-loading-meter visually-hidden");
@@ -1371,7 +1431,7 @@
     opinionTab.setAttribute("aria-controls", panelId); area.setAttribute("aria-labelledby", opinionTab.id);
     button.setAttribute("aria-controls", panelId);
     tabs.append(conferenceTab, opinionTab);
-    bar.append(button, cancel); area.append(tabs, bar, panelHeading, context, note, status, loading, body);
+    bar.append(button, cancel); area.append(tabs, bar, panelHeading, context, note, aiOption, status, loading, body);
     let layout = null, renderedResult = null;
     function switchView(opinion, focus = false) {
       state.expanded = opinion; state.paint();
@@ -1401,13 +1461,14 @@
     };
     function paint() {
       button.disabled = state.pending || !state.source;
-      button.textContent = state.pending ? "Analisando…" : state.result ? "Ver parecer salvo" : state.error ? "Tentar análise novamente" : scope.acumulador ? "Analisar acumulador com IA" : "Analisar esta conta com IA";
+      button.textContent = state.pending ? "Investigando…" : state.result ? "Ver investigação salva" : state.error ? "Tentar investigação novamente" : scope.acumulador ? "Analisar acumulador" : "Analisar conta";
+      aiToggle.disabled=state.pending;
       button.setAttribute("aria-expanded", String(state.expanded));
       cancel.hidden = !state.pending;
       exportButton.hidden = !state.result?.analises?.length;
       const local = state.result && (state.result.provedor === "local" || state.result.analises?.[0]?.provedor === "local");
-      panelTitle.textContent = local ? "Leitura da conferência" : "Parecer da IA";
-      opinionTab.textContent = (local ? "Análise local" : "Parecer da IA") + (state.pending ? " · em andamento" : state.result && !state.expanded ? " · pronto" : "");
+      panelTitle.textContent = "Investigação da seleção";
+      opinionTab.textContent = "Investigação" + (state.pending ? " · em andamento" : state.result && !state.expanded ? " · pronta" : "");
       status.textContent = state.pending ? "Analisando somente esta seleção. Você pode voltar à conferência durante a espera." : state.error || (state.result ? "Parecer pronto para esta seleção." : "");
       status.className = "fiscal-account-analysis-status" + (state.pending || !state.error && state.result ? " visually-hidden" : "");
       status.hidden = !status.textContent;
@@ -1439,6 +1500,7 @@
       if (state.result) { switchView(true); opinionTab.focus({preventScroll:true}); return; }
       if (!state.source || state.source !== previewBody) return;
       const body = new FormData();
+      body.append("usar_ia",String(state.useAI));
       for (const [name, value] of state.source.entries()) if (!["entradas", "saidas", "conta", "tipo", "origem", "acumulador"].includes(name)) body.append(name, value);
       for (const name of ["conta", "tipo", "origem", "acumulador"]) body.append(name, scope[name] || "");
       if (file) [...byId(fileId).files].forEach(document => body.append(scope.tipo === "SAÍDAS" ? "saidas" : "entradas", document));
