@@ -44,7 +44,15 @@ test('pausa manual persiste e retoma sem duplicar temporizadores',()=>{
 
 test('pausar preserva o tempo restante em vez de reiniciar a etapa',()=>{
  const h=setup();h.elapse(1700);h.scene.events.pointerenter({pointerType:'mouse'});assert.equal(h.timers.size,0);
- h.elapse(8000);h.scene.events.pointerleave();assert.equal(h.delay(),2500);
- h.buttons[0].events.click();assert.equal(h.delay(),2500);
- h.advance();assert.equal(h.scene.dataset.stage,'1');assert.equal(h.delay(),4200);
+ h.elapse(8000);h.scene.events.pointerleave();assert.equal(h.delay(),3900);
+ h.buttons[0].events.click();assert.equal(h.delay(),3900);
+ h.advance();assert.equal(h.scene.dataset.stage,'1');assert.equal(h.delay(),5600);
+});
+
+test('mouse pausa apenas a troca da etapa; pausa explícita também para a arte',()=>{
+ const h=setup();h.scene.events.pointerenter({pointerType:'mouse'});
+ assert.equal(h.scene.dataset.playing,'false');assert.equal(h.scene.dataset.artMotion,'playing');
+ h.pause.events.click();assert.equal(h.scene.dataset.artMotion,'paused');
+ h.pause.events.click();assert.equal(h.scene.dataset.artMotion,'playing');
+ h.media.matches=true;h.events.media();assert.equal(h.scene.dataset.artMotion,'paused');
 });

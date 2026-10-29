@@ -8,7 +8,8 @@
   const pause = scene.querySelector('.showcase-pause');
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
   let current = -1, timer = null, held = false, focused = false, userPaused = false;
-  let remaining = 4200, started = 0;
+  const duration = 5600;
+  let remaining = duration, started = 0;
   const available = () => !media.matches && !document.hidden && !home.hidden &&
     home.dataset.motion !== 'paused' && !held && !focused && !userPaused &&
     !document.body.classList.contains('nav-drawer-open');
@@ -22,6 +23,7 @@
   }
   function schedule() {
     stop();
+    scene.dataset.artMotion = userPaused || media.matches || document.hidden || home.hidden || home.dataset.motion === 'paused' ? 'paused' : 'playing';
     if (!available()) return;
     scene.dataset.playing = 'true';
     started = Date.now();
@@ -31,7 +33,7 @@
     if (!Number.isInteger(index) || index < 0 || index >= panels.length) return;
     if (index === current) { schedule(); return; }
     stop();
-    remaining = 4200;
+    remaining = duration;
     current = index;
     scene.dataset.stage = String(index);
     buttons.forEach((button, i) => button.setAttribute('aria-pressed', String(i === index)));
