@@ -172,97 +172,54 @@ html[data-theme="dark"] #companiesView #portfolioPicker .portfolio-entry-arrow {
 html[data-theme="dark"] #companiesView #portfolioPicker .portfolio-entry-action {background:transparent!important;box-shadow:none!important}
 
 
-/* Futuristic welcome: decorative circuits and orbital motion, never live telemetry. */
-#companiesView #portfolioPicker .portfolio-heading {
- --wi:#edf4ff;--wm:#a6bad1;--wb:#84bdff;--wl:#527ea52e;--wp:#0c1624;--wt:#182e47;
- background:radial-gradient(ellipse at 90% 45%,#163755 0%,#101f32 38%,#0d1624 78%);
- border-color:#28445e;color:#edf4ff;box-shadow:0 16px 45px #102b4410;
-}
-html[data-theme="dark"] #companiesView #portfolioPicker .portfolio-heading {background:radial-gradient(ellipse at 90% 45%,#14273a 0%,#101923 38%,#101216 78%);border-color:#2b3b4d!important}
-#companiesView #portfolioPicker .portfolio-heading h1 {color:#f1f6ff}
-#companiesView #portfolioPicker .portfolio-heading p {color:#b0c1d6}
-html[data-theme="dark"] #companiesView #portfolioPicker .portfolio-heading p {color:#b0c1d6!important}
-#companiesView #portfolioPicker .portfolio-eyebrow {color:#afc6e0}
-#companiesView #portfolioPicker .portfolio-eyebrow::before {background:#72d3f7;box-shadow:0 0 12px #63c8ff80}
-#companiesView #portfolioPicker h1 em {color:#8ecbff}
+
+/* Organic movement: soft shapes, calm typography and a flowing composition. */
+#companiesView #portfolioPicker .portfolio-heading {background:linear-gradient(120deg,#fff 20%,#f4f8ff 72%,#edf3fc);border-color:#dfe7f0;box-shadow:0 16px 45px #254c7b05}
+#companiesView #portfolioPicker .portfolio-heading::before {content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(360px circle at var(--pointer-x,75%) var(--pointer-y,45%),#86afff13,transparent 80%);pointer-events:none}
+#companiesView #portfolioPicker .portfolio-heading::after {display:none}
+#companiesView #portfolioPicker .home-ambient {opacity:.15}
+#companiesView #portfolioPicker .home-ambient::after {display:none}
+#companiesView #portfolioPicker .welcome-art {position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;border-radius:inherit}
+#companiesView #portfolioPicker .welcome-art i {position:absolute;right:-50px;top:-100px;width:420px;height:420px;border-radius:42% 58% 62% 38% / 45% 43% 57% 55%;background:linear-gradient(145deg,#c6dcff55,#93b7f620 65%,#e1eaff33);border:1px solid #abc7f133;transform:rotate(-15deg)}
+#companiesView #portfolioPicker .welcome-art i:nth-child(2) {right:160px;top:190px;width:240px;height:240px;border-radius:58% 42% 38% 62% / 55% 62% 38% 45%;background:linear-gradient(145deg,#abcafa38,#d7e9ff18);border-color:#abc7f122;transform:rotate(20deg)}
+#companiesView #portfolioPicker .welcome-art i:nth-child(3) {right:35px;top:95px;width:305px;height:305px;border:1px solid #8baeea40;border-radius:45% 55% 60% 40% / 52% 42% 58% 48%;background:transparent;transform:rotate(35deg)}
+#companiesView #portfolioPicker .welcome-spark {position:absolute;right:49%;top:18%;width:21px;height:21px;fill:#8bafea;opacity:.45}
 #companiesView #portfolioPicker .home-visual {position:relative;z-index:1}
-#companiesView #portfolioPicker .home-visual-heading {color:#afc6e0}
-#companiesView #portfolioPicker .welcome-flow-caption {color:#8caccb}
-#companiesView #portfolioPicker .home-flow-node {--flow-delay:0s;background:#12273dbe;border-color:#76a6d33b;box-shadow:0 7px 20px #0000000d;color:#f0f5fc}
-#companiesView #portfolioPicker .home-flow-node:nth-of-type(2) {--flow-delay:3s}
-#companiesView #portfolioPicker .home-flow-node:nth-of-type(3) {--flow-delay:6s}
-#companiesView #portfolioPicker .home-flow-node small {color:#abc0d7}
-#companiesView #portfolioPicker .home-flow-node::after {color:#7b9cbd}
-#companiesView #portfolioPicker .home-flow-node::before {background:linear-gradient(100deg,#65b3ff22,transparent 85%);border-color:#8ccfff80}
-#companiesView #portfolioPicker .home-flow-node svg {background:#23466970;stroke:#9cd4ff}
-#companiesView #portfolioPicker .home-flow-track {background:#76b9ff55}
-#companiesView #portfolioPicker .home-flow-track::after {background:#b6e9ff;box-shadow:0 0 8px #76c9ff}
-#companiesView #portfolioPicker .portfolio-home-summary {border-color:#8bb9e12b}
-#companiesView #portfolioPicker .portfolio-home-summary strong {color:#f1f6ff}
-#companiesView #portfolioPicker .portfolio-home-summary .home-stat-label {color:#91afd0}
-#companiesView #portfolioPicker .portfolio-home-summary > span > span:last-child {color:#abc0d7}
-html[data-theme="dark"] #companiesView #portfolioPicker .home-flow-node {background:#122234c9;border-color:#76a6d33b}
-#companiesView #portfolioPicker .welcome-tech-scene {position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;border-radius:inherit}
-#companiesView #portfolioPicker .welcome-tech-scene::before {content:"";position:absolute;inset:0;background-image:linear-gradient(#8abfff08 1px,transparent 1px),linear-gradient(90deg,#8abfff08 1px,transparent 1px);background-size:36px 36px;mask-image:linear-gradient(90deg,transparent 10%,#000 90%);opacity:.7}
-#companiesView #portfolioPicker .tech-circuits {position:absolute;inset:0;width:100%;height:100%;fill:none}
-#companiesView #portfolioPicker .tech-circuit-base {stroke:#6aa9d522;stroke-width:1}
-#companiesView #portfolioPicker .tech-circuit-signals {stroke:#8ddaff;stroke-width:1.5;stroke-dasharray:35 900;stroke-linecap:round;opacity:.6}
-#companiesView #portfolioPicker .tech-junctions {fill:#a3ddff;opacity:.45}
-#companiesView #portfolioPicker .tech-orbits {position:absolute;right:-55px;top:50%;width:490px;height:490px;translate:0 -50%;fill:none;stroke:#80bfee25;stroke-width:1}
-#companiesView #portfolioPicker .tech-ring-outer,#companiesView #portfolioPicker .tech-ring-inner,#companiesView #portfolioPicker .tech-satellites {transform-origin:250px 250px}
-#companiesView #portfolioPicker .tech-bright-arc {stroke:#79caff88;stroke-width:2;stroke-linecap:round}
-#companiesView #portfolioPicker .tech-satellites {fill:#b1e6ff;stroke:#6ebeff55;stroke-width:7}
-#companiesView #portfolioPicker .tech-core {stroke:#7ec4f22b;stroke-width:1}
-#companiesView #portfolioPicker .tech-core path+path {stroke:#7ec4f214}
-#companiesView #portfolioPicker .tech-dust {position:absolute;inset:0}
-#companiesView #portfolioPicker .tech-dust i {position:absolute;width:3px;height:3px;left:48%;top:65%;border-radius:50%;background:#8acfff;box-shadow:0 0 7px #8acfff55;opacity:0}
-#companiesView #portfolioPicker .tech-dust i:nth-child(2) {left:61%;top:30%}
-#companiesView #portfolioPicker .tech-dust i:nth-child(3) {left:73%;top:78%}
-#companiesView #portfolioPicker .tech-dust i:nth-child(4) {left:88%;top:24%}
-#companiesView #portfolioPicker .tech-dust i:nth-child(5) {left:37%;top:85%}
-#companiesView #portfolioPicker .tech-dust i:nth-child(6) {left:93%;top:68%}
-#companiesView #portfolioPicker .portfolio-heading::before {content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:radial-gradient(350px circle at var(--pointer-x,40%) var(--pointer-y,50%),#5ba7ec15,transparent 80%);pointer-events:none}
-#companiesView #portfolioPicker .portfolio-heading::after {width:180px;height:140%;top:-20%;left:-200px;right:auto;border:0;border-radius:0;box-shadow:none;background:linear-gradient(105deg,transparent,#96d4ff08,transparent);pointer-events:none}
-#companiesView #portfolioPicker .home-ambient {opacity:.3}
+#companiesView #portfolioPicker .home-flow-node {--soft-delay:0s;background:#ffffffdb;border-color:#dce6f0;box-shadow:0 5px 16px #345b8e04}
+#companiesView #portfolioPicker .home-flow-node:nth-of-type(2) {--soft-delay:-2s}
+#companiesView #portfolioPicker .home-flow-node:nth-of-type(3) {--soft-delay:-4s}
+#companiesView #portfolioPicker .home-flow-node::before {background:linear-gradient(100deg,#83b1f715,transparent 85%);border-color:#94b5eb60}
 #companiesView #portfolioPicker .portfolio-entry::after {content:"";display:block;position:absolute;inset:-20% auto -20% -40%;width:25%;z-index:0;background:linear-gradient(100deg,transparent,#bfdbff16,transparent);transform:skewX(-15deg) translateX(-150%);pointer-events:none}
 #companiesView #portfolioPicker .portfolio-entry-info,#companiesView #portfolioPicker .portfolio-entry-action {position:relative;z-index:1}
-@keyframes futureOrbit {to{rotate:360deg}}
-@keyframes futureSignal {from{stroke-dashoffset:950}to{stroke-dashoffset:-950}}
-@keyframes futureDust {0%,100%{opacity:0;translate:0 14px}30%{opacity:.65}75%{opacity:0;translate:16px -35px}}
-@keyframes futureScan {0%,20%{transform:translateX(0) skewX(-15deg);opacity:0}30%{opacity:1}80%,100%{transform:translateX(1550px) skewX(-15deg);opacity:0}}
-@keyframes futureCore {0%,100%{opacity:.4;scale:.98}50%{opacity:.85;scale:1.02}}
-@keyframes futureStage {0%,4%,32%,100%{opacity:0}10%,24%{opacity:1}}
-@keyframes futureIcon {0%,4%,32%,100%{translate:0 0}12%,24%{translate:0 -4px}}
-@keyframes futureEnter {from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:none}}
-@keyframes futureGrid {to{background-position:36px 36px}}
-@keyframes futureCardLight {0%,45%{transform:skewX(-15deg) translateX(-150%)}95%,100%{transform:skewX(-15deg) translateX(700%)}}
+html[data-theme="dark"] #companiesView #portfolioPicker .portfolio-heading {background:linear-gradient(120deg,#151515 20%,#171c24 100%);border-color:#303239!important}
+html[data-theme="dark"] #companiesView #portfolioPicker .welcome-art i {background:linear-gradient(145deg,#6e9be51a,#6a8eb809 65%);border-color:#8caee31a}
+html[data-theme="dark"] #companiesView #portfolioPicker .welcome-art i:nth-child(3) {background:transparent;border-color:#8caee32b}
+html[data-theme="dark"] #companiesView #portfolioPicker .home-flow-node {background:#191d24e8;border-color:#343d4b}
+@keyframes softShape {0%,100%{transform:translate3d(0,0,0) rotate(-15deg);border-radius:42% 58% 62% 38% / 45% 43% 57% 55%}50%{transform:translate3d(-22px,17px,0) rotate(10deg);border-radius:58% 42% 38% 62% / 55% 62% 38% 45%}}
+@keyframes softOutline {0%,100%{transform:translate3d(0,0,0) rotate(35deg)}50%{transform:translate3d(14px,-12px,0) rotate(70deg)}}
+@keyframes softFloat {0%,100%{translate:0 0}50%{translate:0 -4px}}
+@keyframes softSpark {0%,100%{rotate:0deg;scale:.85;opacity:.3}50%{rotate:45deg;scale:1.1;opacity:.6}}
+@keyframes softTitle {0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes softEntry {from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes softCardLight {0%,55%{transform:skewX(-15deg) translateX(-150%)}95%,100%{transform:skewX(-15deg) translateX(700%)}}
 @media(prefers-reduced-motion:no-preference) {
- #companiesView #portfolioPicker .portfolio-home-topline {animation:futureEnter .7s .05s cubic-bezier(.16,1,.3,1) both}
- #companiesView #portfolioPicker .portfolio-heading {animation:futureEnter .9s .12s cubic-bezier(.16,1,.3,1) both}
- #companiesView #portfolioPicker .portfolio-access {animation:futureEnter .9s .4s cubic-bezier(.16,1,.3,1) both}
- #companiesView #portfolioPicker .tech-ring-outer {animation:futureOrbit 28s linear infinite}
- #companiesView #portfolioPicker .tech-ring-inner {animation:futureOrbit 20s linear infinite reverse}
- #companiesView #portfolioPicker .tech-satellites {animation:futureOrbit 16s linear infinite}
- #companiesView #portfolioPicker .tech-circuit-signals path {animation:futureSignal 7s linear infinite}
- #companiesView #portfolioPicker .tech-circuit-signals path:nth-child(2) {animation-duration:9s;animation-delay:-3s}
- #companiesView #portfolioPicker .tech-circuit-signals path:nth-child(3) {animation-duration:8s;animation-delay:-5s}
- #companiesView #portfolioPicker .tech-core {transform-origin:250px 250px;animation:futureCore 6s ease-in-out infinite}
- #companiesView #portfolioPicker .welcome-tech-scene::before {animation:futureGrid 12s linear infinite}
- #companiesView #portfolioPicker .tech-dust i {animation:futureDust 7s ease-in-out infinite}
- #companiesView #portfolioPicker .tech-dust i:nth-child(2) {animation-delay:-1s}
- #companiesView #portfolioPicker .tech-dust i:nth-child(3) {animation-delay:-2s}
- #companiesView #portfolioPicker .tech-dust i:nth-child(4) {animation-delay:-3s}
- #companiesView #portfolioPicker .tech-dust i:nth-child(5) {animation-delay:-4s}
- #companiesView #portfolioPicker .tech-dust i:nth-child(6) {animation-delay:-5s}
- #companiesView #portfolioPicker .portfolio-heading::after {animation:futureScan 12s ease-in-out infinite}
- #companiesView #portfolioPicker .home-flow-node::before {animation:futureStage 9s var(--flow-delay) ease-in-out infinite}
- #companiesView #portfolioPicker .home-flow-symbol {animation:futureIcon 9s var(--flow-delay) ease-in-out infinite}
- #companiesView #portfolioPicker .portfolio-entry::after {animation:futureCardLight 9s 1s ease-in-out infinite}
+ #companiesView #portfolioPicker .portfolio-home-topline {animation:softEntry .7s .05s cubic-bezier(.16,1,.3,1) both}
+ #companiesView #portfolioPicker .portfolio-heading {animation:softEntry .9s .12s cubic-bezier(.16,1,.3,1) both}
+ #companiesView #portfolioPicker .portfolio-access {animation:softEntry .9s .4s cubic-bezier(.16,1,.3,1) both}
+ #companiesView #portfolioPicker .welcome-art i {animation:softShape 14s ease-in-out infinite}
+ #companiesView #portfolioPicker .welcome-art i:nth-child(2) {animation-duration:11s;animation-delay:-5s}
+ #companiesView #portfolioPicker .welcome-art i:nth-child(3) {animation:softOutline 16s ease-in-out infinite}
+ #companiesView #portfolioPicker .welcome-spark {animation:softSpark 7s ease-in-out infinite}
+ #companiesView #portfolioPicker .home-flow-node {animation:softFloat 6s var(--soft-delay) ease-in-out infinite}
+ #companiesView #portfolioPicker h1 em {color:transparent;background:linear-gradient(110deg,var(--wb) 20%,#719be0 50%,var(--wb) 80%);background-size:220% 100%;background-clip:text;-webkit-background-clip:text;animation:welcomeLineEnter .85s .25s cubic-bezier(.16,1,.3,1) both,softTitle 8s 1s ease-in-out infinite}
+ #companiesView #portfolioPicker .portfolio-entry::after {animation:softCardLight 10s 1s ease-in-out infinite}
 }
 @media(max-width:760px) {
- #companiesView #portfolioPicker .tech-orbits {width:410px;height:410px;right:-120px;top:70%}
- #companiesView #portfolioPicker .tech-circuits {opacity:.55}
+ #companiesView #portfolioPicker .welcome-art i {width:340px;height:340px;right:-170px;top:-100px}
+ #companiesView #portfolioPicker .welcome-art i:nth-child(2) {right:40px;top:360px;width:220px;height:220px}
+ #companiesView #portfolioPicker .welcome-art i:nth-child(3) {width:300px;height:300px;right:-100px;top:270px}
+ #companiesView #portfolioPicker .welcome-spark {right:10%;top:6%;width:17px;height:17px}
 }
 @media(prefers-reduced-motion:reduce) {
- #companiesView #portfolioPicker .tech-circuit-signals,#companiesView #portfolioPicker .tech-dust,#companiesView #portfolioPicker .portfolio-heading::after,#companiesView #portfolioPicker .portfolio-entry::after {display:none}
+ #companiesView #portfolioPicker .portfolio-entry::after {display:none}
 }
