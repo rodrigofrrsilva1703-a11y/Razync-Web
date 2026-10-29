@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="./assets/css/company-directory.css?v=20261027-1">
   <link rel="stylesheet" href="./assets/css/themes.css?v=original-theme-20261028-1">
   <link rel="stylesheet" href="./assets/css/home-welcome.css?v=20261029-7">
+  <link rel="stylesheet" href="./assets/css/global-tool-preparation.css?v=20261029-1">
 </head>
 <body class="sidebar-collapsed">
   <div class="app-shell">
@@ -131,13 +132,12 @@
 
       <section id="converterView" class="global-view">
         <div class="page-head"><span class="company-code">FERRAMENTA GLOBAL · MODELO DOMÍNIO</span><h1>Converter extratos</h1><p>Transforme extratos bancários em Modelo Domínio, com prévia antes do download. Entradas recebem “Recebido:” e saídas recebem “Pago:” automaticamente. Sem vincular contas contábeis.</p></div>
-        <div class="tool-card single-card">
-          <div><h3>Extratos bancários</h3><p>Envie um ou vários PDFs, OFX, CSV ou arquivos Excel. O sistema identifica o formato e utiliza os leitores disponíveis.</p></div>
+        <div class="tool-card single-card global-tool-preparation">
+          <div class="global-tool-intro"><h3>Extratos bancários</h3><p>Envie um ou vários PDFs, OFX, CSV ou arquivos Excel. O sistema identifica o formato e utiliza os leitores disponíveis.</p></div>
           <form id="globalConverterForm">
-            <label for="globalConverterFiles">Extratos para converter</label>
-            <input id="globalConverterFiles" type="file" accept=".pdf,.ofx,.csv,.xls,.xlsx" multiple required>
-            <fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="globalConverterStart">De</label><input id="globalConverterStart" type="date"></div><div><label for="globalConverterEnd">Até</label><input id="globalConverterEnd" type="date"></div></div></fieldset>
-            <button type="submit" id="globalConverterPreviewButton">Visualizar lançamentos</button>
+            <div class="global-upload-field"><label for="globalConverterFiles">Extratos para converter</label>
+            <input id="globalConverterFiles" type="file" accept=".pdf,.ofx,.csv,.xls,.xlsx" multiple required></div>
+            <div class="global-tool-controls"><fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="globalConverterStart">De</label><input id="globalConverterStart" type="date"></div><div><label for="globalConverterEnd">Até</label><input id="globalConverterEnd" type="date"></div></div></fieldset><div class="global-tool-action"><button type="submit" id="globalConverterPreviewButton">Visualizar lançamentos</button></div></div>
             <p id="globalConverterMessage" class="helper" role="status" aria-live="polite"></p>
           </form>
         </div>
@@ -151,18 +151,16 @@
           <h1>Conciliação com Razão</h1>
           <p>Compare o movimento bancário com o Razão da Domínio e identifique diferenças por dia.</p>
         </div>
-        <div class="tool-card single-card">
-          <div>
+        <div class="tool-card single-card global-tool-preparation">
+          <div class="global-tool-intro">
             <h3>Extrato × Razão</h3>
             <p>Entradas do banco são comparadas aos créditos do Razão; saídas, aos débitos.</p>
           </div>
           <form id="ledgerForm">
-            <label for="ledgerStatement">Extrato bancário</label>
-            <input id="ledgerStatement" type="file" accept=".pdf,.ofx,.csv,.xls,.xlsx" multiple>
-            <label for="ledgerFile">Razão da Domínio</label>
-            <input id="ledgerFile" type="file" accept=".csv,.xls,.xlsx" multiple>
-            <fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="ledgerStart">De</label><input id="ledgerStart" type="date"></div><div><label for="ledgerEnd">Até</label><input id="ledgerEnd" type="date"></div></div><p>Deixe em branco para considerar todo o período dos arquivos.</p></fieldset>
-            <button type="submit">Atualizar conferência</button>
+            <div class="global-upload-grid"><div class="global-upload-field"><label for="ledgerStatement">Extrato bancário</label>
+            <input id="ledgerStatement" type="file" accept=".pdf,.ofx,.csv,.xls,.xlsx" multiple></div><div class="global-upload-field"><label for="ledgerFile">Razão da Domínio</label>
+            <input id="ledgerFile" type="file" accept=".csv,.xls,.xlsx" multiple></div></div>
+            <div class="global-tool-controls"><fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="ledgerStart">De</label><input id="ledgerStart" type="date"></div><div><label for="ledgerEnd">Até</label><input id="ledgerEnd" type="date"></div></div><p>Deixe em branco para considerar todo o período dos arquivos.</p></fieldset><div class="global-tool-action"><button type="submit">Atualizar conferência</button></div></div>
             <p id="ledgerMessage" class="helper"></p>
           </form>
         </div>

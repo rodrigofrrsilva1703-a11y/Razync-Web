@@ -1,0 +1,41 @@
+/* Preparation panels only: result tables retain their full width. */
+:is(#converterView,#ledgerView) > .page-head {max-width:1000px;margin-inline:auto}
+:is(#converterView,#ledgerView) > .global-tool-preparation {display:grid;grid-template-columns:minmax(0,1fr);gap:20px;width:100%;max-width:1000px;margin:0 auto 24px;padding:24px 28px;border:1px solid #dce5ef;border-radius:16px;background:#fff;box-shadow:0 4px 20px #263e5704;box-sizing:border-box}
+:is(#converterView,#ledgerView) .global-tool-intro {position:static;min-height:0;margin:0;padding:0 0 18px;border:0;border-bottom:1px solid #e7edf4;border-radius:0;background:transparent;box-shadow:none}
+:is(#converterView,#ledgerView) .global-tool-intro h3 {margin:0 0 7px;font-size:18px;letter-spacing:-.35px;color:var(--text)}
+:is(#converterView,#ledgerView) .global-tool-intro p {max-width:none;margin:0;font-size:12px;line-height:1.7;color:var(--muted)}
+:is(#globalConverterForm,#ledgerForm) {display:grid;grid-template-columns:minmax(0,1fr);gap:20px;min-width:0;width:100%;margin:0;padding:0;border:0;background:transparent;box-shadow:none}
+:is(#converterView,#ledgerView) .global-upload-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+:is(#converterView,#ledgerView) .global-upload-field {display:grid;gap:9px;min-width:0}
+:is(#converterView,#ledgerView) .global-upload-field > label {display:block;margin:0;font-size:12px;font-weight:600;color:var(--text)}
+:is(#converterView,#ledgerView) .global-upload-field .file-drop-shell {display:grid;align-content:center;justify-items:center;gap:12px;min-width:0;min-height:132px;width:100%;padding:20px 16px;border:1px dashed #aebfd4;border-radius:12px;background:#f8fafd;box-sizing:border-box}
+:is(#globalConverterForm,#ledgerForm) input[type=file] {display:block;width:100%;max-width:460px;min-width:0;min-height:44px;margin:0;justify-self:center;padding:8px!important;border:0!important;background:transparent!important;font-size:12px;box-sizing:border-box}
+:is(#globalConverterForm,#ledgerForm) input[type=file]::file-selector-button {margin-right:12px;padding:9px 13px;border:1px solid #cbd9e8;border-radius:8px;background:#fff;color:#35587c;font:inherit;font-weight:600;cursor:pointer}
+:is(#converterView,#ledgerView) .file-drop-hint {justify-content:center;text-align:center;font-size:11px;line-height:1.6;max-width:46ch}
+:is(#converterView,#ledgerView) .file-selection {justify-self:stretch;width:100%;box-sizing:border-box;text-align:left}
+:is(#converterView,#ledgerView) .global-tool-controls {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:24px;padding-top:18px;border-top:1px solid #e7edf4}
+:is(#converterView,#ledgerView) .global-tool-controls .standard-period-card {min-width:0;width:100%;max-width:480px;margin:0;padding:12px 14px;border:1px solid #dce5ef;border-radius:10px;background:#fafcfe;box-sizing:border-box}
+:is(#converterView,#ledgerView) .global-tool-controls legend {font-size:12px;font-weight:600}
+:is(#converterView,#ledgerView) .global-tool-controls legend span {font-size:11px;font-weight:400;color:var(--muted)}
+:is(#converterView,#ledgerView) .global-tool-controls .period-fields {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+:is(#converterView,#ledgerView) .global-tool-controls .period-fields > div {display:grid;gap:6px;min-width:0}
+:is(#converterView,#ledgerView) .global-tool-controls input[type=date] {width:100%;min-width:0;min-height:42px;box-sizing:border-box;border:1px solid #ccd9e7;border-radius:8px;background:#fff;padding:9px 10px;font-size:12px;color:var(--text)}
+:is(#converterView,#ledgerView) .global-tool-controls .standard-period-card p {margin:9px 0 0;font-size:11px;line-height:1.5;color:var(--muted)}
+:is(#converterView,#ledgerView) .global-tool-action {display:grid;min-width:220px;align-self:end}
+:is(#converterView,#ledgerView) .global-tool-action > button[type=submit] {width:100%;min-height:44px;margin:0;padding:12px 20px;border:1px solid #2864d7;border-radius:9px;background:#2864d7;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+:is(#converterView,#ledgerView) .global-tool-action > button[type=submit]:hover:not(:disabled) {background:#2157bd}
+:is(#globalConverterForm,#ledgerForm) > .helper {margin:0;font-size:12px;line-height:1.6}
+:is(#globalConverterForm,#ledgerForm) > .helper:empty {display:none}
+html[data-theme=dark] :is(#converterView,#ledgerView) .global-tool-intro {background:transparent!important;border-color:#303030!important}
+html[data-theme=dark] :is(#converterView,#ledgerView) .global-tool-controls {border-color:#303030!important}
+html[data-theme=dark] .app-shell :is(#converterView,#ledgerView) .global-upload-field .file-drop-shell {background:transparent!important;border-color:#454545!important;box-shadow:none!important}
+html[data-theme=dark] .app-shell :is(#converterView,#ledgerView) .global-upload-field .file-drop-shell:hover {background:transparent!important;border-color:#7198ce!important}
+html[data-theme=dark] .app-shell :is(#globalConverterForm,#ledgerForm) input[type=file] {background:transparent!important;border:0!important;box-shadow:none!important}
+@media(max-width:760px) {
+ :is(#converterView,#ledgerView) > .global-tool-preparation {padding:20px;gap:18px;border-radius:13px}
+ :is(#converterView,#ledgerView) .global-upload-grid {grid-template-columns:minmax(0,1fr);gap:18px}
+ :is(#converterView,#ledgerView) .global-upload-field .file-drop-shell {min-height:116px;padding:16px 12px}
+ :is(#converterView,#ledgerView) .global-tool-controls {grid-template-columns:minmax(0,1fr);gap:18px}
+ :is(#converterView,#ledgerView) .global-tool-controls .standard-period-card {max-width:none}
+ :is(#converterView,#ledgerView) .global-tool-action {min-width:0;width:100%}
+}
