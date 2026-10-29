@@ -118,9 +118,9 @@
 /* Deliberate motion, with one active scene at a time. */
 @keyframes entrance {from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:none}}
 @keyframes auraDrift {0%,100%{transform:translate(-10px,0) rotate(-12deg);opacity:.65}50%{transform:translate(15px,12px) rotate(15deg);opacity:1}}
-@keyframes sceneFloat {0%,100%{translate:0 0}50%{translate:0 -7px}}
-@keyframes sourceFloat {0%,100%{transform:rotate(-8deg) translateY(0)}50%{transform:rotate(-11deg) translateY(-5px)}}
-@keyframes modelFloat {0%,100%{transform:rotate(6deg) translateY(0)}50%{transform:rotate(9deg) translateY(-7px)}}
+@keyframes sceneFloat {0%,100%{translate:0 0}50%{translate:0 -11px}}
+@keyframes sourceFloat {0%,100%{transform:rotate(-8deg) translateY(0)}50%{transform:rotate(-11deg) translateY(-9px)}}
+@keyframes modelFloat {0%,100%{transform:rotate(6deg) translateY(0)}50%{transform:rotate(9deg) translateY(-11px)}}
 @keyframes flowSignal {0%,100%{stroke-dashoffset:80;opacity:.35}50%{stroke-dashoffset:0;opacity:1}}
 @keyframes checkDraw {0%,10%{stroke-dashoffset:25;opacity:.4}55%,100%{stroke-dashoffset:0;opacity:1}}
 @keyframes rowReveal {from{scale:.65 1;opacity:.4}to{scale:1 1;opacity:1}}
@@ -317,4 +317,58 @@ html[data-theme=dark] #companiesView #portfolioPicker .home-showcase .showcase-s
  #companiesView #portfolioPicker .showcase-art {height:164px}
  #companiesView #portfolioPicker .showcase-copy h2 {font-size:19px}
  #companiesView #portfolioPicker .showcase-playback {padding-inline:12px;font-size:8px}
+}
+
+/* Keep the whole welcome alive, including a scene held for reading. */
+#companiesView #portfolioPicker .portfolio-heading::before {content:"";display:block;position:absolute;z-index:-1;inset:-12px 0;border:0;border-radius:28px;background:radial-gradient(ellipse at 80% 45%,#c2d9ff28,transparent 60%),radial-gradient(ellipse at 10% 90%,#d9e7fb1f,transparent 55%);background-size:160% 140%;pointer-events:none}
+#companiesView #portfolioPicker .showcase-aura::before {content:"";position:absolute;inset:15% 8% 8%;border:1px solid #8eb4eb35;border-radius:42% 58% 61% 39% / 54% 43% 57% 46%;pointer-events:none}
+#companiesView #portfolioPicker .showcase-aura i {background:radial-gradient(ellipse,#b1cff959,transparent 70%)}
+#companiesView #portfolioPicker .showcase-aura i+i {background:radial-gradient(ellipse,#c0daf975,transparent 70%)}
+#companiesView #portfolioPicker .scene-ledger {position:relative;overflow:hidden}
+#companiesView #portfolioPicker .scene-ledger::after {content:"";position:absolute;left:12px;right:12px;top:34px;height:1px;background:#7ba8e8;box-shadow:0 0 6px #7ba8e840;opacity:0;pointer-events:none}
+#companiesView #portfolioPicker .portfolio-avatar {position:relative}
+#companiesView #portfolioPicker .portfolio-avatar::after {content:"";position:absolute;inset:-3px;border:1px solid #c8e0ff24;border-radius:12px;opacity:0;pointer-events:none}
+@keyframes welcomeAmbientMove {0%,100%{background-position:0% 0%,100% 100%}50%{background-position:100% 60%,0% 40%}}
+@keyframes welcomeContour {0%,100%{transform:rotate(-14deg) scale(.96);opacity:.45}50%{transform:rotate(16deg) scale(1.04);opacity:.9}}
+@keyframes welcomeTitleLight {0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes welcomeBrandFloat {0%,100%{translate:0 0;rotate:0deg}50%{translate:0 -2px;rotate:-3deg}}
+@keyframes welcomeGridCell {0%,100%{opacity:.45;scale:.94}45%,65%{opacity:1;scale:1}}
+@keyframes welcomeLedgerRows {0%,100%{scale:.86 1;opacity:.6}45%,65%{scale:1 1;opacity:1}}
+@keyframes welcomeLedgerScan {0%,8%{opacity:0;translate:0 0}20%{opacity:.7}75%{opacity:.5;translate:0 52px}90%,100%{opacity:0;translate:0 52px}}
+@keyframes welcomeBalancePulse {0%,100%{box-shadow:0 0 0 6px #9ac6af0b;scale:1}50%{box-shadow:0 0 0 12px #9ac6af00;scale:1.04}}
+@keyframes welcomeCheckLoop {0%,8%{stroke-dashoffset:25;opacity:.4}42%,80%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:.45}}
+@keyframes welcomeFolderBob {0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes welcomeAvatarHalo {0%,100%{opacity:0;scale:.97}50%{opacity:.6;scale:1.04}}
+@media(prefers-reduced-motion:no-preference) {
+ #companiesView #portfolioPicker .portfolio-heading::before {animation:welcomeAmbientMove 16s ease-in-out infinite}
+ #companiesView #portfolioPicker .showcase-aura::before {animation:welcomeContour 14s ease-in-out infinite}
+ #companiesView #portfolioPicker .brand-mark img {animation:welcomeBrandFloat 5s ease-in-out infinite}
+ #companiesView #portfolioPicker h1 em {color:transparent;background:linear-gradient(110deg,var(--home-blue) 15%,#759ce0 50%,var(--home-blue) 85%);background-size:220% 100%;background-clip:text;-webkit-background-clip:text;animation:welcomeTitleLight 7s ease-in-out infinite}
+ #companiesView #portfolioPicker .paper-mini-grid i {animation:welcomeGridCell 3.4s ease-in-out infinite}
+ #companiesView #portfolioPicker .paper-mini-grid i:nth-child(2) {animation-delay:.25s}
+ #companiesView #portfolioPicker .paper-mini-grid i:nth-child(3) {animation-delay:.5s}
+ #companiesView #portfolioPicker .paper-mini-grid i:nth-child(4) {animation-delay:.75s}
+ #companiesView #portfolioPicker .paper-mini-grid i:nth-child(5) {animation-delay:1s}
+ #companiesView #portfolioPicker .paper-mini-grid i:nth-child(6) {animation-delay:1.25s}
+ #companiesView #portfolioPicker .scene-ledger i {animation:welcomeLedgerRows 3.6s ease-in-out infinite}
+ #companiesView #portfolioPicker .scene-ledger i:nth-of-type(2) {animation-delay:.25s}
+ #companiesView #portfolioPicker .scene-ledger i:nth-of-type(3) {animation-delay:.5s}
+ #companiesView #portfolioPicker .scene-ledger i:nth-of-type(4) {animation-delay:.75s}
+ #companiesView #portfolioPicker .scene-ledger::after {animation:welcomeLedgerScan 3.6s ease-in-out infinite}
+ #companiesView #portfolioPicker .ledger-right::after {animation-delay:.45s}
+ #companiesView #portfolioPicker .scene-balance {animation:welcomeBalancePulse 3.6s ease-in-out infinite}
+ #companiesView #portfolioPicker .paper-check path,#companiesView #portfolioPicker .scene-balance path,#companiesView #portfolioPicker .scene-folder path {animation:welcomeCheckLoop 3.8s ease-in-out infinite}
+ #companiesView #portfolioPicker .scene-folder {animation:welcomeFolderBob 4.6s ease-in-out infinite}
+ #companiesView #portfolioPicker .portfolio-avatar::after {animation:welcomeAvatarHalo 5s ease-in-out infinite}
+}
+#companiesView #portfolioPicker .showcase-wrap:has(.home-showcase[data-art-motion=paused]) .showcase-aura,
+#companiesView #portfolioPicker .showcase-wrap:has(.home-showcase[data-art-motion=paused]) .showcase-aura *,
+#companiesView #portfolioPicker .showcase-wrap:has(.home-showcase[data-art-motion=paused]) .showcase-aura::before {animation-play-state:paused}
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-heading::before {background-image:radial-gradient(ellipse at 80% 45%,#406ba21a,transparent 60%),radial-gradient(ellipse at 10% 90%,#2b416719,transparent 55%)}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-aura::before {border-color:#7399d024!important}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-aura i {background:radial-gradient(ellipse,#4c74ae2b,transparent 70%)}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-aura i+i {background:radial-gradient(ellipse,#36557933,transparent 70%)}
+@media(prefers-reduced-motion:reduce) {
+ #companiesView #portfolioPicker .scene-ledger::after,#companiesView #portfolioPicker .portfolio-avatar::after {display:none}
+ #companiesView #portfolioPicker .paper-check path,#companiesView #portfolioPicker .scene-balance path,#companiesView #portfolioPicker .scene-folder path {stroke-dasharray:none}
 }
