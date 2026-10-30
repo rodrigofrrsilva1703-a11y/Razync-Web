@@ -577,3 +577,56 @@ html[data-theme=dark] #companiesView #portfolioPicker {--home-muted:#a1abb9}
 @media(max-width:760px) {
  #companiesView #portfolioPicker h1 {font-size:clamp(36px,8.5vw,48px)}
 }
+
+/* One header and a balanced working entrance, scoped to the home only. */
+.home-header-brand,.home-header-date {display:none}
+.app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) .home-header-brand {display:flex;align-items:center;gap:9px;margin-right:auto;min-width:0;color:var(--text,#1c3048)}
+.home-header-brand img {display:block;object-fit:contain;border-radius:9px;flex:none;transition:transform .25s}
+.home-header-brand strong {display:block;font-size:20px;letter-spacing:-.6px;line-height:1.2}
+.home-header-brand small {display:block;font-size:8px;line-height:1.4;letter-spacing:.6px;color:var(--muted,#586b80)}
+.app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) .topbar-title {display:none}
+.app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) .home-header-date {display:block;margin-right:12px;font-size:11px;text-transform:capitalize;color:var(--muted,#586b80)}
+#companiesView #portfolioPicker {margin:0 auto;gap:0}
+#companiesView #portfolioPicker .portfolio-heading {min-height:0;padding:24px 0;gap:clamp(32px,4vw,56px);grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+#companiesView #portfolioPicker .home-intro-copy {padding:0}
+#companiesView #portfolioPicker .portfolio-access {max-width:460px;margin-top:26px}
+#companiesView #portfolioPicker .portfolio-entry {min-height:100px;padding:19px 21px;grid-template-columns:48px minmax(0,1fr) 92px;gap:6px 15px;border-color:#587eaa;box-shadow:0 8px 28px #18324d12}
+#companiesView #portfolioPicker .portfolio-avatar {width:48px;height:48px}
+#companiesView #portfolioPicker .portfolio-entry-info strong {font-size:20px}
+#companiesView #portfolioPicker .portfolio-entry-action {font-size:12px}
+#companiesView #portfolioPicker .portfolio-entry-action > span:first-child {font-size:12px}
+#companiesView #portfolioPicker:has(#portfolioList > .portfolio-entry:only-child) .portfolio-home-summary {display:none}
+#companiesView #portfolioPicker .home-showcase {max-width:500px;width:100%}
+#companiesView #portfolioPicker .showcase-art {height:180px;gap:24px}
+#companiesView #portfolioPicker .scene-paper {width:102px;height:132px;padding:12px;gap:8px}
+#companiesView #portfolioPicker .scene-ledger {width:98px;height:128px;padding:13px;gap:10px}
+#companiesView #portfolioPicker .showcase-copy {min-height:88px}
+#companiesView #portfolioPicker .showcase-copy p {font-size:13px;max-width:36ch}
+html[data-theme=dark] #companiesView #portfolioPicker {--home-muted:#b2bdcc}
+@media(min-width:1000px) {
+ .app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) main #companiesView.active {min-height:calc(100svh - 104px);display:grid;align-items:center}
+ #companiesView #portfolioPicker .portfolio-heading {padding:24px 0 48px}
+}
+@media(min-width:1000px) and (max-height:640px) {
+ .app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) main #companiesView.active {min-height:calc(100svh - 90px)}
+ #companiesView #portfolioPicker .portfolio-heading {padding:18px 0 28px}
+ #companiesView #portfolioPicker .showcase-art {height:135px}
+ #companiesView #portfolioPicker .scene-paper {width:88px;height:112px;padding:10px;gap:6px}
+ #companiesView #portfolioPicker .scene-ledger {width:84px;height:108px;padding:10px;gap:8px}
+ #companiesView #portfolioPicker .portfolio-entry {min-height:90px;padding:14px 18px}
+}
+@media(max-width:760px) {
+ .app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) .home-header-date {display:none}
+ .home-header-brand small {display:none}
+ .home-header-brand strong {font-size:18px}
+ .home-header-brand img {width:28px;height:28px}
+ #companiesView #portfolioPicker .portfolio-heading {grid-template-columns:minmax(0,1fr);gap:38px;padding:24px 0 32px}
+ #companiesView #portfolioPicker .portfolio-access {max-width:none}
+ #companiesView #portfolioPicker .portfolio-entry {grid-template-columns:40px minmax(0,1fr) 70px;padding:16px;gap:6px 10px}
+ #companiesView #portfolioPicker .portfolio-avatar {width:40px;height:40px}
+ #companiesView #portfolioPicker .portfolio-entry-info strong {font-size:18px}
+ #companiesView #portfolioPicker .showcase-art {height:160px;gap:16px}
+}
+@media(hover:hover) and (prefers-reduced-motion:no-preference) {
+ .home-header-brand:hover img {transform:rotate(-6deg)}
+}
