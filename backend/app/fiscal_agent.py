@@ -92,6 +92,20 @@ def note_key(value):
     return (str(value).lstrip('0') or '0') if value not in (None, '') else ''
 
 
+# A pergunta pode ser natural ("por que a conta não está batendo?").
+# Não exigir a frase literal "não bate" para consultar a diferença da conta.
+_ACCOUNT_DIFFERENCE_PATTERN = re.compile(
+    r'\b(?:pendenc\w*|diverg\w*|diferenc\w*|conferir|explic\w*|'
+    r'primeir\w*|prioridad\w*|motivo\w*|proxim\w*\s+passo|'
+    r'como\s+(?:posso\s+)?(?:resolver|corrigir)|'
+    r'o\s+que\s+(?:fazer|faco|conferir)|'
+    r'nao(?:\s+\w+){0,3}\s+(?:bat\w*|fech\w*|confer\w*|correspond\w*)|'
+    r'(?:por\s+que|porque|qual\s+(?:e\s+)?(?:a\s+)?causa|'
+    r'qual\s+(?:e\s+)?(?:o\s+)?problema).{0,100}'
+    r'\b(?:conta|fiscal|razao|acumulador|valor(?:es)?|totais?)\b)'
+)
+
+
 def query_plan(question):
     query = normalized(question)
     notes = []
@@ -103,14 +117,14 @@ def query_plan(question):
     refs = [r.upper() for r in re.findall(r'\b[res]-\d+\b', query)]
     duplicate = bool(re.search(r'duplic|repetid|repetic|duas vezes', query))
     other = bool(re.search(r'outra[s]? conta', query))
+    account_difference = bool(_ACCOUNT_DIFFERENCE_PATTERN.search(query))
     intent = ('duplicidade' if duplicate else 'documento' if notes else 'referencia' if refs else
               'sem_vinculo' if re.search(r'sem vinculo|nao vinculad|sem documento', query) else
-              'diferenca' if re.search(r'pendencia|diverg|diferenca|conferir|explic|nao bate|nao fecha|primeiro|prioridade|motivo|como (?:posso )?(?:resolver|corrigir)|o que (?:fazer|faco)|proximo passo', query) else 'historico')
+              'diferenca' if account_difference else 'historico')
     amount_match = re.search(r'(?:r\$\s*|valor\s+)(-?[\d.]+(?:,\d{1,2})?)|(?<!\w)(-?[\d.]+,\d{2})\b', query)
     amount = None
-    # "Por que existe diferença de R$ X?" pede diagnóstico da conta,
-    # não busca de um lançamento isolado de R$ X.
-    account_difference = bool(re.search(r'\b(?:diferenca|divergenc|nao bate|nao fecha|pendencias?)', query))
+    # Valores citados em perguntas sobre a divergência não são filtros de lançamentos.
+    # A busca explícita por valor (ex.: "procure o valor R$ 100") mantém prioridade.
     explicit_lookup = bool(re.search(r'\b(?:procure|buscar|encontre|localize|mostre|pesquise)\b', query))
     if amount_match and not notes and not refs and not duplicate and (not account_difference or explicit_lookup):
         amount = str(Decimal((amount_match.group(1) or amount_match.group(2)).replace('.', '').replace(',', '.')))
