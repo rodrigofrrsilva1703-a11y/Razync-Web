@@ -57,6 +57,11 @@ class DocumentaryAgentTests(unittest.TestCase):
         self.assertIn('S-2',[r['referencia'] for r in result['evidencias']])
         self.assertEqual([r['referencia'] for r in self.ask('Quais estão sem vínculo?')['evidencias']],['R-1'])
 
+    def test_unclassified_raw_lines_are_not_reported_as_confirmed_pending(self):
+        docs = dict(self.docs, documentos=[dict(id='S-1',nota='12',valor=100,situacao='LIDO')])
+        self.token=agent.register(self.report,self.scope,docs,self.investigation)['session']
+        self.assertEqual([r['referencia'] for r in self.ask('Explique a diferença')['evidencias']],['R-1'])
+
     def test_external_context_does_not_include_histories(self):
         with patch.object(agent, 'interpret', return_value=dict(explicacao='Confira o documento.', proximos_passos=[], referencias=['R-1'], provedor='teste', modelo='teste')) as call:
             result = self.ask('Nota 149599', True)

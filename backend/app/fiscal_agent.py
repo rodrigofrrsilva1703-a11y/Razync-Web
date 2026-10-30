@@ -95,7 +95,8 @@ def retrieve(data, question):
         rows = [r for r in rows if r['referencia'] in data.get('unlinked', []) or r.get('situacao') == 'SEM_LANCAMENTO_IDENTIFICADO']
         tool = 'Busca dos movimentos e documentos sem vínculo identificado'
     elif re.search(r'pendencia|diverg|diferenca|conferir|explic', query):
-        rows = [r for r in rows if r['referencia'] in data['pending'] or r.get('situacao') not in ('', 'CONCILIADO')]
+        pending_status = {'VALOR_DIFERENTE', 'DATA_DIFERENTE', 'CONTA_DIFERENTE', 'ESTORNO_EM_ANALISE', 'PROVAVEL', 'AMBIGUO', 'SEM_LANCAMENTO_IDENTIFICADO'}
+        rows = [r for r in rows if r['referencia'] in data['pending'] or r.get('situacao') in pending_status]
         tool = 'Consulta das pendências e da composição da diferença'
     else:
         terms = [w for w in re.findall(r'[\w]+', query) if len(w) > 3 and w not in {'qual','quais','essa','esse','conta','valor','para','sobre','esta','como'}]
@@ -130,6 +131,8 @@ def interpret(question, facts):
     else:
         body = {'model': model, 'messages': [{'role': 'system', 'content': PROMPT}, {'role': 'user', 'content': text}],
                 'temperature': 0, 'response_format': {'type': 'json_object'}, 'max_completion_tokens' if provider == 'groq' else 'max_tokens': 1200}
+        if provider == 'groq':
+            body['reasoning_effort'] = 'low' if model.startswith('openai/') else 'none'
         if provider == 'openrouter':
             body['provider'] = {'allow_fallbacks': False, 'data_collection': 'deny', 'max_price': {'prompt': 0, 'completion': 0}}
         url = groq_fiscal.API_URL if provider == 'groq' else 'https://openrouter.ai/api/v1/chat/completions'
@@ -216,8 +219,10 @@ def answer(request):
             facts[0] = {k: v for k, v in facts[0].items() if k not in ('empresa', 'empresa_nome', 'filial')}
             try:
                 response.update(interpret(question, facts), origem='ia')
-            except Exception:
-                response['aviso_ia'] = 'A interpretação externa não ficou disponível ou não passou na validação. Os resultados locais foram preservados.'
+            except Exception as exc:
+                safe_reasons = {'Nenhum provedor gratuito disponível agora.', 'Resposta incompleta.', 'Referência não confirmada.', 'Formato inválido.', 'Número não confirmado nas evidências.'}
+                reason = str(exc) if isinstance(exc, ValueError) and str(exc) in safe_reasons else 'O provedor não retornou uma interpretação válida nesta tentativa.'
+                response['aviso_ia'] = reason + ' Os resultados locais foram preservados.'
         with _lock:
             notes = {r.get('nota') for r in rows if r.get('nota')}
             if len(notes) == 1:
