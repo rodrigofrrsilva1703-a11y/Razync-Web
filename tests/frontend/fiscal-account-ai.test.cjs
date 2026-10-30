@@ -143,15 +143,14 @@ test('recorte documental envia apenas o acompanhamento do tipo e preserva o acum
   await find(other,'fiscal-account-analysis-button').click();assert.equal(requests.length,2);
 });
 
-test('investigação permite desligar IA e invalida cache quando um arquivo auxiliar muda',async()=>{
-  const {context,requests,files,find,all}=setup();
+test('investigação ativa IA gratuita automaticamente e invalida cache quando arquivos mudam',async()=>{
+  const {context,requests,files,find}=setup();
   const scope={origem:'documentos',conta:'470',tipo:'ENTRADAS'};
   files.fiscal242Entradas.files=['primeiro.xls','segundo.xls'];
   let root=context.createAccountAnalysis(scope);
-  const checkbox=all(root).find(el=>el.tag==='input' && el.type==='checkbox');
-  checkbox.checked=false;checkbox.events.change();
+  assert.equal(find(root,'fiscal-hybrid-ai-option'),undefined);
   await find(root,'fiscal-account-analysis-button').click();
-  assert.equal(requests[0].options.body.get('usar_ia'),'false');
+  assert.equal(requests[0].options.body.get('usar_ia'),'true');
   files.fiscal242Entradas.files=['primeiro.xls','outro.xls'];
   root=context.createAccountAnalysis(scope);
   await find(root,'fiscal-account-analysis-button').click();
