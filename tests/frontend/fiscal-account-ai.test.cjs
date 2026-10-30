@@ -59,7 +59,7 @@ test('assistente envia só token e pergunta, mostra fonte e preserva texto sem H
   assert.deepEqual(sent.body,{session:'token-temporario',pergunta:'Procure a nota 149599',usar_ia:true});
   assert.equal(find(root,'fiscal-agent-permission'),undefined);
   assert.equal(find(root,'fiscal-agent-chat-options'),undefined);
-  assert.ok(all(root).some(el=>String(el.textContent).includes('Assistente automático')));
+  assert.ok(all(root).some(el=>String(el.textContent).includes('IA gratuita automática')));
   assert.ok(all(root).some(e=>e.textContent==='<img onerror=evil()>'));
   assert.ok(!all(root).some(e=>e.tag==='img'));
   assert.equal(state.agentMessages.length,1);
