@@ -132,7 +132,7 @@ def query_plan(question):
         'diferenca' if account_difference else
         'geral'
     )
-    intent = ('documento' if notes else 'referencia' if refs else topic)
+    intent = ('duplicidade' if duplicate else 'documento' if notes else 'referencia' if refs else topic)
     amount_match = re.search(r'(?:r\$\s*|valor\s+)(-?[\d.]+(?:,\d{1,2})?)|(?<!\w)(-?[\d.]+,\d{2})\b', query)
     amount = None
     # Valores citados em perguntas sobre a divergência não são filtros de lançamentos.
