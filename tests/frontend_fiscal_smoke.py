@@ -40,7 +40,7 @@ assert "Assistente IA" in JS and "fiscal-account-ai-fab" in JS
 assert "renderFiscalAssistant" in JS and "fiscal-account-ai-chat" in JS
 assert "fiscal-account-analysis-tabs" not in JS
 assert "renderHybridOpinion" in JS and "investigacao_hibrida" in JS
-assert 'body.append("usar_ia",String(state.useAI))' in JS
+assert 'body.append("usar_ia","true")' in JS, "A investigação fiscal usa IA gratuita automaticamente."
 assert "/api/v1/conferencia-fiscal/ia/conta" in JS
 assert set(anchors).issubset(ids)
 
