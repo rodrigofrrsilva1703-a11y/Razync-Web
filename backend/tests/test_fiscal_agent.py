@@ -102,6 +102,14 @@ class DocumentaryAgentTests(unittest.TestCase):
         self.assertEqual(result['encontrados'],2)
         self.assertEqual(result['nota_contexto'],'149599')
 
+    def test_other_account_search_distinguishes_only_current_account_from_other_accounts(self):
+        self.assertIn('470',self.ask('Nota 149599 em outra conta')['explicacao'])
+        self.prepare_note_pair()
+        result=self.ask('Nota 149353 em outras contas')
+        self.assertIn('somente na conta 408',result['explicacao'])
+        self.assertIsNone(result['comparacao'])
+        self.assertIn('SAÍDAS',result['recorte'])
+
     def test_note_ai_context_excludes_account_summary_and_cannot_replace_local_facts(self):
         self.prepare_note_pair()
         with patch.object(agent,'interpret',return_value=dict(explicacao='Confira as parcelas.',proximos_passos=[],referencias=['S-1'],provedor='teste',modelo='teste')) as call:

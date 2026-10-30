@@ -208,8 +208,8 @@ def local_reading(data, plan, rows, tool):
                 fiscal=c['fiscal'], contabil=c['contabil'], diferenca=str((Decimal(str(c['contabil'])) - Decimal(str(c['fiscal']))).quantize(Decimal('.01'))),
                 criterio='Valores do cruzamento documental existente; o vínculo ainda exige conferência.',
                 referencias=c['referencias'])
-    result['recorte'] = ('Nota ' + ', '.join(notes) if notes else 'Conta ' + data['scope']['conta']) + (
-        ' · outras contas do mesmo relatório e filial' if plan['outra_conta'] else ' · ' + data['scope']['tipo'])
+    result['recorte'] = ('Nota ' + ', '.join(notes) if notes else 'Conta ' + data['scope']['conta']) + ' · ' + data['scope']['tipo'] + (
+        ' · pesquisa em outras contas' if plan['outra_conta'] else '')
     if plan['outra_conta'] and (not notes or data['scope'].get('acumulador')):
         result.update(titulo='Informe a nota e abra a conta inteira', explicacao=tool,
                       proximos_passos=['Abra a seleção da conta inteira e informe o número da nota para pesquisar outras contas.'])
@@ -240,11 +240,12 @@ def local_reading(data, plan, rows, tool):
             result['pontos_confirmar'] = (['A diferença de valor é um fato; desconto, parcela ou redutor são hipóteses que dependem do documento original.'] if diff else
                 ['Confira série, data, filial e natureza da operação. Igualdade de valores não confirma a identidade documental.'])
         elif plan['outra_conta']:
-            accounts = sorted({r['conta'] for r in rows})
-            result['titulo'] = 'Registros localizados por conta'
-            result['explicacao'] = 'A nota foi localizada nas contas ' + ', '.join(accounts) + ' do mesmo relatório e filial. Os valores de contas diferentes não foram somados.'
-            result['pontos_confirmar'] = ['A presença em outra conta pode representar contrapartida ou outra operação; não comprova classificação incorreta.']
-            result['pontos_confirmar'].append('A pesquisa ampliada consulta o Razão do mesmo relatório e filial. O acompanhamento fiscal continua limitado à conta selecionada.')
+            others = sorted({r['conta'] for r in rows if r['conta'] != data['scope']['conta']})
+            result['titulo'] = 'Registros localizados em outras contas' if others else 'Nenhum registro em outra conta neste recorte'
+            result['explicacao'] = ('Encontrei registros da nota nas contas ' + ', '.join(others) + ' além da seleção atual. Os valores permanecem separados por conta.' if others else
+                'A pesquisa encontrou registros somente na conta ' + data['scope']['conta'] + ', dentro dos dados preparados. Isso não comprova ausência em outras contas da escrituração.')
+            result['pontos_confirmar'] = (['A presença em outra conta pode representar contrapartida ou outra operação; não comprova classificação incorreta.'] if others else [])
+            result['pontos_confirmar'].append('A pesquisa ampliada usa o mesmo relatório, filial e tipo (' + data['scope']['tipo'] + '). O acompanhamento fiscal continua limitado à conta selecionada.')
         elif len(matches) > 1 or (fiscal and ledger):
             result['titulo'] = 'Identidade documental a confirmar'
             result['explicacao'] = 'Há registros relacionados à consulta, mas não existe um único vínculo seguro para comparar os totais. Não somei candidatos ou documentos de séries diferentes.'
