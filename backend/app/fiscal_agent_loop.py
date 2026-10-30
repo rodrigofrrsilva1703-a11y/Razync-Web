@@ -175,7 +175,8 @@ def investigate(question, data, *, option=None):
         "instrucao": "Investigue usando as ferramentas disponíveis; não confunda indícios com prova."
     }, ensure_ascii=False)}]
     executed = []
-    allowed = {"CONSULTA", "RESUMO"} | set(audit_tools._ref_index(data))
+    allowed = {"CONSULTA", "RESUMO"}
+    scoped_refs = set(audit_tools._ref_index(data))
     disclosed = [context]
     for turn in range(MAX_MODEL_CALLS):
         if sum(len(str(m)) for m in messages) > MAX_CONTEXT_CHARS:
@@ -202,6 +203,9 @@ def investigate(question, data, *, option=None):
                 name = call.get("function", {}).get("name", "desconhecida") if isinstance(call, dict) else "desconhecida"
                 result = {"erro": "Ferramenta indisponível ou parâmetros inválidos; não foi executada."}
             disclosed.append(result)
+            # Só permitir citar movimentos efetivamente retornados pelas ferramentas.
+            visible = set(re.findall(r"\b[A-Z]-\d+\b", json.dumps(result, ensure_ascii=False)))
+            allowed.update(visible & scoped_refs)
             executed.append(name)
             verified.append((call, name, result))
         messages.append({"role": "assistant", "content": reply, "tool_calls": [
