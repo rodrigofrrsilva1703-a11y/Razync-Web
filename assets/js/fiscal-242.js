@@ -1453,20 +1453,44 @@
         ? "Fatos calculados no sistema · apoio de " + answer.provedor + " · " + answer.modelo
         : "Consulta documental · cálculos locais";
       entry.append(node("small","fiscal-agent-source",source));
-      if(answer.ferramentas_ia?.length){
-        const labels={
-          obter_contexto_conta:"Conferir contexto",
-          cruzar_documentos_fiscais_razao:"Cruzar documentos",
-          buscar_movimentos_razao:"Localizar movimentos",
-          testar_hipotese_matematica:"Testar valores",
-          investigar_competencia:"Verificar competência",
-          consultar_indicios:"Revisar indícios"
-        };
-        const steps=node("details","fiscal-agent-tool-steps");
-        steps.append(node("summary","","Investigação realizada · "+answer.ferramentas_ia.length+" consulta(s)"));
-        const list=node("ol");
-        answer.ferramentas_ia.forEach(name=>list.append(node("li","",labels[name] || "Consulta autorizada")));
-        steps.append(list);entry.appendChild(steps);
+      // Apenas ferramentas efetivamente relatadas pelo backend: nunca simular
+      // etapas executadas ou estados de progresso que a API não informou.
+      const toolLabels={
+        obter_contexto_conta:"Contexto da conta",
+        cruzar_documentos_fiscais_razao:"Cruzamento de documentos",
+        buscar_movimentos_razao:"Movimentos do Razão",
+        testar_hipotese_matematica:"Teste de valores",
+        investigar_competencia:"Datas e competência",
+        consultar_indicios:"Indícios contábeis"
+      };
+      const rawSteps=Array.isArray(answer.passos_agente) && answer.passos_agente.length
+        ? answer.passos_agente.slice(0,4)
+        : (Array.isArray(answer.ferramentas_ia) ? answer.ferramentas_ia.slice(0,4).map(ferramenta=>({ferramenta})) : []);
+      const reportedSteps=rawSteps.filter(step=>step && typeof step.ferramenta==="string" && toolLabels[step.ferramenta]);
+      if(reportedSteps.length){
+        const block=node("section","fiscal-agent-steps");
+        block.setAttribute("aria-label","Etapas executadas pelo agente na resposta");
+        const head=node("div","fiscal-agent-steps-header");
+        const title=node("strong","fiscal-agent-steps-title","Investigação do agente");
+        const count=node("span","fiscal-agent-steps-count",reportedSteps.length+" verificação"+(reportedSteps.length===1?"":"es"));
+        head.append(title,count);
+        const list=node("ol","fiscal-agent-steps-list");
+        reportedSteps.forEach((step,index)=>{
+          const status=["concluido","nao_executado","dados_insuficientes"].includes(step.situacao)
+            ? step.situacao : "registrado";
+          const line=node("li","fiscal-agent-step is-"+status);
+          const marker=node("span","fiscal-agent-step-index",String(index+1).padStart(2,"0"));
+          marker.setAttribute("aria-hidden","true");
+          const info=node("div","fiscal-agent-step-info");
+          info.appendChild(node("strong","fiscal-agent-step-name",toolLabels[step.ferramenta]));
+          if(typeof step.resumo==="string" && step.resumo.trim())
+            info.appendChild(node("span","fiscal-agent-step-description",step.resumo.slice(0,180)));
+          const label=status==="concluido"?"Concluída":status==="dados_insuficientes"
+            ?"Dados insuficientes":status==="nao_executado"?"Não executada":"Consultada";
+          line.append(marker,info,node("span","fiscal-agent-step-status",label));
+          list.appendChild(line);
+        });
+        block.append(head,list);entry.appendChild(block);
       }
       if(answer.titulo)entry.appendChild(node("h5","fiscal-agent-answer-title",answer.titulo));
       if(answer.recorte)entry.appendChild(node("small","fiscal-agent-scope",answer.recorte));
