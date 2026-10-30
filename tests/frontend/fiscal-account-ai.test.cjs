@@ -72,7 +72,7 @@ test('chat exibe etapas do agente, resultados reais e não inventa progresso',as
   const scope={conta:'408',tipo:'SAÍDAS',origem:'documentos',acumulador:''};
   const state={source:context.previewBody,result:{assistente:{disponivel:true,session:'sessao'}}};
   context.fetch=async()=>({ok:true,json:async()=>({
-    origem:'ia',provedor:'groq',modelo:'free',explicacao:'Conferência limitada.',
+    escopo:scope,origem:'ia',provedor:'groq',modelo:'free',explicacao:'Conferência limitada.',
     interpretacao_ia:'A causa ainda não está comprovada.',
     encontrados:2,exibidos:2,ferramenta:'Investigação',evidencias:[],
     ferramentas_ia:['obter_contexto_conta','cruzar_documentos_fiscais_razao','buscar_movimentos_razao'],
