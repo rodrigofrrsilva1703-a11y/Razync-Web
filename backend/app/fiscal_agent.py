@@ -220,6 +220,9 @@ def answer(request):
             try:
                 response.update(interpret(question, facts), origem='ia')
             except Exception as exc:
+                # Diagnostic metadata only: never log prompts, responses or credentials.
+                import logging
+                logging.getLogger(__name__).warning('Fiscal assistant interpretation failed: type=%s status=%s', type(exc).__name__, getattr(exc, 'status_code', getattr(exc, 'code', None)))
                 safe_reasons = {'Nenhum provedor gratuito disponível agora.', 'Resposta incompleta.', 'Referência não confirmada.', 'Formato inválido.', 'Número não confirmado nas evidências.'}
                 reason = str(exc) if isinstance(exc, ValueError) and str(exc) in safe_reasons else 'O provedor não retornou uma interpretação válida nesta tentativa.'
                 response['aviso_ia'] = reason + ' Os resultados locais foram preservados.'
