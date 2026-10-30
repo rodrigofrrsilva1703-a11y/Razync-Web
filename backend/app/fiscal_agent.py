@@ -528,7 +528,7 @@ def answer(request):
         # anterior desta MESMA conta e sessão, nunca dados de outras empresas.
         plan = query_plan(question)
         previous_topic = session.get('last_intent')
-        followup = bool(re.match(r'^\\s*(?:e|mas|entao|nesse caso|nesse ponto|sobre isso|quanto a isso)\\b', normalized(question)))
+        followup = bool(re.match(r'^\s*(?:e|mas|entao|nesse caso|nesse ponto|sobre isso|quanto a isso)\b', normalized(question)))
         if followup and plan['intent'] == 'geral' and previous_topic in {
                 'diferenca', 'competencia', 'acumulador', 'combinacao', 'movimentos', 'totais', 'sem_vinculo'}:
             plan['intent'] = previous_topic
