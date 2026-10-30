@@ -1421,7 +1421,7 @@
   }
   function renderFiscalAssistant(result, scope, state) {
     const host=node("section","fiscal-document-assistant");
-    host.append(node("h4","","Converse sobre esta conta"),node("p","","Pesquise notas, históricos e pendências nos documentos preparados. As respostas não alteram lançamentos."));
+    host.append(node("p","fiscal-agent-chat-hint","Pergunte sobre esta conta. Respostas baseadas apenas nos registros consultados."));
     const session=result.assistente;
     if(!session?.disponivel){host.appendChild(node("p","",session?.motivo || "O assistente ficará disponível após uma nova análise nesta versão do servidor."));return host;}
     const thread=node("div","fiscal-agent-thread");thread.setAttribute("role","log");thread.setAttribute("aria-label","Conversa sobre a conta");
@@ -1493,6 +1493,37 @@
     return host;
   }
 
+  // A conversa mostra primeiro a conclusão e os valores, sem empilhar o relatório
+  // inteiro em uma janela pequena. O parecer integral permanece acessível sob demanda.
+  function renderCompactFiscalChatReport(result, scope) {
+    const item = result.analises?.[0] || {};
+    const hybrid = item.investigacao_hibrida || {};
+    const summary = hybrid.resumo || item.valores || {};
+    const conclusion = hybrid.conclusao?.texto ||
+      item.parecer?.resumo_executivo?.conclusao ||
+      item.parecer?.leitura_comparacao?.resultado ||
+      item.explicacao || "Confira os movimentos e documentos antes de concluir.";
+    const report = node("section", "fiscal-account-ai-chat-report");
+    report.append(node("span", "fiscal-account-ai-chat-message-head", "✦  Resultado da investigação"),
+      node("p", "fiscal-chat-conclusion", conclusion));
+    const labels = [["Fiscal", "fiscal"], ["Razão", "contabil"], ["Diferença", "diferenca"]];
+    const metrics = node("dl", "fiscal-chat-metrics");
+    for (const [label, key] of labels) {
+      if (summary[key] == null || !Number.isFinite(Number(summary[key]))) continue;
+      const metric = node("div", key === "diferenca" ? "is-difference" : "");
+      metric.append(node("dt", "", label), node("dd", "", money.format(Number(summary[key]))));
+      metrics.appendChild(metric);
+    }
+    if (metrics.children.length) report.appendChild(metrics);
+    const accuracy = hybrid.conclusao?.grau;
+    if (accuracy === "hipotese" || accuracy === "inconclusiva")
+      report.appendChild(node("p", "fiscal-chat-caution", "A causa ainda não está comprovada. Confirme as evidências antes de corrigir lançamentos."));
+    const detail = node("details", "fiscal-chat-full-report");
+    detail.append(node("summary", "", "Ver investigação completa"), renderAccountOpinion(result, scope));
+    report.appendChild(detail);
+    return report;
+  }
+
   function createAccountAnalysis(scope) {
     const key = [scope.origem, scope.conta, scope.tipo, scope.acumulador || ""].join(":");
     const fileId = scope.tipo === "SAÍDAS" ? "fiscal242Saidas" : "fiscal242Entradas";
@@ -1532,9 +1563,6 @@
     meter.setAttribute("role", "progressbar"); meter.setAttribute("aria-label", "Aguardando retorno da análise");
     const loadingHint = node("p", "fiscal-account-loading-hint");
     loading.append(loadingHead, meter, loadingHint);
-    const panelHeading = node("div", "fiscal-account-analysis-heading");
-    const panelTitle = node("h4", "", "Parecer da IA");
-    panelHeading.append(panelTitle, exportButton);
     const context = node("p", "fiscal-account-analysis-context", "Conta " + scope.conta + " · " + scope.tipo + (scope.acumulador ? " · Acumulador " + scope.acumulador : ""));
     const panelId = "fiscal-chat-" + [scope.origem, scope.conta, scope.tipo === "SAÍDAS" ? "saidas" : "entradas", scope.acumulador || "conta"].join("-");
     area.id = panelId;
@@ -1548,14 +1576,22 @@
     launcher.setAttribute("aria-controls", panelId);
     const chatHeading = node("div", "fiscal-account-ai-chat-heading");
     const chatIdentity = node("div", "fiscal-account-ai-chat-identity");
-    chatIdentity.append(node("span", "fiscal-account-ai-avatar", "✦"),
-      node("div", "fiscal-account-ai-chat-title", "Assistente Razync"));
+    const chatTitle = node("div", "fiscal-account-ai-chat-title", "Assistente Razync");
+    const chatSubtitle = node("small", "fiscal-account-ai-chat-subtitle", "Conta " + scope.conta + " · " + scope.tipo + (scope.acumulador ? " · Acumulador " + scope.acumulador : ""));
+    const titleWrap = node("div", "fiscal-account-ai-title-wrap");
+    titleWrap.append(chatTitle, chatSubtitle);
+    chatIdentity.append(node("span", "fiscal-account-ai-avatar", "✦"), titleWrap);
     const closeChat = node("button", "fiscal-account-ai-close", "×");
     closeChat.type = "button";
     closeChat.setAttribute("aria-label", "Fechar conversa e voltar à conferência");
-    chatHeading.append(chatIdentity, closeChat);
-    bar.append(button, cancel);
-    area.append(chatHeading, panelHeading, context, note, aiOption, status, loading, body, composerSlot, bar);
+    const chatActions = node("div", "fiscal-account-ai-header-actions");
+    exportButton.textContent = "Exportar";
+    chatActions.append(exportButton, closeChat);
+    chatHeading.append(chatIdentity, chatActions);
+    const aiSettings = node("details", "fiscal-account-ai-settings");
+    aiSettings.append(node("summary", "", "Configurações de investigação"), aiOption);
+    bar.append(aiSettings, button, cancel);
+    area.append(chatHeading, status, loading, body, composerSlot, bar);
     let layout = null, renderedResult = null;
     function switchView(open, focus = false) {
       state.expanded = open;
@@ -1584,6 +1620,7 @@
     };
     area.destroy = () => {
       state.chatController?.abort();
+      layout?.shell.classList?.remove("fiscal-chat-open");
       state.expanded = false;
       layout = null;
       area.remove();
@@ -1599,8 +1636,7 @@
       launcher.setAttribute("aria-label", (state.expanded ? "Recolher" : "Abrir") + " assistente da conta " + scope.conta);
       cancel.hidden = !state.pending;
       exportButton.hidden = !state.result?.analises?.length;
-      panelTitle.textContent = "Parecer desta conta";
-      status.textContent = state.pending ? "Investigando somente esta conta. Você pode recolher a conversa." : state.error || (state.result ? "Análise concluída. Consulte as evidências e faça perguntas sobre esta seleção." : "");
+      status.textContent = state.pending ? "Consultando os registros desta conta…" : state.error || "";
       status.className = "fiscal-account-analysis-status" + (state.pending ? " visually-hidden" : "");
       status.hidden = !status.textContent;
       body.hidden = !state.result;
@@ -1610,11 +1646,12 @@
       loading.hidden = !state.pending;
       loading.setAttribute("aria-busy", String(state.pending));
       updateLoadingTime();
-      context.hidden = false;
-      if (layout) area.hidden = !state.expanded;
+      if (layout) {
+        area.hidden = !state.expanded;
+        layout.shell.classList?.toggle("fiscal-chat-open", state.expanded);
+      }
       if (state.result && renderedResult !== state.result) {
-        const report = node("section", "fiscal-account-ai-chat-report");
-        report.append(node("div", "fiscal-account-ai-chat-message-head", "✦  Resultado da investigação"), renderAccountOpinion(state.result, scope));
+        const report = renderCompactFiscalChatReport(state.result, scope);
         const assistant = renderFiscalAssistant(state.result, scope, state);
         body.replaceChildren(report, assistant);
         composerSlot.replaceChildren(...(assistant.composer ? [assistant.composer] : []));
