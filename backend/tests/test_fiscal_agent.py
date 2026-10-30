@@ -38,6 +38,38 @@ class DocumentaryAgentTests(unittest.TestCase):
         self.token = agent.register(self.report, scope, docs, self.investigation)['session']
         self.assertEqual(self.ask('Nota 149599 em outra conta')['encontrados'], 0)
 
+    def test_difference_question_with_amount_keeps_account_diagnostic(self):
+        """Perguntar por que não fecha não deve virar busca de valor isolado."""
+        investigation = dict(self.investigation, resumo=dict(fiscal='5100', contabil='3000', diferenca='-2100'))
+        self.token = agent.register(self.report, dict(self.scope, origem='resumo'), None, investigation)['session']
+        result = self.ask('Por que existe uma divergência de R$ 2.100,00 nesta conta?')
+        self.assertEqual(result['intencao'], 'diferenca')
+        self.assertEqual(result['comparacao']['diferenca'], '-2100')
+        self.assertIn('R$ 2.100,00', result['explicacao'])
+        self.assertIn('acompanhamento fiscal', ' '.join(result['proximos_passos']))
+        self.assertIn('documento fiscal', ' '.join(result['pontos_confirmar']))
+        self.assertEqual(result['encontrados'], 0)
+
+    def test_explicit_value_search_is_still_available(self):
+        self.assertEqual(agent.query_plan('Procure o valor R$ 3.900,00')['intent'], 'valor')
+        self.assertEqual(self.ask('Procure o valor R$ 3.900,00')['encontrados'], 1)
+
+    def test_equal_difference_amount_is_candidate_not_proof(self):
+        self.token = agent.register(self.report, dict(self.scope, origem='resumo'), None, self.investigation)['session']
+        result = self.ask('Explique a diferença de R$ 3.900,00')
+        self.assertEqual(result['intencao'], 'diferenca')
+        self.assertEqual(result['encontrados'], 1)
+        self.assertIn('Coincidência', result['ferramenta'])
+        self.assertIn('não prova', ' '.join(result['pontos_confirmar']))
+        self.assertNotIn('causa comprovada', result['explicacao'])
+
+    def test_unlinked_question_without_fiscal_documents_explains_limitation(self):
+        self.token = agent.register(self.report, dict(self.scope, origem='resumo'), None, self.investigation)['session']
+        result = self.ask('Quais movimentos estão sem vínculo?')
+        self.assertEqual(result['encontrados'], 0)
+        self.assertIn('detalhamento fiscal', result['titulo'])
+        self.assertIn('não identificam', result['explicacao'])
+
     def test_same_question_reuses_answer_and_ai_is_opt_in(self):
         with patch.object(agent, 'interpret') as call:
             self.ask('Explique a diferença')
