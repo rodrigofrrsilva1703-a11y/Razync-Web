@@ -72,7 +72,7 @@ jobs:
           trap 'kill $SERVER_PID || true' EXIT
           sleep 1
           CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --enable-logging=stderr --v=1             --virtual-time-budget=8000 --dump-dom http://127.0.0.1:4173/             > /tmp/razync-dom.html 2> /tmp/razync-chrome.log || true
+          timeout 90s "$CHROME" --headless=new --no-sandbox --disable-gpu --enable-logging=stderr --v=1             --virtual-time-budget=8000 --dump-dom http://127.0.0.1:4173/             > /tmp/razync-dom.html 2> /tmp/razync-chrome.log || true
           echo "=== Chrome stderr ==="
           grep -E 'Uncaught|TypeError|ReferenceError|SyntaxError|CONSOLE' /tmp/razync-chrome.log || true
           echo "=== Rendered page checks ==="

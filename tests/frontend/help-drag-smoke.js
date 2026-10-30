@@ -297,14 +297,17 @@
     homeFrame.style.width='390px';homeFrame.style.height='844px';
     if(homeDoc.documentElement.scrollWidth>390)throw Error('O início tem corte lateral no celular.');
     // The same real CSS cascade must fit the company directory in both themes/views.
-    const directoryLoaded=new Promise(resolve=>homeFrame.onload=resolve);
-    homeFrame.srcdoc='<!doctype html><html><head>'+homeStyles+'<style>*,*::before,*::after{animation:none!important;transition:none!important}</style></head><body class="sidebar-collapsed">'+directoryLayoutMarkup+'</body></html>';
-    await directoryLoaded;
-    const directoryDoc=homeFrame.contentDocument;
+    homeFrame.remove();
+    const directoryFrame=document.createElement('iframe');
+    directoryFrame.style.cssText='position:fixed;left:-2000px;top:0;width:1366px;height:650px;border:0';
+    const directoryLoaded=new Promise(resolve=>directoryFrame.onload=resolve);
+    directoryFrame.srcdoc='<!doctype html><html><head>'+homeStyles+'<style>*,*::before,*::after{animation:none!important;transition:none!important}</style></head><body class="sidebar-collapsed">'+directoryLayoutMarkup+'</body></html>';
+    document.body.append(directoryFrame);await directoryLoaded;
+    const directoryDoc=directoryFrame.contentDocument;
     for(const theme of ['light','dark']) {
       directoryDoc.documentElement.dataset.theme=theme;
       for(const [width,height] of [[1366,650],[1280,720],[1024,600],[390,844]]) {
-        homeFrame.style.width=width+'px';homeFrame.style.height=height+'px';
+        directoryFrame.style.width=width+'px';directoryFrame.style.height=height+'px';
         for(const view of ['cards','list']) {
           directoryDoc.querySelector('#companyGrid').dataset.view=view;
           if(directoryDoc.documentElement.scrollWidth>width) {
@@ -318,7 +321,7 @@
         }
       }
     }
-    homeFrame.remove();
+    directoryFrame.remove();
     state("ok");
   } catch(error) {
     state("failed",String(error.message||error).slice(0,400));
