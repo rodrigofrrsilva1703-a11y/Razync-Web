@@ -264,7 +264,7 @@ def local_reading(data, plan, rows, tool):
             result['pontos_confirmar'].append('Sem o detalhamento por documento fiscal, nenhuma causa específica pode ser comprovada.')
         elif not rows:
             result['pontos_confirmar'].append('Não foram encontrados registros já classificados como pendentes nesta conta; isso não elimina a divergência dos totais.')
-        elif tool.startswith('Coincidência'):
+        if tool.startswith('Coincidência'):
             result['pontos_confirmar'].append('O mesmo valor da diferença é apenas um indício para revisão, não prova de omissão ou duplicidade.')
     elif not rows:
         if intent == 'sem_vinculo' and not data.get('tem_documentos'):
