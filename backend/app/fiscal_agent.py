@@ -67,10 +67,18 @@ def register(report, scope, documentary, investigation):
             situacao=c.get('situacao', ''), fiscal=c.get('valor_fiscal'), contabil=c.get('valor_razao'), diferenca=c.get('diferenca'),
             referencias=[ref for ref in refs if ref in known], completo=bool(refs) and all(ref in known for ref in refs),
             mesma_conta=all(str(m.get('conta', scope['conta'])) == str(scope['conta']) for m in c.get('lancamentos', []))))
+    # Indícios já calculados pelo motor fiscal, não inferidos pelo modelo.
+    # Limitados e de somente leitura para dar contexto às perguntas abertas.
+    findings = [
+        {key: deepcopy(h.get(key)) for key in
+         ('id', 'categoria', 'titulo', 'explicacao', 'grau', 'referencias', 'falta_confirmar')}
+        for h in investigation.get('hipoteses', [])[:20]
+    ]
     payload = dict(scope=deepcopy(scope), records=records, pending=list(pending), comparacoes=comparisons,
         tem_documentos=documentary is not None,
         unlinked=[m['id'] for m in (documentary or {}).get('razao_sem_vinculo', [])],
         resumo=deepcopy(investigation['resumo']), composicao=deepcopy(investigation.get('composicao_diferenca', {})),
+        hipoteses=findings, contagens=deepcopy(investigation.get('contagens', {})),
         limites=deepcopy(investigation.get('limitacoes', [])))
     size = len(json.dumps(payload, ensure_ascii=False, default=str).encode())
     if size > 8 * 1024 * 1024:
@@ -292,6 +300,9 @@ def local_reading(data, plan, rows, tool):
                                     criterio='Razão na comparação menos fiscal; valores da conta inteira.', referencias=['RESUMO'])
         parts = [p for p in data['composicao'].get('itens', []) if Decimal(str(p['valor'])) != 0]
         result['fatos'] = [p['descricao'] + ': ' + brl(p['valor']) for p in parts]
+        if data.get('hipoteses'):
+            result['fatos'].extend('Indício ' + str(h.get('id', '')) + ': ' + str(h.get('titulo', '')) +
+                ' · ' + str(h.get('explicacao', '')) for h in data['hipoteses'][:3])
         if not parts:
             result['pontos_confirmar'] = ['A composição documental ainda não está disponível. Anexe os acompanhamentos para investigar as notas.']
         else:
@@ -361,6 +372,15 @@ def local_reading(data, plan, rows, tool):
             result['explicacao'] = (f'A conta apresenta diferença de {brl(abs(diff))} entre Razão e fiscal. ' if diff else
                 'Os totais da conta são iguais. ') + (
                 'Os registros permitem investigar indícios, mas somente a identificação documental pode confirmar a causa.')
+        relevant = [h for h in data.get('hipoteses', [])
+                    if intent in {'geral', 'movimentos', 'totais'}
+                    or (intent == 'competencia' and h.get('categoria') == 'competencia')
+                    or (intent == 'combinacao' and h.get('categoria') == 'combinacao')
+                    or (intent == 'acumulador' and h.get('categoria') in {'classificacao', 'ausente'})]
+        if relevant:
+            result['fatos'].extend('Indício ' + str(h.get('id', '')) + ': ' + str(h.get('titulo', '')) +
+                ' · ' + str(h.get('explicacao', '')) for h in relevant[:4])
+            result['pontos_confirmar'].extend(str(h.get('falta_confirmar', '')) for h in relevant[:2] if h.get('falta_confirmar'))
         if not data.get('tem_documentos'):
             result['pontos_confirmar'].append('O acompanhamento fiscal individual não foi carregado neste recorte; faltam dados para comprovar nota ausente ou vínculo incorreto.')
             result['proximos_passos'] = ['Anexe o acompanhamento fiscal de ' +
@@ -563,6 +583,12 @@ def answer(request):
                 fatos=reading['fatos'], pontos_confirmar=reading['pontos_confirmar'], comparacao=reading['comparacao'],
                 registros_exibidos=len(evidence), registros_encontrados=len(rows))
             facts = [context]
+            if data.get('hipoteses') and plan['intent'] in {'diferenca', 'geral', 'competencia', 'acumulador', 'combinacao', 'movimentos', 'totais'}:
+                # As hipóteses são suspeitas documentadas, nunca fatos conclusivos.
+                context['indicios_calculados'] = [
+                    {'id': h.get('id'), 'categoria': h.get('categoria'), 'titulo': h.get('titulo'),
+                     'grau': h.get('grau'), 'referencias': h.get('referencias', [])[:4]}
+                    for h in data['hipoteses'][:6]]
             if plan['intent'] == 'diferenca':
                 facts.extend(dict(referencia='COMPOSICAO-' + str(i), **part)
                     for i, part in enumerate(data['composicao'].get('itens', []), 1))
