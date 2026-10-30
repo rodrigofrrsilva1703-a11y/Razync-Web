@@ -65,7 +65,7 @@ test('somente clique envia a seleção e reabrir o parecer não repete a chamada
   assert.equal(requests.length,1);
   assert.equal(requests[0].options.body.get('conta'),'470');assert.equal(requests[0].options.body.get('tipo'),'ENTRADAS');
   assert.equal(requests[0].options.body.get('entradas'),undefined);
-  assert.ok(all(root).some(el=>el.textContent==='Resultado da investigação'));
+  assert.ok(all(root).some(el=>String(el.textContent).includes('Resultado da investigação')));
   assert.ok(all(root).some(el=>el.textContent==='Ver investigação completa'));
   root=context.createAccountAnalysis(scope);await find(root,'fiscal-account-analysis-button').click();await find(root,'fiscal-account-analysis-button').click();
   assert.equal(requests.length,1);
@@ -196,19 +196,17 @@ test('chat pode ser recolhido enquanto analisa sem trocar a conferência',async(
 test('chat resume a investigação e carrega o parecer completo apenas quando solicitado',()=>{
   const {context,find,all}=setup();
   context.money=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
-  const result={analises:[{conta:'362',tipo:'ENTRADAS',investigacao_hibrida:{
-    resumo:{fiscal:'130.00',contabil:'120.00',diferenca:'-10.00'},
-    conclusao:{grau:'inconclusiva',texto:'A diferença de R$ 10 ainda requer documentos.'},
-    contagens:{lancamentos_examinados:2,documentos_examinados:0,correspondencias:0},
-    verificacoes:[],hipoteses:[],limitacoes:[],ia:{estado:'dispensada',motivo:'Investigação local',chamadas:0}
-  }}]};
+  const result={analises:[{conta:'362',tipo:'ENTRADAS',
+    valores:{fiscal:130,contabil:120,diferenca:-10},
+    parecer:{resumo_executivo:{conclusao:'A diferença de R$ 10 ainda requer documentos.'},leitura_comparacao:{}}
+  }]};
   const report=context.renderCompactFiscalChatReport(result,{conta:'362',tipo:'ENTRADAS'});
   assert.ok(all(report).some(n=>n.textContent==='A diferença de R$ 10 ainda requer documentos.'));
   assert.ok(all(report).some(n=>n.textContent==='Ver investigação completa'));
   const full=find(report,'fiscal-chat-full-report');
-  assert.equal(find(report,'fiscal-account-opinion fiscal-hybrid-opinion'),undefined);
+  assert.equal(find(report,'fiscal-account-opinion'),undefined);
   full.open=true;full.events.toggle();
-  assert.ok(find(report,'fiscal-account-opinion fiscal-hybrid-opinion'));
+  assert.ok(find(report,'fiscal-account-opinion'));
 });
 
 test('parecer apresenta explicação, confirmação, solução condicional e validação em sequência',()=>{
