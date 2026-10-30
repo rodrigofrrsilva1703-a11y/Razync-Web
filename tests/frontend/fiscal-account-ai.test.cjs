@@ -24,6 +24,7 @@ function setup(){
     aiSourceLabel:()=> 'Groq · gratuito',renderAIConsidered:()=>null,renderAIExcluded:()=>null,renderAIDocumentary:()=>null,renderAICases:()=>null,renderAILimits:()=>null,
     fetch:async(url,options)=>{requests.push({url,options});const body=options.body;return {ok:true,json:async()=>({
       escopo:{conta:body.get('conta'),tipo:body.get('tipo'),origem:body.get('origem'),acumulador:body.get('acumulador')},
+      assistente:{disponivel:true,session:'token-para-teste'},
       analises:[{conta:body.get('conta'),tipo:body.get('tipo'),parecer:{resumo_executivo:{conclusao:'Confira o documento original'},leitura_comparacao:{orientacoes:[{acao:'Compare a nota',objetivo:'Confirme a origem'}]}}}]})};}};
   vm.createContext(context);vm.runInContext(source.slice(source.indexOf('  const accountAnalysisCache ='),source.indexOf('  function fiscalAccountSituation(')),context);
   const all=root=>[root,...root.children.flatMap(all)];const find=(root,cls)=>all(root).find(el=>el.className===cls);
