@@ -64,7 +64,7 @@ def obter_contexto_conta(data, args):
         "registros_fiscais": sum(r.get("origem") == "Fiscal" for r in records),
         "acompanhamento_fiscal_disponivel": bool(data.get("tem_documentos")),
         "indicios": len(data.get("hipoteses", [])),
-        "limitacoes": [str(x)[:150] for x in data.get("limites", [])[:4]],
+        "quantidade_limitacoes": len(data.get("limites", [])),
         "criterio": "Débitos no Razão para Entradas; créditos para Saídas. Diferença = Razão - Fiscal.",
     }
 
@@ -195,7 +195,7 @@ def consultar_indicios(data, args):
          "grau": str(h.get("grau") or "hipotese"),
          "referencias": h.get("referencias", [])[:8]}
         for h in hypotheses[:12]],
-        "limitacoes": [str(v)[:120] for v in data.get("limites", [])[:4]],
+        "quantidade_limitacoes": len(data.get("limites", [])),
         "ressalva": "Causas exigem documento original; os indícios não autorizam ajustes."}
 
 
