@@ -138,6 +138,9 @@ test('botão flutuante só é montado para a conta selecionada, abre conversa e 
   assert.equal(comparison.hidden,false);
   const body=find(panel,'fiscal-account-analysis-body'),rendered=body.children[0];
   assert.ok(find(panel,'fiscal-document-assistant'));
+  assert.ok(find(panel,'fiscal-agent-chat-composer'));
+  assert.equal(find(body,'fiscal-agent-chat-composer'),undefined);
+  assert.equal(find(panel,'fiscal-account-analysis-bar').hidden,true);
   await find(panel,'fiscal-account-ai-close').click();
   assert.equal(panel.hidden,true);
   assert.equal(comparison.scrollTop,275);
