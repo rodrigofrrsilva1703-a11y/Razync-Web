@@ -5,6 +5,7 @@
   panel.id='baseInvestigation';panel.className='base-investigation';panel.hidden=true;
   document.querySelector('#classifyForm').after(panel);
   const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text)e.textContent=text;if(cls)e.className=cls;return e;};
+  const quantity=(n,singular,plural=singular+'s')=>`${n} ${n===1?singular:plural}`;
   const button=(text,fn)=>{const e=node('button',text,'secondary-action');e.type='button';e.addEventListener('click',fn);return e;};
   function reset(){generation++;controller?.abort();context=null;panel.replaceChildren();panel.hidden=true;}
   function mount({prepared,company,options,summary}) {
@@ -33,7 +34,7 @@
   }
   function render(result,current,version){
     panel.replaceChildren();const counts={FORTE:0,MODERADA:0,MANUAL:0};result.sugestoes.forEach(s=>counts[s.situacao]++);
-    panel.append(node('h3','Revisão das pendências'),node('p',`${result.total_pendencias} linhas · ${result.grupos_investigados} grupos · ${counts.FORTE} fortes · ${counts.MODERADA} moderadas · ${counts.MANUAL} para revisão manual`));
+    panel.append(node('h3','Revisão das pendências'),node('p',`${quantity(result.total_pendencias,'linha')} · ${quantity(result.grupos_investigados,'grupo')} · ${quantity(counts.FORTE,'forte')} · ${quantity(counts.MODERADA,'moderada')} · ${counts.MANUAL} para revisão manual`));
     if(!result.total_pendencias){panel.append(node('p','Não há pendências elegíveis para revisão neste perfil.'));return;}
     const ai=node('p',result.ia?.motivo || 'Evidências consultadas no histórico da empresa.','helper');panel.append(ai);
     const scroll=node('div',null,'base-investigation-scroll'),table=document.createElement('table');
@@ -50,7 +51,7 @@
       if(s.evidencias.length)evidence.append(details);
       const account=document.createElement('input');account.type='text';account.inputMode='numeric';account.value=s.conta_sugerida;account.maxLength=15;account.placeholder='Conta revisada';account.setAttribute('aria-label',`Conta para ${s._aba}, linha ${s._linha}`);
       const list=document.createElement('datalist');list.id=`baseAccounts-${s._linha}-${controls.length}`;account.setAttribute('list',list.id);
-      for(const item of result.catalogo_contas || []){if(item.natureza!==s.natureza)continue;const option=document.createElement('option');option.value=item.conta;option.label=`${item.bancos.join(', ')} · ${item.periodos.length} períodos`;list.append(option);}
+      for(const item of result.catalogo_contas || []){if(item.natureza!==s.natureza)continue;const option=document.createElement('option');option.value=item.conta;option.label=`${item.bancos.join(', ')} · ${quantity(item.periodos.length,'período')}`;list.append(option);}
       const accountCell=node('td');accountCell.append(account,list);tr.append(td,entry,evidence,accountCell);tbody.append(tr);controls.push({s,select,account});
     }
     table.append(tbody);scroll.append(table);panel.append(scroll);
@@ -73,7 +74,7 @@
         panel.querySelectorAll('input,button').forEach(e=>e.disabled=true);
         completed=true;
         renderClassificationCoverage(summary.cobertura);
-        message.textContent=`${summary.aplicadas} revisões aplicadas. ${summary.aprendizados || 0} padrões aprendidos.`;
+        message.textContent=`Revisões aplicadas: ${summary.aplicadas}. Padrões aprendidos: ${summary.aprendizados || 0}.`;
         const download=button('Baixar Excel revisado',()=>downloadBlob(new Response(blob),`RAZYNC_${current.company}_REVISADO.xlsx`));download.className='preview-download';panel.append(download);
         const previewBody=new FormData();previewBody.append('file',blob,'revisado.xlsx');
         const previewResponse=await fetch(`${API()}/api/v1/modelo-preview`,{method:'POST',body:previewBody,signal});
