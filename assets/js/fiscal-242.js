@@ -1630,7 +1630,7 @@
     let state = accountAnalysisCache.get(key);
     if (!state || state.source !== previewBody || state.file !== file || files.length !== state.files?.length || files.some((item,index)=>item !== state.files[index])) {
       state?.controller?.abort();
-      state = {source:previewBody, file, files, useAI:false, pending:false, result:null, error:"", expanded:false};
+      state = {source:previewBody, file, files, useAI:true, pending:false, result:null, error:"", expanded:false};
       accountAnalysisCache.set(key, state);
     }
     const area = node("section", "fiscal-account-analysis");
@@ -1642,9 +1642,6 @@
       ? "Só este acumulador, nesta conta e tipo. Os filtros de nota não alteram a base da análise."
       : "Só esta conta e este tipo. O parecer é reaproveitado enquanto os arquivos forem os mesmos.");
     const status = node("p", "fiscal-account-analysis-status"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite");
-    const aiOption=node("label","fiscal-hybrid-ai-option"),aiToggle=node("input");aiToggle.type="checkbox";aiToggle.checked=state.useAI;
-    aiOption.append(aiToggle,node("span","","Permitir IA gratuita para priorizar indícios, sem enviar históricos ou identificação."));
-    aiToggle.addEventListener("change",()=>{state.useAI=aiToggle.checked;state.chatController?.abort();state.agentMessages=[];state.result=null;state.paint();});
     const exportButton = node("button", "fiscal-account-analysis-export", "Exportar parecer"); exportButton.type = "button";
     const body = node("div", "fiscal-account-analysis-body");
     state.revealMessage = entry => {
@@ -1696,9 +1693,7 @@
     exportButton.textContent = "Exportar";
     chatActions.append(exportButton, expandChat, closeChat);
     chatHeading.append(chatIdentity, chatActions);
-    const aiSettings = node("details", "fiscal-account-ai-settings");
-    aiSettings.append(node("summary", "", "Configurações de investigação"), aiOption);
-    bar.append(aiSettings, button, cancel);
+    bar.append(button, cancel);
     area.append(chatHeading, status, loading, body, composerSlot, bar);
     let layout = null, renderedResult = null;
     function switchView(open, focus = false) {
@@ -1739,7 +1734,6 @@
       button.disabled = state.pending || !state.source;
       bar.hidden = Boolean(state.result);
       button.textContent = state.pending ? "Investigando…" : state.result ? "Ver investigação salva" : state.error ? "Tentar investigação novamente" : scope.acumulador ? "Investigar acumulador" : "Investigar conta";
-      aiToggle.disabled = state.pending;
       launcher.textContent = state.pending ? "✦  Investigando…" : state.result ? "✦  IA · Parecer pronto" : "✦  Assistente IA";
       launcher.setAttribute("aria-expanded", String(state.expanded));
       launcher.setAttribute("aria-label", (state.expanded ? "Recolher" : "Abrir") + " assistente da conta " + scope.conta);
@@ -1784,7 +1778,7 @@
       if (state.result) { switchView(true, true); return; }
       if (!state.source || state.source !== previewBody) return;
       const body = new FormData();
-      body.append("usar_ia",String(state.useAI));
+      body.append("usar_ia","true");
       for (const [name, value] of state.source.entries()) if (!["entradas", "saidas", "conta", "tipo", "origem", "acumulador"].includes(name)) body.append(name, value);
       for (const name of ["conta", "tipo", "origem", "acumulador"]) body.append(name, scope[name] || "");
       if (file) [...byId(fileId).files].forEach(document => body.append(scope.tipo === "SAÍDAS" ? "saidas" : "entradas", document));
