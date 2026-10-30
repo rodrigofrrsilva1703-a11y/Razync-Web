@@ -1421,7 +1421,8 @@
   }
   function renderFiscalAssistant(result, scope, state) {
     const host=node("section","fiscal-document-assistant");
-    host.append(node("p","fiscal-agent-chat-hint","Pergunte sobre esta conta. Respostas baseadas apenas nos registros consultados."));
+    const modeHint=node("p","fiscal-agent-chat-hint","Modo local: investigação sem IA externa. Você pode ativar a IA gratuita abaixo para interpretar perguntas abertas.");
+    host.append(modeHint);
     const session=result.assistente;
     if(!session?.disponivel){host.appendChild(node("p","",session?.motivo || "O assistente ficará disponível após uma nova análise nesta versão do servidor."));return host;}
     const thread=node("div","fiscal-agent-thread");thread.setAttribute("role","log");thread.setAttribute("aria-label","Conversa sobre a conta");
@@ -1454,7 +1455,7 @@
       entry.append(node("small","fiscal-agent-source",source));
       if(answer.titulo)entry.appendChild(node("h5","fiscal-agent-answer-title",answer.titulo));
       if(answer.recorte)entry.appendChild(node("small","fiscal-agent-scope",answer.recorte));
-      entry.appendChild(node("p","fiscal-agent-answer-text",answer.explicacao));
+      entry.appendChild(node("p","fiscal-agent-answer-text",answer.interpretacao_ia || answer.explicacao));
       if(answer.comparacao){
         const comparison=node("section","fiscal-agent-comparison");
         comparison.appendChild(node("h6","",answer.comparacao.rotulo || "Valores comparados"));
@@ -1482,10 +1483,10 @@
       section("Próximo passo",answer.proximos_passos,"fiscal-agent-next");
       section("A confirmar",answer.pontos_confirmar,"fiscal-agent-confirm");
       if(answer.interpretacao_ia){
-        const interpretation=node("section","fiscal-agent-interpretation");
-        interpretation.append(node("h6","","Explicação complementar da IA"),node("p","",answer.interpretacao_ia));
-        if(answer.orientacoes_ia?.length){const list=node("ul");answer.orientacoes_ia.forEach(text=>list.appendChild(node("li","",text)));interpretation.appendChild(list);}
-        entry.appendChild(interpretation);
+        const local=node("details","fiscal-agent-interpretation");
+        local.append(node("summary","","Ver conclusão calculada localmente"),node("p","",answer.explicacao));
+        entry.appendChild(local);
+        section("Orientações da IA para revisar",answer.orientacoes_ia,"fiscal-agent-ai-next");
       }
       if(answer.aviso_ia)entry.appendChild(node("p","fiscal-agent-warning",answer.aviso_ia));
       entry.appendChild(node("small","fiscal-agent-coverage",answer.exibidos+" de "+answer.encontrados+" registros exibidos · "+answer.ferramenta));
@@ -1533,7 +1534,7 @@
     const input=node("textarea");input.rows=2;input.maxLength=1000;input.placeholder="Pergunte por uma nota, valor, histórico ou diferença…";input.setAttribute("aria-label","Pergunta sobre os documentos desta conta");
     for(const [label,text] of [["Explicar diferença","Explique a diferença e as pendências"],["Sem vínculo","Quais movimentos estão sem vínculo?"],["Verificar repetição","Existe duplicidade nesta conta?"]]){const b=node("button","",label);b.type="button";b.title=text;b.addEventListener("click",()=>{input.value=text;input.focus();});suggestions.appendChild(b);}
     const permission=node("label","fiscal-agent-permission"),toggle=node("input");toggle.type="checkbox";toggle.checked=false;
-    permission.append(toggle,node("span","","Usar IA externa nesta pergunta: envia a pergunta e até 20 evidências estruturadas ao provedor gratuito configurado. Os arquivos, nomes e históricos não são enviados. Evite incluir dados pessoais na pergunta."));
+    permission.append(toggle,node("span","","Usar IA gratuita nesta pergunta (Groq, Gemini ou OpenRouter). A pergunta e até 20 evidências estruturadas serão enviadas ao provedor. Não inclua informações pessoais ou sigilosas."));
     const send=node("button","fiscal-agent-send","↑");send.type="button";send.setAttribute("aria-label","Perguntar");send.title="Enviar pergunta · Enter";
     const cancel=node("button","fiscal-agent-stop","■");cancel.type="button";cancel.hidden=true;cancel.title="Parar espera";cancel.setAttribute("aria-label","Cancelar espera");
     const status=node("p","fiscal-agent-status visually-hidden");status.setAttribute("role","status");
@@ -1548,7 +1549,7 @@
       for(let i=0;i<3;i++)dots.appendChild(node("i"));
       waiting.append(assistantHeading(),dots,node("span","fiscal-agent-typing-label",toggle.checked ? "Preparando resposta com IA…" : "Consultando os documentos…"));
       pending.append(user,waiting);thread.appendChild(pending);state.revealMessage?.(pending);
-      send.disabled=true;send.hidden=true;cancel.hidden=false;input.disabled=true;toggle.disabled=true;permissionDetails.open=false;status.textContent="Consultando os registros desta seleção…";
+      send.disabled=true;send.hidden=true;cancel.hidden=false;input.disabled=true;toggle.disabled=true;status.textContent="Consultando os registros desta seleção…";
       const timeout=setTimeout(()=>controller.abort(),45000);
       try{
         const response=await fetch(API()+"/api/v1/conferencia-fiscal/ia/conta/conversa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session:session.session,pergunta:question,usar_ia:toggle.checked}),signal:controller.signal});
@@ -1569,8 +1570,14 @@
     cancel.addEventListener("click",()=>state.chatController?.abort());
     const composer = node("div", "fiscal-agent-chat-composer");
     const permissionDetails = node("details", "fiscal-agent-chat-options");
-    permissionDetails.append(node("summary", "", "IA externa · opcional"), permission);
-    toggle.addEventListener("change",()=>{permissionDetails.querySelector("summary").textContent=toggle.checked ? "IA externa · ativada" : "IA externa · opcional";});
+    permissionDetails.append(node("summary", "", "IA gratuita · desativada"), permission);
+    permissionDetails.open=true;
+    toggle.addEventListener("change",()=>{
+      permissionDetails.querySelector("summary").textContent=toggle.checked ? "IA gratuita · ativada nesta pergunta" : "IA gratuita · desativada";
+      modeHint.textContent=toggle.checked
+        ? "IA gratuita ativada: perguntas abertas terão interpretação por modelo externo quando disponível, com cálculos e evidências locais."
+        : "Modo local: investigação sem IA externa. Você pode ativar a IA gratuita abaixo para interpretar perguntas abertas.";
+    });
     const sendRow = node("div", "fiscal-agent-chat-send-row");
     sendRow.append(send, cancel);
     const inputRow=node("div","fiscal-agent-input-row");inputRow.append(input,sendRow);
