@@ -386,6 +386,10 @@ html.fiscal-account-dialog-open {overflow:hidden;scrollbar-gutter:stable;}
 #fiscalView .fiscal-hybrid-hypotheses > li {padding:12px 0;border-bottom:1px solid var(--border,#dbe4ee)}
 #fiscalView .fiscal-hybrid-hypotheses p {margin:5px 0}
 #fiscalView .fiscal-hybrid-refs {font-size:11px;overflow-wrap:anywhere;color:var(--muted,#61758a)}
+#fiscalView .fiscal-hybrid-bridge {margin:8px 0;font-variant-numeric:tabular-nums}
+#fiscalView .fiscal-hybrid-bridge > div {display:flex;justify-content:space-between;gap:16px;padding:6px 0;border-bottom:1px solid var(--border,#dbe4ee)}
+#fiscalView .fiscal-hybrid-bridge dd {margin:0;white-space:nowrap}
+#fiscalView .fiscal-hybrid-bridge .is-residual {font-weight:600}
 #fiscalView .fiscal-hybrid-ai-status {padding:9px 12px;background:var(--surface-soft,#f4f7fb);border:1px solid var(--border,#dbe4ee);border-radius:9px;font-size:11px}
 #fiscalView .fiscal-hybrid-evidence-scroll {max-height:360px;overflow:auto;border:1px solid var(--border,#dbe4ee);border-radius:9px}
 #fiscalView .fiscal-hybrid-evidence-scroll table {min-width:640px;width:100%;font-size:11px}

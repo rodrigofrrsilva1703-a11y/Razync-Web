@@ -74,12 +74,16 @@ test('parecer híbrido exibe evidências e limites sem HTML oriundo dos históri
     contagens:{lancamentos_examinados:1,documentos_examinados:0,correspondencias:0,evidencias_exibidas:1,evidencias_disponiveis:1},
     ia:{estado:'dispensada',chamadas:0,motivo:'Sem chamada externa.'},verificacoes:['Precisão em centavos'],hipoteses:[],
     conclusao:{grau:'inconclusiva',texto:'Causa não identificada'},limitacoes:['Faltam documentos'],
+    composicao_diferenca:{disponivel:true,itens:[{descricao:'Diferença nos documentos',valor:'-10.00'}],
+      residual:'0.00',fecha_aritmeticamente:true,documentos_lidos:'100.00',lacuna_documental:'0.00'},
     evidencias:[{referencia:'R-1',origem:'Razão',historico:'<img src=x onerror=delete_all()>',valor:'90.00'}]
   }}]};
   const root=context.renderAccountOpinion(result,{});
   const nodes=all(root);
   assert.ok(nodes.some(el=>el.textContent==='Causa inconclusiva'));
   assert.ok(nodes.some(el=>el.textContent==='Faltam documentos'));
+  assert.ok(nodes.some(el=>el.textContent==='Residual sem composição'));
+  assert.ok(nodes.some(el=>el.textContent.includes('Isso não comprova a causa contábil.')));
   assert.ok(nodes.some(el=>el.textContent==='<img src=x onerror=delete_all()>'));
   assert.ok(!nodes.some(el=>el.tag==='img'));
 });

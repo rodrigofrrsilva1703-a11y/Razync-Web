@@ -1197,6 +1197,18 @@
       entry.append(node("dt","",label),node("dd","",money.format(Number(summary[key])))); values.appendChild(entry);
     }
     conclusion.appendChild(values); content.appendChild(conclusion);
+    const bridge=report.composicao_diferenca;
+    if(bridge){
+      content.appendChild(node("h5","","Como a diferença se compõe"));
+      if(bridge.documentos_lidos != null)content.appendChild(node("p","", "Documentos fiscais lidos: " + money.format(Number(bridge.documentos_lidos)) +
+        " · Resumo menos documentos: " + money.format(Number(bridge.lacuna_documental))));
+      if(bridge.disponivel){
+        const parts=node("dl","fiscal-hybrid-bridge");
+        bridge.itens.forEach(part=>{const entry=node("div");entry.append(node("dt","",part.descricao),node("dd","",money.format(Number(part.valor))));parts.appendChild(entry);});
+        const residual=node("div","is-residual");residual.append(node("dt","","Residual sem composição"),node("dd","",money.format(Number(bridge.residual))));parts.appendChild(residual);content.appendChild(parts);
+        content.appendChild(node("p","",bridge.fecha_aritmeticamente ? "A composição reproduz a diferença inicial em centavos. Isso não comprova a causa contábil." : "A composição não fecha com a diferença inicial. O residual precisa de investigação adicional."));
+      }else content.appendChild(node("p","","Ainda não há detalhamento suficiente para compor a diferença. Anexe o acompanhamento fiscal na etapa documental."));
+    }
     content.append(node("h5", "", "Investigação realizada"),node("p", "fiscal-hybrid-coverage",
       counts.lancamentos_examinados + " lançamentos examinados · " + counts.documentos_examinados + " linhas fiscais examinadas · " + counts.correspondencias + " linhas fiscais conciliadas"));
     const checks=node("ul","fiscal-hybrid-checks"); report.verificacoes.forEach(text=>checks.appendChild(node("li","",text))); content.appendChild(checks);
@@ -1212,6 +1224,13 @@
       const ordered=[...report.hipoteses].sort((a,b)=>(priorities.includes(a.id)?priorities.indexOf(a.id):99)-(priorities.includes(b.id)?priorities.indexOf(b.id):99));
       ordered.forEach(h=>{
         const li=node("li"); li.append(node("strong","",h.id + " · " + h.titulo),node("p","",h.explicacao));
+        if(h.comparacao){
+          const c=h.comparacao;
+          li.appendChild(node("p","","Documento " + (c.nota || "não identificado") + (c.serie ? " · Série " + c.serie : "") +
+            " · Fiscal: " + money.format(Number(c.fiscal)) + " · Razão candidato: " + (c.contabil == null ? "vínculo não confirmado" : money.format(Number(c.contabil)))));
+          li.appendChild(node("p","","Data fiscal: " + (c.data_fiscal || "não informada") + " · Datas no Razão: " + (c.datas_razao.join(", ") || "não identificadas") +
+            " · Contas candidatas: " + (c.contas_candidatas.join(", ") || "nenhuma identificada")));
+        }
         if(h.diferenca_documental != null)li.appendChild(node("p","","Diferença documental: " + money.format(Number(h.diferenca_documental))));
         if(h.soma != null)li.appendChild(node("p","","Soma: " + money.format(Number(h.soma)) + " · Residual: " + money.format(Number(h.residual))));
         if(h.criterio)li.appendChild(node("small","",h.criterio));
