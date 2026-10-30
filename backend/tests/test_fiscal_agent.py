@@ -38,6 +38,44 @@ class DocumentaryAgentTests(unittest.TestCase):
         self.token = agent.register(self.report, scope, docs, self.investigation)['session']
         self.assertEqual(self.ask('Nota 149599 em outra conta')['encontrados'], 0)
 
+    def test_natural_question_why_account_does_not_match_uses_totals(self):
+        """Reproduz a pergunta mostrada na conta 362 no chat."""
+        questions = [
+            'Por que essa conta não está batendo?',
+            'Porque a conta 362 não está fechando?',
+            'Por que o Razão não confere com o fiscal?',
+            'Os valores não estão correspondendo, qual a causa?',
+            'Qual é o problema da conta 362?',
+            'Por que a conta não bate?',
+            'Por que esta conta não está batendo em R$ 25.549,09?',
+        ]
+        for question in questions:
+            with self.subTest(question=question):
+                plan = agent.query_plan(question)
+                self.assertEqual(plan['intent'], 'diferenca')
+                self.assertIsNone(plan['valor'])
+                result = self.ask(question)
+                self.assertEqual(result['intencao'], 'diferenca')
+                self.assertEqual(result['titulo'], 'Composição da diferença da conta')
+                self.assertIsNotNone(result['comparacao'])
+                self.assertIn('Razão está', result['explicacao'])
+                self.assertNotIn('Nenhum registro encontrado', result['titulo'])
+
+    def test_natural_difference_without_individual_fiscal_documents(self):
+        scope = dict(self.scope, origem='resumo')
+        self.token = agent.register(self.report, scope, None, self.investigation)['session']
+        result = self.ask('Por que essa conta não está batendo?')
+        self.assertEqual(result['intencao'], 'diferenca')
+        self.assertIn('3.900,00', result['explicacao'])
+        self.assertIn('acompanhamento fiscal', ' '.join(result['proximos_passos']))
+        self.assertIn('documento fiscal', ' '.join(result['pontos_confirmar']))
+        self.assertEqual(result['origem'], 'local')
+
+    def test_explicit_note_and_amount_search_still_take_priority(self):
+        self.assertEqual(agent.query_plan('Por que a nota 149599 não bate?')['intent'], 'documento')
+        self.assertEqual(agent.query_plan('Procure o valor R$ 3.900,00')['intent'], 'valor')
+        self.assertEqual(agent.query_plan('Procure o valor R$ 3.900,00')['valor'], '3900.00')
+
     def test_difference_question_with_amount_keeps_account_diagnostic(self):
         """Perguntar por que não fecha não deve virar busca de valor isolado."""
         investigation = dict(self.investigation, resumo=dict(fiscal='5100', contabil='3000', diferenca='-2100'))
