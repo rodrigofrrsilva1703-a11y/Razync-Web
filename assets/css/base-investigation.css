@@ -5,3 +5,5 @@
 .base-investigation input[type=text]{width:130px;min-height:38px;padding:8px;font-size:13px}.base-investigation input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent)}.base-investigation-grade{font-size:11px;font-weight:650;color:var(--accent)}.base-investigation details{margin-top:8px}.base-investigation summary{cursor:pointer;font-size:11px;color:var(--accent)}.base-investigation-learn{display:flex;align-items:center;gap:8px;margin:16px 0;font-size:12px}
 @media(max-width:760px){.base-investigation{padding:14px}.base-investigation-heading{align-items:flex-start;flex-direction:column}.base-investigation-learn{align-items:flex-start;line-height:1.6}}
 @media(prefers-reduced-motion:no-preference){.base-investigation:not([hidden]){animation:razyncAppear .25s ease-out}}
+/* Review spans the teaching/classification columns; long tables scroll internally. */
+#companyPanel .base-investigation{grid-column:1/-1;min-width:0;width:100%;box-sizing:border-box}
