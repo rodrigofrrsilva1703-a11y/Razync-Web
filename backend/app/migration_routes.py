@@ -242,14 +242,30 @@ async def review_pending(
         raise HTTPException(422, str(exc)) from exc
 
 @router.post('/base-inteligente/{company_code}/revisar')
-async def apply_review(company_code: int, file: UploadFile = File(...), revisoes_json: str = Form(...), aprender: bool = Form(False)):
+async def apply_review(company_code: int, file: UploadFile = File(...), revisoes_json: str = Form(...), aprender: bool = Form(False), investigacao_token: str = Form('')):
     try:
         revisions = json.loads(revisoes_json)
         if not isinstance(revisions, list):
             raise ValueError('Revisões inválidas.')
-        book, summary = base.review(company_code, await file.read(), file.filename or 'modelo.xlsx', revisions, aprender)
+        content = await file.read()
+        if investigacao_token:
+            from app.ai_classification_agent import apply
+            book, summary = await run_in_threadpool(apply, company_code, content, file.filename or 'modelo.xlsx', revisions, investigacao_token, aprender)
+        else:
+            book, summary = base.review(company_code, content, file.filename or 'modelo.xlsx', revisions, aprender)
         return download(book, f'RAZYNC_{company_code}_REVISADO.xlsx', summary)
     except Exception as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+@router.post('/base-inteligente/{company_code}/sugerir-pendentes')
+async def suggest_pending(company_code: int, file: UploadFile = File(...), options_json: str = Form('{}'), usar_ia: bool = Form(True)):
+    from app.ai_classification_agent import investigate
+    try:
+        options = json.loads(options_json)
+        if not isinstance(options, dict):
+            raise ValueError('Opções inválidas.')
+        return await run_in_threadpool(investigate, company_code, await file.read(), options, usar_ia)
+    except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
 @router.post('/modelo-dominio-txt')

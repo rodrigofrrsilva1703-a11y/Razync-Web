@@ -892,6 +892,7 @@ async function refreshBaseStats(learnedStatus=null) {
   }
 }
 function openCompany(company) {
+  globalThis.RazyncBaseInvestigation?.reset();
   cancelReconcilePreview();
   selected = company;
   renderCompanyToolGuide("");
@@ -1334,6 +1335,7 @@ function renderClassificationCoverage(coverage) {
 }
 
 function cancelClassificationPreview() {
+  globalThis.RazyncBaseInvestigation?.reset();
   classificationController?.abort();
   $("#classificationPreview").replaceChildren();
   $("#classificationCoverage").hidden = true;
@@ -1377,6 +1379,7 @@ classifyForm.addEventListener("submit", async (event) => {
     if (controller.signal.aborted || selected?.codigo !== companyCode) return;
     showWorkflowPreview(result,target);
     renderClassificationCoverage(summary.cobertura);
+    globalThis.RazyncBaseInvestigation?.mount({prepared,company:companyCode,options:classifyOptions,summary});
     const download = document.createElement("button");download.type="button";download.className="preview-download";
     download.textContent="Baixar Excel classificado";
     download.addEventListener("click", async () => {

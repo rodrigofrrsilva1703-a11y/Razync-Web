@@ -12,7 +12,11 @@ globalThis.RazyncResults = Object.freeze({
   async workbookPreview(response, {endpoint, snapshot, signal, filename}) {
     if ((response.headers.get('content-type') || '').includes('application/vnd.razync.preview+json')) {
       const result = await response.json();
-      return {preview:result.preview, download:async()=> {
+      return {preview:result.preview, blob:async()=> {
+        const report = await RazyncResults.downloadResponse(result.report_token, endpoint, {method:'POST',body:snapshot,signal});
+        if (!report.ok) throw new Error(await responseError(report));
+        return report.blob();
+      }, download:async()=> {
         const report = await RazyncResults.downloadResponse(result.report_token, endpoint, {method:'POST',body:snapshot,signal});
         if (!report.ok) throw new Error(await responseError(report));
         await downloadBlob(report, filename);
@@ -23,7 +27,7 @@ globalThis.RazyncResults = Object.freeze({
     const preview = await fetch(`${API()}/api/v1/modelo-preview`, {method:'POST',body,signal});
     if (!preview.ok) throw new Error(await responseError(preview));
     const headers = response.headers.get('content-disposition');
-    return {preview:await preview.json(), download:()=>downloadBlob(new Response(workbook, {
+    return {preview:await preview.json(), blob:async()=>workbook, download:()=>downloadBlob(new Response(workbook, {
       headers:headers ? {'Content-Disposition':headers} : {}
     }), filename)};
   }
