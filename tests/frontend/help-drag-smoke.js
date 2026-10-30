@@ -204,6 +204,10 @@
       const style=getComputedStyle(boundary);
       if(style.borderTopWidth!=='1px' || style.borderTopStyle==='none')throw Error('O campo de anexo perdeu sua borda.');
     });
+    document.querySelectorAll('#companyPanel .field-group,#companyPanel .bank-selector,#companyPanel .period-card,#fiscalView .fiscal-form,#fiscalView .fiscal-form-actions').forEach(wrapper=>{
+      const style=getComputedStyle(wrapper);
+      if(style.backgroundColor!=='rgba(0, 0, 0, 0)' || style.backgroundImage!=='none')throw Error('Fundo extra em contêiner interno: '+wrapper.className);
+    });
     document.querySelectorAll('#companyPanel .tool-intro,#companyPanel .modern-form').forEach(panel=>{
       if(getComputedStyle(panel).borderTopWidth!=='1px')throw Error('Um painel da ferramenta perdeu seu contorno.');
     });

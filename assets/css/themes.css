@@ -286,3 +286,37 @@ html[data-theme="dark"] .app-shell .topbar #apiStatus[data-connection="online"] 
 html[data-theme="dark"] .app-shell .topbar #apiStatus[data-connection="checking"],
 html[data-theme="dark"] .app-shell .topbar #apiStatus[data-connection="waking"] {color:#b5cdf1!important}
 html[data-theme="dark"] .app-shell .topbar #apiStatus[data-connection="offline"] {color:#ddc292!important}
+
+
+/* Layout containers inherit their panel surface instead of adding painted layers.
+   Actual panels, editable controls, selected items and semantic warnings retain their surfaces. */
+html[data-theme="dark"] .app-shell #companyPanel :is(
+ .field-group,.bank-selector,.period-card,.tool-feature-list,.base-management,
+ .base-periods,.saved-period-bank,.base-period-bank,.base-period-item,
+ .base-cleanup,.base-cleanup-confirmation,.file-selection-summary
+),
+html[data-theme="dark"] .app-shell :is(#converterView,#ledgerView) :is(
+ .global-tool-controls,.standard-period-card,.global-upload-grid,.global-upload-field
+),
+html[data-theme="dark"] .app-shell #fiscalView :is(
+ .fiscal-form,.fiscal-setup-heading,.fiscal-form-actions,.fiscal-context-grid,
+ .fiscal-account-opinion,.fiscal-account-opinion-conclusion,.fiscal-account-opinion-hypothesis,
+ .fiscal-account-opinion-local,.fiscal-account-analysis,.fiscal-account-analysis.is-docked,
+ .fiscal-doc-reader,.fiscal-doc-stage,.fiscal-doc-balance,.fiscal-doc-pagination,
+ .fiscal-doc-accounts,.fiscal-ai-account-nav,.fiscal-ai-toolbar,
+ .fiscal-reading-guide,.fiscal-table-count,.fiscal-ai-method,.fiscal-ai-context,
+ .fiscal-ai-document-summary,.fiscal-ai-executive-coverage
+) {
+ background:transparent!important;
+ background-image:none!important;
+ box-shadow:none!important;
+}
+/* Nested text follows its notice background, without a separate colored rectangle. */
+html[data-theme="dark"] .app-shell :is(.is-success,.is-warning,.is-error) :is(p,strong) {
+ background:transparent!important;background-image:none!important;
+}
+/* File chips and legends share the drop area's canvas; their edges remain visible. */
+html[data-theme="dark"] .app-shell :is(#companyPanel,#converterView,#ledgerView,#fiscalView) .file-drop-shell,
+html[data-theme="dark"] .app-shell #companyPanel .preparation-form :is(.field-group,.bank-selector,.period-card):hover {
+ background:transparent!important;background-image:none!important;box-shadow:none!important;
+}
