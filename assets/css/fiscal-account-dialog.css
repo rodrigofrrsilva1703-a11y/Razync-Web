@@ -795,3 +795,66 @@ html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat 
   #fiscalView .fiscal-account-ai-chat .fiscal-agent-message.is-pending .fiscal-agent-user {animation:none!important}
   #fiscalView .fiscal-account-ai-chat .fiscal-agent-typing-dots i {opacity:.7}
 }
+
+/* Linha do tempo do Agente Investigador: etapas reais, sem progresso inventado. */
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-steps {
+  margin:8px 0 12px;
+  padding:11px 12px;
+  border:1px solid var(--fiscal-line,#d8e3ee);
+  border-radius:12px;
+  background:var(--fiscal-soft,#f6f8fb);
+  color:var(--fiscal-copy,#24394c);
+}
+#fiscalView .fiscal-agent-steps-header {
+  display:flex;align-items:baseline;justify-content:space-between;
+  flex-wrap:wrap;gap:4px 10px;margin:0 0 10px;
+}
+#fiscalView .fiscal-agent-steps-title {
+  font-size:12px;font-weight:700;line-height:1.45;
+}
+#fiscalView .fiscal-agent-steps-count {
+  font-size:10px;color:var(--fiscal-muted,#677a8e);white-space:nowrap;
+}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-steps-list {
+  list-style:none;margin:0;padding:0;display:grid;gap:0;
+}
+#fiscalView .fiscal-agent-step {
+  position:relative;min-width:0;display:grid;
+  grid-template-columns:22px minmax(0,1fr) auto;
+  align-items:start;column-gap:8px;padding:0 0 12px;
+}
+#fiscalView .fiscal-agent-step:last-child {padding-bottom:0;}
+#fiscalView .fiscal-agent-step:not(:last-child)::after {
+  content:"";position:absolute;left:10px;top:24px;bottom:3px;
+  width:1px;background:var(--fiscal-line,#d8e3ee);
+}
+#fiscalView .fiscal-agent-step-index {
+  display:grid;place-items:center;width:22px;height:22px;border-radius:7px;
+  border:1px solid var(--fiscal-line,#d8e3ee);
+  background:var(--fiscal-surface,#fff);color:var(--fiscal-copy,#24394c);
+  font-size:10px;font-variant-numeric:tabular-nums;font-weight:700;line-height:1;
+}
+#fiscalView .fiscal-agent-step-info {min-width:0;display:grid;gap:2px;padding-top:2px;}
+#fiscalView .fiscal-agent-step-name {
+  font-size:11px;font-weight:650;line-height:1.4;
+  overflow-wrap:anywhere;
+}
+#fiscalView .fiscal-agent-step-description {
+  font-size:10px;line-height:1.55;color:var(--fiscal-muted,#677a8e);
+  overflow-wrap:anywhere;
+}
+#fiscalView .fiscal-agent-step-status {
+  align-self:start;font-size:9px;line-height:1.45;
+  padding:4px 0 0 6px;white-space:nowrap;
+  color:var(--fiscal-muted,#677a8e);
+}
+#fiscalView .fiscal-agent-step.is-nao_executado .fiscal-agent-step-index,
+#fiscalView .fiscal-agent-step.is-dados_insuficientes .fiscal-agent-step-index {
+  border-style:dashed;
+}
+@media(max-width:760px) {
+  #fiscalView .fiscal-account-ai-chat .fiscal-agent-steps {padding:10px;margin:8px 0 10px;}
+  #fiscalView .fiscal-agent-step {grid-template-columns:21px minmax(0,1fr);column-gap:7px;}
+  #fiscalView .fiscal-agent-step-index {width:21px;height:21px;}
+  #fiscalView .fiscal-agent-step-status {grid-column:2;padding:0;margin-top:1px;}
+}
