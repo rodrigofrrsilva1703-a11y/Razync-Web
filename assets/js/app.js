@@ -1368,7 +1368,7 @@ classifyForm.addEventListener("submit", async (event) => {
   data.append("options_json", JSON.stringify(classifyOptions));
   $("#classifyMessage").textContent = "Classificando…";
   try {
-    const response = await fetch(`${API()}/api/v1/base-inteligente/${companyCode}/classificar`, {method:"POST", body:data, signal:controller.signal, headers:{"X-Razync-Preview":"1"}});
+    const response = await fetch(`${API()}/api/v1/base-inteligente/${companyCode}/classificar`, {method:"POST", body:data, signal:controller.signal});
     if (!response.ok) throw new Error(await responseError(response));
     const raw = response.headers.get("x-razync-summary");
     const summary = raw ? JSON.parse(raw) : {};

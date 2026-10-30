@@ -1,0 +1,15 @@
+# Investigação opcional da Base Inteligente
+
+Ensinar base e Classificar mantêm seu motor original. A investigação aparece após classificar e usa o Blob do Excel efetivamente gerado, sem nova seleção do usuário. A classificação da Base solicita o Excel binário para impedir que a investigação refaça silenciosamente um processamento cujo cache expirou.
+
+O Python identifica pendências conforme os perfis existentes (incluindo 242/1408), exclui Principal nos perfis Eletro, Retirados e destinos com fórmulas. Consulta assinaturas exatas, evidências abaixo de três períodos, conflitos e similaridades em outros bancos da mesma empresa. O catálogo permite consultar contas históricas por natureza. Contas e justificativas são sempre calculadas/validadas localmente.
+
+Somente grupos ambíguos com candidatos podem solicitar uma chamada de IA gratuita, com até 12 descritores anônimos, resposta limitada e timeout de 15 segundos. A IA apenas prioriza revisões: não recebe históricos, valores, nomes, contas, datas ou arquivos e não escolhe contas nem executa ferramentas. Reutiliza a seleção gratuita e o orçamento compartilhado existentes, sem fallback automático nem novas dependências.
+
+Agrupamento conservador por banco, natureza, assinatura e histórico normalizado completo; diferenças materiais de descrição continuam separadas. Forte exige conta única sem conflitos e pelo menos dois períodos comprovados no mesmo banco. Correspondência exata com um período/outro banco é moderada. Similaridade isolada e conflitos exigem revisão manual. Nenhuma linha começa aprovada.
+
+POST /api/v1/base-inteligente/{empresa}/sugerir-pendentes consulta sem escrever. POST /api/v1/base-inteligente/{empresa}/revisar reutiliza o escritor Excel existente e recebe investigacao_token quando originado desta tela. O token vincula empresa, hash do arquivo, versão da base e opções. O servidor revalida destinos, natureza e contas antes de aplicar exclusivamente as linhas selecionadas. Aprendizado é desmarcado por padrão; se aprovado, recebe origem sugestao_agente_aprovada.
+
+Cache e tickets são voláteis, por processo, até 32 investigações por 20 minutos. Reinício/expiração exigem nova investigação; várias instâncias podem invalidar tickets ao alternar servidor. Cancelar aborta a espera no navegador; uma chamada externa já iniciada pode terminar no servidor (máximo 15 segundos). Não existe plano de contas ativo integrado: a interface avisa que o histórico não comprova conta ativa. IA indisponível preserva todas as evidências locais. Não há garantia de acerto de classificação: a decisão é humana.
+
+Testes sintéticos: períodos 1/2/3, conflitos, bancos/empresas/filial, naturezas, placeholders, cache, expiração, resposta externa inválida, cotas sem chamadas reais, aprovação parcial, aprendizado opcional, fórmulas/formatação e abas Principal/Retirados, além do contrato HTTP de investigação/revisão.
