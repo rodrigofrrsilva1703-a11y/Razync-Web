@@ -56,7 +56,10 @@ test('assistente envia só token e pergunta, mostra fonte e preserva texto sem H
   const root=context.renderFiscalAssistant(result,scope,state);
   all(root).find(e=>e.tag==='textarea').value='Procure a nota 149599';
   await find(root,'fiscal-agent-send').click();
-  assert.deepEqual(sent.body,{session:'token-temporario',pergunta:'Procure a nota 149599',usar_ia:false});
+  assert.deepEqual(sent.body,{session:'token-temporario',pergunta:'Procure a nota 149599',usar_ia:true});
+  assert.equal(find(root,'fiscal-agent-permission'),undefined);
+  assert.equal(find(root,'fiscal-agent-chat-options'),undefined);
+  assert.ok(all(root).some(el=>String(el.textContent).includes('Assistente automático')));
   assert.ok(all(root).some(e=>e.textContent==='<img onerror=evil()>'));
   assert.ok(!all(root).some(e=>e.tag==='img'));
   assert.equal(state.agentMessages.length,1);
