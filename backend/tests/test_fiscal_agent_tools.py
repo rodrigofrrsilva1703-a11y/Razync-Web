@@ -103,7 +103,21 @@ class FiscalToolsTests(unittest.TestCase):
                          ["buscar_movimentos_razao", "testar_hipotese_matematica"])
         self.assertEqual(result["iteracoes"], 3)
         self.assertEqual(result["status_diagnostico"], "EVIDENCIA_PARCIAL")
+        self.assertEqual([x["situacao"] for x in result["passos_agente"]], ["concluido", "concluido"])
+        self.assertIn("movimento(s)", result["passos_agente"][0]["resumo"])
+        self.assertIn("combinação", result["passos_agente"][1]["resumo"])
+        self.assertNotIn("confidencial", json.dumps(result["passos_agente"], ensure_ascii=False))
         self.assertEqual(len(requests), 3)
+
+    def test_agent_step_with_missing_fiscal_document_is_not_marked_complete(self):
+        self.data["tem_documentos"] = False
+        result = agent._step_summary(
+            "cruzar_documentos_fiscais_razao",
+            tools.execute(self.data, "cruzar_documentos_fiscais_razao", {}))
+        self.assertEqual(result["situacao"], "dados_insuficientes")
+        self.assertIn("não anexado", result["resumo"])
+        invalid = agent._step_summary("buscar_movimentos_razao", {"erro": "consulta recusada"})
+        self.assertEqual(invalid["situacao"], "nao_executado")
 
     def test_agent_rejects_fabricated_refs(self):
         with patch.object(agent, "_invoke", return_value=(json.dumps({
