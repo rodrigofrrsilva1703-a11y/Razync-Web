@@ -9,8 +9,26 @@ from app import fiscal_ai_sessions as sessions
 from app.fiscal_242 import conferencia_fiscal_preview
 from app.fiscal_documentos import investigar_documentos, recortar_acumulador_ia
 from app import fiscal_hybrid
+from app import fiscal_agent
+from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/api/v1/conferencia-fiscal/ia/conta")
+
+
+class AgentQuestion(BaseModel):
+    session: str = Field(min_length=32, max_length=100)
+    pergunta: str = Field(min_length=3, max_length=1000)
+    usar_ia: bool = False
+
+
+@router.post("/conversa")
+async def converse(request: AgentQuestion):
+    if len(request.pergunta.strip()) < 3:
+        raise HTTPException(422, 'Escreva uma pergunta com pelo menos três caracteres.')
+    try:
+        return await run_in_threadpool(fiscal_agent.answer, request)
+    except fiscal_agent.AgentError as exc:
+        raise HTTPException(exc.status_code, str(exc)) from exc
 
 
 def scope_account(report, account, tipo):
@@ -95,6 +113,7 @@ async def analyze_account(acumuladores: list[UploadFile] = File(...), razao: lis
                                         source_hash=source_hash, use_ai=usar_ia)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
-    return {"analises": [result], "provedor": result["provedor"], "gratuito": True,
+    agent = fiscal_agent.register(report, scope, documentary, result["investigacao_hibrida"]) if result.get("investigacao_hibrida") else None
+    return {"analises": [result], "provedor": result["provedor"], "gratuito": True, "assistente": agent,
             "cache_reutilizado": result.get("cache_reutilizado", False), "escopo": scope,
             "contexto_revisao": context_id, "aviso": "Investigação somente de leitura; nenhuma alteração contábil foi executada."}

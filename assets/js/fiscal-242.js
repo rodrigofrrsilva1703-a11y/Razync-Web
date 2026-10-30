@@ -1419,6 +1419,64 @@
     content.appendChild(node("p", "fiscal-account-opinion-limit", "Sugestões para revisão. A análise não altera os valores nem confirma a natureza contábil dos lançamentos."));
     return content;
   }
+  function renderFiscalAssistant(result, scope, state) {
+    const host=node("section","fiscal-document-assistant");
+    host.append(node("h4","","Converse sobre esta conta"),node("p","","Pesquise notas, históricos e pendências nos documentos preparados. As respostas não alteram lançamentos."));
+    const session=result.assistente;
+    if(!session?.disponivel){host.appendChild(node("p","",session?.motivo || "O assistente ficará disponível após uma nova análise nesta versão do servidor."));return host;}
+    const thread=node("div","fiscal-agent-thread");thread.setAttribute("role","log");thread.setAttribute("aria-label","Conversa sobre a conta");
+    state.agentMessages ||= [];
+    const renderMessage=message=>{
+      const entry=node("article","fiscal-agent-message");
+      entry.append(node("strong","",message.question));
+      if(message.error){entry.appendChild(node("p","",message.error));thread.appendChild(entry);return;}
+      const answer=message.answer;
+      entry.append(node("small","fiscal-agent-source",answer.origem==="ia" ? "Interpretação por " + answer.provedor + " · " + answer.modelo : "Consulta local dos documentos · sem IA externa"),
+        node("p","",answer.explicacao));
+      if(answer.aviso_ia)entry.appendChild(node("p","fiscal-agent-warning",answer.aviso_ia));
+      const totals=node("p","fiscal-agent-totals");
+      totals.textContent="Fiscal: " + money.format(Number(answer.resumo.fiscal)) + " · Razão: " + money.format(Number(answer.resumo.contabil)) + " · Diferença: " + money.format(Number(answer.resumo.diferenca));
+      entry.appendChild(totals);
+      const steps=node("ol");(answer.proximos_passos || []).forEach(text=>steps.appendChild(node("li","",text)));entry.appendChild(steps);
+      entry.appendChild(node("small","",answer.ferramenta + " · " + answer.exibidos + " de " + answer.encontrados + " registros exibidos. Ausência na busca não comprova ausência na escrituração."));
+      if(answer.evidencias?.length){
+        const details=node("details");details.appendChild(node("summary","","Evidências consultadas (" + answer.evidencias.length + ")"));
+        answer.evidencias.forEach(r=>details.appendChild(node("p","fiscal-agent-evidence",r.referencia + " · " + r.origem + " · Conta " + r.conta + " · " + (r.nota ? "Nota " + r.nota + " · " : "") + r.data + " · " + money.format(Number(r.valor)) + "\n" + (r.historico || ""))));
+        entry.appendChild(details);
+      }
+      if(answer.limites?.length){const limits=node("details");limits.appendChild(node("summary","","Limites desta consulta"));answer.limites.forEach(text=>limits.appendChild(node("p","",text)));entry.appendChild(limits);}
+      thread.appendChild(entry);
+    };
+    state.agentMessages.forEach(renderMessage);host.appendChild(thread);
+    const suggestions=node("div","fiscal-agent-suggestions");
+    const input=node("textarea");input.rows=2;input.maxLength=1000;input.placeholder="Ex.: Por que essa conta não bate? Ou: procure a nota 149599";input.setAttribute("aria-label","Pergunta sobre os documentos desta conta");
+    for(const text of ["Explique a diferença e as pendências","Quais movimentos estão sem vínculo?"]){const b=node("button","",text);b.type="button";b.addEventListener("click",()=>{input.value=text;input.focus();});suggestions.appendChild(b);}
+    const permission=node("label","fiscal-agent-permission"),toggle=node("input");toggle.type="checkbox";toggle.checked=false;
+    permission.append(toggle,node("span","","Usar IA externa nesta pergunta: envia a pergunta e até 20 evidências estruturadas ao provedor gratuito configurado. Os arquivos, nomes e históricos não são enviados. Evite incluir dados pessoais na pergunta."));
+    const send=node("button","fiscal-agent-send","Perguntar");send.type="button";
+    const cancel=node("button","","Cancelar espera");cancel.type="button";cancel.hidden=true;
+    const status=node("p","fiscal-agent-status");status.setAttribute("role","status");
+    send.addEventListener("click",async()=>{
+      const question=input.value.trim();if(question.length<3){status.textContent="Escreva uma pergunta com pelo menos três caracteres.";return;}
+      if(state.chatPending)return;
+      state.chatPending=true;const controller=new AbortController();state.chatController=controller;
+      send.disabled=true;cancel.hidden=false;input.disabled=true;toggle.disabled=true;status.textContent="Consultando os registros desta seleção…";
+      const timeout=setTimeout(()=>controller.abort(),45000);
+      try{
+        const response=await fetch(API()+"/api/v1/conferencia-fiscal/ia/conta/conversa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session:session.session,pergunta:question,usar_ia:toggle.checked}),signal:controller.signal});
+        if(!response.ok)throw new Error(await responseError(response));
+        const answer=await response.json();
+        if(controller.signal.aborted || state.source!==previewBody || state.result!==result)return;
+        if(answer.escopo?.conta!==String(scope.conta) || answer.escopo?.tipo!==scope.tipo || (answer.escopo?.acumulador || "")!==(scope.acumulador || ""))throw new Error("Resposta de outra seleção bloqueada.");
+        const message={question,answer};state.agentMessages.push(message);renderMessage(message);input.value="";status.textContent="Resposta pronta. Confira as evidências antes de decidir um ajuste.";
+      }catch(error){status.textContent=controller.signal.aborted ? "Espera encerrada. Nenhum lançamento foi alterado." : error.message || "Não foi possível consultar o assistente.";}
+      finally{clearTimeout(timeout);state.chatPending=false;state.chatController=null;send.disabled=false;cancel.hidden=true;input.disabled=false;toggle.disabled=false;}
+    });
+    cancel.addEventListener("click",()=>state.chatController?.abort());
+    host.append(suggestions,input,permission,send,cancel,status,node("small","","Conversa temporária por até 20 minutos, limitada à empresa, filial, conta e tipo desta seleção. Para pesquisar outras contas do mesmo relatório, informe explicitamente a nota e 'outra conta'."));
+    return host;
+  }
+
   function createAccountAnalysis(scope) {
     const key = [scope.origem, scope.conta, scope.tipo, scope.acumulador || ""].join(":");
     const fileId = scope.tipo === "SAÍDAS" ? "fiscal242Saidas" : "fiscal242Entradas";
@@ -1496,6 +1554,7 @@
       paint();
     };
     area.destroy = () => {
+      state.chatController?.abort();
       if (layout) layout.comparison.hidden = false;
       layout = null; area.remove(); tabs.remove(); bar.remove();
     };
@@ -1524,7 +1583,7 @@
       }
       if (layout) { layout.comparison.hidden = state.expanded; area.hidden = !state.expanded; }
       if (state.result && renderedResult !== state.result) {
-        body.replaceChildren(renderAccountOpinion(state.result, scope)); renderedResult = state.result;
+        body.replaceChildren(renderFiscalAssistant(state.result, scope, state), renderAccountOpinion(state.result, scope)); renderedResult = state.result;
       }
     }
     function updateLoadingTime() {

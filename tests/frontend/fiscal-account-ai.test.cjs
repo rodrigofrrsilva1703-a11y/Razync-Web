@@ -30,6 +30,22 @@ function setup(){
   return {context,requests,files,find,all,node};
 }
 
+test('assistente envia só token e pergunta, mostra fonte e preserva texto sem HTML',async()=>{
+  const {context,all,find}=setup();
+  context.setTimeout=()=>1;context.clearTimeout=()=>{};context.money=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+  const scope={conta:'408',tipo:'SAÍDAS',origem:'documentos',acumulador:''};
+  const result={assistente:{disponivel:true,session:'token-temporario'}};
+  const state={source:context.previewBody,result};let sent;
+  context.fetch=async(url,options)=>{sent={url,body:JSON.parse(options.body)};return {ok:true,json:async()=>({escopo:scope,origem:'local',resumo:{fiscal:100,contabil:110,diferenca:10},explicacao:'<img onerror=evil()>',evidencias:[],proximos_passos:[],ferramenta:'Busca',exibidos:0,encontrados:0})};};
+  const root=context.renderFiscalAssistant(result,scope,state);
+  all(root).find(e=>e.tag==='textarea').value='Procure a nota 149599';
+  await find(root,'fiscal-agent-send').click();
+  assert.deepEqual(sent.body,{session:'token-temporario',pergunta:'Procure a nota 149599',usar_ia:false});
+  assert.ok(all(root).some(e=>e.textContent==='<img onerror=evil()>'));
+  assert.ok(!all(root).some(e=>e.tag==='img'));
+  assert.equal(state.agentMessages.length,1);
+});
+
 test('somente clique envia a seleção e reabrir o parecer não repete a chamada',async()=>{
   const {context,requests,find,all}=setup();const scope={origem:'resumo',conta:'470',tipo:'ENTRADAS'};
   let root=context.createAccountAnalysis(scope);

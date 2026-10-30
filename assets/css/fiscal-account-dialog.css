@@ -464,3 +464,27 @@ html[data-theme=dark] .app-shell #fiscalView .fiscal-document-dialog .fiscal-doc
 @media(max-width:700px){
  #fiscalView .fiscal-document-dialog .fiscal-doc-rows .fiscal-doc-status {width:auto;min-width:0}
 }
+
+/* Account-scoped documentary conversation. */
+#fiscalView .fiscal-document-assistant {padding:18px 0 22px;margin-bottom:22px;border-bottom:1px solid var(--fiscal-line,#dce5ef);min-width:0}
+#fiscalView .fiscal-document-assistant h4 {font-size:19px;margin:0 0 8px}
+#fiscalView .fiscal-document-assistant p {font-size:13px;line-height:1.7}
+#fiscalView .fiscal-agent-thread {display:grid;gap:18px;margin:16px 0}
+#fiscalView .fiscal-agent-message {padding:14px 16px;border-left:3px solid var(--studio-blue,#386c9c);background:transparent}
+#fiscalView .fiscal-agent-message > strong {display:block;font-size:14px;margin-bottom:8px}
+#fiscalView .fiscal-agent-source {display:block;font-size:11px;color:var(--fiscal-muted,#61748a)}
+#fiscalView .fiscal-agent-totals {font-variant-numeric:tabular-nums;font-weight:600}
+#fiscalView .fiscal-agent-evidence {white-space:pre-wrap;overflow-wrap:anywhere;border-bottom:1px solid var(--fiscal-line,#dce5ef);padding:9px 0}
+#fiscalView .fiscal-agent-message details {margin:12px 0}
+#fiscalView .fiscal-agent-message summary {cursor:pointer;font-size:12px}
+#fiscalView .fiscal-agent-message ol {padding-left:20px;font-size:13px;line-height:1.7}
+#fiscalView .fiscal-agent-suggestions {display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+#fiscalView .fiscal-agent-suggestions button {min-height:36px;padding:7px 11px;font-size:12px;border:1px solid var(--fiscal-line,#dce5ef);border-radius:8px;background:transparent;color:inherit;cursor:pointer}
+#fiscalView .fiscal-document-assistant textarea {display:block;width:100%;box-sizing:border-box;resize:vertical;min-height:80px;max-height:200px;padding:12px;font:inherit;font-size:13px;border:1px solid var(--fiscal-line,#cedbe8);border-radius:9px}
+#fiscalView .fiscal-agent-permission {display:flex;align-items:flex-start;gap:9px;font-size:11px;line-height:1.6;font-weight:400;margin:12px 0}
+#fiscalView .fiscal-agent-permission input {flex:none;margin-top:3px}
+#fiscalView .fiscal-document-assistant .fiscal-agent-send {padding:10px 20px;min-height:42px;border:1px solid #2864d7;border-radius:8px;background:#2864d7;color:white;font-size:13px;font-weight:600;cursor:pointer}
+html[data-theme=dark] .app-shell #fiscalView .fiscal-document-assistant {background:transparent!important;box-shadow:none!important}
+html[data-theme=dark] .app-shell #fiscalView .fiscal-document-assistant .fiscal-agent-send {background:#2864d7!important;color:white!important}
+#fiscalView .fiscal-agent-status:empty {display:none}
+#fiscalView .fiscal-document-assistant > small {display:block;font-size:11px;line-height:1.6;margin-top:12px;color:var(--fiscal-muted,#61748a)}
