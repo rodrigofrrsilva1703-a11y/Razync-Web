@@ -524,10 +524,19 @@ def answer(request):
         question = request.pergunta.strip()
         if session.get('last_note') and re.search(r'\b(ess[ae] (nota|documento|diferenca)|el[ae]|del[ae]|ness[ae]|mesma nota|outras? contas?|como (?:posso )?(?:resolver|corrigir)|o que (?:fazer|faco|conferir|confiro)|proximo passo)\b', normalized(question)) and not query_plan(question)['notas'] and not re.search(r'\b((?:da|na|nesta|nessa) conta|conta inteira)\b', normalized(question)):
             question += ' (nota ' + session['last_note'] + ')'
-        key = (question, request.usar_ia)
+        # Continuidade sem inventar documentos: respostas curtas retomam o tema
+        # anterior desta MESMA conta e sessão, nunca dados de outras empresas.
+        plan = query_plan(question)
+        previous_topic = session.get('last_intent')
+        followup = bool(re.match(r'^\\s*(?:e|mas|entao|nesse caso|nesse ponto|sobre isso|quanto a isso)\\b', normalized(question)))
+        if followup and plan['intent'] == 'geral' and previous_topic in {
+                'diferenca', 'competencia', 'acumulador', 'combinacao', 'movimentos', 'totais', 'sem_vinculo'}:
+            plan['intent'] = previous_topic
+        key = (question, request.usar_ia, plan['intent'])
         if key in session['cache']:
             cached = deepcopy(session['cache'][key])
             session['last_note'] = cached.get('nota_contexto')
+            session['last_intent'] = cached.get('intencao')
             return dict(cached, cache_reutilizado=True)
         if session['busy']:
             raise AgentError(409, 'Aguarde a resposta desta conta antes de perguntar novamente.')
@@ -537,7 +546,6 @@ def answer(request):
         session['count'] += 1
     try:
         data = session['data']
-        plan = query_plan(question)
         rows, tool = select_rows(data, question, plan)
         evidence = deepcopy(rows[:20])
         reading = local_reading(data, plan, rows, tool)
@@ -574,6 +582,7 @@ def answer(request):
                 response['aviso_ia'] = reason + ' Os resultados locais foram preservados.'
         with _lock:
             session['last_note'] = subject
+            session['last_intent'] = plan['intent']
             # Do not permanently cache provider failures; allow a later recovery.
             if not response.get('aviso_ia'):
                 session['cache'][key] = deepcopy(response)
