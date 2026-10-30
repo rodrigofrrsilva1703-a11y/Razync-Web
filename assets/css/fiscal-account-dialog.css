@@ -708,6 +708,6 @@ html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat 
 @media(prefers-reduced-motion:reduce) {
   #fiscalView .fiscal-account-ai-chat .fiscal-agent-typing-dots i,
   #fiscalView .fiscal-account-ai-chat .fiscal-agent-message .fiscal-agent-answer,
-  #fiscalView .fiscal-account-ai-chat .fiscal-agent-message.is-pending .fiscal-agent-user {animation:none}
+  #fiscalView .fiscal-account-ai-chat .fiscal-agent-message.is-pending .fiscal-agent-user {animation:none!important}
   #fiscalView .fiscal-account-ai-chat .fiscal-agent-typing-dots i {opacity:.7}
 }
