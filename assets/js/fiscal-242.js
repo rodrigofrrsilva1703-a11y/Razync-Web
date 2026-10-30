@@ -1562,6 +1562,7 @@
     });
     area.mount = target => {
       layout = target;
+      target.comparison.hidden = false;
       area.className = "fiscal-account-analysis fiscal-account-ai-chat";
       target.shell.append(launcher, area);
       state.expanded = false;
