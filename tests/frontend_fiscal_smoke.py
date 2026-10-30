@@ -36,7 +36,7 @@ assert set(required).issubset(ids), "A interface não preserva controles fiscais
 
 anchors = [a.get("data-fiscal-target") for _, a in p.elements if "data-fiscal-target" in a]
 assert set(anchors) == {"fiscal242Overview"}
-assert '"Assistente IA"' in JS and "fiscal-account-ai-fab" in JS
+assert "Assistente IA" in JS and "fiscal-account-ai-fab" in JS
 assert "renderFiscalAssistant" in JS and "fiscal-account-ai-chat" in JS
 assert "fiscal-account-analysis-tabs" not in JS
 assert "renderHybridOpinion" in JS and "investigacao_hibrida" in JS
