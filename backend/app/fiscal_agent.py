@@ -105,7 +105,7 @@ def query_plan(question):
     other = bool(re.search(r'outra[s]? conta', query))
     intent = ('duplicidade' if duplicate else 'documento' if notes else 'referencia' if refs else
               'sem_vinculo' if re.search(r'sem vinculo|nao vinculad|sem documento', query) else
-              'diferenca' if re.search(r'pendencia|diverg|diferenca|conferir|explic|nao bate|nao fecha|primeiro|prioridade|motivo', query) else 'historico')
+              'diferenca' if re.search(r'pendencia|diverg|diferenca|conferir|explic|nao bate|nao fecha|primeiro|prioridade|motivo|como (?:posso )?(?:resolver|corrigir)|o que (?:fazer|faco)|proximo passo', query) else 'historico')
     amount_match = re.search(r'(?:r\$\s*|valor\s+)(-?[\d.]+(?:,\d{1,2})?)|(?<!\w)(-?[\d.]+,\d{2})\b', query)
     amount = None
     if amount_match and not notes and not refs and not duplicate:
@@ -389,7 +389,7 @@ def answer(request):
             _sessions.pop(request.session, None)
             raise AgentError(410, 'A conversa expirou ou o servidor reiniciou. Reabra a análise para preparar os documentos novamente.')
         question = request.pergunta.strip()
-        if session.get('last_note') and re.search(r'\b(ess[ae] (nota|documento|diferenca)|el[ae]|del[ae]|ness[ae]|mesma nota|outras? contas?)\b', normalized(question)) and not query_plan(question)['notas'] and not re.search(r'\b(diferenca da conta|conta inteira)\b', normalized(question)):
+        if session.get('last_note') and re.search(r'\b(ess[ae] (nota|documento|diferenca)|el[ae]|del[ae]|ness[ae]|mesma nota|outras? contas?|como (?:posso )?(?:resolver|corrigir)|o que (?:fazer|faco|conferir|confiro)|proximo passo)\b', normalized(question)) and not query_plan(question)['notas'] and not re.search(r'\b((?:da|na|nesta|nessa) conta|conta inteira)\b', normalized(question)):
             question += ' (nota ' + session['last_note'] + ')'
         key = (question, request.usar_ia)
         if key in session['cache']:

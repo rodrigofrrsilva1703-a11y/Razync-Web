@@ -110,6 +110,16 @@ class DocumentaryAgentTests(unittest.TestCase):
         self.assertIsNone(result['comparacao'])
         self.assertIn('SAÍDAS',result['recorte'])
 
+    def test_natural_next_step_keeps_note_but_explicit_account_question_resets_scope(self):
+        self.prepare_note_pair()
+        self.ask('Compare a nota 149353')
+        result=self.ask('Como posso resolver?')
+        self.assertEqual(result['nota_contexto'],'149353')
+        self.assertEqual(result['comparacao']['diferenca'],'-180.00')
+        result=self.ask('O que conferir primeiro na conta inteira?')
+        self.assertEqual(result['intencao'],'diferenca')
+        self.assertTrue(result['comparacao']['rotulo'].startswith('Conta'))
+
     def test_note_ai_context_excludes_account_summary_and_cannot_replace_local_facts(self):
         self.prepare_note_pair()
         with patch.object(agent,'interpret',return_value=dict(explicacao='Confira as parcelas.',proximos_passos=[],referencias=['S-1'],provedor='teste',modelo='teste')) as call:
