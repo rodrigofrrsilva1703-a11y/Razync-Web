@@ -1298,10 +1298,21 @@ def gerar_excel_analise(payload: dict) -> bytes:
         investigation_sheet.append(["Conta", "Tipo", "Indício", "Categoria", "Explicação local", "Referências", "Falta confirmar", "Limite"])
         sources_sheet = book.create_sheet("Fontes da investigação")
         sources_sheet.append(["Conta", "Referência", "Origem", "Data", "Nota", "Série", "Acumulador", "Histórico", "Valor"])
+        bridge_sheet = book.create_sheet("Composição da diferença")
+        bridge_sheet.append(["Conta", "Tipo", "Componente", "Valor", "Interpretação"])
         for item in hybrid:
             investigation = item["investigacao_hibrida"]
             if not isinstance(investigation, dict) or len(investigation.get("hipoteses", [])) > 80 or len(investigation.get("evidencias", [])) > 120:
                 raise ValueError("Investigação inválida para exportação.")
+            bridge = investigation.get("composicao_diferenca") or {}
+            if len(bridge.get("itens", [])) > 20:
+                raise ValueError("Composição inválida para exportação.")
+            for component in bridge.get("itens", []):
+                bridge_sheet.append([texto(item.get("conta")), texto(item.get("tipo")), texto(component.get("descricao")),
+                    numero(component.get("valor")), "Componente aritmético; não comprova a causa contábil."])
+            if bridge:
+                bridge_sheet.append([texto(item.get("conta")), texto(item.get("tipo")), "Residual sem composição",
+                    numero(bridge.get("residual")), "Fechamento em centavos" if bridge.get("fecha_aritmeticamente") else "Composição incompleta ou indisponível"])
             for hypothesis in investigation.get("hipoteses", []):
                 investigation_sheet.append([texto(item.get("conta")), texto(item.get("tipo")), texto(hypothesis.get("titulo")),
                     texto(hypothesis.get("categoria")), texto(hypothesis.get("explicacao")), texto(", ".join(hypothesis.get("referencias", []))),
@@ -1312,6 +1323,7 @@ def gerar_excel_analise(payload: dict) -> bytes:
                     texto(evidence.get("historico")), numero(evidence.get("valor"))])
         formato(investigation_sheet, 1, set(), [16, 16, 48, 24, 90, 42, 90, 60])
         formato(sources_sheet, 1, {9}, [16, 18, 24, 18, 22, 15, 18, 90, 22])
+        formato(bridge_sheet, 1, {4}, [16, 16, 65, 22, 80])
     manual = payload.get("acompanhamento_manual") or []
     if not isinstance(manual, list) or len(manual) > 1000:
         raise ValueError("Acompanhamento manual inválido.")

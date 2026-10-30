@@ -89,8 +89,87 @@ def test_signed_combinations_are_bounded_and_no_cause_is_claimed():
         assert solution["residual"] == "0.00"
     assert result["operacoes"] < 4000
     result = hybrid.combinations(99999, [{"referencia":str(i), "centavos":1} for i in range(5000)])
-    assert result["busca_limitada"] and result["candidatos_testados"] == 160
-    assert result["operacoes"] < 4000
+    assert result["busca_limitada"] and result["candidatos_testados"] == 5000
+    assert result["operacoes"] < 8000
+
+
+def test_pairs_and_singles_after_160th_record_are_examined():
+    records=[{"referencia":str(i),"centavos":100000+i} for i in range(400)]
+    records += [{"referencia":"last-a","centavos":42},{"referencia":"last-b","centavos":58}]
+    solutions=hybrid.combinations(100,records)["resultados"]
+    assert any(set(s["referencias"])=={"last-a","last-b"} for s in solutions)
+
+
+def test_displayed_hypotheses_never_lose_evidence_and_cover_categories():
+    evidence=[{"referencia":str(i)} for i in range(300)]
+    hypotheses=[{"id":str(i),"categoria":"valor","referencias":[str(i)]} for i in range(100)]
+    hypotheses += [{"id":"rare","categoria":"competencia","referencias":["299"]},
+                   {"id":"missing","categoria":"ausente","referencias":["nonexistent"]}]
+    chosen,shown,_=hybrid.select_evidence(hypotheses,evidence)
+    assert any(h["id"]=="rare" for h in chosen)
+    assert not any(h["id"]=="missing" for h in chosen)
+    assert all(set(h["referencias"]) <= {e["referencia"] for e in shown} for h in chosen)
+    assert len(shown)<=120 and len(chosen)<=80
+
+
+def test_bridge_verifies_partition_and_exposes_residual_independently():
+    report=source(120)
+    docs=documentary()
+    docs["composicao"]={"itens":[{"codigo":"part","descricao":"Parcela","valor":15}],"confere_com_inicial":True}
+    result=hybrid.investigate(report,scope(),docs)
+    bridge=result["composicao_diferenca"]
+    assert bridge["residual"]=="5.00" and not bridge["fecha_aritmeticamente"]
+    docs["composicao"]["itens"][0]["valor"]=20
+    assert hybrid.investigate(report,scope(),docs)["composicao_diferenca"]["fecha_aritmeticamente"]
+
+
+def test_same_month_date_difference_is_not_reported_as_competence_shift():
+    docs=documentary()
+    docs["comparacoes"][0].update(situacao="DATA_DIFERENTE",data="05/08/2026",valor_fiscal=100,
+        lancamentos=[{"id":"R-1","data":"06/08/2026","valor":100}])
+    result=hybrid.investigate(source(100),scope(),docs)
+    assert any(h["categoria"]=="data" for h in result["hipoteses"])
+    assert not any(h["categoria"]=="competencia" for h in result["hipoteses"])
+
+
+def test_document_coverage_gap_is_not_blame_assigned_to_ledger():
+    docs=documentary();docs["documentos"][0]["valor"]=60
+    result=hybrid.investigate(source(80),scope(),docs)
+    assert result["composicao_diferenca"]["lacuna_documental"]=="40.00"
+    assert any("não reproduzem" in message for message in result["limitacoes"])
+
+
+def test_adjacent_candidate_keeps_initial_totals_and_requires_explicit_note():
+    report=source(0)
+    report["_competencia_adjacente"]=[{"referencia":"A-8","conta":"470","filial":"1",
+        "data":"01/09/2026","valor":"100.00","historico":"COMPRA CF NF 1"}]
+    result=hybrid.investigate(report,scope(),documentary())
+    adjacent=[h for h in result["hipoteses"] if h["categoria"]=="competencia"]
+    assert len(adjacent)==1 and adjacent[0]["referencias"]==["E-1","A-8"]
+    assert result["resumo"]["contabil"]=="0.00"
+    report["_competencia_adjacente"][0]["historico"]="Pagamento genérico"
+    assert not any(h["categoria"]=="competencia" for h in hybrid.investigate(report,scope(),documentary())["hipoteses"])
+
+
+def test_adjacent_reader_isolates_branch_account_and_neighbour_month(monkeypatch):
+    import pandas as pd
+    from razync import conferencia_fiscal
+    frame=pd.DataFrame([
+        {"CONTA":"470","FILIAL":"1","DATA":"2026-09-01","DÉBITO":100,"HISTÓRICO":"CF NF 1"},
+        {"CONTA":"470","FILIAL":"2","DATA":"2026-09-01","DÉBITO":100,"HISTÓRICO":"CF NF 1"},
+        {"CONTA":"999","FILIAL":"1","DATA":"2026-09-01","DÉBITO":100,"HISTÓRICO":"CF NF 1"},
+        {"CONTA":"470","FILIAL":"1","DATA":"2026-10-01","DÉBITO":100,"HISTÓRICO":"CF NF 1"},
+    ])
+    monkeypatch.setattr(conferencia_fiscal,"ler_razao",lambda *a:(frame,{}))
+    result=hybrid.adjacent_ledger(b"test","razao.xls",source(0),"470","ENTRADAS")
+    assert len(result)==1 and result[0]["referencia"]=="A-0"
+
+
+def test_repeated_adjacent_candidates_are_not_chosen_arbitrarily():
+    report=source(0)
+    report["_competencia_adjacente"]=[{"referencia":ref,"conta":"470","filial":"1",
+        "data":"01/09/2026","valor":"100.00","historico":"CF NF 1"} for ref in ["A-1","A-2"]]
+    assert not any(h["categoria"]=="competencia" for h in hybrid.investigate(report,scope(),documentary())["hipoteses"])
 
 
 def test_competence_and_invalid_dates_are_explicit():

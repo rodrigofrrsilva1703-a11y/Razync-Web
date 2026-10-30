@@ -74,6 +74,9 @@ async def analyze_account(acumuladores: list[UploadFile] = File(...), razao: lis
                 selected = [selected_row]
         # Keep global record positions for the documentary R-n references.
         report = dict(preview, contas=selected)
+        if documentary and preview.get("movimentos_fora_periodo"):
+            report["_competencia_adjacente"] = await run_in_threadpool(
+                fiscal_hybrid.adjacent_ledger, args[2], args[3], preview, conta, tipo)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     scope = {"conta": conta, "tipo": tipo, "acumulador": acumulador, "origem": origem}

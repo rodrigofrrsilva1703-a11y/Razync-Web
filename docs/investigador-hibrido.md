@@ -21,15 +21,28 @@ competência, notas sem correspondência identificada, diferenças de valores e 
 em outra conta e redutores/estornos já identificados pelo cruzamento existente. Correspondências
 por valor isolado não são criadas. Registros repetidos são indícios, nunca exclusões automáticas.
 
-A busca de combinações é limitada: até 160 candidatos para valores individuais/pares, trios com
-dois elementos entre os primeiros 60 e o terceiro entre os 160, e até cinco soluções por origem.
+A busca de valores individuais e pares percorre todos os candidatos com índices por centavos.
+Trios usam até 60 candidatos-base escolhidos por proximidade de valores, com o terceiro elemento
+buscado no índice completo. São exibidas até cinco soluções por origem.
 Sinais são preservados. Documentos fiscais sem vínculo também podem compor uma falta aparente.
 O residual é calculado em centavos. Coincidência aritmética não prova vínculo nem causa contábil.
 
 Não há corte de 1.500 lançamentos na investigação local. A apresentação retorna até 80 indícios e
 120 evidências, com contagens e aviso explícito quando excedidos. A relação completa permanece
 no cruzamento documental e nos arquivos originais. A busca é parcial e não demonstra inexistência
-de outras combinações. Sem competências adjacentes, não é possível comprovar deslocamento mensal.
+de outras combinações. Cada indício exibido tem todas as suas referências presentes na tabela.
+A apresentação prioriza impacto e diversidade de categorias, sem criar probabilidades de acerto.
+
+A versão 2 verifica independentemente a composição aritmética já produzida pelo cruzamento.
+Mostra lacuna entre documentos lidos e resumo fiscal, parcelas da diferença e residual. Hipóteses
+não são somadas entre si: podem se sobrepor e isso duplicaria valores. Fechar essa composição não
+comprova uma causa contábil. Datas diferentes no mesmo mês não são chamadas de mudança de competência.
+
+Se o arquivo validado contiver movimentos excluídos pelo período, o investigador pode reler
+somente a mesma conta e filial nos meses imediatamente adjacentes. Candidatos exigem nota explícita,
+valor compatível e unicidade; são fontes A-n separadas, nunca reincorporadas aos totais. Série,
+parceiro e competência correta continuam sujeitos a confirmação. Sem meses vizinhos no arquivo,
+não é possível investigar uma operação que só conste nesses meses.
 
 ## IA opcional e custo de API
 
@@ -80,5 +93,5 @@ o cache continua em memória. Nenhum serviço externo foi adicionado.
 Modal existente com resumo, verificações, indícios, referências, tabela de evidências, limites e
 conclusão sempre visíveis. Há rolagem local da tabela em telas menores. Históricos são inseridos
 como texto, nunca HTML ou instruções. A exportação existente ganha duas abas apenas quando há
-investigação híbrida: **Investigação híbrida** e **Fontes da investigação**. Textos que poderiam
+investigação híbrida: **Investigação híbrida**, **Fontes da investigação** e **Composição da diferença**. Textos que poderiam
 virar fórmulas são neutralizados no Excel. As análises anteriores mantêm o formato existente.
