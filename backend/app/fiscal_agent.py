@@ -110,8 +110,8 @@ def query_plan(question):
     amount = None
     # "Por que existe diferença de R$ X?" pede diagnóstico da conta,
     # não busca de um lançamento isolado de R$ X.
-    account_difference = bool(re.search(r'\\b(?:diferenca|divergenc|nao bate|nao fecha|pendencias?)', query))
-    explicit_lookup = bool(re.search(r'\\b(?:procure|buscar|encontre|localize|mostre|pesquise)\\b', query))
+    account_difference = bool(re.search(r'\b(?:diferenca|divergenc|nao bate|nao fecha|pendencias?)', query))
+    explicit_lookup = bool(re.search(r'\b(?:procure|buscar|encontre|localize|mostre|pesquise)\b', query))
     if amount_match and not notes and not refs and not duplicate and (not account_difference or explicit_lookup):
         amount = str(Decimal((amount_match.group(1) or amount_match.group(2)).replace('.', '').replace(',', '.')))
         intent = 'valor'
