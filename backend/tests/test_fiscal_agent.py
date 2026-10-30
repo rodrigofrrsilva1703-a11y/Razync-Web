@@ -45,7 +45,7 @@ class DocumentaryAgentTests(unittest.TestCase):
         self.assertEqual(proxima['intencao'], 'movimentos')
         self.assertTrue(proxima['comparacao'])
         self.assertEqual(self.ask('Quanto deu o fiscal?')['intencao'], 'totais')
-        self.assertEqual(self.ask('E sobre isso, o que conferir?')['intencao'], 'totais')
+        self.assertEqual(self.ask('E sobre isso?')['intencao'], 'totais')
 
     def test_ia_gratuita_pode_explicar_total_sem_registros_individuais(self):
         context = dict(self.investigation, resumo=dict(fiscal='5000',contabil='2900',diferenca='-2100'))
