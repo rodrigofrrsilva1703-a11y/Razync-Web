@@ -100,7 +100,7 @@ def _invoke(option, messages):
     try:
         with request_slot(provider, model if provider != "openrouter" else "free", body) as usage:
             req = urllib.request.Request(url, data=json.dumps(body).encode(), headers=headers)
-            with urllib.request.urlopen(req, timeout=22) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:
                 raw = json.loads(resp.read(60000))
             usage(raw)
     except urllib.error.HTTPError as exc:
