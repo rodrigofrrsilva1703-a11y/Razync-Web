@@ -118,9 +118,21 @@ def query_plan(question):
     duplicate = bool(re.search(r'duplic|repetid|repetic|duas vezes', query))
     other = bool(re.search(r'outra[s]? conta', query))
     account_difference = bool(_ACCOUNT_DIFFERENCE_PATTERN.search(query))
-    intent = ('duplicidade' if duplicate else 'documento' if notes else 'referencia' if refs else
-              'sem_vinculo' if re.search(r'sem vinculo|nao vinculad|sem documento', query) else
-              'diferenca' if account_difference else 'historico')
+    # O assistente deve responder perguntas sobre a conta, não apenas localizar
+    # palavras em históricos. Consultas de documento/valor/referência continuam
+    # tendo precedência sobre as perguntas gerais.
+    topic = (
+        'sem_vinculo' if re.search(r'sem vinculo|nao vinculad|sem documento|sem correspondencia|nao localizado no razao', query) else
+        'competencia' if re.search(r'competenc|outro mes|mes seguinte|mes anterior|fora do periodo|data diferent|virada do mes', query) else
+        'duplicidade' if duplicate else
+        'acumulador' if re.search(r'acumulador|acumuladores|cfop', query) else
+        'combinacao' if re.search(r'combinac|somando|soma dos lancamentos|soma de lancamentos|quais valores compoem', query) else
+        'movimentos' if re.search(r'quais lancamentos|quais movimentos|maiores valores|maiores lancamentos|lancamentos dessa conta|movimentac', query) else
+        'totais' if re.search(r'quanto|total|somatorio|saldo|valor fiscal|valor contabil|qual valor', query) else
+        'diferenca' if account_difference else
+        'geral'
+    )
+    intent = ('documento' if notes else 'referencia' if refs else topic)
     amount_match = re.search(r'(?:r\$\s*|valor\s+)(-?[\d.]+(?:,\d{1,2})?)|(?<!\w)(-?[\d.]+,\d{2})\b', query)
     amount = None
     # Valores citados em perguntas sobre a divergência não são filtros de lançamentos.
@@ -191,9 +203,28 @@ def select_rows(data, question, plan):
                         and abs(Decimal(str(r.get('valor') or 0))) == difference]
                 if rows:
                     tool = 'Coincidência de valores com a diferença; não comprova vínculo ou causa'
-    elif plan['intent'] != 'duplicidade':
+    elif plan['intent'] in {'geral', 'movimentos', 'competencia', 'acumulador', 'combinacao', 'totais'}:
+        # Evidências relevantes da conta, sem deixar uma pergunta aberta cair
+        # em uma busca textual vazia. Não implicam vínculos ou causas.
+        source = [r for r in rows if r['conta'] == data['scope']['conta']]
+        if plan['intent'] == 'competencia':
+            source = [r for r in source if r.get('data')]
+        elif plan['intent'] == 'acumulador':
+            source = [r for r in source if r['origem'] == 'Fiscal' or r.get('acumulador')]
+        elif plan['intent'] == 'combinacao':
+            source = [r for r in source if r['referencia'] in data.get('pending', [])] or source
+        rows = sorted(source, key=lambda r: (r['referencia'] not in data['pending'],
+                      -abs(Decimal(str(r.get('valor') or 0))), r['referencia']))
+        tool = 'Panorama da conta e evidências do período' if plan['intent'] == 'geral' else {
+            'movimentos': 'Consulta dos movimentos e maiores valores da conta',
+            'competencia': 'Consulta de datas e possíveis diferenças de competência',
+            'acumulador': 'Consulta dos acumuladores e documentos fiscais disponíveis',
+            'combinacao': 'Consulta de indícios e somas já verificadas pelo motor contábil',
+            'totais': 'Consulta dos totais fiscal, contábil e diferença calculados',
+        }[plan['intent']]
+    elif plan['intent'] == 'historico':
         stop = {'qual','quais','essa','esse','conta','valor','para','sobre','esta','como','pode','voce','preciso','quero','encontre','procure','buscar','pesquise','historico','mostre','registros'}
-        terms = [w for w in re.findall(r'[\w]+', normalized(question)) if len(w) > 3 and w not in stop]
+        terms = [w for w in re.findall(r'[\\w]+', normalized(question)) if len(w) > 3 and w not in stop]
         rows = [r for r in rows if any(w in normalized(' '.join(str(v) for v in r.values())) for w in terms)]
         tool = 'Busca nos campos dos documentos e históricos'
     else:
@@ -284,6 +315,58 @@ def local_reading(data, plan, rows, tool):
             result['pontos_confirmar'].append('Não foram encontrados registros já classificados como pendentes nesta conta; isso não elimina a divergência dos totais.')
         if tool.startswith('Coincidência'):
             result['pontos_confirmar'].append('O mesmo valor da diferença é apenas um indício para revisão, não prova de omissão ou duplicidade.')
+    elif intent in {'geral', 'totais', 'movimentos', 'competencia', 'acumulador', 'combinacao'}:
+        summary = data['resumo']
+        diff = Decimal(str(summary['diferenca']))
+        report = dict(rotulo='Conta ' + data['scope']['conta'],
+            **{k: summary[k] for k in ('fiscal', 'contabil', 'diferenca')},
+            criterio='Razão considerado menos total fiscal nesta seleção; conferência aritmética, não causa contábil.',
+            referencias=['RESUMO'])
+        result['comparacao'] = report
+        result['fatos'] = [
+            'Fiscal: ' + brl(summary['fiscal']) + ' · Razão: ' + brl(summary['contabil']) +
+            ' · Diferença: ' + brl(summary['diferenca']),
+            f"{sum(r['origem'] == 'Razão' and r['conta'] == data['scope']['conta'] for r in data['records'])} lançamento(s) do Razão e " +
+            f"{sum(r['origem'] == 'Fiscal' and r['conta'] == data['scope']['conta'] for r in data['records'])} linha(s) de documentos fiscais disponíveis neste recorte.",
+        ]
+        if intent == 'movimentos':
+            result['titulo'] = 'Movimentos da conta para conferir'
+            result['explicacao'] = (f'Encontrei {len(rows)} movimento(s) no recorte, ordenados com pendências primeiro e maiores valores em seguida. '
+                'A presença de valores iguais não comprova a identidade do documento.')
+            result['fatos'] += [r['referencia'] + ' · ' + r['origem'] + ' · ' + str(r['data']) + ' · ' + brl(r['valor']) for r in rows[:5]]
+        elif intent == 'competencia':
+            result['titulo'] = 'Datas e competência da conta'
+            result['explicacao'] = 'Verifiquei as datas presentes nesta seleção. A data de um lançamento, sozinha, não comprova a competência fiscal correta.'
+            result['fatos'] += [r['referencia'] + ' · ' + r['origem'] + ' · ' + str(r['data']) for r in rows[:5]]
+            result['pontos_confirmar'] = ['Para comprovar diferença entre competências, são necessários os períodos e documentos correspondentes; não presumi acesso ao mês anterior ou seguinte.']
+        elif intent == 'acumulador':
+            result['titulo'] = 'Cobertura dos acumuladores fiscais'
+            result['explicacao'] = ('O resumo permite comparar totais, mas não identificar todas as notas por acumulador. '
+                'Para pesquisar uma nota ou CFOP específico, é necessário o detalhamento fiscal correspondente.')
+            result['pontos_confirmar'] = ['Confira a conta vinculada a cada acumulador e a filial. Um acumulador sem documentação individual não comprova lançamento ausente.']
+        elif intent == 'combinacao':
+            result['titulo'] = 'Composição e combinações verificadas'
+            parts = [p for p in data['composicao'].get('itens', []) if Decimal(str(p.get('valor') or 0)) != 0]
+            result['fatos'] += [p['descricao'] + ': ' + brl(p['valor']) for p in parts]
+            result['explicacao'] = ('Os valores disponíveis foram comparados com o fechamento da conta. '
+                'Uma soma que fecha a diferença é uma coincidência matemática e não comprova duplicidade, omissão ou classificação incorreta.')
+            result['pontos_confirmar'] = ['Não execute ajustes com base apenas em soma de valores; confirme notas, histórico, conta e competência.']
+        elif intent == 'totais':
+            result['titulo'] = 'Totais da conta: fiscal × Razão'
+            result['explicacao'] = (f'O Razão está {brl(abs(diff))} ' + ('acima' if diff > 0 else 'abaixo' if diff < 0 else 'igual ao') +
+                ' total fiscal considerado na conferência. Isso representa a diferença aritmética, não sua causa.')
+        else:
+            result['titulo'] = 'Panorama da conta e próximos passos'
+            result['explicacao'] = (f'A conta apresenta diferença de {brl(abs(diff))} entre Razão e fiscal. ' if diff else
+                'Os totais da conta são iguais. ') + (
+                'Os registros permitem investigar indícios, mas somente a identificação documental pode confirmar a causa.')
+        if not data.get('tem_documentos'):
+            result['pontos_confirmar'].append('O acompanhamento fiscal individual não foi carregado neste recorte; faltam dados para comprovar nota ausente ou vínculo incorreto.')
+            result['proximos_passos'] = ['Anexe o acompanhamento fiscal de ' +
+                ('Entradas' if data['scope']['tipo'] == 'ENTRADAS' else 'Saídas') +
+                ' da competência e confira os documentos e movimentos lado a lado.']
+        else:
+            result['proximos_passos'] = ['Abra as evidências, confira nota, série, filial, data, valor e conta. Pergunte por uma nota ou referência específica para aprofundar.']
     elif not rows:
         if intent == 'sem_vinculo' and not data.get('tem_documentos'):
             result.update(titulo='Falta o detalhamento fiscal para verificar vínculos',
