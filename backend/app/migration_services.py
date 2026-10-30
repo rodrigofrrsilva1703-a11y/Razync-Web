@@ -125,7 +125,7 @@ def statement(code, bank, content, filename):
             return processar_extrato_itau_modelo(content, '508', ('MARIA A D P NARB', '59.124.979/0001-52', '0097731-6'), '1532 - Maria Narbutis')
         if code == 968 and bank == 'bradesco':
             from razync.bradesco_radani import processar_extrato_bradesco_radani
-            return processar_extrato_bradesco_radani(content)[0]
+            return pd.DataFrame(processar_extrato_bradesco_radani(content)[0], columns=COLUNAS)
         # PDF Aplicativo Santander Empresas (Valor + Saldo): aceita em todas
         # as empresas configuradas com Santander, sem alterar SIG/XLS.
         if bank == 'santander' and filename.lower().endswith('.pdf'):
@@ -480,7 +480,7 @@ def _workflow(code, roles, options):
             for bank, label in [('itau','Itaú'),('bradesco','Bradesco')]:
                 frames = []
                 for filename, content in roles.get(bank, []):
-                    frame = processar_extrato_bradesco_radani(content)[0] if bank == 'bradesco' else pd.DataFrame(engine._radani_cache_extrato_pdf(content, filename))
+                    frame = pd.DataFrame(processar_extrato_bradesco_radani(content)[0], columns=COLUNAS) if bank == 'bradesco' else pd.DataFrame(engine._radani_cache_extrato_pdf(content, filename))
                     frames.append(frame)
                 if not frames:
                     continue
