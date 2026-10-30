@@ -1258,7 +1258,7 @@
     }
     const relevantRefs=new Set(report.hipoteses.flatMap(h=>h.referencias || []));
     unmatched.forEach(m=>relevantRefs.add(m.id));
-    const focusedEvidence=report.evidencias.filter(e=>relevantRefs.has(e.referencia));
+    const focusedEvidence=relevantRefs.size ? report.evidencias.filter(e=>relevantRefs.has(e.referencia)) : report.evidencias;
     if(report.evidencias.length){
       const evidenceDetails=node("details","fiscal-focused-evidence");
       evidenceDetails.appendChild(node("summary","","Consultar evidências das pendências (" + focusedEvidence.length + ")"));
