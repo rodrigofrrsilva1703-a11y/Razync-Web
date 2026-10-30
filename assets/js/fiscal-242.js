@@ -1476,7 +1476,20 @@
       finally{clearTimeout(timeout);state.chatPending=false;state.chatController=null;send.disabled=false;cancel.hidden=true;input.disabled=false;toggle.disabled=false;}
     });
     cancel.addEventListener("click",()=>state.chatController?.abort());
-    host.append(suggestions,input,permission,send,cancel,status,node("small","","Conversa temporária por até 20 minutos, limitada à empresa, filial, conta e tipo desta seleção. Para pesquisar outras contas do mesmo relatório, informe explicitamente a nota e 'outra conta'."));
+    const composer = node("div", "fiscal-agent-chat-composer");
+    const permissionDetails = node("details", "fiscal-agent-chat-options");
+    permissionDetails.append(node("summary", "", "Opção de IA externa"), permission);
+    const sendRow = node("div", "fiscal-agent-chat-send-row");
+    sendRow.append(send, cancel);
+    composer.append(suggestions, input, permissionDetails, sendRow, status);
+    host.append(composer, node("small", "", "Conversa temporária, limitada à empresa, filial, conta e tipo. Confirme as evidências nos documentos originais."));
+    host.composer = composer;
+    input.addEventListener("keydown", event => {
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        send.click();
+      }
+    });
     return host;
   }
 
@@ -1505,6 +1518,7 @@
     aiToggle.addEventListener("change",()=>{state.useAI=aiToggle.checked;state.result=null;state.paint();});
     const exportButton = node("button", "fiscal-account-analysis-export", "Exportar parecer"); exportButton.type = "button";
     const body = node("div", "fiscal-account-analysis-body");
+    const composerSlot = node("div", "fiscal-account-ai-composer-slot");
     const loading = node("section", "fiscal-account-loading"); loading.hidden = true;
     loading.setAttribute("aria-label", "Análise desta seleção em andamento");
     const loadingHead = node("div", "fiscal-account-loading-heading");
@@ -1541,7 +1555,7 @@
     closeChat.setAttribute("aria-label", "Fechar conversa e voltar à conferência");
     chatHeading.append(chatIdentity, closeChat);
     bar.append(button, cancel);
-    area.append(chatHeading, panelHeading, context, note, aiOption, status, loading, body, bar);
+    area.append(chatHeading, panelHeading, context, note, aiOption, status, loading, body, composerSlot, bar);
     let layout = null, renderedResult = null;
     function switchView(open, focus = false) {
       state.expanded = open;
@@ -1589,6 +1603,7 @@
       status.className = "fiscal-account-analysis-status" + (state.pending ? " visually-hidden" : "");
       status.hidden = !status.textContent;
       body.hidden = !state.result;
+      composerSlot.hidden = !state.result;
       body.setAttribute("aria-busy", String(state.pending));
       note.hidden = state.pending || Boolean(state.result);
       loading.hidden = !state.pending;
@@ -1599,7 +1614,9 @@
       if (state.result && renderedResult !== state.result) {
         const report = node("section", "fiscal-account-ai-chat-report");
         report.append(node("div", "fiscal-account-ai-chat-message-head", "✦  Resultado da investigação"), renderAccountOpinion(state.result, scope));
-        body.replaceChildren(report, renderFiscalAssistant(state.result, scope, state));
+        const assistant = renderFiscalAssistant(state.result, scope, state);
+        body.replaceChildren(report, assistant);
+        composerSlot.replaceChildren(...(assistant.composer ? [assistant.composer] : []));
         renderedResult = state.result;
       }
     }
