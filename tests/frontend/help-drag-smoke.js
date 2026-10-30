@@ -33,6 +33,15 @@
     document.querySelector('[data-company-view="list"]').click();
     if(document.querySelector('#companyGrid').dataset.view!=='list')throw Error('A visualização em lista não foi aplicada.');
     document.querySelector('[data-company-view="cards"]').click();
+    const directoryLayoutMarkup=document.querySelector('.app-shell').outerHTML;
+    const firstCompany=document.querySelector('.company-row');
+    if(!firstCompany.querySelector('.company-row-heading') || !firstCompany.querySelector('.company-row-footer')) {
+      throw Error('O cartão da empresa não possui identificação e resumo separados.');
+    }
+    const allBadge=document.querySelector('[data-filter="all"] .filter-count');
+    if(Number(allBadge.textContent)!==document.querySelectorAll('.company-row').length) {
+      throw Error('O contador do filtro não corresponde às empresas da carteira.');
+    }
     const company = {
       codigo:266, nome:"NOVA GERACAO COMERCIAL ELETRICA LTDA",
       regime:"LUCRO PRESUMIDO",
@@ -287,6 +296,28 @@
     }
     homeFrame.style.width='390px';homeFrame.style.height='844px';
     if(homeDoc.documentElement.scrollWidth>390)throw Error('O início tem corte lateral no celular.');
+    // The same real CSS cascade must fit the company directory in both themes/views.
+    const directoryLoaded=new Promise(resolve=>homeFrame.onload=resolve);
+    homeFrame.srcdoc='<!doctype html><html><head>'+homeStyles+'<style>*,*::before,*::after{animation:none!important;transition:none!important}</style></head><body class="sidebar-collapsed">'+directoryLayoutMarkup+'</body></html>';
+    await directoryLoaded;
+    const directoryDoc=homeFrame.contentDocument;
+    for(const theme of ['light','dark']) {
+      directoryDoc.documentElement.dataset.theme=theme;
+      for(const [width,height] of [[1366,650],[1280,720],[1024,600],[390,844]]) {
+        homeFrame.style.width=width+'px';homeFrame.style.height=height+'px';
+        for(const view of ['cards','list']) {
+          directoryDoc.querySelector('#companyGrid').dataset.view=view;
+          if(directoryDoc.documentElement.scrollWidth>width) {
+            throw Error('A carteira tem corte lateral: '+[theme,view,width].join(' / '));
+          }
+          const first=directoryDoc.querySelector('.company-row').getBoundingClientRect();
+          if(width>=1024 && first.top>420)throw Error('Os filtros ocupam espaço demais antes das empresas: '+first.top);
+          const name=directoryDoc.querySelector('.company-row-name');
+          if(name.scrollWidth>name.clientWidth+1)throw Error('O nome da empresa ultrapassa seu cartão.');
+          if(first.width<200)throw Error('O cartão da empresa ficou estreito demais.');
+        }
+      }
+    }
     homeFrame.remove();
     state("ok");
   } catch(error) {

@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="./assets/css/base-maintenance.css?v=saved-periods-20261026-1">
   <link rel="stylesheet" href="./assets/css/admin-auth.css?v=20261023-1">
   <link rel="stylesheet" href="./assets/css/tool-preparation.css?v=statement-reading-20261026-1">
-  <link rel="stylesheet" href="./assets/css/company-directory.css?v=20261027-1">
+  <link rel="stylesheet" href="./assets/css/company-directory.css?v=directory-studio-20261030-1">
   <link rel="stylesheet" href="./assets/css/themes.css?v=original-theme-20261028-1">
   <link rel="stylesheet" href="./assets/css/sidebar-motion.css?v=20261029-1">
   <link rel="stylesheet" href="./assets/css/home-welcome.css?v=home-composition-20261030-1">
@@ -114,20 +114,19 @@
             </div>
           </div>
         </section>
-        <section class="hero compact-hero" hidden>
+        <section class="hero compact-hero directory-hero" hidden>
           <div class="portfolio-toolbar"><button id="backToPortfolios" type="button" class="portfolio-back">← Voltar às carteiras</button><span id="portfolioActiveName" class="portfolio-owner"></span></div>
-          <div class="eyebrow">RAZYNC</div>
+          <div class="directory-intro"><div class="directory-title"><div class="eyebrow">SUA CARTEIRA</div>
           <h1>Empresas</h1>
           <p>Pesquise uma empresa e acesse diretamente as ferramentas de organização, classificação e conferência.</p>
+          </div><div class="overview" aria-label="Resumo da carteira">
+          <div class="overview-card"><div><strong id="totalCompanies">—</strong><span>Empresas</span></div></div>
+          <div class="overview-card"><div><strong id="organizerCompanies">—</strong><span>Com ferramentas</span></div></div>
+          <div class="overview-card"><div><strong id="multiBankCompanies">—</strong><span>Múltiplos bancos</span></div></div>
+        </div></div>
         </section>
-        <div class="overview" aria-label="Resumo das ferramentas">
-          <div class="overview-card"><span class="overview-icon" aria-hidden="true">▦</span><div><strong id="totalCompanies">—</strong><span>Empresas cadastradas</span></div></div>
-          <div class="overview-card"><span class="overview-icon" aria-hidden="true">↗</span><div><strong id="organizerCompanies">—</strong><span>Com ferramentas</span></div></div>
-          <div class="overview-card"><span class="overview-icon" aria-hidden="true">⌘</span><div><strong id="multiBankCompanies">—</strong><span>Com múltiplos bancos</span></div></div>
-        </div>
         <section class="workspace" hidden>
           <div class="search-card">
-            <div class="directory-heading"><div><h2>Encontre sua próxima empresa</h2><p>Pesquise, filtre e acesse as ferramentas da sua carteira.</p></div><button id="addCompany" type="button" class="secondary-action">+ Adicionar empresa</button></div>
             <label for="companySearch" class="visually-hidden">Pesquisar empresa</label>
             <div class="directory-controls">
             <div class="search-wrap">
@@ -137,14 +136,14 @@
             </div>
             <label for="regimeFilter" class="visually-hidden">Filtrar por regime</label><select id="regimeFilter"><option value="">Todos os regimes</option><option>LUCRO REAL</option><option>LUCRO PRESUMIDO</option><option>SIMPLES NACIONAL</option></select>
             <label for="companySort" class="visually-hidden">Ordenar empresas</label><select id="companySort"><option value="code">Código crescente</option><option value="name">Nome de A a Z</option><option value="tools">Com ferramentas primeiro</option></select>
+            <button id="addCompany" type="button" class="secondary-action"><span aria-hidden="true">+</span> Adicionar empresa</button>
             </div>
-            <div class="company-filters" role="group" aria-label="Filtrar ferramentas"><button type="button" class="company-filter active" data-filter="all" aria-pressed="true">Todas</button><button type="button" class="company-filter" data-filter="organizer" aria-pressed="false">Com ferramentas</button><button type="button" class="company-filter" data-filter="multibank" aria-pressed="false">Múltiplos bancos</button><button type="button" class="company-filter" data-filter="catalog" aria-pressed="false">Sem ferramenta</button></div>
-            <div class="search-meta">
-              <span id="companyCount" role="status" aria-live="polite" aria-atomic="true">Carregando empresas…</span>
-              <button id="companyReset" class="directory-reset" type="button" hidden>Limpar filtros</button>
-              <div class="directory-views" role="group" aria-label="Visualização das empresas"><button type="button" data-company-view="cards" aria-pressed="true">Cartões</button><button type="button" data-company-view="list" aria-pressed="false">Lista</button></div>
+            <div class="directory-toolbar">
+              <div class="company-filters" role="group" aria-label="Filtrar ferramentas"><button type="button" class="company-filter active" data-filter="all" aria-pressed="true">Todas <span class="filter-count" aria-hidden="true"></span></button><button type="button" class="company-filter" data-filter="organizer" aria-pressed="false">Com ferramentas <span class="filter-count" aria-hidden="true"></span></button><button type="button" class="company-filter" data-filter="multibank" aria-pressed="false">Múltiplos bancos <span class="filter-count" aria-hidden="true"></span></button><button type="button" class="company-filter" data-filter="catalog" aria-pressed="false">Sem ferramenta <span class="filter-count" aria-hidden="true"></span></button></div>
+              <div class="directory-views" role="group" aria-label="Visualização das empresas"><button type="button" data-company-view="cards" aria-pressed="true"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="12" y="3" width="5" height="5" rx="1"/><rect x="3" y="12" width="5" height="5" rx="1"/><rect x="12" y="12" width="5" height="5" rx="1"/></svg>Cartões</button><button type="button" data-company-view="list" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 5h10M7 10h10M7 15h10M3 5h.1M3 10h.1M3 15h.1"/></svg>Lista</button></div>
             </div>
           </div>
+          <div class="directory-results-heading"><h2>Empresas da carteira</h2><div class="search-meta"><span id="companyCount" role="status" aria-live="polite" aria-atomic="true">Carregando empresas…</span><button id="companyReset" class="directory-reset" type="button" hidden>Limpar filtros</button></div></div>
           <div class="grid" id="companyGrid" data-view="cards" aria-label="Empresas da carteira"></div>
         </section>
       </section>
@@ -729,7 +728,7 @@
   <script src="./assets/js/organizer-jobs.js?v=20261026-1"></script>
   <script src="./assets/js/company-directory.js?v=20261027-1"></script>
   <script src="./assets/js/converter-global.js?v=20261028-1"></script>
-  <script src="./assets/js/app.js?v=directory-20261027-1"></script>
+  <script src="./assets/js/app.js?v=directory-studio-20261030-1"></script>
   <script src="./assets/js/migration.js?v=admin-modal-20261021-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=hybrid-20261029-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>

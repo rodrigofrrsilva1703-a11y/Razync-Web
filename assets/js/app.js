@@ -196,6 +196,16 @@ function render(items) {
   $('#totalCompanies').textContent = current.length;
   $('#organizerCompanies').textContent = current.filter(hasCompanyTools).length;
   $('#multiBankCompanies').textContent = current.filter(c=>Object.keys(c.capabilities?.banks || {}).length > 1).length;
+  const filterTotals = {
+    all: current.length,
+    organizer: current.filter(hasCompanyTools).length,
+    multibank: current.filter(c=>Object.keys(c.capabilities?.banks || {}).length > 1).length,
+    catalog: current.filter(c=>!hasCompanyTools(c)).length,
+  };
+  $$('.company-filter').forEach(button => {
+    const badge = button.querySelector('.filter-count');
+    if (badge) badge.textContent = filterTotals[button.dataset.filter] ?? 0;
+  });
   if (!items.length) {
     const empty = document.createElement('div');
     empty.className = 'empty-state directory-empty';
@@ -212,34 +222,68 @@ function render(items) {
     row.type = "button";
     row.className = "company-card company-card-button company-row";
     row.dataset.availability = company.capabilities?.status || 'unknown';
+    row.dataset.reveal = String(index < 12);
+    row.dataset.hasTools = String(hasCompanyTools(company));
     row.setAttribute('aria-label', `${company.codigo} · ${company.nome}. ${hasCompanyTools(company) ? 'Abrir ferramentas' : 'Ver empresa'}`);
-    row.style.setProperty("--row-index", String(Math.min(index, 12)));
+    row.style.setProperty("--row-index", String(Math.min(index, 8)));
+
+    const heading = document.createElement("span");
+    heading.className = "company-row-heading";
 
     const code = document.createElement("span");
     code.className = "company-row-code";
     code.textContent = company.codigo;
+    code.title = "Código da empresa";
 
     const main = document.createElement("span");
     main.className = "company-row-main";
     const name = document.createElement("strong");
     name.className = "company-row-name";
     name.textContent = company.nome;
+    name.title = company.nome;
     const meta = document.createElement("span");
     meta.className = "company-row-meta";
     const regime = document.createElement("span");
     regime.className = "company-row-regime";
-    regime.textContent = company.regime;
+    regime.textContent = company.regime || 'Regime não informado';
     const status = document.createElement("span");
     status.className = "mini-status";
-    status.textContent = hasCompanyTools(company) ? statusFor(company) : 'Sem ferramenta';
-    meta.append(regime, status);
+    status.textContent = hasCompanyTools(company)
+      ? (company.capabilities?.status === 'api_ready' ? 'Em validação' : statusFor(company))
+      : 'Sem ferramenta';
+    status.title = hasCompanyTools(company) ? statusFor(company) : 'Ferramenta ainda não cadastrada';
+    heading.append(code, status);
+    meta.append(regime);
     main.append(name, meta);
+
+    const footer = document.createElement("span");
+    footer.className = "company-row-footer";
+    const details = document.createElement("span");
+    details.className = "company-row-details";
+    const tools = company.capabilities?.tools?.length || 0;
+    const banks = Object.keys(company.capabilities?.banks || {});
+    const toolCount = document.createElement("span");
+    toolCount.className = "company-tool-count";
+    toolCount.textContent = tools ? `${tools} ${tools === 1 ? 'ferramenta' : 'ferramentas'}` : 'Aguardando ferramenta';
+    details.appendChild(toolCount);
+    if (tools && banks.length) {
+      const bankCount = document.createElement("span");
+      bankCount.textContent = `${banks.length} ${banks.length === 1 ? 'banco' : 'bancos'}`;
+      bankCount.title = banks.map(bank => bankName(bank)).join(', ');
+      details.appendChild(bankCount);
+    }
 
     const action = document.createElement("span");
     action.className = "company-row-action";
-    action.innerHTML = '<span>Abrir</span><b aria-hidden="true">→</b>';
+    const actionLabel = document.createElement("span");
+    actionLabel.textContent = tools ? 'Acessar' : 'Ver empresa';
+    const arrow = document.createElement("b");
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.textContent = '↗';
+    action.append(actionLabel, arrow);
+    footer.append(details, action);
 
-    row.append(code, main, action);
+    row.append(heading, main, footer);
     row.addEventListener("click", () => openCompany(company));
     grid.appendChild(row);
   });
@@ -1533,6 +1577,7 @@ reconcileForm.addEventListener("submit",async event => {
 
 function filterCompanies() {
   const query = search.value.trim();
+  grid.dataset.searching = String(Boolean(query));
   const regime = $('#regimeFilter').value;
   const current = companies.filter(companyBelongsToPortfolio);
   const clear = $('#companySearchClear');if(clear)clear.hidden=!query;
