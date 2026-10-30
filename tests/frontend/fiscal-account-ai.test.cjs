@@ -117,44 +117,64 @@ test('trocar arquivos invalida cache e resposta de outra conta nunca aparece',as
 });
 
 
-test('botão fica no rodapé e parecer ocupa uma vista separada sem novas chamadas ao alternar',async()=>{
-  const {context,requests,find,all,node}=setup();
+test('botão flutuante só é montado para a conta selecionada, abre conversa e reutiliza o parecer',async()=>{
+  const {context,requests,find,node}=setup();
   const scope={origem:'documentos',conta:'470',tipo:'ENTRADAS',acumulador:'1403'};
   const panel=context.createAccountAnalysis(scope);
   const shell=node('div'),header=node('header'),comparison=node('div'),footer=node('footer'),navigation=node('nav');
-  shell.append(header,comparison,footer);footer.appendChild(navigation);comparison.scrollTop=275;
+  shell.append(header,comparison,footer);footer.append(navigation);comparison.scrollTop=275;
+  assert.equal(find(shell,'fiscal-account-ai-fab'),undefined);
   panel.mount({shell,header,comparison,footer,navigation});
-  const tabs=find(header,'fiscal-account-analysis-tabs'),button=find(footer,'fiscal-account-analysis-button');
-  assert.ok(button);assert.equal(find(comparison,'fiscal-account-analysis-button'),undefined);
-  assert.equal(panel.parentElement,shell);assert.equal(panel.hidden,true);assert.equal(comparison.hidden,false);
-  await tabs.children[1].click();assert.equal(requests.length,0);assert.equal(panel.hidden,false);assert.equal(comparison.hidden,true);
-  await button.click();assert.equal(requests.length,1);assert.equal(tabs.children[1].attributes['aria-selected'],'true');
+  const launcher=find(shell,'fiscal-account-ai-fab');
+  assert.ok(launcher);
+  assert.equal(launcher.attributes['aria-controls'],panel.id);
+  assert.equal(panel.hidden,true);
+  assert.equal(comparison.hidden,false);
+  assert.equal(find(header,'fiscal-account-analysis-tabs'),undefined);
+  await launcher.click();
+  assert.equal(requests.length,1);
+  assert.equal(panel.hidden,false);
+  assert.equal(launcher.attributes['aria-expanded'],'true');
+  assert.equal(comparison.hidden,false);
   const body=find(panel,'fiscal-account-analysis-body'),rendered=body.children[0];
-  await tabs.children[0].click();assert.equal(comparison.hidden,false);assert.equal(comparison.scrollTop,275);
-  await button.click();assert.equal(requests.length,1);assert.equal(body.children[0],rendered);
-  let prevented=false;tabs.events.keydown({key:'Home',preventDefault:()=>{prevented=true;}});
-  assert.equal(prevented,true);assert.equal(comparison.hidden,false);assert.equal(tabs.children[0].tabIndex,0);
-  panel.destroy();assert.equal(find(footer,'fiscal-account-analysis-button'),undefined);assert.equal(header.children.length,0);
+  assert.ok(find(panel,'fiscal-document-assistant'));
+  await find(panel,'fiscal-account-ai-close').click();
+  assert.equal(panel.hidden,true);
+  assert.equal(comparison.scrollTop,275);
+  await launcher.click();
+  assert.equal(requests.length,1);
+  assert.equal(body.children[0],rendered);
+  let prevented=false;
+  panel.events.keydown({key:'Escape',preventDefault:()=>{prevented=true;},stopPropagation:()=>{}});
+  assert.equal(prevented,true);
+  assert.equal(panel.hidden,true);
+  panel.destroy();
+  assert.equal(find(shell,'fiscal-account-ai-fab'),undefined);
+  assert.equal(find(shell,'fiscal-account-ai-chat'),undefined);
 });
 
-test('carregamento usa tempo real, encerra o timer e não muda a vista escolhida ao concluir',async()=>{
+test('chat pode ser recolhido enquanto analisa sem trocar a conferência',async()=>{
   const {context,find,node}=setup();let clock=0,tick,finish,calls=0;const cleared=[];
   context.Date={now:()=>clock};context.setInterval=fn=>{tick=fn;return 123;};context.clearInterval=id=>cleared.push(id);
   context.fetch=()=>{calls++;return new Promise(resolve=>{finish=resolve;});};
   const panel=context.createAccountAnalysis({origem:'resumo',conta:'470',tipo:'ENTRADAS'});
   const shell=node('div'),header=node('header'),comparison=node('div'),footer=node('footer'),navigation=node('nav');
   shell.append(header,comparison,footer);footer.append(navigation);panel.mount({shell,header,comparison,footer,navigation});
-  const button=find(footer,'fiscal-account-analysis-button'),pending=button.click();
+  const launcher=find(shell,'fiscal-account-ai-fab');
+  const pending=launcher.click();
   const loading=find(panel,'fiscal-account-loading');assert.equal(loading.hidden,false);
   assert.equal(find(panel,'fiscal-account-loading-meter visually-hidden').attributes['aria-valuenow'],undefined);
   clock=65000;tick();assert.equal(find(panel,'fiscal-account-loading-time').textContent,'1 min 5 s');
-  await find(header,'fiscal-account-analysis-tabs').children[0].click();assert.equal(comparison.hidden,false);
+  await find(panel,'fiscal-account-ai-close').click();
+  assert.equal(comparison.hidden,false);
+  assert.equal(panel.hidden,true);
   finish({ok:true,json:async()=>({escopo:{conta:'470',tipo:'ENTRADAS',origem:'resumo',acumulador:''},analises:[]})});
   await pending;
-  assert.equal(loading.hidden,true);assert.ok(cleared.includes(123));assert.equal(comparison.hidden,false);
-  await button.click();assert.equal(calls,1);assert.equal(panel.hidden,false);assert.equal(loading.hidden,true);
+  assert.equal(loading.hidden,true);assert.ok(cleared.includes(123));
+  await launcher.click();
+  assert.equal(calls,1);assert.equal(panel.hidden,false);
+  assert.equal(comparison.hidden,false);
 });
-
 
 test('parecer apresenta explicação, confirmação, solução condicional e validação em sequência',()=>{
   const {context,all}=setup();
