@@ -1,4 +1,6 @@
 import unittest
+import json
+from contextlib import contextmanager
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -68,6 +70,24 @@ class DocumentaryAgentTests(unittest.TestCase):
             self.assertEqual(result['origem'], 'ia')
             self.assertTrue(all('historico' not in fact for fact in call.call_args.args[1][1:]))
             self.assertNotIn('empresa_nome', call.call_args.args[1][0])
+
+    def test_provider_request_headers_and_brazilian_amount_validation(self):
+        @contextmanager
+        def slot(*args):
+            yield lambda raw: None
+        response = dict(choices=[dict(finish_reason='stop', message=dict(content=json.dumps(dict(
+            explicacao='Confira R$ 3.698,89 em RESUMO.', proximos_passos=['Confira R-902.'], referencias=['RESUMO','R-902']))))])
+        modules = {'app.fiscal_hybrid_ai': SimpleNamespace(choose_provider=lambda: ('groq','openai/gpt-oss-120b','test-key')),
+            'app.ai_budget': SimpleNamespace(request_slot=slot), 'app.groq_fiscal': SimpleNamespace(API_URL='https://example.test/ai')}
+        with patch.dict('sys.modules', modules), patch.object(agent.urllib.request,'urlopen') as send:
+            send.return_value.__enter__.return_value.read.return_value=json.dumps(response).encode()
+            result=agent.interpret('Explique a diferença', [dict(referencia='RESUMO',diferenca='3698.89'),dict(referencia='R-902',valor='3900')])
+            self.assertEqual(result['referencias'],['RESUMO','R-902'])
+            self.assertEqual(send.call_args.args[0].get_header('User-agent'),'Razync-Web/1.0')
+            response['choices'][0]['message']['content']=json.dumps(dict(explicacao='Diferença de R$ 8.888,88.',proximos_passos=[],referencias=['RESUMO']))
+            send.return_value.__enter__.return_value.read.return_value=json.dumps(response).encode()
+            with self.assertRaisesRegex(ValueError,'Número não confirmado'):
+                agent.interpret('Explique',[dict(referencia='RESUMO',diferenca='3698.89')])
 
     def test_failure_retains_local_evidence_without_fake_ai_attribution(self):
         with patch.object(agent, 'interpret', side_effect=ValueError('invalid')):
