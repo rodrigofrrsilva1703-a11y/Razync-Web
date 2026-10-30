@@ -46,3 +46,23 @@ def test_pix_itau_permanece_como_extrato():
     res = analisar_desmembramentos(extrato, 'Itaú', comprovantes=_comprovantes())
     assert len(res.organizado) == 1
     assert res.organizado.iloc[0]['HISTÓRICO'].startswith('PIX ENVIADO')
+
+
+def test_radani_bradesco_retorna_dataframe_para_concatenacao(monkeypatch):
+    from app import migration_services
+    from razync import bradesco_radani
+    original = [{
+        'DESCRIÇÃO': 'BANCO BRADESCO',
+        'DATA': pd.Timestamp('2026-10-01'),
+        'VALOR': -120.0,
+        'DÉBITO': '',
+        'CRÉDITO': '',
+        'HISTÓRICO': 'PAGAMENTO',
+    }]
+    monkeypatch.setattr(bradesco_radani, 'processar_extrato_bradesco_radani',
+                        lambda content: (original, {'ok': True}))
+    frame = migration_services.statement(968, 'bradesco', b'pdf', 'extrato.pdf')
+    assert isinstance(frame, pd.DataFrame)
+    assert len(frame) == 1
+    assert frame.iloc[0]['VALOR'] == -120.0
+    assert len(pd.concat([frame, frame], ignore_index=True)) == 2
