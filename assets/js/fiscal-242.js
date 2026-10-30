@@ -1421,7 +1421,7 @@
   }
   function renderFiscalAssistant(result, scope, state) {
     const host=node("section","fiscal-document-assistant");
-    const modeHint=node("p","fiscal-agent-chat-hint","Assistente automático: investiga com os dados da conta e consulta uma IA gratuita quando disponível. Se a cota acabar, continua com resultados locais.");
+    const modeHint=node("p","fiscal-agent-chat-hint","IA gratuita automática: a pergunta e evidências resumidas podem ser enviadas ao provedor externo. Não inclua dados pessoais ou sigilosos na mensagem. Se indisponível, a investigação local continua.");
     host.append(modeHint);
     const session=result.assistente;
     if(!session?.disponivel){host.appendChild(node("p","",session?.motivo || "O assistente ficará disponível após uma nova análise nesta versão do servidor."));return host;}
