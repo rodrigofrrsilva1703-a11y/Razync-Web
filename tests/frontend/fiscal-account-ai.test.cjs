@@ -65,7 +65,8 @@ test('somente clique envia a seleção e reabrir o parecer não repete a chamada
   assert.equal(requests.length,1);
   assert.equal(requests[0].options.body.get('conta'),'470');assert.equal(requests[0].options.body.get('tipo'),'ENTRADAS');
   assert.equal(requests[0].options.body.get('entradas'),undefined);
-  assert.ok(all(root).some(el=>el.textContent==='Conclusão desta seleção'));
+  assert.ok(all(root).some(el=>el.textContent==='Resultado da investigação'));
+  assert.ok(all(root).some(el=>el.textContent==='Ver investigação completa'));
   root=context.createAccountAnalysis(scope);await find(root,'fiscal-account-analysis-button').click();await find(root,'fiscal-account-analysis-button').click();
   assert.equal(requests.length,1);
 });
