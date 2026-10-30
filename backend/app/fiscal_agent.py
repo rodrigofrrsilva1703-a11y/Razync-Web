@@ -276,6 +276,10 @@ def local_reading(data, plan, rows, tool):
             result['proximos_passos'] = ['Revise as evidências e a cobertura dos documentos anexados; nenhum lançamento candidato foi identificado nesta consulta.']
         if not data.get('tem_documentos'):
             result['pontos_confirmar'].append('Sem o detalhamento por documento fiscal, nenhuma causa específica pode ser comprovada.')
+            if first:
+                result['proximos_passos'].append('Anexe o acompanhamento fiscal de ' +
+                    ('Entradas' if data['scope']['tipo'] == 'ENTRADAS' else 'Saídas') +
+                    ' desta competência para verificar as notas e confirmar se há vínculo com o Razão.')
         elif not rows:
             result['pontos_confirmar'].append('Não foram encontrados registros já classificados como pendentes nesta conta; isso não elimina a divergência dos totais.')
         if tool.startswith('Coincidência'):
