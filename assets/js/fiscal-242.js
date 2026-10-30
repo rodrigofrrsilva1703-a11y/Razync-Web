@@ -1421,7 +1421,7 @@
   }
   function renderFiscalAssistant(result, scope, state) {
     const host=node("section","fiscal-document-assistant");
-    const modeHint=node("p","fiscal-agent-chat-hint","Modo local: investigação sem IA externa. Você pode ativar a IA gratuita abaixo para interpretar perguntas abertas.");
+    const modeHint=node("p","fiscal-agent-chat-hint","Assistente automático: investiga com os dados da conta e consulta uma IA gratuita quando disponível. Se a cota acabar, continua com resultados locais.");
     host.append(modeHint);
     const session=result.assistente;
     if(!session?.disponivel){host.appendChild(node("p","",session?.motivo || "O assistente ficará disponível após uma nova análise nesta versão do servidor."));return host;}
@@ -1533,8 +1533,8 @@
     const suggestions=node("div","fiscal-agent-suggestions");
     const input=node("textarea");input.rows=2;input.maxLength=1000;input.placeholder="Pergunte por uma nota, valor, histórico ou diferença…";input.setAttribute("aria-label","Pergunta sobre os documentos desta conta");
     for(const [label,text] of [["Explicar diferença","Explique a diferença e as pendências"],["Sem vínculo","Quais movimentos estão sem vínculo?"],["Verificar repetição","Existe duplicidade nesta conta?"]]){const b=node("button","",label);b.type="button";b.title=text;b.addEventListener("click",()=>{input.value=text;input.focus();});suggestions.appendChild(b);}
-    const permission=node("label","fiscal-agent-permission"),toggle=node("input");toggle.type="checkbox";toggle.checked=false;
-    permission.append(toggle,node("span","","Usar IA gratuita nesta pergunta (Groq, Gemini ou OpenRouter). A pergunta e até 20 evidências estruturadas serão enviadas ao provedor. Não inclua informações pessoais ou sigilosas."));
+    // Modo automático: o backend decide se existe provedor gratuito disponível.
+    // Nenhuma troca manual de IA a cada pergunta ou fallback para modelos pagos.
     const send=node("button","fiscal-agent-send","↑");send.type="button";send.setAttribute("aria-label","Perguntar");send.title="Enviar pergunta · Enter";
     const cancel=node("button","fiscal-agent-stop","■");cancel.type="button";cancel.hidden=true;cancel.title="Parar espera";cancel.setAttribute("aria-label","Cancelar espera");
     const status=node("p","fiscal-agent-status visually-hidden");status.setAttribute("role","status");
@@ -1547,12 +1547,12 @@
       const waiting=node("div","fiscal-agent-answer fiscal-agent-typing");
       const dots=node("span","fiscal-agent-typing-dots");dots.setAttribute("aria-hidden","true");
       for(let i=0;i<3;i++)dots.appendChild(node("i"));
-      waiting.append(assistantHeading(),dots,node("span","fiscal-agent-typing-label",toggle.checked ? "Preparando resposta com IA…" : "Consultando os documentos…"));
+      waiting.append(assistantHeading(),dots,node("span","fiscal-agent-typing-label","Investigando com o assistente…"));
       pending.append(user,waiting);thread.appendChild(pending);state.revealMessage?.(pending);
-      send.disabled=true;send.hidden=true;cancel.hidden=false;input.disabled=true;toggle.disabled=true;status.textContent="Consultando os registros desta seleção…";
+      send.disabled=true;send.hidden=true;cancel.hidden=false;input.disabled=true;status.textContent="Consultando os registros desta seleção…";
       const timeout=setTimeout(()=>controller.abort(),45000);
       try{
-        const response=await fetch(API()+"/api/v1/conferencia-fiscal/ia/conta/conversa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session:session.session,pergunta:question,usar_ia:toggle.checked}),signal:controller.signal});
+        const response=await fetch(API()+"/api/v1/conferencia-fiscal/ia/conta/conversa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session:session.session,pergunta:question,usar_ia:true}),signal:controller.signal});
         if(!response.ok){
           if(response.status===410){state.result=null;state.agentMessages=[];state.error="A conversa expirou. Clique em Tentar investigação novamente para preparar os documentos.";state.paint();}
           throw new Error(await responseError(response));
@@ -1565,23 +1565,14 @@
         status.textContent=controller.signal.aborted ? "Espera encerrada. Nenhum lançamento foi alterado." : error.message || "Não foi possível consultar o assistente.";
         if(state.source===previewBody && state.result===result){pending.remove();const message={question,error:status.textContent};state.agentMessages.push(message);const entry=renderMessage(message);state.revealMessage?.(entry);}
       }
-      finally{pending.remove();clearTimeout(timeout);state.chatPending=false;state.chatController=null;send.disabled=false;send.hidden=false;cancel.hidden=true;input.disabled=false;toggle.disabled=false;thread.setAttribute("aria-busy","false");}
+      finally{pending.remove();clearTimeout(timeout);state.chatPending=false;state.chatController=null;send.disabled=false;send.hidden=false;cancel.hidden=true;input.disabled=false;thread.setAttribute("aria-busy","false");}
     });
     cancel.addEventListener("click",()=>state.chatController?.abort());
     const composer = node("div", "fiscal-agent-chat-composer");
-    const permissionDetails = node("details", "fiscal-agent-chat-options");
-    permissionDetails.append(node("summary", "", "IA gratuita · desativada"), permission);
-    permissionDetails.open=true;
-    toggle.addEventListener("change",()=>{
-      permissionDetails.querySelector("summary").textContent=toggle.checked ? "IA gratuita · ativada nesta pergunta" : "IA gratuita · desativada";
-      modeHint.textContent=toggle.checked
-        ? "IA gratuita ativada: perguntas abertas terão interpretação por modelo externo quando disponível, com cálculos e evidências locais."
-        : "Modo local: investigação sem IA externa. Você pode ativar a IA gratuita abaixo para interpretar perguntas abertas.";
-    });
     const sendRow = node("div", "fiscal-agent-chat-send-row");
     sendRow.append(send, cancel);
     const inputRow=node("div","fiscal-agent-input-row");inputRow.append(input,sendRow);
-    const meta=node("div","fiscal-agent-composer-meta");meta.append(permissionDetails,node("small","fiscal-agent-key-hint","Enter envia · Shift+Enter quebra a linha"));
+    const meta=node("div","fiscal-agent-composer-meta");meta.append(node("small","fiscal-agent-key-hint","IA gratuita automática · sem contratação paga · Enter envia"));
     composer.append(suggestions, inputRow, meta, status);
     host.append(composer, node("small", "", "Conversa temporária, limitada à empresa, filial, conta e tipo. Confirme as evidências nos documentos originais."));
     host.composer = composer;
