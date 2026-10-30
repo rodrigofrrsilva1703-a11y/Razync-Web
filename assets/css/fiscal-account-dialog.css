@@ -678,3 +678,27 @@ html[data-theme=dark] .app-shell #fiscalView .fiscal-agent-input-row:focus-withi
   #fiscalView .fiscal-agent-chat-composer .fiscal-agent-suggestions {display:none}
 }
 @media(prefers-reduced-motion:reduce) {#fiscalView .fiscal-account-ai-chat {animation:none;transition:none}}
+
+/* Azul contextual do Razync, com superfícies pretas e contraste de leitura. */
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-dialog-shell > .fiscal-account-analysis.fiscal-account-ai-chat {
+  border-color:#2d3b50!important;border-top-color:#477cd5!important;
+}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-account-ai-avatar {
+  background:#1b2a42!important;color:#91b8ff!important;border:1px solid #314a6d;
+}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-account-ai-chat-subtitle {color:#92afd9!important}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-account-ai-chat-message-head,
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-source {color:#96b6e6!important}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-chat-metrics .is-difference dd {color:#91b8ff!important}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-suggestions button {
+  border-color:#334766!important;color:#bdd2f5!important;background:transparent!important;
+}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-suggestions button:hover,
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-account-ai-header-actions button:hover {background:#1b2a42!important;color:#c8dcff!important}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat details > summary {color:#a4c3f8!important}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-input-row:focus-within {
+  border-color:#5c94ed!important;box-shadow:0 0 0 2px #2864d728;
+}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-fab {border-color:#395b89!important;color:#bed5ff!important;background:#17243a!important}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat button:focus-visible,
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat summary:focus-visible {outline:2px solid #80afff;outline-offset:3px}
