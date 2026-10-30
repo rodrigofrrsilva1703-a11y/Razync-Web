@@ -5,7 +5,17 @@ const vm=require('node:vm');
 const source=fs.readFileSync('assets/js/fiscal-242.js','utf8');
 function setup(){
   class Element {
-    constructor(tag,cls='',text=''){this.tag=tag;this.className=cls;this.textContent=text;this.children=[];this.events={};this.attributes={};}
+    constructor(tag,cls='',text=''){
+      this.tag=tag;this.className=cls;this.textContent=text;this.children=[];this.events={};this.attributes={};
+      this.classList={
+        add:(name)=>{this.className=[...new Set([...this.className.split(' ').filter(Boolean),name])].join(' ');},
+        remove:(name)=>{this.className=this.className.split(' ').filter(x=>x!==name).join(' ');},
+        toggle:(name,force)=>{
+          const has=this.className.split(' ').includes(name), next=force===undefined?!has:Boolean(force);
+          next?this.classList.add(name):this.classList.remove(name);return next;
+        }
+      };
+    }
     append(...items){items.forEach(item=>this.appendChild(item));}
     appendChild(item){item.remove();this.children.push(item);item.parentElement=this;return item;}
     replaceChildren(...items){this.children.slice().forEach(item=>item.remove());this.append(...items);}
@@ -136,6 +146,7 @@ test('botão flutuante só é montado para a conta selecionada, abre conversa e 
   assert.equal(requests.length,1);
   assert.equal(panel.hidden,false);
   assert.equal(launcher.attributes['aria-expanded'],'true');
+  assert.ok(shell.className.includes('fiscal-chat-open'));
   assert.equal(comparison.hidden,false);
   const body=find(panel,'fiscal-account-analysis-body'),rendered=body.children[0];
   assert.ok(find(panel,'fiscal-document-assistant'));
@@ -144,6 +155,7 @@ test('botão flutuante só é montado para a conta selecionada, abre conversa e 
   assert.equal(find(panel,'fiscal-account-analysis-bar').hidden,true);
   await find(panel,'fiscal-account-ai-close').click();
   assert.equal(panel.hidden,true);
+  assert.ok(!shell.className.includes('fiscal-chat-open'));
   assert.equal(comparison.scrollTop,275);
   await launcher.click();
   assert.equal(requests.length,1);
@@ -178,6 +190,24 @@ test('chat pode ser recolhido enquanto analisa sem trocar a conferência',async(
   await launcher.click();
   assert.equal(calls,1);assert.equal(panel.hidden,false);
   assert.equal(comparison.hidden,false);
+});
+
+test('chat resume a investigação e carrega o parecer completo apenas quando solicitado',()=>{
+  const {context,find,all}=setup();
+  context.money=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+  const result={analises:[{conta:'362',tipo:'ENTRADAS',investigacao_hibrida:{
+    resumo:{fiscal:'130.00',contabil:'120.00',diferenca:'-10.00'},
+    conclusao:{grau:'inconclusiva',texto:'A diferença de R$ 10 ainda requer documentos.'},
+    contagens:{lancamentos_examinados:2,documentos_examinados:0,correspondencias:0},
+    verificacoes:[],hipoteses:[],limitacoes:[],ia:{estado:'dispensada',motivo:'Investigação local',chamadas:0}
+  }}]};
+  const report=context.renderCompactFiscalChatReport(result,{conta:'362',tipo:'ENTRADAS'});
+  assert.ok(all(report).some(n=>n.textContent==='A diferença de R$ 10 ainda requer documentos.'));
+  assert.ok(all(report).some(n=>n.textContent==='Ver investigação completa'));
+  const full=find(report,'fiscal-chat-full-report');
+  assert.equal(find(report,'fiscal-account-opinion fiscal-hybrid-opinion'),undefined);
+  full.open=true;full.events.toggle();
+  assert.ok(find(report,'fiscal-account-opinion fiscal-hybrid-opinion'));
 });
 
 test('parecer apresenta explicação, confirmação, solução condicional e validação em sequência',()=>{
