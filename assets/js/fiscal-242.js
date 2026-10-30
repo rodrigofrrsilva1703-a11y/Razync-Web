@@ -1472,7 +1472,7 @@
         block.setAttribute("aria-label","Etapas executadas pelo agente na resposta");
         const head=node("div","fiscal-agent-steps-header");
         const title=node("strong","fiscal-agent-steps-title","Investigação do agente");
-        const count=node("span","fiscal-agent-steps-count",reportedSteps.length+" verificação"+(reportedSteps.length===1?"":"es"));
+        const count=node("span","fiscal-agent-steps-count",reportedSteps.length+(reportedSteps.length===1?" verificação":" verificações"));
         head.append(title,count);
         const list=node("ol","fiscal-agent-steps-list");
         reportedSteps.forEach((step,index)=>{
