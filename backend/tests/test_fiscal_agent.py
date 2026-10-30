@@ -76,12 +76,12 @@ class DocumentaryAgentTests(unittest.TestCase):
         def slot(*args):
             yield lambda raw: None
         response = dict(choices=[dict(finish_reason='stop', message=dict(content=json.dumps(dict(
-            explicacao='Confira R$ 3.698,89 em RESUMO.', proximos_passos=['Confira R-902.'], referencias=['RESUMO','R-902']))))])
+            explicacao='Confira R$ 3.698,89 em RESUMO e R$ 3.900,00 em R-902.', proximos_passos=['Confira R-902.'], referencias=['RESUMO','R-902']))))])
         modules = {'app.fiscal_hybrid_ai': SimpleNamespace(choose_provider=lambda: ('groq','openai/gpt-oss-120b','test-key')),
             'app.ai_budget': SimpleNamespace(request_slot=slot), 'app.groq_fiscal': SimpleNamespace(API_URL='https://example.test/ai')}
         with patch.dict('sys.modules', modules), patch.object(agent.urllib.request,'urlopen') as send:
             send.return_value.__enter__.return_value.read.return_value=json.dumps(response).encode()
-            result=agent.interpret('Explique a diferença', [dict(referencia='RESUMO',diferenca='3698.89'),dict(referencia='R-902',valor='3900')])
+            result=agent.interpret('Explique a diferença', [dict(referencia='RESUMO',diferenca='3698.89'),dict(referencia='R-902',valor=3900.0)])
             self.assertEqual(result['referencias'],['RESUMO','R-902'])
             self.assertEqual(send.call_args.args[0].get_header('User-agent'),'Razync-Web/1.0')
             response['choices'][0]['message']['content']=json.dumps(dict(explicacao='Diferença de R$ 8.888,88.',proximos_passos=[],referencias=['RESUMO']))

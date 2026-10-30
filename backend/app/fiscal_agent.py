@@ -165,9 +165,19 @@ def interpret(question, facts):
         raise ValueError('Formato inválido.')
     # Reject invented numerical claims; interpretation cannot introduce amounts/notes/dates.
     def numeric_claims(text):
-        return {re.sub(r'\D', '', n).lstrip('0') or '0' for n in re.findall(r'\d+(?:[.,/]\d+)*', text)}
+        claims = set()
+        for number in re.findall(r'\d+(?:[.,/]\d+)*', text):
+            if '/' in number:
+                claims.add(number)
+                continue
+            if ',' in number:
+                number = number.replace('.', '').replace(',', '.')
+            elif number.count('.') > 1 or ('.' in number and len(number.split('.')[0]) <= 3 and len(number.split('.')[-1]) == 3):
+                number = number.replace('.', '')
+            claims.add(str(Decimal(number).normalize()))
+        return claims
     context_text = json.dumps(facts, ensure_ascii=False, default=str)
-    context_numbers = numeric_claims(context_text) | set(re.findall(r'\d+', context_text))
+    context_numbers = numeric_claims(context_text)
     if not numeric_claims(answer['explicacao'] + ' '.join(steps)) <= context_numbers:
         raise ValueError('Número não confirmado nas evidências.')
     return dict(explicacao=answer['explicacao'], proximos_passos=steps, referencias=refs, provedor=provider, modelo=model)
@@ -214,6 +224,10 @@ def answer(request):
         if request.usar_ia and evidence:
             # No raw reports, company names, partner names or histories go to the provider.
             facts = [dict(referencia='RESUMO', **data['resumo'])]
+            facts[0].update(registros_exibidos=len(evidence),
+                documentos_fiscais_exibidos=sum(r['origem'] == 'Fiscal' for r in evidence),
+                movimentos_razao_exibidos=sum(r['origem'] == 'Razão' for r in evidence),
+                movimentos_sem_vinculo_exibidos=sum(r['referencia'] in data['unlinked'] for r in evidence))
             facts.extend(dict(referencia='COMPOSICAO-' + str(i), **part) for i, part in enumerate(data['composicao'].get('itens', []), 1))
             facts.extend({k: v for k, v in r.items() if k != 'historico'} for r in evidence)
             # Company identity never leaves the server, even through the summary.
