@@ -48,6 +48,15 @@ class DocumentaryAgentTests(unittest.TestCase):
         self.ask('Procure a nota 149599')
         self.assertEqual(self.ask('E essa nota?')['encontrados'], 1)
 
+    def test_document_status_comes_from_comparisons_not_raw_document_defaults(self):
+        docs = dict(self.docs, documentos=[dict(id='S-1',nota='12',valor=100,situacao='LIDO'),dict(id='S-2',nota='13',valor=120,situacao='LIDO')],
+            comparacoes=[dict(situacao='CONCILIADO',linhas_fiscais=[dict(id='S-1')]),dict(situacao='VALOR_DIFERENTE',linhas_fiscais=[dict(id='S-2')])])
+        self.token=agent.register(self.report,self.scope,docs,self.investigation)['session']
+        result=self.ask('Explique as pendências')
+        self.assertNotIn('S-1',[r['referencia'] for r in result['evidencias']])
+        self.assertIn('S-2',[r['referencia'] for r in result['evidencias']])
+        self.assertEqual([r['referencia'] for r in self.ask('Quais estão sem vínculo?')['evidencias']],['R-1'])
+
     def test_external_context_does_not_include_histories(self):
         with patch.object(agent, 'interpret', return_value=dict(explicacao='Confira o documento.', proximos_passos=[], referencias=['R-1'], provedor='teste', modelo='teste')) as call:
             result = self.ask('Nota 149599', True)

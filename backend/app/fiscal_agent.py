@@ -47,13 +47,16 @@ def register(report, scope, documentary, investigation):
         note = re.search(r'\b(?:NF|NOTA|NFE)\s*[:.°º-]?\s*(\d+)', history, re.I)
         records.append(dict(referencia=ref, origem='Razão', conta=str(m.get('conta', '')),
             data=str(m.get('data', '')), valor=m[side], nota=note.group(1) if note else '', historico=history))
+    status_by_ref = {str(d['id']): c.get('situacao', '')
+                     for c in (documentary or {}).get('comparacoes', []) for d in c.get('linhas_fiscais', [])}
     for d in (documentary or {}).get('documentos', []):
         records.append(dict(referencia=str(d['id']), origem='Fiscal', conta=scope['conta'],
             data=d.get('data', ''), valor=d.get('valor'), nota=str(d.get('nota', '')),
-            historico=str(d.get('parceiro', ''))[:200], situacao=d.get('situacao', ''), acumulador=d.get('acumulador', '')))
+            historico=str(d.get('parceiro', ''))[:200], situacao=status_by_ref.get(str(d['id']), d.get('situacao', '')), acumulador=d.get('acumulador', '')))
     pending = {m['id'] for m in (documentary or {}).get('razao_sem_vinculo', [])}
     pending.update(ref for h in investigation.get('hipoteses', []) for ref in h.get('referencias', []))
     payload = dict(scope=deepcopy(scope), records=records, pending=list(pending),
+        unlinked=[m['id'] for m in (documentary or {}).get('razao_sem_vinculo', [])],
         resumo=deepcopy(investigation['resumo']), composicao=deepcopy(investigation.get('composicao_diferenca', {})),
         limites=deepcopy(investigation.get('limitacoes', [])))
     size = len(json.dumps(payload, ensure_ascii=False, default=str).encode())
@@ -88,7 +91,10 @@ def retrieve(data, question):
         amount = Decimal((amount_match.group(1) or amount_match.group(2)).replace('.', '').replace(',', '.'))
         rows = [r for r in rows if Decimal(str(r.get('valor') or 0)) == amount]
         tool = 'Busca por valor exato; igualdade de valor não cria vínculo documental'
-    elif re.search(r'sem vinculo|pendencia|diverg|diferenca|conferir|explic', query):
+    elif re.search(r'sem vinculo', query):
+        rows = [r for r in rows if r['referencia'] in data.get('unlinked', []) or r.get('situacao') == 'SEM_LANCAMENTO_IDENTIFICADO']
+        tool = 'Busca dos movimentos e documentos sem vínculo identificado'
+    elif re.search(r'pendencia|diverg|diferenca|conferir|explic', query):
         rows = [r for r in rows if r['referencia'] in data['pending'] or r.get('situacao') not in ('', 'CONCILIADO')]
         tool = 'Consulta das pendências e da composição da diferença'
     else:
@@ -154,8 +160,11 @@ def interpret(question, facts):
     if not isinstance(steps, list) or len(steps) > 3 or any(not isinstance(s, str) or len(s) > 300 for s in steps):
         raise ValueError('Formato inválido.')
     # Reject invented numerical claims; interpretation cannot introduce amounts/notes/dates.
-    context_numbers = set(re.findall(r'\d+', json.dumps(facts, ensure_ascii=False, default=str)))
-    if not set(re.findall(r'\d+', answer['explicacao'] + ' '.join(steps))) <= context_numbers:
+    def numeric_claims(text):
+        return {re.sub(r'\D', '', n).lstrip('0') or '0' for n in re.findall(r'\d+(?:[.,/]\d+)*', text)}
+    context_text = json.dumps(facts, ensure_ascii=False, default=str)
+    context_numbers = numeric_claims(context_text) | set(re.findall(r'\d+', context_text))
+    if not numeric_claims(answer['explicacao'] + ' '.join(steps)) <= context_numbers:
         raise ValueError('Número não confirmado nas evidências.')
     return dict(explicacao=answer['explicacao'], proximos_passos=steps, referencias=refs, provedor=provider, modelo=model)
 
