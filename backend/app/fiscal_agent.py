@@ -621,6 +621,7 @@ def answer(request):
                     provedor=interpretation['provedor'], modelo=interpretation['modelo'])
                 if interpretation.get('ferramentas_executadas'):
                     response['ferramentas_ia'] = interpretation['ferramentas_executadas']
+                    response['passos_agente'] = interpretation.get('passos_agente', [])
                     response['iteracoes_ia'] = interpretation['iteracoes']
                     response['diagnostico_ia'] = interpretation['status_diagnostico']
             except Exception as exc:
