@@ -438,3 +438,29 @@ html.fiscal-account-dialog-open {overflow:hidden;scrollbar-gutter:stable;}
   #fiscalView #fiscal242Detail .fiscal-comparison-bridge-values dd {font-size:14px;}
   #fiscalView #fiscal242DetailDialog .fiscal-account-dialog-footer .fiscal-account-analysis-button {min-height:44px;}
 }
+
+/* Results: distinguish evidence, pending links and the total difference in both themes. */
+#fiscalView .fiscal-priority-findings {padding:16px 18px;margin:16px 0;border-left:3px solid #b17b24;border-radius:8px;background:#fff8ed;color:#47351a}
+#fiscalView .fiscal-priority-findings p {display:grid;gap:5px;padding:10px 0;margin:0}
+#fiscalView .fiscal-priority-findings span {font-size:13px}
+#fiscalView .fiscal-priority-findings small {font-size:12px;line-height:1.6}
+#fiscalView .fiscal-focused-evidence {margin:18px 0}
+#fiscalView .fiscal-focused-evidence > summary {cursor:pointer;font-size:13px;font-weight:600;padding:10px 0}
+#fiscalView .fiscal-hybrid-confirmation {padding:12px 15px;line-height:1.7;border-left:2px solid var(--fiscal-line,#cddbea)}
+#fiscalView .fiscal-pending-ledger-title {margin:16px 0 10px;font-size:14px}
+#fiscalView .fiscal-document-dialog .fiscal-doc-rows td {text-align:left;line-height:1.65;font-size:12px}
+#fiscalView .fiscal-document-dialog .fiscal-doc-rows .fiscal-doc-status {width:29%;min-width:180px}
+#fiscalView .fiscal-document-dialog .fiscal-doc-rows td:last-child {white-space:normal}
+#fiscalView .fiscal-document-dialog .fiscal-doc-status small {font-size:12px}
+#fiscalView .fiscal-document-dialog .fiscal-doc-difference {font-size:16px}
+html[data-theme=dark] .app-shell #fiscalView .fiscal-document-dialog .fiscal-doc-total-difference {background:#192331!important}
+html[data-theme=dark] .app-shell #fiscalView .fiscal-document-dialog .fiscal-doc-total-difference strong {color:#c3d9ff!important}
+html[data-theme=dark] .app-shell #fiscalView .fiscal-document-dialog .fiscal-doc-difference {color:#f0c47c!important}
+html[data-theme=dark] .app-shell #fiscalView .fiscal-document-dialog .fiscal-doc-badge-valor_diferente {color:#f0c47c!important;background:#29231a!important}
+html[data-theme=dark] .app-shell #fiscalView .fiscal-priority-findings {background:#211d16!important;color:#e9d8b9!important;border-color:#c79b50!important}
+html[data-theme=dark] .app-shell #fiscalView .fiscal-hybrid-ai-status {background:#17202b!important;border-color:#334359!important;color:#c2d2e7!important}
+html[data-theme=dark] .app-shell #fiscalView .fiscal-hybrid-bridge dd {color:#e3e9f1!important}
+html[data-theme=dark] .app-shell #fiscalView .fiscal-document-dialog .fiscal-doc-status small {color:#b8c0cb!important}
+@media(max-width:700px){
+ #fiscalView .fiscal-document-dialog .fiscal-doc-rows .fiscal-doc-status {width:auto;min-width:0}
+}

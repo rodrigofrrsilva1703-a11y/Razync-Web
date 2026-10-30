@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('assets/js/fiscal-242.js','utf8');
-function setup({grouped=false}={}) {
+function setup({grouped=false,unlinked=false}={}) {
   class Element {
     constructor(tag, cls='', text='') { this.tag=tag; this.className=cls; this.textContent=String(text); this.children=[]; this.attributes={}; this.events={}; this.value=''; this.dataset={}; this.open=false; this.isConnected=true; }
     append(...items) {items.forEach(item=>this.appendChild(item));}
@@ -36,7 +36,7 @@ function setup({grouped=false}={}) {
   if(grouped) docs[0].linhas_fiscais.push({...docs[0].linhas_fiscais[0],id:'E-extra',valor:0});
   const group={composicao:{confere_com_inicial:true,itens:[
       {descricao:'Diferenças nos vínculos',valor:1009.99},{descricao:'Fora da conferência inicial',valor:-9.99},{descricao:'Cobertura',valor:0}]},conta:'508',tipo:'ENTRADAS',descricao:'Compras',fiscal:110000,contabil:111000,diferenca:1000,
-    documentos_total:1100,comparacoes:docs,acumuladores:[{codigo:'1152',descricao:'Compras',valor_resumo:110000,valor_documentos:110000,detalhamento_disponivel:true}],razao_sem_vinculo:[]};
+    documentos_total:1100,comparacoes:docs,acumuladores:[{codigo:'1152',descricao:'Compras',valor_resumo:110000,valor_documentos:110000,detalhamento_disponivel:true}],razao_sem_vinculo:unlinked ? [{id:'R-extra',data:'13/08/2026',nota:'149599',historico:'VENDA CF NF 149599',valor:3900,situacao:'SEM_DOCUMENTO_IDENTIFICADO'}] : []};
   context.renderInvestigation({resumo:{contas:2,conciliados:1000,pendentes:100},contas:[group,{...group,conta:'509',comparacoes:[],documentos_total:0}]});
   return {root,all,byClass,context,classes,exportedBlob:()=>exported};
 }
@@ -237,4 +237,13 @@ test('substituir a investigação fecha a janela antiga e libera a rolagem',()=>
   context.renderInvestigation({contas:[]});
   assert.equal(old.open,false);
   assert.equal(classes.has('fiscal-account-dialog-open'),false);
+});
+
+test('todas as pendências inclui movimento sem vínculo na tela e no CSV',async()=>{
+ const h=setup({unlinked:true});
+ assert.match(h.byClass('fiscal-doc-filter').children.find(o=>o.value==='review').textContent,/101/);
+ assert.ok(h.all().some(e=>e.textContent==='Razão sem documento vinculado (1)'));
+ assert.ok(h.all().some(e=>e.textContent==='R-extra · 13/08/2026'));
+ h.byClass('fiscal-doc-export').click();
+ const csv=await h.exportedBlob().text();assert.match(csv,/R-extra/);assert.match(csv,/3900/);
 });
