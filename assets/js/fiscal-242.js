@@ -1541,7 +1541,7 @@
     closeChat.setAttribute("aria-label", "Fechar conversa e voltar à conferência");
     chatHeading.append(chatIdentity, closeChat);
     bar.append(button, cancel);
-    area.append(chatHeading, context, note, aiOption, status, loading, body, bar);
+    area.append(chatHeading, panelHeading, context, note, aiOption, status, loading, body, bar);
     let layout = null, renderedResult = null;
     function switchView(open, focus = false) {
       state.expanded = open;
