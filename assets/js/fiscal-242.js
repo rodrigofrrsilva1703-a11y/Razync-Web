@@ -1464,7 +1464,10 @@
       const timeout=setTimeout(()=>controller.abort(),45000);
       try{
         const response=await fetch(API()+"/api/v1/conferencia-fiscal/ia/conta/conversa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session:session.session,pergunta:question,usar_ia:toggle.checked}),signal:controller.signal});
-        if(!response.ok)throw new Error(await responseError(response));
+        if(!response.ok){
+          if(response.status===410){state.result=null;state.agentMessages=[];state.error="A conversa expirou. Clique em Tentar investigação novamente para preparar os documentos.";state.paint();}
+          throw new Error(await responseError(response));
+        }
         const answer=await response.json();
         if(controller.signal.aborted || state.source!==previewBody || state.result!==result)return;
         if(answer.escopo?.conta!==String(scope.conta) || answer.escopo?.tipo!==scope.tipo || (answer.escopo?.acumulador || "")!==(scope.acumulador || ""))throw new Error("Resposta de outra seleção bloqueada.");
