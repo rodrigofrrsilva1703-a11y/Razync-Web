@@ -129,6 +129,7 @@ def query_plan(question):
         'combinacao' if re.search(r'combinac|somando|soma dos lancamentos|soma de lancamentos|quais valores compoem', query) else
         'movimentos' if re.search(r'quais lancamentos|quais movimentos|maiores valores|maiores lancamentos|lancamentos dessa conta|movimentac', query) else
         'totais' if re.search(r'quanto|total|somatorio|saldo|valor fiscal|valor contabil|qual valor', query) else
+        'historico' if re.search(r'historic|descric|\bpix\b|fornecedor|cliente|parceiro|palavra|termo', query) else
         'diferenca' if account_difference else
         'geral'
     )
@@ -224,7 +225,7 @@ def select_rows(data, question, plan):
         }[plan['intent']]
     elif plan['intent'] == 'historico':
         stop = {'qual','quais','essa','esse','conta','valor','para','sobre','esta','como','pode','voce','preciso','quero','encontre','procure','buscar','pesquise','historico','mostre','registros'}
-        terms = [w for w in re.findall(r'[\\w]+', normalized(question)) if len(w) > 3 and w not in stop]
+        terms = [w for w in re.findall(r'[\w]+', normalized(question)) if len(w) > 3 and w not in stop]
         rows = [r for r in rows if any(w in normalized(' '.join(str(v) for v in r.values())) for w in terms)]
         tool = 'Busca nos campos dos documentos e históricos'
     else:
@@ -546,8 +547,10 @@ def answer(request):
             ferramenta=tool, encontrados=len(rows), exibidos=len(evidence), evidencias=evidence,
             limites=data['limites'], origem='local', referencias=[r['referencia'] for r in evidence],
             cache_reutilizado=False, nota_contexto=subject, **reading)
-        if request.usar_ia and evidence:
-            # Only structured facts from the current query; no raw files, histories or company identity.
+        if request.usar_ia:
+            # Também é possível interpretar uma pergunta sobre a diferença quando
+            # nenhum documento individual foi encontrado. O RESUMO é a evidência.
+            # Nunca envie os arquivos, históricos ou a identificação da empresa.
             context = dict(referencia='CONSULTA', intencao=plan['intent'], leitura_calculada=reading['explicacao'],
                 fatos=reading['fatos'], pontos_confirmar=reading['pontos_confirmar'], comparacao=reading['comparacao'],
                 registros_exibidos=len(evidence), registros_encontrados=len(rows))
@@ -555,7 +558,8 @@ def answer(request):
             if plan['intent'] == 'diferenca':
                 facts.extend(dict(referencia='COMPOSICAO-' + str(i), **part)
                     for i, part in enumerate(data['composicao'].get('itens', []), 1))
-            facts.extend({k: v for k, v in r.items() if k != 'historico'} for r in evidence)
+            facts.extend({k: v for k, v in r.items() if k not in {'historico', 'conta'}}
+                for r in evidence)
             try:
                 interpretation = interpret(question, facts)
                 response.update(origem='ia', interpretacao_ia=interpretation['explicacao'],
