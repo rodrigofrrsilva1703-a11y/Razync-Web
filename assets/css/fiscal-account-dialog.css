@@ -642,7 +642,9 @@ html[data-theme=dark] .app-shell #fiscalView .fiscal-document-assistant .fiscal-
 #fiscalView .fiscal-agent-input-row:focus-within {border-color:#5286df;box-shadow:0 0 0 2px #5286df18}
 #fiscalView .fiscal-agent-chat-composer textarea {flex:1;min-width:0;min-height:54px;height:54px;max-height:105px;padding:8px;border:0;border-radius:8px;outline:none;box-shadow:none;resize:vertical;background:transparent;color:inherit;font:inherit;font-size:12px;line-height:1.5}
 #fiscalView .fiscal-agent-chat-send-row {display:flex;flex-direction:column;gap:4px;flex:none}
-#fiscalView .fiscal-agent-chat-send-row .fiscal-agent-send {min-height:35px;padding:7px 11px;font-size:11px;border-radius:8px}
+#fiscalView .fiscal-agent-chat-send-row .fiscal-agent-send {min-height:35px;padding:7px 11px;font-size:11px;font-weight:600;border:1px solid #2864d7;border-radius:8px;background:#2864d7;color:#fff;cursor:pointer}
+#fiscalView .fiscal-agent-chat-send-row .fiscal-agent-send:disabled {opacity:.6;cursor:wait}
+#fiscalView .fiscal-account-ai-chat .fiscal-document-assistant > small {display:none}
 #fiscalView .fiscal-agent-chat-send-row > button:not(.fiscal-agent-send) {font-size:10px;padding:4px;max-width:85px}
 #fiscalView .fiscal-agent-chat-options {font-size:10px;margin:0;color:var(--fiscal-muted,#64748b)}
 #fiscalView .fiscal-agent-chat-options summary {cursor:pointer;padding:2px 0}

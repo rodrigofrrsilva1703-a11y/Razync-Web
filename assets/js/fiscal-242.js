@@ -1446,6 +1446,7 @@
       }
       if(answer.limites?.length){const limits=node("details");limits.appendChild(node("summary","","Limites desta consulta"));answer.limites.forEach(text=>limits.appendChild(node("p","",text)));entry.appendChild(limits);}
       thread.appendChild(entry);
+      return entry;
     };
     state.agentMessages.forEach(renderMessage);host.appendChild(thread);
     const suggestions=node("div","fiscal-agent-suggestions");
@@ -1471,7 +1472,7 @@
         const answer=await response.json();
         if(controller.signal.aborted || state.source!==previewBody || state.result!==result)return;
         if(answer.escopo?.conta!==String(scope.conta) || answer.escopo?.tipo!==scope.tipo || (answer.escopo?.acumulador || "")!==(scope.acumulador || ""))throw new Error("Resposta de outra seleção bloqueada.");
-        const message={question,answer};state.agentMessages.push(message);renderMessage(message);input.value="";status.textContent="Resposta pronta. Confira as evidências antes de decidir um ajuste.";
+        const message={question,answer};state.agentMessages.push(message);const entry=renderMessage(message);state.revealMessage?.(entry);input.value="";status.textContent="Resposta pronta. Confira as evidências antes de decidir um ajuste.";
       }catch(error){status.textContent=controller.signal.aborted ? "Espera encerrada. Nenhum lançamento foi alterado." : error.message || "Não foi possível consultar o assistente.";}
       finally{clearTimeout(timeout);state.chatPending=false;state.chatController=null;send.disabled=false;cancel.hidden=true;input.disabled=false;toggle.disabled=false;}
     });
@@ -1557,6 +1558,10 @@
     aiToggle.addEventListener("change",()=>{state.useAI=aiToggle.checked;state.chatController?.abort();state.agentMessages=[];state.result=null;state.paint();});
     const exportButton = node("button", "fiscal-account-analysis-export", "Exportar parecer"); exportButton.type = "button";
     const body = node("div", "fiscal-account-analysis-body");
+    state.revealMessage = entry => {
+      if (!state.expanded || !entry) return;
+      body.scrollTop += entry.getBoundingClientRect().top - body.getBoundingClientRect().top - 12;
+    };
     const composerSlot = node("div", "fiscal-account-ai-composer-slot");
     const loading = node("section", "fiscal-account-loading"); loading.hidden = true;
     loading.setAttribute("aria-label", "Análise desta seleção em andamento");
@@ -1634,6 +1639,7 @@
     };
     area.destroy = () => {
       state.chatController?.abort();
+      state.revealMessage = null;
       layout?.shell.classList?.remove("fiscal-chat-open");
       state.expanded = false;
       layout = null;
