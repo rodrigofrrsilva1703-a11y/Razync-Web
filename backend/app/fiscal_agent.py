@@ -601,10 +601,28 @@ def answer(request):
             facts.extend({k: v for k, v in r.items() if k not in {'historico', 'conta'}}
                 for r in evidence)
             try:
-                interpretation = interpret(question, facts)
+                # A IA decide consultas apenas nas perguntas investigativas.
+                # Perguntas pontuais continuam em uma única chamada, economizando cota.
+                complexa = plan['intent'] in {
+                    'geral', 'diferenca', 'competencia', 'acumulador',
+                    'combinacao', 'movimentos', 'sem_vinculo'}
+                if complexa:
+                    from app.fiscal_agent_loop import investigate as run_tool_agent, UnsupportedTools
+                    try:
+                        interpretation = run_tool_agent(question, data)
+                    except UnsupportedTools:
+                        # Modelo gratuito sem function calling: uma interpretação
+                        # tradicional limitada, nunca mudar para modelo pago.
+                        interpretation = interpret(question, facts)
+                else:
+                    interpretation = interpret(question, facts)
                 response.update(origem='ia', interpretacao_ia=interpretation['explicacao'],
                     orientacoes_ia=interpretation['proximos_passos'], referencias_ia=interpretation['referencias'],
                     provedor=interpretation['provedor'], modelo=interpretation['modelo'])
+                if interpretation.get('ferramentas_executadas'):
+                    response['ferramentas_ia'] = interpretation['ferramentas_executadas']
+                    response['iteracoes_ia'] = interpretation['iteracoes']
+                    response['diagnostico_ia'] = interpretation['status_diagnostico']
             except Exception as exc:
                 # Diagnostic metadata only: never log prompts, responses or credentials.
                 import logging
