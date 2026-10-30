@@ -1548,10 +1548,10 @@
       state.paint();
       if (focus) (open ? closeChat : launcher).focus({preventScroll:true});
     }
-    launcher.addEventListener("click", () => {
+    launcher.addEventListener("click", async () => {
       if (state.expanded) { switchView(false, true); return; }
       switchView(true, true);
-      if (!state.pending && !state.result && !state.error) button.click();
+      if (!state.pending && !state.result && !state.error) await button.click();
     });
     closeChat.addEventListener("click", () => switchView(false, true));
     area.addEventListener("keydown", event => {
