@@ -1430,28 +1430,93 @@
       const entry=node("article","fiscal-agent-message");
       entry.append(node("strong","",message.question));
       if(message.error){entry.appendChild(node("p","",message.error));thread.appendChild(entry);return;}
+
       const answer=message.answer;
-      entry.append(node("small","fiscal-agent-source",answer.origem==="ia" ? "Interpretação por " + answer.provedor + " · " + answer.modelo : "Consulta local dos documentos · sem IA externa"),
-        node("p","",answer.explicacao));
-      if(answer.aviso_ia)entry.appendChild(node("p","fiscal-agent-warning",answer.aviso_ia));
-      const totals=node("p","fiscal-agent-totals");
-      totals.textContent="Fiscal: " + money.format(Number(answer.resumo.fiscal)) + " · Razão: " + money.format(Number(answer.resumo.contabil)) + " · Diferença: " + money.format(Number(answer.resumo.diferenca));
-      entry.appendChild(totals);
-      const steps=node("ol");(answer.proximos_passos || []).forEach(text=>steps.appendChild(node("li","",text)));entry.appendChild(steps);
-      entry.appendChild(node("small","",answer.ferramenta + " · " + answer.exibidos + " de " + answer.encontrados + " registros exibidos. Ausência na busca não comprova ausência na escrituração."));
-      if(answer.evidencias?.length){
-        const details=node("details");details.appendChild(node("summary","","Evidências consultadas (" + answer.evidencias.length + ")"));
-        answer.evidencias.forEach(r=>details.appendChild(node("p","fiscal-agent-evidence",r.referencia + " · " + r.origem + " · Conta " + r.conta + " · " + (r.nota ? "Nota " + r.nota + " · " : "") + r.data + " · " + money.format(Number(r.valor)) + "\n" + (r.historico || ""))));
-        entry.appendChild(details);
+      const source=answer.origem==="ia"
+        ? "Fatos calculados no sistema · apoio de " + answer.provedor + " · " + answer.modelo
+        : "Consulta documental · cálculos locais";
+      entry.append(node("small","fiscal-agent-source",source));
+      if(answer.titulo)entry.appendChild(node("h5","fiscal-agent-answer-title",answer.titulo));
+      if(answer.recorte)entry.appendChild(node("small","fiscal-agent-scope",answer.recorte));
+      entry.appendChild(node("p","fiscal-agent-answer-text",answer.explicacao));
+      if(answer.comparacao){
+        const comparison=node("section","fiscal-agent-comparison");
+        comparison.appendChild(node("h6","",answer.comparacao.rotulo || "Valores comparados"));
+        const values=node("dl");
+        for(const [label,key] of [["Fiscal","fiscal"],["Razão no vínculo","contabil"],["Diferença · Razão menos fiscal","diferenca"]]){
+          const value=answer.comparacao[key];if(value==null || !Number.isFinite(Number(value)))continue;
+          const row=node("div",key==="diferenca" ? "is-difference" : "");
+          row.append(node("dt","",label),node("dd","",money.format(Number(value))));values.appendChild(row);
+        }
+        comparison.append(values,node("small","",answer.comparacao.criterio || ""));
+        entry.appendChild(comparison);
+      }else if(!answer.intencao && answer.resumo){
+        // Compatibility with an older API response, without inventing document totals.
+        entry.appendChild(node("p","fiscal-agent-totals","Fiscal: "+money.format(Number(answer.resumo.fiscal))+" · Razão: "+money.format(Number(answer.resumo.contabil))+" · Diferença: "+money.format(Number(answer.resumo.diferenca))));
       }
+      const section=(title,items,className)=>{
+        if(!items?.length)return;
+        const group=node("section",className);
+        group.appendChild(node("h6","",title));
+        const list=node("ul");
+        items.forEach(text=>list.appendChild(node("li","",text)));
+        group.appendChild(list);entry.appendChild(group);
+      };
+      section("O que os registros mostram",answer.fatos,"fiscal-agent-facts");
+      section("Próximo passo",answer.proximos_passos,"fiscal-agent-next");
+      section("A confirmar",answer.pontos_confirmar,"fiscal-agent-confirm");
+      if(answer.interpretacao_ia){
+        const interpretation=node("section","fiscal-agent-interpretation");
+        interpretation.append(node("h6","","Explicação complementar da IA"),node("p","",answer.interpretacao_ia));
+        if(answer.orientacoes_ia?.length){const list=node("ul");answer.orientacoes_ia.forEach(text=>list.appendChild(node("li","",text)));interpretation.appendChild(list);}
+        entry.appendChild(interpretation);
+      }
+      if(answer.aviso_ia)entry.appendChild(node("p","fiscal-agent-warning",answer.aviso_ia));
+      entry.appendChild(node("small","fiscal-agent-coverage",answer.exibidos+" de "+answer.encontrados+" registros exibidos · "+answer.ferramenta));
+      let evidenceDetails=null;
+      if(answer.evidencias?.length){
+        const details=node("details","fiscal-agent-records");
+        details.appendChild(node("summary","","Evidências consultadas ("+answer.evidencias.length+")"));
+        for(const origin of ["Fiscal","Razão"]){
+          const records=answer.evidencias.filter(r=>r.origem===origin);if(!records.length)continue;
+          details.appendChild(node("h6","",origin));
+          records.forEach(r=>{
+            const record=node("article","fiscal-agent-evidence-record");
+            record.append(node("strong","",r.referencia+" · Conta "+r.conta),
+              node("p","",""+(r.nota ? "Nota "+r.nota+" · " : "")+(r.serie ? "Série "+r.serie+" · " : "")+r.data+" · "+money.format(Number(r.valor))));
+            if(r.historico)record.appendChild(node("p","fiscal-agent-evidence-history",r.historico));
+            details.appendChild(record);
+          });
+        }
+        entry.appendChild(details);evidenceDetails=details;
+      }
+      const actions=node("div","fiscal-agent-result-actions");
+      for(const action of answer.acoes || []){
+        if(!["pergunta","evidencias"].includes(action.tipo))continue;
+        if(action.tipo==="evidencias" && !evidenceDetails)continue;
+        if(action.tipo==="pergunta" && (typeof action.pergunta!=="string" || action.pergunta.length>1000))continue;
+        const button=node("button","",action.rotulo);button.type="button";
+        button.title=action.tipo==="pergunta" ? "Preencher próxima pergunta; clique em Perguntar para enviar" : "Abrir registros desta resposta";
+        button.addEventListener("click",()=>{
+          if(action.tipo==="evidencias"){evidenceDetails.open=true;evidenceDetails.scrollIntoView?.({block:"nearest"});}
+          else if(!state.chatPending){input.value=action.pergunta;input.focus();}
+        });
+        actions.appendChild(button);
+      }
+      if(evidenceDetails && answer.comparacao){
+        const compare=node("button","","Comparar registros");compare.type="button";
+        compare.addEventListener("click",()=>{evidenceDetails.open=true;evidenceDetails.scrollIntoView?.({block:"nearest"});});
+        actions.appendChild(compare);
+      }
+      if(actions.children.length)entry.appendChild(actions);
       if(answer.limites?.length){const limits=node("details");limits.appendChild(node("summary","","Limites desta consulta"));answer.limites.forEach(text=>limits.appendChild(node("p","",text)));entry.appendChild(limits);}
       thread.appendChild(entry);
       return entry;
     };
     state.agentMessages.forEach(renderMessage);host.appendChild(thread);
     const suggestions=node("div","fiscal-agent-suggestions");
-    const input=node("textarea");input.rows=2;input.maxLength=1000;input.placeholder="Ex.: Por que essa conta não bate? Ou: procure a nota 149599";input.setAttribute("aria-label","Pergunta sobre os documentos desta conta");
-    for(const [label,text] of [["Explicar diferença","Explique a diferença e as pendências"],["Sem vínculo","Quais movimentos estão sem vínculo?"]]){const b=node("button","",label);b.type="button";b.title=text;b.addEventListener("click",()=>{input.value=text;input.focus();});suggestions.appendChild(b);}
+    const input=node("textarea");input.rows=2;input.maxLength=1000;input.placeholder="Pergunte por uma nota, valor, histórico ou diferença…";input.setAttribute("aria-label","Pergunta sobre os documentos desta conta");
+    for(const [label,text] of [["Explicar diferença","Explique a diferença e as pendências"],["Sem vínculo","Quais movimentos estão sem vínculo?"],["Verificar repetição","Existe duplicidade nesta conta?"]]){const b=node("button","",label);b.type="button";b.title=text;b.addEventListener("click",()=>{input.value=text;input.focus();});suggestions.appendChild(b);}
     const permission=node("label","fiscal-agent-permission"),toggle=node("input");toggle.type="checkbox";toggle.checked=false;
     permission.append(toggle,node("span","","Usar IA externa nesta pergunta: envia a pergunta e até 20 evidências estruturadas ao provedor gratuito configurado. Os arquivos, nomes e históricos não são enviados. Evite incluir dados pessoais na pergunta."));
     const send=node("button","fiscal-agent-send","Perguntar");send.type="button";

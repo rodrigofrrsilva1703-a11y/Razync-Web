@@ -44,6 +44,65 @@ class DocumentaryAgentTests(unittest.TestCase):
             self.assertTrue(self.ask('Explique a diferença')['cache_reutilizado'])
             call.assert_not_called()
 
+    def prepare_note_pair(self, ambiguous=False):
+        self.report['lancamentos'][0].update(credito=915,historico='VENDA CF NF 149353')
+        docs=dict(documentos=[dict(id='S-1',nota='149353',serie='0',data='13/08/2026',valor=1095)],
+            comparacoes=[dict(nota='149353',serie='0',data='13/08/2026',situacao='AMBIGUO' if ambiguous else 'VALOR_DIFERENTE',valor_fiscal=1095,valor_razao=915,diferenca=-180,
+                linhas_fiscais=[dict(id='S-1')],lancamentos=[dict(id='R-1',conta='408')])],razao_sem_vinculo=[])
+        self.token=agent.register(self.report,self.scope,docs,self.investigation)['session']
+
+    def test_note_answer_uses_document_values_instead_of_account_totals(self):
+        self.prepare_note_pair()
+        result=self.ask('Compare a nota 149353')
+        self.assertEqual(result['comparacao']['fiscal'],1095)
+        self.assertEqual(result['comparacao']['diferenca'],'-180.00')
+        self.assertIn('180,00',result['explicacao'])
+        self.assertNotIn('3.900',result['explicacao'])
+        self.assertTrue(result['acoes'])
+
+    def test_missing_and_ambiguous_counterpart_never_become_zero(self):
+        result=self.ask('Nota 149599')
+        self.assertIsNone(result['comparacao'])
+        self.assertIn('ausente não foi tratado como zero',result['explicacao'])
+        self.prepare_note_pair(ambiguous=True)
+        self.assertIsNone(self.ask('Compare a nota 149353')['comparacao'])
+
+    def test_reference_and_negative_exact_amount_search(self):
+        self.assertEqual(self.ask('Mostre R-1')['encontrados'],1)
+        self.report['lancamentos'][0]['credito']=-3900
+        self.token=agent.register(self.report,self.scope,self.docs,self.investigation)['session']
+        self.assertEqual(self.ask('Procure valor -3.900,00')['encontrados'],1)
+
+    def test_duplicate_check_does_not_confuse_counterpart_or_installment(self):
+        self.prepare_note_pair()
+        self.assertIn('Sem repetição',self.ask('Existe duplicidade na nota 149353?')['titulo'])
+        self.report['lancamentos'].append(dict(self.report['lancamentos'][0],credito=200))
+        self.token=agent.register(self.report,self.scope,self.docs,self.investigation)['session']
+        self.assertIn('Sem repetição',self.ask('Nota 149353 duplicada?')['titulo'])
+        self.report['lancamentos'].append(dict(self.report['lancamentos'][0]))
+        self.token=agent.register(self.report,self.scope,self.docs,self.investigation)['session']
+        result=self.ask('Nota 149353 duplicada?')
+        self.assertIn('Possível repetição',result['titulo'])
+        self.assertEqual(result['encontrados'],2)
+        self.assertIsNone(result['comparacao'])
+
+    def test_followup_and_cached_note_restore_the_correct_subject(self):
+        self.ask('Nota 149599')
+        self.ask('Nota 999999')
+        self.assertTrue(self.ask('Nota 149599')['cache_reutilizado'])
+        result=self.ask('E em outra conta?')
+        self.assertEqual(result['encontrados'],2)
+        self.assertEqual(result['nota_contexto'],'149599')
+
+    def test_note_ai_context_excludes_account_summary_and_cannot_replace_local_facts(self):
+        self.prepare_note_pair()
+        with patch.object(agent,'interpret',return_value=dict(explicacao='Confira as parcelas.',proximos_passos=[],referencias=['S-1'],provedor='teste',modelo='teste')) as call:
+            result=self.ask('Compare a nota 149353',True)
+            self.assertIn('180,00',result['explicacao'])
+            self.assertEqual(result['interpretacao_ia'],'Confira as parcelas.')
+            self.assertNotIn('3.900',json.dumps(call.call_args.args[1],ensure_ascii=False))
+            self.assertEqual(result['comparacao']['diferenca'],'-180.00')
+
     def test_amount_search_does_not_create_link_and_followup_keeps_document(self):
         result = self.ask('Procure o valor R$ 3.900,00')
         self.assertEqual(result['encontrados'], 1)

@@ -71,6 +71,30 @@ test('somente clique envia a seleção e reabrir o parecer não repete a chamada
   assert.equal(requests.length,1);
 });
 
+test('resposta por nota separa comparação e fatos; ações abrem evidências ou preenchem pergunta sem enviar',async()=>{
+  const {context,all,find}=setup();let calls=0;
+  context.setTimeout=()=>1;context.clearTimeout=()=>{};context.money=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+  const scope={conta:'408',tipo:'SAÍDAS',origem:'documentos',acumulador:''};
+  const result={assistente:{disponivel:true,session:'token'}};const state={source:context.previewBody,result};
+  context.fetch=async()=>{calls++;return{ok:true,json:async()=>({escopo:scope,origem:'local',intencao:'documento',titulo:'Diferença no documento',recorte:'Nota 149353',
+    explicacao:'O Razão está abaixo do fiscal.',resumo:{fiscal:900000,contabil:999999,diferenca:99999},
+    comparacao:{rotulo:'Nota 149353',fiscal:1095,contabil:915,diferenca:-180},fatos:['S-365 e R-657'],
+    proximos_passos:['Compare as parcelas.'],pontos_confirmar:['Causa não comprovada.'],
+    evidencias:[{referencia:'R-657',origem:'Razão',conta:'408',nota:'149353',data:'05/08/2026',valor:915,historico:'<img onerror=evil()>'}],
+    acoes:[{tipo:'evidencias',rotulo:'Ver lançamentos'},{tipo:'pergunta',rotulo:'Pesquisar em outras contas',pergunta:'Procure a nota 149353 em outras contas'}],
+    ferramenta:'Busca',exibidos:1,encontrados:1})};};
+  const root=context.renderFiscalAssistant(result,scope,state),input=all(root).find(e=>e.tag==='textarea');
+  input.value='Compare a nota 149353';await find(root,'fiscal-agent-send').click();
+  assert.ok(find(root,'fiscal-agent-comparison'));
+  assert.equal(find(root,'fiscal-agent-totals'),undefined);
+  assert.ok(all(root).some(e=>e.textContent==='A confirmar'));
+  assert.ok(!all(root).some(e=>e.tag==='img'));
+  await all(root).find(e=>e.tag==='button'&&e.textContent==='Ver lançamentos').click();
+  assert.equal(find(root,'fiscal-agent-records').open,true);
+  await all(root).find(e=>e.tag==='button'&&e.textContent==='Pesquisar em outras contas').click();
+  assert.equal(input.value,'Procure a nota 149353 em outras contas');assert.equal(calls,1);
+});
+
 test('recorte documental envia apenas o acompanhamento do tipo e preserva o acumulador',async()=>{
   const {context,requests,find}=setup();
   const root=context.createAccountAnalysis({origem:'documentos',conta:'470',tipo:'ENTRADAS',acumulador:'1403'});
