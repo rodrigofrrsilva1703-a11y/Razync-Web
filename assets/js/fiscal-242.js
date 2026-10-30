@@ -1522,57 +1522,70 @@
     const panelTitle = node("h4", "", "Parecer da IA");
     panelHeading.append(panelTitle, exportButton);
     const context = node("p", "fiscal-account-analysis-context", "Conta " + scope.conta + " · " + scope.tipo + (scope.acumulador ? " · Acumulador " + scope.acumulador : ""));
-    const tabs = node("div", "fiscal-account-analysis-tabs"); tabs.setAttribute("role", "tablist"); tabs.setAttribute("aria-label", "Visualização da conta");
-    const conferenceTab = node("button", "", "Conferência"), opinionTab = node("button", "", "Parecer da IA");
-    const panelId = "fiscal-opinion-" + [scope.origem,scope.conta,scope.tipo === "SAÍDAS" ? "saidas" : "entradas",scope.acumulador || "conta"].join("-");
-    area.id = panelId; area.setAttribute("role", "tabpanel"); area.tabIndex = 0;
-    for (const [tab, suffix] of [[conferenceTab,"comparison"],[opinionTab,"opinion"]]) {
-      tab.type = "button"; tab.id = panelId + "-" + suffix; tab.setAttribute("role", "tab");
-    }
-    opinionTab.setAttribute("aria-controls", panelId); area.setAttribute("aria-labelledby", opinionTab.id);
-    button.setAttribute("aria-controls", panelId);
-    tabs.append(conferenceTab, opinionTab);
-    bar.append(button, cancel); area.append(tabs, bar, panelHeading, context, note, aiOption, status, loading, body);
+    const panelId = "fiscal-chat-" + [scope.origem, scope.conta, scope.tipo === "SAÍDAS" ? "saidas" : "entradas", scope.acumulador || "conta"].join("-");
+    area.id = panelId;
+    area.setAttribute("role", "region");
+    area.setAttribute("aria-label", "Conversa e parecer da conta " + scope.conta);
+    area.tabIndex = -1;
+    const launcher = node("button", "fiscal-account-ai-fab");
+    launcher.type = "button";
+    launcher.textContent = "✦  Assistente IA";
+    launcher.setAttribute("aria-label", "Abrir assistente da conta " + scope.conta);
+    launcher.setAttribute("aria-controls", panelId);
+    const chatHeading = node("div", "fiscal-account-ai-chat-heading");
+    const chatIdentity = node("div", "fiscal-account-ai-chat-identity");
+    chatIdentity.append(node("span", "fiscal-account-ai-avatar", "✦"),
+      node("div", "fiscal-account-ai-chat-title", "Assistente Razync"));
+    const closeChat = node("button", "fiscal-account-ai-close", "×");
+    closeChat.type = "button";
+    closeChat.setAttribute("aria-label", "Fechar conversa e voltar à conferência");
+    chatHeading.append(chatIdentity, closeChat);
+    bar.append(button, cancel);
+    area.append(chatHeading, context, note, aiOption, status, loading, body, bar);
     let layout = null, renderedResult = null;
-    function switchView(opinion, focus = false) {
-      state.expanded = opinion; state.paint();
-      if (focus) (opinion ? opinionTab : conferenceTab).focus({preventScroll:true});
+    function switchView(open, focus = false) {
+      state.expanded = open;
+      state.paint();
+      if (focus) (open ? closeChat : launcher).focus({preventScroll:true});
     }
-    conferenceTab.addEventListener("click", () => switchView(false));
-    opinionTab.addEventListener("click", () => switchView(true));
-    tabs.addEventListener("keydown", event => {
-      if (!["ArrowLeft","ArrowRight","Home","End"].includes(event.key)) return;
+    launcher.addEventListener("click", () => {
+      if (state.expanded) { switchView(false, true); return; }
+      switchView(true, true);
+      if (!state.pending && !state.result && !state.error) button.click();
+    });
+    closeChat.addEventListener("click", () => switchView(false, true));
+    area.addEventListener("keydown", event => {
+      if (event.key !== "Escape") return;
       event.preventDefault();
-      switchView(event.key === "Home" ? false : event.key === "End" ? true : !state.expanded, true);
+      event.stopPropagation?.();
+      switchView(false, true);
     });
     area.mount = target => {
       layout = target;
-      area.className = "fiscal-account-analysis fiscal-detail fiscal-account-dialog-body is-docked";
-      target.header.appendChild(tabs);
-      target.footer.insertBefore(bar, target.navigation);
-      target.shell.insertBefore(area, target.footer);
-      target.comparison.id ||= panelId + "-comparison-panel";
-      target.comparison.setAttribute("role", "tabpanel"); target.comparison.setAttribute("tabindex", "0"); target.comparison.setAttribute("aria-labelledby", conferenceTab.id);
-      conferenceTab.setAttribute("aria-controls", target.comparison.id);
+      area.className = "fiscal-account-analysis fiscal-account-ai-chat";
+      target.shell.append(launcher, area);
+      state.expanded = false;
       paint();
     };
     area.destroy = () => {
       state.chatController?.abort();
-      if (layout) layout.comparison.hidden = false;
-      layout = null; area.remove(); tabs.remove(); bar.remove();
+      state.expanded = false;
+      layout = null;
+      area.remove();
+      launcher.remove();
     };
     function paint() {
       button.disabled = state.pending || !state.source;
-      button.textContent = state.pending ? "Investigando…" : state.result ? "Ver investigação salva" : state.error ? "Tentar investigação novamente" : scope.acumulador ? "Analisar acumulador" : "Analisar conta";
-      aiToggle.disabled=state.pending;
-      button.setAttribute("aria-expanded", String(state.expanded));
+      button.textContent = state.pending ? "Investigando…" : state.result ? "Ver investigação salva" : state.error ? "Tentar investigação novamente" : scope.acumulador ? "Investigar acumulador" : "Investigar conta";
+      aiToggle.disabled = state.pending;
+      launcher.textContent = state.pending ? "✦  Investigando…" : state.result ? "✦  IA · Parecer pronto" : "✦  Assistente IA";
+      launcher.setAttribute("aria-expanded", String(state.expanded));
+      launcher.setAttribute("aria-label", (state.expanded ? "Recolher" : "Abrir") + " assistente da conta " + scope.conta);
       cancel.hidden = !state.pending;
       exportButton.hidden = !state.result?.analises?.length;
-      const local = state.result && (state.result.provedor === "local" || state.result.analises?.[0]?.provedor === "local");
-      panelTitle.textContent = "Investigação da seleção";
-      opinionTab.textContent = "Investigação" + (state.pending ? " · em andamento" : state.result && !state.expanded ? " · pronta" : "");
-      status.textContent = state.pending ? "Analisando somente esta seleção. Você pode voltar à conferência durante a espera." : state.error || (state.result ? "Parecer pronto para esta seleção." : "");
-      status.className = "fiscal-account-analysis-status" + (state.pending || !state.error && state.result ? " visually-hidden" : "");
+      panelTitle.textContent = "Parecer desta conta";
+      status.textContent = state.pending ? "Investigando somente esta conta. Você pode recolher a conversa." : state.error || (state.result ? "Análise concluída. Consulte as evidências e faça perguntas sobre esta seleção." : "");
+      status.className = "fiscal-account-analysis-status" + (state.pending ? " visually-hidden" : "");
       status.hidden = !status.textContent;
       body.hidden = !state.result;
       body.setAttribute("aria-busy", String(state.pending));
@@ -1581,12 +1594,12 @@
       loading.setAttribute("aria-busy", String(state.pending));
       updateLoadingTime();
       context.hidden = false;
-      for (const [tab, selected] of [[conferenceTab,!state.expanded],[opinionTab,state.expanded]]) {
-        tab.setAttribute("aria-selected", String(selected)); tab.tabIndex = selected ? 0 : -1;
-      }
-      if (layout) { layout.comparison.hidden = state.expanded; area.hidden = !state.expanded; }
+      if (layout) area.hidden = !state.expanded;
       if (state.result && renderedResult !== state.result) {
-        body.replaceChildren(renderFiscalAssistant(state.result, scope, state), renderAccountOpinion(state.result, scope)); renderedResult = state.result;
+        const report = node("section", "fiscal-account-ai-chat-report");
+        report.append(node("div", "fiscal-account-ai-chat-message-head", "✦  Resultado da investigação"), renderAccountOpinion(state.result, scope));
+        body.replaceChildren(report, renderFiscalAssistant(state.result, scope, state));
+        renderedResult = state.result;
       }
     }
     function updateLoadingTime() {
@@ -1599,7 +1612,7 @@
     state.paint = paint; state.tick = updateLoadingTime;
     button.addEventListener("click", async () => {
       if (state.pending) return;
-      if (state.result) { switchView(true); opinionTab.focus({preventScroll:true}); return; }
+      if (state.result) { switchView(true, true); return; }
       if (!state.source || state.source !== previewBody) return;
       const body = new FormData();
       body.append("usar_ia",String(state.useAI));
@@ -1609,7 +1622,6 @@
       const controller = new AbortController(); state.controller = controller;
       state.pending = true; state.expanded = true; state.error = ""; state.startedAt = Date.now(); state.paint();
       state.timer = setInterval(() => { if (state.pending) state.tick(); }, 1000);
-      opinionTab.focus({preventScroll:true});
       try {
         const response = await fetch(API() + "/api/v1/conferencia-fiscal/ia/conta", {method:"POST", body, signal:controller.signal});
         if (!response.ok) throw new Error(await responseError(response));
