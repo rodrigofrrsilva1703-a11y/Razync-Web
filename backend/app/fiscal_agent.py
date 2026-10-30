@@ -137,6 +137,7 @@ def interpret(question, facts):
             body['provider'] = {'allow_fallbacks': False, 'data_collection': 'deny', 'max_price': {'prompt': 0, 'completion': 0}}
         url = groq_fiscal.API_URL if provider == 'groq' else 'https://openrouter.ai/api/v1/chat/completions'
         headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key}
+    headers.update({'Accept': 'application/json', 'User-Agent': 'Razync-Web/1.0'})
     with request_slot(provider, model if provider != 'openrouter' else 'free', body) as usage:
         req = urllib.request.Request(url, data=json.dumps(body).encode(), headers=headers)
         with urllib.request.urlopen(req, timeout=25) as response:
