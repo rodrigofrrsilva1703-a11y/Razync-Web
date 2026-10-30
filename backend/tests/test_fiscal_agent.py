@@ -61,6 +61,39 @@ class DocumentaryAgentTests(unittest.TestCase):
             self.assertEqual(call.call_count, 1)
             self.assertEqual(call.call_args.args[1][0]['referencia'], 'CONSULTA')
 
+    def test_investigation_question_invokes_bounded_tool_agent(self):
+        result_data = dict(explicacao='Diferença sob investigação documental.',
+            proximos_passos=['Confira as notas desta competência.'],
+            referencias=['RESUMO'], provedor='groq', modelo='gratuito',
+            ferramentas_executadas=['obter_contexto_conta', 'consultar_indicios'],
+            iteracoes=3, status_diagnostico='EVIDENCIA_PARCIAL')
+        with patch('app.fiscal_agent_loop.investigate', return_value=result_data) as mocked:
+            result = self.ask('Investigue a diferença desta conta.', True)
+        self.assertEqual(mocked.call_count, 1)
+        self.assertEqual(result['origem'], 'ia')
+        self.assertEqual(result['ferramentas_ia'], result_data['ferramentas_executadas'])
+        self.assertEqual(result['diagnostico_ia'], 'EVIDENCIA_PARCIAL')
+
+    def test_agent_fallback_for_model_without_tools_remains_free(self):
+        from app.fiscal_agent_loop import UnsupportedTools
+        with patch('app.fiscal_agent_loop.investigate', side_effect=UnsupportedTools('not supported')):
+            with patch.object(agent, 'interpret', return_value=dict(
+                explicacao='A diferença está confirmada pelos totais.',
+                proximos_passos=['Confira os documentos.'], referencias=['CONSULTA'],
+                provedor='groq', modelo='gratuito')) as fallback:
+                result = self.ask('Investigue a diferença.', True)
+        self.assertEqual(fallback.call_count, 1)
+        self.assertEqual(result['origem'], 'ia')
+        self.assertNotIn('ferramentas_ia', result)
+
+    def test_invalid_tool_output_keeps_safe_local_answer(self):
+        from app.fiscal_agent_loop import InvalidAgentReply
+        with patch('app.fiscal_agent_loop.investigate', side_effect=InvalidAgentReply('invalid')):
+            result = self.ask('Investigue a diferença.', True)
+        self.assertEqual(result['origem'], 'local')
+        self.assertIn('aviso_ia', result)
+        self.assertEqual(result['comparacao']['diferenca'], '3900')
+
     def test_chat_aproveita_indicios_calculados_sem_provar_causa(self):
         investigation = dict(self.investigation, hipoteses=[{
             'id': 'H1', 'categoria': 'competencia',
