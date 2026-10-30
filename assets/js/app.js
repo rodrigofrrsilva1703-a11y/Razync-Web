@@ -268,8 +268,9 @@ function render(items) {
     details.appendChild(toolCount);
     if (tools && banks.length) {
       const bankCount = document.createElement("span");
-      bankCount.textContent = `${banks.length} ${banks.length === 1 ? 'banco' : 'bancos'}`;
-      bankCount.title = banks.map(bank => bankName(bank)).join(', ');
+      const bankNames = [...new Set(banks.map(bank => bankName(bank)))];
+      bankCount.textContent = `${bankNames.length} ${bankNames.length === 1 ? 'banco' : 'bancos'}`;
+      bankCount.title = banks.map(bank => bankLabel(bank, company.capabilities.banks[bank])).join(', ');
       details.appendChild(bankCount);
     }
 
