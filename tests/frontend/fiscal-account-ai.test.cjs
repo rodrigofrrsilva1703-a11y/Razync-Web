@@ -65,6 +65,42 @@ test('assistente envia só token e pergunta, mostra fonte e preserva texto sem H
   assert.equal(state.agentMessages.length,1);
 });
 
+test('chat exibe etapas do agente, resultados reais e não inventa progresso',async()=>{
+  const {context,all,find}=setup();
+  context.setTimeout=()=>1;context.clearTimeout=()=>{};
+  context.money=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+  const scope={conta:'408',tipo:'SAÍDAS',origem:'documentos',acumulador:''};
+  const state={source:context.previewBody,result:{assistente:{disponivel:true,session:'sessao'}}};
+  context.fetch=async()=>({ok:true,json:async()=>({
+    origem:'ia',provedor:'groq',modelo:'free',explicacao:'Conferência limitada.',
+    interpretacao_ia:'A causa ainda não está comprovada.',
+    encontrados:2,exibidos:2,ferramenta:'Investigação',evidencias:[],
+    ferramentas_ia:['obter_contexto_conta','cruzar_documentos_fiscais_razao','buscar_movimentos_razao'],
+    passos_agente:[
+      {ferramenta:'obter_contexto_conta',situacao:'concluido',resumo:'Totais consultados.'},
+      {ferramenta:'cruzar_documentos_fiscais_razao',situacao:'dados_insuficientes',resumo:'Acompanhamento não anexado.'},
+      {ferramenta:'buscar_movimentos_razao',situacao:'concluido',resumo:'2 movimentos no recorte.'}
+    ]
+  })});
+  const root=context.renderFiscalAssistant(state.result,scope,state);
+  const thread=find(root,'fiscal-agent-thread');
+  assert.equal(find(root,'fiscal-agent-steps'),undefined);
+  const input=all(root).find(e=>e.tag==='textarea');input.value='Investigue a diferença';
+  await find(root,'fiscal-agent-send').click();
+  const section=find(root,'fiscal-agent-steps');
+  assert.ok(section,'O chat deve renderizar as etapas retornadas.');
+  assert.equal(section.attributes['aria-label'],'Etapas executadas pelo agente na resposta');
+  const items=all(section).filter(e=>String(e.className).startsWith('fiscal-agent-step is-'));
+  assert.equal(items.length,3);
+  assert.ok(items[0].className.includes('is-concluido'));
+  assert.ok(items[1].className.includes('is-dados_insuficientes'));
+  assert.ok(all(section).some(e=>e.textContent==='Acompanhamento não anexado.'));
+  assert.ok(all(section).some(e=>e.textContent==='3 verificações'));
+  assert.ok(all(section).some(e=>e.textContent==='Cruzamento de documentos'));
+  assert.ok(all(thread).some(e=>e.textContent==='A causa ainda não está comprovada.'));
+  assert.ok(!all(section).some(e=>e.tag==='button'));
+});
+
 test('somente clique envia a seleção e reabrir o parecer não repete a chamada',async()=>{
   const {context,requests,find,all}=setup();const scope={origem:'resumo',conta:'470',tipo:'ENTRADAS'};
   let root=context.createAccountAnalysis(scope);
