@@ -1,0 +1,1668 @@
+CÓDIGO-FONTE DA BASE INTELIGENTE — RAZYNC-WEB
+============================================
+Repositório: https://github.com/rodrigofrrsilva1703-a11y/Razync-Web
+Origem: branch main · consultada em 30/10/2026
+Formato: arquivos completos + trechos claramente identificados dos arquivos maiores
+Finalidade: estudo, documentação e reutilização. Este TXT não é um script Python único executável.
+
+A API atual chama classification_service.py, que utiliza o motor
+classificar_planilha_final() de engine.py. O módulo base_inteligente.py
+foi incluído separadamente porque também existe no repositório.
+
+Dependências e demais módulos necessários para execução devem ser consultados
+no repositório original.
+
+ARQUIVOS INCLUÍDOS:
+01. backend/app/classification_service.py — COMPLETO · Serviço usado pela API para aprendizado e classificação
+02. backend/app/classification_coverage.py — COMPLETO · Cobertura dos lançamentos classificados
+03. backend/app/engine.py — classificar_planilha_final — FUNÇÃO COMPLETA · Motor principal que aplica os padrões
+04. backend/app/main.py — rotas da Base Inteligente — TRECHO DA API · Status, aprendizado e classificação
+05. assets/js/app.js — interface da Base Inteligente — TRECHO DA INTERFACE · Aprendizado, modos, prévia e classificação
+06. assets/js/app.js — consulta de estatísticas — FUNÇÃO COMPLETA · Atualização de padrões, bancos e períodos
+07. backend/app/base_maintenance.py — COMPLETO · Manutenção e exclusão seletiva do aprendizado
+08. assets/js/base-maintenance.js — COMPLETO · Interface de manutenção da base
+09. assets/js/base-periods.js — COMPLETO · Consulta de períodos salvos
+10. backend/app/base_inteligente.py — COMPLETO · Implementação separada mantida no repositório (as rotas atuais usam classification_service.py)
+
+
+================================================================================================
+SEÇÃO 1: backend/app/classification_service.py
+COMPLETO · Serviço usado pela API para aprendizado e classificação
+================================================================================================
+
+"""Persistent adapter for the complete original classification and review rules."""
+from __future__ import annotations
+import hashlib
+import io
+import json
+import os
+import sqlite3
+import urllib.request
+import urllib.parse
+from pathlib import Path
+import pandas as pd
+from app import engine, persistence
+from app.migration_services import accounts, slug
+
+DB_PATH = Path(os.getenv('RAZYNC_DB_PATH', '/data/razync.db'))
+
+# Perfis originais da Base Inteligente da empresa 242 no Streamlit.
+# O frontend envia apenas a origem; as contas elegíveis são decididas aqui.
+ELETRO_242_CLASSIFICATION_PROFILES = {
+    'consolidada': {
+        'modo_consolidado': True,
+        'coluna_substituir': '',
+        'valores_substituiveis': [],
+    },
+    'despesa': {
+        'modo_consolidado': False,
+        'coluna_substituir': 'debito',
+        'valores_substituiveis': ['0', ''],
+    },
+    'fornecedor': {
+        'modo_consolidado': False,
+        'coluna_substituir': 'debito',
+        'valores_substituiveis': ['166', '0', ''],
+    },
+    'recebido': {
+        'modo_consolidado': False,
+        'coluna_substituir': 'credito',
+        'valores_substituiveis': ['166', '0', '14', '16', ''],
+    },
+    'francesinhas': {
+        'modo_consolidado': False,
+        'coluna_substituir': 'credito',
+        'valores_substituiveis': [''],
+    },
+}
+
+def resolve_classification_options(company, options=None):
+    resolved = dict(options or {})
+    if int(company) == 242:
+        origem = str(resolved.get('origem_242') or '').strip().casefold()
+        if origem:
+            if origem not in ELETRO_242_CLASSIFICATION_PROFILES:
+                raise ValueError('Modo de classificação inválido para a empresa 242.')
+            resolved.update(ELETRO_242_CLASSIFICATION_PROFILES[origem])
+    elif int(company) == 1408:
+        # No Streamlit a filial tem apenas "Modelo Domínio consolidado".
+        # Pagamentos e recebimentos substituem somente conta vazia/0.
+        resolved.update({
+            'modo_consolidado': True,
+            'coluna_substituir': '',
+            'valores_substituiveis': [],
+        })
+    return resolved
+
+def _db():
+    con = persistence.connect(DB_PATH)
+    if persistence.is_postgres(con):return con
+    con.executescript('''
+      CREATE TABLE IF NOT EXISTS classification_records(
+        company INTEGER NOT NULL, id TEXT NOT NULL, payload TEXT NOT NULL,
+        PRIMARY KEY(company,id));
+      CREATE TABLE IF NOT EXISTS classification_imports(
+        company INTEGER NOT NULL, digest TEXT NOT NULL, PRIMARY KEY(company,digest));
+    ''')
+    return con
+
+def _save(con, company, records):
+    # One read and one upsert per batch instead of two network trips per pattern.
+    # SQLite keeps batches below its traditional 999-parameter limit.
+    batch_size = 1000 if persistence.is_postgres(con) else 250
+    for offset in range(0, len(records), batch_size):
+        prepared = []
+        for source in records[offset:offset + batch_size]:
+            record = dict(source)
+            record['empresa'] = slug(company)
+            record['id'] = hashlib.sha256(f"{record['empresa']}|{record['banco']}|{record['assinatura']}|{record['debito']}|{record['credito']}".encode()).hexdigest()
+            prepared.append(record)
+        identities = list(dict.fromkeys(record['id'] for record in prepared))
+        placeholders = ','.join('?' for _ in identities)
+        previous = {row['id']: json.loads(row['payload']) for row in con.execute(
+            f'SELECT id,payload FROM classification_records WHERE company=? AND id IN ({placeholders})',
+            (company, *identities))}
+        updates = {}
+        for record in prepared:
+            identity = record['id']
+            old = updates.get(identity, previous.get(identity))
+            if old:
+                record['periodos'] = sorted(set(record.get('periodos', []) + old.get('periodos', [])))
+                record['ocorrencias'] = max(int(record.get('ocorrencias', 1)), int(old.get('ocorrencias', 1)))
+            updates[identity] = record
+        values = ','.join('(?,?,?)' for _ in updates)
+        parameters = tuple(value for record in updates.values()
+                           for value in (company, record['id'], json.dumps(record, ensure_ascii=False)))
+        con.execute('INSERT INTO classification_records(company,id,payload) VALUES ' + values +
+                    ' ON CONFLICT(company,id) DO UPDATE SET payload=excluded.payload', parameters)
+
+def records(company):
+    con = _db()
+    try:
+        result = [json.loads(row['payload']) for row in con.execute('SELECT payload FROM classification_records WHERE company=?', (company,))]
+        # Preserve all previously learned v0.3 records without rewriting the table.
+        if persistence.table_exists(con, 'patterns'):
+            known = {(r['banco'], r['assinatura'], r['debito'], r['credito']) for r in result}
+            for row in con.execute('SELECT * FROM patterns WHERE company=?', (company,)):
+                bank = row['bank']
+                bank = 'bb' if company == 242 and bank == 'banco_brasil' else 'itau_512' if company == 1408 and bank == 'itau' else bank
+                account = accounts(company).get(bank)
+                if not account:
+                    continue
+                debit, credit = (row['counterpart'], account) if row['nature'] == 'pago' else (account, row['counterpart'])
+                identity = (bank, row['signature'], debit, credit)
+                if identity in known:
+                    continue
+                matching = next((r for r in result if (r['banco'], r['assinatura'], r['debito'], r['credito']) == identity), None)
+                if matching:
+                    matching['periodos'] = sorted(set(matching['periodos'] + [row['period']]))
+                    matching['ocorrencias'] += row['occurrences']
+                else:
+                    result.append({'empresa': slug(company), 'banco': bank, 'assinatura': row['signature'],
+                        'debito': debit, 'credito': credit, 'periodos': [row['period']],
+                        'ocorrencias': row['occurrences'], 'exemplo_historico': row['example']})
+        return result
+    finally:
+        con.close()
+
+def status(company):
+    rows = records(company)
+    return {'patterns': len(rows), 'banks': len({r['banco'] for r in rows}),
+            'periods': len({p for r in rows for p in r.get('periodos', [])})}
+
+class SourceFile(io.BytesIO):
+    def __init__(self, content, filename):
+        super().__init__(content)
+        self.name = filename
+
+def _learning_records(company, content, filename, data_inicial='', data_final=''):
+    if filename.lower().endswith('.json'):
+        payload = json.loads(content)
+        if not isinstance(payload, dict) or int(payload.get('company', -1)) != company:
+            raise ValueError('A base importada pertence a outra empresa.')
+        imported = payload.get('records', [])
+        if not isinstance(imported, list):
+            raise ValueError('Base de classificações inválida.')
+    else:
+        imported = engine.importar_arquivos_classificados([SourceFile(content, filename)], slug(company), accounts(company))
+    if bool(data_inicial) != bool(data_final):
+        raise ValueError('Informe as duas datas do período.')
+    if data_inicial:
+        inicio = pd.Timestamp(data_inicial).to_period('M')
+        fim = pd.Timestamp(data_final).to_period('M')
+        if fim < inicio:
+            raise ValueError('A Data Final não pode ser anterior à Data Inicial.')
+        meses = {str(periodo) for periodo in pd.period_range(inicio, fim, freq='M')}
+        imported = [
+            item for item in imported
+            if any(str(periodo) in meses for periodo in (item.get('periodos') or []))
+        ]
+        if not imported:
+            raise ValueError('Nenhum padrão revisado foi encontrado no período informado.')
+    for item in imported:
+        if not all(k in item for k in ('banco', 'assinatura', 'debito', 'credito', 'periodos')) or item['banco'] not in accounts(company):
+            raise ValueError('Padrão inválido ou banco não configurado para esta empresa.')
+    if not imported:
+        raise ValueError('Nenhum padrão revisado foi encontrado. Envie um Modelo Domínio ou Razão com as contas preenchidas.')
+    return imported
+
+
+def learn(company, content, filename, data_inicial='', data_final=''):
+    digest_source = content + f"|{data_inicial}|{data_final}".encode("utf-8") if (data_inicial or data_final) else content
+    digest = hashlib.sha256(digest_source).hexdigest()
+    con = _db()
+    try:
+        if con.execute('SELECT 1 FROM classification_imports WHERE company=? AND digest=?', (company, digest)).fetchone():
+            return 0
+    finally:
+        con.close()
+    # Parsing and validating a large workbook must not hold the shared write lock.
+    imported = _learning_records(company, content, filename, data_inicial, data_final)
+    learned = sum(int(r.get('ocorrencias', 1)) for r in imported)
+    con = _db()
+    try:
+        con.execute('BEGIN IMMEDIATE')
+        # Another request may have learned this file while it was being parsed.
+        if con.execute('SELECT 1 FROM classification_imports WHERE company=? AND digest=?', (company, digest)).fetchone():
+            return 0
+        _save(con, company, imported)
+        con.execute('INSERT INTO classification_imports VALUES(?,?)', (company, digest))
+        con.commit()
+        return learned
+    finally:
+        con.close()
+
+def _limit_classified_workbook_to_period(original_content, classified_content, data_inicial='', data_final=''):
+    if bool(data_inicial) != bool(data_final):
+        raise ValueError('Informe as duas datas do período.')
+    if not data_inicial:
+        return classified_content, None
+    inicio = pd.Timestamp(data_inicial).normalize()
+    fim = pd.Timestamp(data_final).normalize()
+    if fim < inicio:
+        raise ValueError('A Data Final não pode ser anterior à Data Inicial.')
+
+    from openpyxl import load_workbook
+    original = load_workbook(io.BytesIO(original_content), data_only=False)
+    result = load_workbook(io.BytesIO(classified_content), data_only=False)
+    changed = 0
+
+    for ws in result.worksheets:
+        if ws.title not in original.sheetnames or 'retir' in engine.normalizar_texto(ws.title):
+            continue
+        source = original[ws.title]
+        header = None
+        columns = {}
+        for row_number in range(1, min(source.max_row, 30) + 1):
+            test = {
+                engine.normalizar_texto(engine.texto_celula_seguro(source.cell(row_number, col).value)).strip(): col
+                for col in range(1, source.max_column + 1)
+            }
+            if all(name in test for name in ('historico', 'debito', 'credito')):
+                header, columns = row_number, test
+                break
+        if header is None:
+            continue
+        data_col = columns.get('data')
+        if data_col is None:
+            raise ValueError(f'A aba {ws.title} não possui coluna DATA para aplicar o período.')
+        debit_col, credit_col = columns['debito'], columns['credito']
+
+        for row_number in range(header + 1, source.max_row + 1):
+            raw_date = source.cell(row_number, data_col).value
+            parsed = pd.to_datetime(raw_date, dayfirst=True, errors='coerce')
+            inside = not pd.isna(parsed) and inicio <= parsed.normalize() <= fim
+            source_debit = source.cell(row_number, debit_col).value
+            source_credit = source.cell(row_number, credit_col).value
+            if not inside:
+                ws.cell(row_number, debit_col).value = source_debit
+                ws.cell(row_number, credit_col).value = source_credit
+            elif (
+                ws.cell(row_number, debit_col).value != source_debit
+                or ws.cell(row_number, credit_col).value != source_credit
+            ):
+                changed += 1
+
+    output = io.BytesIO()
+    result.save(output)
+    return output.getvalue(), changed
+
+
+def classify(company, content, filename, options=None):
+    options = resolve_classification_options(company, options)
+    workbook, summary = engine.classificar_planilha_final(
+        content, filename, records(company), accounts(company),
+        empresa_classificacao=slug(company), coluna_substituir=options.get('coluna_substituir', ''),
+        valores_substituiveis=options.get('valores_substituiveis', []),
+        modo_consolidado_eletro_forte=bool(options.get('modo_consolidado', company in {242, 1408}))
+    )
+    workbook, changed = _limit_classified_workbook_to_period(
+        content, workbook, options.get('data_inicial', ''), options.get('data_final', '')
+    )
+    if changed is not None:
+        summary = dict(summary)
+        summary['automaticos'] = changed
+        summary['periodo_aplicado'] = {
+            'data_inicial': options.get('data_inicial', ''),
+            'data_final': options.get('data_final', ''),
+        }
+    return workbook, summary
+
+
+def classify_with_coverage(company, content, filename, options=None):
+    """Acrescenta indicadores apenas à resposta web, preservando o contrato interno."""
+    workbook, summary = classify(company, content, filename, options)
+    resolved = resolve_classification_options(company, options)
+    resolved.setdefault('modo_consolidado', int(company) in {242, 1408})
+    from app.classification_coverage import coverage
+    report = coverage(content, workbook, slug(company), resolved)
+    return workbook, {**summary, 'cobertura': report}
+
+
+def pending(company, content, data_inicial='', data_final=''):
+    frame = engine.extrair_pendencias_revisao_inteligente(content, accounts(company))
+    if bool(data_inicial) != bool(data_final):
+        raise ValueError('Informe as duas datas do período.')
+    if data_inicial and not frame.empty:
+        inicio = pd.Timestamp(data_inicial).normalize()
+        fim = pd.Timestamp(data_final).normalize()
+        if fim < inicio:
+            raise ValueError('A Data Final não pode ser anterior à Data Inicial.')
+        datas = pd.to_datetime(frame['Data'], dayfirst=True, errors='coerce')
+        frame = frame.loc[datas.between(inicio, fim, inclusive='both')].copy()
+    return json.loads(frame.to_json(orient='records', date_format='iso', force_ascii=False))
+
+def review(company, content, filename, revisions, remember=False):
+    expected = pending(company, content)
+    identities = {(r['_aba'], int(r['_linha'])): r for r in expected}
+    validated = []
+    for requested in revisions:
+        identity = (requested.get('_aba'), int(requested.get('_linha', 0)))
+        if identity not in identities:
+            raise ValueError('O lançamento já está classificado ou não pertence à revisão deste arquivo.')
+        row = dict(identities[identity])
+        row['Conta da contrapartida'] = str(requested.get('Conta da contrapartida', '')).strip()
+        validated.append(row)
+    workbook, applied, new_records = engine.aplicar_revisoes_inteligentes(content, pd.DataFrame(validated), filename, slug(company), accounts(company))
+    if remember:
+        con = _db()
+        try:
+            con.execute('BEGIN IMMEDIATE')
+            _save(con, company, new_records)
+            con.commit()
+        finally:
+            con.close()
+    return workbook, {'aplicadas': applied, 'aprendizados': len(new_records) if remember else 0}
+
+def import_original_online(company):
+    """Explicit read-only copy; never write to the original database."""
+    url = os.getenv('SUPABASE_URL', '').split('/rest/v1')[0].rstrip('/')
+    key = os.getenv('SUPABASE_SERVICE_KEY', '')
+    if not url.startswith('https://') or not key:
+        raise ValueError('Configure SUPABASE_URL e SUPABASE_SERVICE_KEY somente no Railway para importar a base original.')
+    query = urllib.parse.urlencode({'empresa': 'eq.' + slug(company), 'select': '*'})
+    imported, offset = [], 0
+    while True:
+        request = urllib.request.Request(f'{url}/rest/v1/classificacoes_bancarias?{query}&limit=1000&offset={offset}', headers={'apikey': key, 'Authorization': f'Bearer {key}'})
+        with urllib.request.urlopen(request, timeout=30) as response:
+            batch = json.load(response)
+        imported.extend(batch)
+        if len(batch) < 1000:
+            break
+        offset += 1000
+    return learn(company, json.dumps({'company': company, 'records': imported}).encode(), 'base-original.json')
+
+def clear(company):
+    con = _db()
+    try:
+        con.execute('BEGIN IMMEDIATE')
+        for table in ('classification_records', 'classification_imports'):
+            con.execute(f'DELETE FROM {table} WHERE company=?', (company,))
+        if persistence.table_exists(con, 'patterns'):
+            con.execute('DELETE FROM patterns WHERE company=?', (company,))
+        con.commit()
+    finally:
+        con.close()
+
+
+
+================================================================================================
+SEÇÃO 2: backend/app/classification_coverage.py
+COMPLETO · Cobertura dos lançamentos classificados
+================================================================================================
+
+"""Resumo de cobertura da Base Inteligente, sem alterar regras de classificação.
+
+Uma linha com histórico é considerada classificada quando possui contas de
+DÉBITO e CRÉDITO utilizáveis. Nas modalidades da Eletro Forte, as contas
+provisórias da coluna de contrapartida são tratadas como pendentes.
+"""
+from __future__ import annotations
+
+import io
+
+from openpyxl import load_workbook
+
+from app import engine
+
+
+def _cell_text(value):
+    return engine.texto_celula_seguro(value).strip()
+
+
+def _normalized_header(ws):
+    for row, values in enumerate(ws.iter_rows(max_row=30, values_only=True), start=1):
+        columns = {
+            engine.normalizar_texto(_cell_text(value)).strip(): col
+            for col, value in enumerate(values, start=1)
+        }
+        if all(key in columns for key in ("historico", "debito", "credito")):
+            return row, columns
+    return None, None
+
+
+def _needs_replacement(row, cols, company_slug, options):
+    """A coluna de contrapartida e seus placeholders conforme o modo vigente."""
+    column = engine.normalizar_texto(str(options.get("coluna_substituir") or "")).strip()
+    placeholders = {_cell_text(value) for value in options.get("valores_substituiveis", [])}
+
+    if bool(options.get("modo_consolidado", False)) and company_slug.startswith("eletro_forte"):
+        value_col = cols.get("valor")
+        value = (
+            engine.limpar_valor_monetario(row[value_col - 1])
+            if value_col is not None else 0.0
+        )
+        if value < 0:
+            column = "debito"
+            placeholders = (
+                {"", "0"} if company_slug == "eletro_forte_filial_1408"
+                else {"", "0", "166"}
+            )
+        elif value > 0:
+            column = "credito"
+            placeholders = (
+                {"", "0"} if company_slug == "eletro_forte_filial_1408"
+                else {"", "0", "14", "16", "166"}
+            )
+        else:
+            return None, set()
+    return column, placeholders
+
+
+def _classified(row, cols, company_slug, options):
+    debit = _cell_text(row[cols["debito"] - 1])
+    credit = _cell_text(row[cols["credito"] - 1])
+    if debit in {"", "0"} or credit in {"", "0"}:
+        return False
+    column, invalid = _needs_replacement(row, cols, company_slug, options)
+    if column == "debito" and debit in invalid:
+        return False
+    if column == "credito" and credit in invalid:
+        return False
+    return True
+
+
+def coverage(original_bytes: bytes, classified_bytes: bytes, company_slug: str,
+             options: dict | None = None) -> dict:
+    """Indicadores apenas das abas elegíveis; exclui Principal e Retirados."""
+    options = options or {}
+    original = load_workbook(io.BytesIO(original_bytes), read_only=True, data_only=False)
+    result = load_workbook(io.BytesIO(classified_bytes), read_only=True, data_only=False)
+    total = previous = classified = new = 0
+    try:
+        for ws in result.worksheets:
+            normalized = engine.normalizar_texto(ws.title)
+            if "retir" in normalized:
+                continue
+            if company_slug.startswith("eletro_forte") and normalized.strip() == "principal":
+                continue
+            if ws.title not in original.sheetnames:
+                continue
+            source = original[ws.title]
+            header, columns = _normalized_header(ws)
+            if header is None:
+                continue
+            original_header, source_columns = _normalized_header(source)
+            if original_header is None:
+                continue
+            results = ws.iter_rows(min_row=header + 1, values_only=True)
+            originals = source.iter_rows(min_row=original_header + 1, values_only=True)
+            for row, source_row in zip(results, originals):
+                if not _cell_text(row[columns["historico"] - 1]):
+                    continue
+                total += 1
+                complete = _classified(row, columns, company_slug, options)
+                was_complete = _classified(source_row, source_columns, company_slug, options)
+                if complete:
+                    classified += 1
+                if was_complete:
+                    previous += 1
+                if complete and not was_complete:
+                    new += 1
+    finally:
+        original.close()
+        result.close()
+    return {
+        "total": total,
+        "classificadas": classified,
+        "pendentes": total - classified,
+        "ja_classificadas": previous,
+        "novas_classificadas": new,
+        "percentual": round(100 * classified / total, 1) if total else None,
+    }
+
+
+
+================================================================================================
+SEÇÃO 3: backend/app/engine.py — classificar_planilha_final
+FUNÇÃO COMPLETA · Motor principal que aplica os padrões
+================================================================================================
+
+def classificar_planilha_final(
+    file_bytes, filename, base_classificacoes, contas_bancarias=None,
+    empresa_classificacao='', coluna_substituir='', valores_substituiveis=None,
+    modo_consolidado_eletro_forte=False,
+):
+    """Preenche Débito/Crédito somente na planilha final já conciliada."""
+    from openpyxl import load_workbook
+
+    if not filename.lower().endswith('.xlsx'):
+        raise ValueError('A planilha final deve estar no formato .xlsx.')
+
+    contas_bancarias = contas_bancarias or {
+        'itau': '508', 'bradesco': '9', 'fibra': '506'
+    }
+    candidatos_por_banco = {}
+    periodos_por_banco = {}
+    evidencias_nomes_por_banco = {}
+    for item in base_classificacoes:
+        banco = item.get('banco', '')
+        assinatura = item.get('assinatura', '')
+        debito_item = texto_celula_seguro(item.get('debito'))
+        credito_item = texto_celula_seguro(item.get('credito'))
+        conta_banco_item = texto_celula_seguro(contas_bancarias.get(banco, ''))
+
+        # Para padrões já aprendidos, a posição REAL da conta bancária é mais
+        # confiável que palavras como "pago" ou "recebido" presentes no histórico.
+        if banco in contas_bancarias and conta_banco_item:
+            if credito_item == conta_banco_item and debito_item:
+                natureza = 'pago'
+                contrapartida = debito_item
+            elif debito_item == conta_banco_item and credito_item:
+                natureza = 'recebido'
+                contrapartida = credito_item
+            else:
+                natureza = assinatura.split('|', 1)[0] if assinatura else ''
+                contrapartida = ''
+        else:
+            natureza = assinatura.split('|', 1)[0] if assinatura else ''
+            contrapartida = ''
+
+        # Normaliza também a assinatura existente para a natureza real inferida
+        # pela posição da conta do banco. Isso reaproveita a base antiga sem zerar.
+        if assinatura and natureza in {'pago', 'recebido'}:
+            partes_assinatura = assinatura.split('|', 1)
+            sufixo_assinatura = partes_assinatura[1] if len(partes_assinatura) > 1 else ''
+            assinatura = (
+                f"{natureza}|{sufixo_assinatura}" if sufixo_assinatura else natureza
+            )
+        if banco not in contas_bancarias or not assinatura or not contrapartida:
+            continue
+        candidatos_por_banco.setdefault(banco, {}).setdefault(assinatura, set()).add(
+            contrapartida
+        )
+        periodos_item = set(item.get('periodos') or [])
+        periodos_por_banco.setdefault(banco, {}).setdefault(assinatura, set()).update(
+            periodos_item
+        )
+
+        historico_exemplo = item.get('exemplo_historico') or ''
+        nome_empresa = extrair_nome_empresa_classificacao(
+            historico_exemplo, assinatura
+        )
+        if nome_empresa:
+            por_natureza = evidencias_nomes_por_banco.setdefault(
+                banco, {}
+            ).setdefault(natureza, {})
+            por_conta = por_natureza.setdefault(nome_empresa, {}).setdefault(
+                contrapartida,
+                {'periodos': set(), 'ocorrencias': 0}
+            )
+            por_conta['periodos'].update(periodos_item)
+            try:
+                ocorrencias_item = max(1, int(item.get('ocorrencias') or 1))
+            except (TypeError, ValueError):
+                ocorrencias_item = 1
+            por_conta['ocorrencias'] += ocorrencias_item
+
+    mapas_seguros = {}
+    for banco, candidatos in candidatos_por_banco.items():
+        mapas_seguros[banco] = {
+            assinatura: next(iter(contas))
+            for assinatura, contas in candidatos.items()
+            if len(contas) == 1 and len(
+                periodos_por_banco.get(banco, {}).get(assinatura, set())
+            ) >= 3
+        }
+
+    def valor_conta_excel(conta):
+        texto = texto_celula_seguro(conta)
+        if texto.isdigit() and (texto == '0' or not texto.startswith('0')):
+            return int(texto)
+        return texto
+
+    wb = load_workbook(io.BytesIO(file_bytes))
+    resumo = {
+        'automaticos': 0,
+        'somente_banco': 0,
+        'antecipados': 0,
+        'regras_fixas_1000': 0,
+        'por_nome_empresa': 0,
+        'ja_preenchidos': 0,
+        'parciais_completados': 0,
+        'conflitos': 0,
+        'padroes_novos': 0,
+        'banco_nao_identificado': 0,
+        'abas_processadas': 0,
+        'elegiveis_regra': 0,
+        'preservados_regra': 0,
+    }
+    banco_arquivo = identificar_chave_banco_empresa(filename)
+    cache_similaridade = {}
+
+    for ws in wb.worksheets:
+        # Na 242, nunca classificar a aba Principal. Ela deve permanecer exatamente
+        # como foi recebida; somente as abas BB/Itau do Modelo Domínio são alteradas.
+        if empresa_classificacao.startswith('eletro_forte') and normalizar_texto(ws.title).strip() == 'principal':
+            continue
+        if 'retir' in normalizar_texto(ws.title):
+            continue
+        linha_cabecalho = None
+        mapa_colunas = {}
+        for numero_linha in range(1, min(ws.max_row, 30) + 1):
+            mapa_teste = {
+                normalizar_texto(texto_celula_seguro(ws.cell(numero_linha, coluna).value)).strip(): coluna
+                for coluna in range(1, ws.max_column + 1)
+            }
+            if all(nome in mapa_teste for nome in ['historico', 'debito', 'credito']):
+                linha_cabecalho = numero_linha
+                mapa_colunas = mapa_teste
+                break
+        if linha_cabecalho is None:
+            continue
+
+        resumo['abas_processadas'] += 1
+        col_hist = mapa_colunas['historico']
+        col_debito = mapa_colunas['debito']
+        col_credito = mapa_colunas['credito']
+        col_valor = mapa_colunas.get('valor')
+        col_descricao = mapa_colunas.get('descricao')
+        banco_aba = identificar_chave_banco_empresa(ws.title) or banco_arquivo
+
+        for numero_linha in range(linha_cabecalho + 1, ws.max_row + 1):
+            historico = texto_celula_seguro(ws.cell(numero_linha, col_hist).value)
+            if not historico:
+                continue
+            debito_atual = texto_celula_seguro(ws.cell(numero_linha, col_debito).value)
+            credito_atual = texto_celula_seguro(ws.cell(numero_linha, col_credito).value)
+
+            # Na 242, algumas contas são placeholders e precisam ser substituídas
+            # pela Base Inteligente. Todo valor fora da lista é preservado.
+            coluna_regra = normalizar_texto(coluna_substituir or '').strip()
+            valores_regra = {
+                texto_celula_seguro(v) for v in (valores_substituiveis or [])
+            }
+            if modo_consolidado_eletro_forte:
+                valor_consolidado = (
+                    limpar_valor_monetario(ws.cell(numero_linha, col_valor).value)
+                    if col_valor is not None else 0.0
+                )
+                if valor_consolidado < 0:
+                    coluna_regra = 'debito'
+                    valores_regra = (
+                        {'', '0'} if empresa_classificacao == 'eletro_forte_filial_1408'
+                        else {'0', '166'}
+                    )
+                elif valor_consolidado > 0:
+                    coluna_regra = 'credito'
+                    valores_regra = (
+                        {'', '0'} if empresa_classificacao == 'eletro_forte_filial_1408'
+                        else {'', '0', '14', '16', '166'}
+                    )
+                else:
+                    resumo['preservados_regra'] += 1
+                    continue
+            if coluna_regra in {'debito', 'credito'}:
+                atual_regra = debito_atual if coluna_regra == 'debito' else credito_atual
+                if atual_regra not in valores_regra:
+                    resumo['preservados_regra'] += 1
+                    resumo['ja_preenchidos'] += 1
+                    continue
+                resumo['elegiveis_regra'] += 1
+                if coluna_regra == 'debito':
+                    ws.cell(numero_linha, col_debito).value = None
+                    debito_atual = ''
+                else:
+                    ws.cell(numero_linha, col_credito).value = None
+                    credito_atual = ''
+            elif debito_atual and credito_atual:
+                resumo['ja_preenchidos'] += 1
+                continue
+            linha_estava_parcial = bool(debito_atual or credito_atual)
+
+            descricao_linha = (
+                ws.cell(numero_linha, col_descricao).value
+                if col_descricao is not None else ''
+            )
+            if empresa_classificacao.startswith('eletro_forte'):
+                banco_linha = identificar_banco_classificacao_eletro_forte(
+                    ws.title, descricao_linha, debito_atual, credito_atual
+                )
+            else:
+                banco_linha = (
+                    identificar_chave_banco_empresa(descricao_linha)
+                    if col_descricao is not None else ''
+                ) or banco_aba
+            if banco_linha not in contas_bancarias:
+                resumo['banco_nao_identificado'] += 1
+                continue
+
+            assinatura = criar_assinatura_classificacao(historico)
+
+            # REGRA PRINCIPAL: o sinal do VALOR decide a natureza.
+            # Nunca usamos uma palavra perdida no histórico para decidir se o banco
+            # entra no débito ou no crédito.
+            valor_linha = (
+                limpar_valor_monetario(ws.cell(numero_linha, col_valor).value)
+                if col_valor is not None else 0.0
+            )
+            if valor_linha < 0:
+                natureza = 'pago'
+            elif valor_linha > 0:
+                natureza = 'recebido'
+            else:
+                natureza = assinatura.split('|', 1)[0] if assinatura else ''
+
+            # A assinatura usada para procurar a contrapartida também recebe a
+            # natureza definida pelo sinal, evitando que "pago" dentro do histórico
+            # faça um recebimento buscar padrões de pagamento (e vice-versa).
+            if assinatura and natureza in {'pago', 'recebido'}:
+                partes_assinatura = assinatura.split('|', 1)
+                sufixo_assinatura = partes_assinatura[1] if len(partes_assinatura) > 1 else ''
+                assinatura = (
+                    f"{natureza}|{sufixo_assinatura}" if sufixo_assinatura else natureza
+                )
+
+            conta_banco = contas_bancarias[banco_linha]
+            if natureza == 'pago':
+                if not credito_atual:
+                    ws.cell(numero_linha, col_credito).value = valor_conta_excel(conta_banco)
+                coluna_contrapartida = col_debito
+            elif natureza == 'recebido':
+                if not debito_atual:
+                    ws.cell(numero_linha, col_debito).value = valor_conta_excel(conta_banco)
+                coluna_contrapartida = col_credito
+            else:
+                resumo['padroes_novos'] += 1
+                continue
+
+            contrapartida_atual = texto_celula_seguro(
+                ws.cell(numero_linha, coluna_contrapartida).value
+            )
+            if contrapartida_atual:
+                resumo['automaticos'] += 1
+                if linha_estava_parcial:
+                    resumo['parciais_completados'] += 1
+                continue
+
+            candidatos_banco = candidatos_por_banco.get(banco_linha, {})
+            mapas_banco = mapas_seguros.get(banco_linha, {})
+            candidatos = candidatos_banco.get(assinatura, set())
+            conta_segura = mapas_banco.get(assinatura)
+
+            # Quando a base foi aprendida a partir de histórico cru da Autokraft,
+            # a assinatura fica "outro|...". Mantemos o restante da assinatura e
+            # localizamos esse padrão também.
+            if not candidatos and assinatura:
+                partes_assinatura = assinatura.split('|', 1)
+                sufixo_assinatura = partes_assinatura[1] if len(partes_assinatura) > 1 else ''
+                assinatura_outro = f"outro|{sufixo_assinatura}" if sufixo_assinatura else assinatura
+                candidatos = candidatos_banco.get(assinatura_outro, set())
+                conta_segura = mapas_banco.get(assinatura_outro)
+            conta_fixa_accede = (
+                identificar_conta_folha_accede_1000(historico)
+                if empresa_classificacao == 'accede_automacao'
+                and natureza == 'pago'
+                else ''
+            )
+            if conta_fixa_accede:
+                ws.cell(
+                    numero_linha, coluna_contrapartida
+                ).value = valor_conta_excel(conta_fixa_accede)
+                resumo['automaticos'] += 1
+                resumo['regras_fixas_1000'] += 1
+                if linha_estava_parcial:
+                    resumo['parciais_completados'] += 1
+            elif 'antecipad' in normalizar_texto(historico):
+                ws.cell(numero_linha, coluna_contrapartida).value = 532
+                resumo['automaticos'] += 1
+                resumo['antecipados'] += 1
+                if linha_estava_parcial:
+                    resumo['parciais_completados'] += 1
+            elif conta_segura:
+                ws.cell(numero_linha, coluna_contrapartida).value = valor_conta_excel(
+                    conta_segura
+                )
+                resumo['automaticos'] += 1
+                if linha_estava_parcial:
+                    resumo['parciais_completados'] += 1
+            elif len(candidatos) > 1:
+                resumo['conflitos'] += 1
+                resumo['somente_banco'] += 1
+            else:
+                chave_cache = (banco_linha, natureza, assinatura)
+                if chave_cache not in cache_similaridade:
+                    cache_similaridade[chave_cache] = encontrar_conta_por_nome_historico(
+                        historico,
+                        natureza,
+                        evidencias_nomes_por_banco.get(banco_linha, {})
+                    )
+                conta_similar, _, motivo_nome = cache_similaridade[chave_cache]
+                if conta_similar:
+                    ws.cell(numero_linha, coluna_contrapartida).value = valor_conta_excel(
+                        conta_similar
+                    )
+                    resumo['automaticos'] += 1
+                    resumo['por_nome_empresa'] += 1
+                    if linha_estava_parcial:
+                        resumo['parciais_completados'] += 1
+                else:
+                    if motivo_nome == 'conflito':
+                        resumo['conflitos'] += 1
+                    else:
+                        resumo['padroes_novos'] += 1
+                    resumo['somente_banco'] += 1
+
+    if resumo['abas_processadas'] == 0:
+        raise ValueError(
+            'Nenhuma aba com as colunas HISTÓRICO, DÉBITO e CRÉDITO foi encontrada.'
+        )
+
+    saida = io.BytesIO()
+    wb.save(saida)
+    return saida.getvalue(), resumo
+
+
+================================================================================================
+SEÇÃO 4: backend/app/main.py — rotas da Base Inteligente
+TRECHO DA API · Status, aprendizado e classificação
+================================================================================================
+
+@app.get("/api/v1/base-inteligente/{company_code}/status")
+def intelligent_base_status(company_code: int):
+    return {"company": company_code, **base_status(company_code)}
+
+
+@app.post("/api/v1/base-inteligente/{company_code}/aprender")
+async def intelligent_base_learn(
+    company_code: int,
+    files: list[UploadFile] = File(...),
+    data_inicial: str = Form(""),
+    data_final: str = Form(""),
+):
+    total = 0
+    errors = []
+    for upload in files:
+        try:
+            total += await run_in_threadpool(
+                base_learn, company_code, await upload.read(), upload.filename or "arquivo.xlsx",
+                data_inicial, data_final
+            )
+        except Exception as exc:
+            errors.append(f"{upload.filename}: {exc}")
+    if total == 0 and errors:
+        raise HTTPException(status_code=422, detail="; ".join(errors))
+    stats = await run_in_threadpool(base_status, company_code)
+    return {"ok": True, "learned": total, "errors": errors, **stats}
+
+
+@app.post("/api/v1/base-inteligente/{company_code}/classificar")
+async def intelligent_base_classify(
+    request: Request,
+    company_code: int, file: list[UploadFile] = File(...), options_json: str = Form('{}'),
+):
+    file = await upload_group(file, model=True)
+    try:
+        options = json.loads(options_json)
+        if not isinstance(options, dict):
+            raise ValueError('Opções de classificação inválidas.')
+        workbook, summary = await run_in_threadpool(base_classify_with_coverage, company_code, await file.read(), file.filename or "modelo.xlsx", options)
+        headers = {"X-Razync-Summary": json.dumps(summary, ensure_ascii=False)}
+        response = await run_in_threadpool(workbook_response, workbook, f"RAZYNC_{company_code}_CLASSIFICADO.xlsx", request.headers.get("x-razync-preview") == "1")
+        response.headers.update(headers)
+        return response
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+================================================================================================
+SEÇÃO 5: assets/js/app.js — interface da Base Inteligente
+TRECHO DA INTERFACE · Aprendizado, modos, prévia e classificação
+================================================================================================
+
+learnForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = learnForm.querySelector('[type="submit"]');
+  if (button.disabled) return;
+  const files = [...$("#learnFiles").files];
+  if (!files.length) return $("#learnMessage").textContent = "Selecione pelo menos um arquivo revisado.";
+  const company = selected.codigo;
+  const current = () => selected?.codigo === company;
+  const data = new FormData();
+  files.forEach(file => data.append("files", file));
+  button.disabled = true;
+  $("#learnMessage").textContent = "Aprendendo padrões…";
+  try {
+    const response = await fetch(`${API()}/api/v1/base-inteligente/${company}/aprender`, {method:"POST", body:data});
+    if (!response.ok) throw new Error(await responseError(response));
+    const result = await response.json();
+    if (current()) {
+      const errors = (result.errors || []).join("; ");
+      $("#learnMessage").textContent = `${result.learned} padrão(ões) processado(s).${errors ? ` Alguns arquivos não foram importados: ${errors}` : ""}`;
+      refreshBaseStats(result);
+      window.refreshSavedBasePeriods?.();
+    }
+  } catch (error) {
+    if (current()) $("#learnMessage").textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+let eletro242ClassificationMode = "consolidada";
+const ELETRO_242_MODE_HELP = {
+  consolidada: "Classifica todas as abas bancárias. Pagamentos usam DÉBITO e recebimentos usam CRÉDITO; contas já classificadas são preservadas.",
+  despesa: "Somente as abas bancárias são classificadas. Na Despesa, apenas DÉBITO 0 ou vazio pode ser substituído; a aba Principal é preservada.",
+  fornecedor: "Somente as abas bancárias são classificadas. No Fornecedor, apenas DÉBITO 166, 0 ou vazio pode ser substituído; a aba Principal é preservada.",
+  recebido: "Somente as abas bancárias são classificadas. No Recebido, apenas CRÉDITO 166, 0, 14, 16 ou vazio pode ser substituído; a aba Principal é preservada.",
+  francesinhas: "Classifica a planilha gerada por Francesinhas, preenchendo somente CRÉDITO vazio e mantendo 508 e 509 separados."
+};
+
+function setEletro242ClassificationMode(mode) {
+  if (!ELETRO_242_MODE_HELP[mode]) mode = "consolidada";
+  eletro242ClassificationMode = mode;
+  document.querySelectorAll("#eletro242Modes [data-eletro242-mode]").forEach(button => {
+    const active = button.dataset.eletro242Mode === mode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  const help = $("#eletro242ModeHelp");
+  if (help) help.textContent = ELETRO_242_MODE_HELP[mode];
+}
+
+document.querySelectorAll("#eletro242Modes [data-eletro242-mode]").forEach(button => {
+  button.addEventListener("click", () => {
+    if (eletro242ClassificationMode !== button.dataset.eletro242Mode) {
+      cancelClassificationPreview();
+      $("#classifyMessage").textContent = "";
+    }
+    setEletro242ClassificationMode(button.dataset.eletro242Mode);
+  });
+});
+
+let classificationController;
+
+function renderClassificationCoverage(coverage) {
+  const panel = $("#classificationCoverage");
+  if (!panel) return;
+  const total = Number(coverage?.total);
+  if (!coverage || !Number.isInteger(total) || total < 0) {
+    panel.hidden = true;
+    return;
+  }
+  const count = name => {
+    const value = Number(coverage[name]);
+    return Number.isInteger(value) ? Math.max(0, Math.min(total, value)) : 0;
+  };
+  const done = count("classificadas");
+  const pending = total - done;
+  const percent = total ? Math.round(done / total * 1000) / 10 : 0;
+  const formatNumber = value => value.toLocaleString("pt-BR");
+  const formatPercent = value => value.toLocaleString("pt-BR", {
+    minimumFractionDigits: 1, maximumFractionDigits: 1
+  });
+  $("#classificationCoveragePercent").textContent = total ? `${formatPercent(percent)}%` : "—";
+  $("#classificationCoverageFraction").textContent = `${formatNumber(done)} de ${formatNumber(total)} linhas`;
+  $("#classificationCoverageNew").textContent = formatNumber(count("novas_classificadas"));
+  $("#classificationCoveragePrevious").textContent = formatNumber(count("ja_classificadas"));
+  $("#classificationCoveragePending").textContent = formatNumber(pending);
+  $("#classificationCoverageFill").style.width = `${percent}%`;
+  const bar = $("#classificationCoverageProgress");
+  if (total) {
+    bar.setAttribute("aria-valuenow", String(percent));
+  } else {
+    bar.removeAttribute("aria-valuenow");
+  }
+  panel.hidden = false;
+}
+
+function cancelClassificationPreview() {
+  classificationController?.abort();
+  $("#classificationPreview").replaceChildren();
+  $("#classificationCoverage").hidden = true;
+  classifyForm.querySelector('button[type="submit"]').disabled = false;
+}
+classifyForm.addEventListener("change", () => {
+  cancelClassificationPreview();
+  $("#classifyMessage").textContent = "";
+});
+
+classifyForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const file = $("#classifyFile").files[0];
+  if (!file) return $("#classifyMessage").textContent = "Selecione o Modelo Domínio.";
+  cancelClassificationPreview();
+  const controller = new AbortController();
+  classificationController = controller;
+  const companyCode = selected.codigo;
+  const target = $("#classificationPreview");
+  const button = event.submitter;
+  button.disabled = true;
+  const data = new FormData();
+  [...$("#classifyFile").files].forEach(file => data.append("file", file));
+  const classifyOptions = {};
+  if (Number(selected.codigo) === 242) {
+    classifyOptions.origem_242 = eletro242ClassificationMode;
+  } else if (Number(selected.codigo) === 1408) {
+    classifyOptions.modo_consolidado = true;
+  }
+  data.append("options_json", JSON.stringify(classifyOptions));
+  $("#classifyMessage").textContent = "Classificando…";
+  try {
+    const response = await fetch(`${API()}/api/v1/base-inteligente/${companyCode}/classificar`, {method:"POST", body:data, signal:controller.signal, headers:{"X-Razync-Preview":"1"}});
+    if (!response.ok) throw new Error(await responseError(response));
+    const raw = response.headers.get("x-razync-summary");
+    const summary = raw ? JSON.parse(raw) : {};
+    const prepared = await RazyncResults.workbookPreview(response, {
+      endpoint:`${API()}/api/v1/base-inteligente/${companyCode}/classificar`, snapshot:data,
+      signal:controller.signal, filename:`RAZYNC_${companyCode}_CLASSIFICADO.xlsx`});
+    const result = prepared.preview;
+    if (controller.signal.aborted || selected?.codigo !== companyCode) return;
+    showWorkflowPreview(result,target);
+    renderClassificationCoverage(summary.cobertura);
+    const download = document.createElement("button");download.type="button";download.className="preview-download";
+    download.textContent="Baixar Excel classificado";
+    download.addEventListener("click", async () => {
+      download.disabled=true;
+      try { await prepared.download(); }
+      catch (error) { if (error.name !== "AbortError" && selected?.codigo === companyCode) $("#classifyMessage").textContent=error.message; }
+      finally { download.disabled=false; }
+    });
+    target.querySelector(".preview-primary-actions").append(download);
+    $("#classifyMessage").textContent = "Classificação concluída. Confira as linhas classificadas, as pendências e a prévia antes de baixar.";
+  } catch (error) {
+    if (controller.signal.aborted || selected?.codigo !== companyCode) return;
+    $("#classifyMessage").textContent = error.message;
+  } finally {
+    if (classificationController === controller) button.disabled = false;
+  }
+});
+
+function reconcileSelectionState() {
+  const banks = selectedReconcileBanks();
+  const missing = [];
+  const files = [];
+  const fileBanks = [];
+
+  banks.forEach(bank => {
+    const input = document.querySelector(`#reconcileStatementFields [data-reconcile-bank="${bank}"]`);
+    const bankFiles = input ? [...input.files] : [];
+    if (!bankFiles.length) {
+      missing.push(bank);
+      return;
+    }
+    bankFiles.forEach(file => {
+      files.push(file);
+      fileBanks.push(bank);
+    });
+  });
+
+  return {banks,files,fileBanks,missing};
+}
+
+function buildSingleReconcileData(bank) {
+  const data = new FormData();
+  data.append("bank",bank);
+  [...$("#modelFile").files].forEach(file => data.append("model_file",file));
+  data.append("options_json",JSON.stringify({
+    data_inicial:dateApiValue($("#reconcileStart")),
+    data_final:dateApiValue($("#reconcileEnd"))
+  }));
+  const input = document.querySelector(`#reconcileStatementFields [data-reconcile-bank="${bank}"]`);
+  [...(input?.files || [])].forEach(file => data.append("statement_files",file));
+  return data;
+}
+
+function buildReconcileData() {
+  const state = reconcileSelectionState();
+  const data = new FormData();
+  data.append("banks_json",JSON.stringify(state.banks));
+  data.append("file_banks_json",JSON.stringify(state.fileBanks));
+  [...$("#modelFile").files].forEach(file => data.append("model_file",file));
+  data.append("options_json",JSON.stringify({
+    data_inicial:dateApiValue($("#reconcileStart")),
+    data_final:dateApiValue($("#reconcileEnd"))
+  }));
+  state.files.forEach(file => data.append("files",file));
+  return data;
+}
+
+let reconcilePreviewTimer;
+let reconcilePreviewController;
+
+function cancelReconcilePreview() {
+  clearTimeout(reconcilePreviewTimer);
+  reconcilePreviewController?.abort();
+  clearToolResult("#reconcileResult");
+  $("#reconcileMessage").textContent = "";
+}
+
+function scheduleReconcilePreview() {
+  cancelReconcilePreview();
+
+  const model = $("#modelFile").files[0];
+  const state = reconcileSelectionState();
+
+  if (!model || !state.banks.length) {
+    $("#reconcileResult").hidden = true;
+    $("#reconcileResult").replaceChildren();
+    $("#reconcileMessage").textContent = "";
+    return;
+  }
+
+  if (!reconcileForm.checkValidity()) {
+    $("#reconcileMessage").textContent = "Confira as datas: use DD/MM/AAAA.";
+    return;
+  }
+  if (state.missing.length) {
+    $("#reconcileResult").hidden = true;
+    $("#reconcileResult").replaceChildren();
+    $("#reconcileMessage").textContent = "Envie o extrato de: " + state.missing.map(bankName).join(", ") + ".";
+    return;
+  }
+
+  $("#reconcileMessage").textContent = state.banks.length > 1
+    ? `Arquivos prontos. Conferindo ${state.banks.length} bancos…`
+    : "Arquivos prontos. Montando conferência diária…";
+  const companyCode = selected?.codigo;
+  reconcilePreviewTimer = setTimeout(() => {
+    if (companyCode !== undefined && selected?.codigo === companyCode) reconcileForm.requestSubmit();
+  },550);
+}
+
+
+================================================================================================
+SEÇÃO 6: assets/js/app.js — consulta de estatísticas
+FUNÇÃO COMPLETA · Atualização de padrões, bancos e períodos
+================================================================================================
+
+async function refreshBaseStats(learnedStatus=null) {
+  if (!baseStats) return;
+  if (!selected || selected.capabilities?.status !== "api_ready") {
+    baseStats.innerHTML = '<span><strong>—</strong> padrões</span><span><strong>—</strong> bancos</span><span><strong>—</strong> períodos</span>';
+    return;
+  }
+
+  baseStats.classList.add("is-loading");
+  baseStats.innerHTML = '<span><strong>…</strong> padrões</span><span><strong>…</strong> bancos</span><span><strong>…</strong> períodos</span>';
+
+  try {
+    let data = learnedStatus;
+    if (!data) {
+      const r = await fetch(`${API()}/api/v1/base-inteligente/${selected.codigo}/status`);
+      if (!r.ok) throw new Error(await responseError(r));
+      data = await r.json();
+    }
+    baseStats.innerHTML = `
+      <span><strong>${Number(data.patterns || 0).toLocaleString("pt-BR")}</strong> padrões salvos</span>
+      <span><strong>${Number(data.banks || 0).toLocaleString("pt-BR")}</strong> bancos aprendidos</span>
+      <span><strong>${Number(data.periods || 0).toLocaleString("pt-BR")}</strong> períodos</span>
+    `;
+    baseStats.title = `Base Inteligente da empresa ${selected.codigo}`;
+  } catch (error) {
+    baseStats.innerHTML = '<span class="base-stat-error"><strong>!</strong> Base indisponível</span>';
+    baseStats.title = error.message || "Não foi possível consultar a Base Inteligente.";
+  } finally {
+    baseStats.classList.remove("is-loading");
+  }
+}
+
+
+================================================================================================
+SEÇÃO 7: backend/app/base_maintenance.py
+COMPLETO · Manutenção e exclusão seletiva do aprendizado
+================================================================================================
+
+"""Exclusão exata de um banco/período, preservando os demais aprendizados."""
+import hashlib
+import json
+from app import classification_service as base, persistence
+from app.migration_services import accounts
+
+
+class StaleSelection(ValueError):
+    pass
+
+
+def _bank(company, bank):
+    if company == 242 and bank == 'banco_brasil':
+        return 'bb'
+    if company == 1408 and bank == 'itau':
+        return 'itau_512'
+    return bank
+
+
+def _rows(con, company):
+    modern = [(row['id'], json.loads(row['payload'])) for row in con.execute(
+        'SELECT id,payload FROM classification_records WHERE company=? ORDER BY id', (company,))]
+    legacy = []
+    if persistence.table_exists(con, 'patterns'):
+        legacy = [dict(row) for row in con.execute('SELECT * FROM patterns WHERE company=? ORDER BY bank,signature,nature,counterpart,period', (company,))]
+    return modern, legacy
+
+
+def slices(company):
+    con = base._db()
+    try:
+        modern, legacy = _rows(con, company)
+        found = {}
+        for _, record in modern:
+            found.setdefault(record['banco'], set()).update(record.get('periodos', []))
+        for record in legacy:
+            found.setdefault(_bank(company, record['bank']), set()).add(record['period'])
+        return {'banks': [{'bank': bank, 'account': accounts(company).get(bank, ''),
+                           'periods': sorted(periods, reverse=True)} for bank, periods in sorted(found.items()) if periods]}
+    finally:
+        con.close()
+
+
+def _selection(con, company, bank, period):
+    if not isinstance(bank, str) or not isinstance(period, str) or not bank or not period:
+        raise ValueError('Selecione o banco e o período salvo na base.')
+    modern, legacy = _rows(con, company)
+    modern = [(identity, record) for identity, record in modern if record['banco'] == bank and period in record.get('periodos', [])]
+    legacy = [record for record in legacy if _bank(company, record['bank']) == bank and record['period'] == period]
+    if not modern and not legacy:
+        raise ValueError('Não há registros para este banco e período.')
+    token = hashlib.sha256(json.dumps([company, bank, period, modern, legacy], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+    retained = sum(bool(set(record['periodos']) - {period}) for _, record in modern)
+    return modern, legacy, {'company': company, 'bank': bank, 'period': period,
+        'affected': len(modern) + len(legacy), 'retained': retained,
+        'removed': len(modern) + len(legacy) - retained, 'token': token}
+
+
+def preview(company, bank, period):
+    con = base._db()
+    try:
+        con.execute('BEGIN')
+        return _selection(con, company, bank, period)[2]
+    finally:
+        con.close()
+
+
+def delete(company, bank, period, token):
+    con = base._db()
+    try:
+        con.execute('BEGIN IMMEDIATE')
+        modern, legacy, result = _selection(con, company, bank, period)
+        if not token or token != result['token']:
+            raise StaleSelection('A base mudou desde a prévia. Confira novamente antes de excluir.')
+        for identity, record in modern:
+            record['periodos'] = [p for p in record['periodos'] if p != period]
+            if record['periodos']:
+                con.execute('UPDATE classification_records SET payload=? WHERE company=? AND id=?',
+                            (json.dumps(record, ensure_ascii=False), company, identity))
+            else:
+                con.execute('DELETE FROM classification_records WHERE company=? AND id=?', (company, identity))
+        for record in legacy:
+            con.execute('DELETE FROM patterns WHERE company=? AND bank=? AND signature=? AND nature=? AND counterpart=? AND period=?',
+                        (company, record['bank'], record['signature'], record['nature'], record['counterpart'], period))
+        # O histórico de importações não possui escopo por banco/período.
+        # Liberar sua deduplicação permite reensinar o recorte removido; _save
+        # continua mesclando os padrões restantes sem duplicá-los.
+        con.execute('DELETE FROM classification_imports WHERE company=?', (company,))
+        con.commit()
+        return {'ok': True, **{key: value for key, value in result.items() if key != 'token'}}
+    finally:
+        con.close()
+
+
+
+================================================================================================
+SEÇÃO 8: assets/js/base-maintenance.js
+COMPLETO · Interface de manutenção da base
+================================================================================================
+
+/* Manutenção do aprendizado: a prévia autoriza apenas o recorte exibido. */
+(() => {
+  const byId = id => document.getElementById(id);
+  const panel=byId('baseCleanup'), load=byId('loadBaseSlices'), bank=byId('baseCleanupBank'), period=byId('baseCleanupPeriod');
+  const preview=byId('previewBaseCleanup'), confirm=byId('confirmBaseCleanup'), cancel=byId('cancelBaseCleanup');
+  const box=byId('baseCleanupConfirmation'), summary=byId('baseCleanupSummary'), message=byId('baseCleanupMessage');
+  if (!panel) return;
+  let revision=0, controller, slices=[], prepared=null;
+  const label=value=>bankName(value==='bb'?'banco_brasil':value==='itau_512'?'itau':value);
+  const periodLabel=value=>/^\d{4}-\d{2}$/.test(value)?value.slice(5)+'/'+value.slice(0,4):value;
+  function options(select, items, placeholder) {
+    select.replaceChildren();
+    for (const [value,text] of [['',placeholder],...items]) {
+      const option=document.createElement('option');option.value=value;option.textContent=text;select.appendChild(option);
+    }
+    select.value='';select.disabled=!items.length;
+  }
+  function invalidate() {
+    revision++;controller?.abort();prepared=null;box.hidden=true;
+    preview.disabled=!bank.value || !period.value;confirm.disabled=false;load.disabled=false;
+  }
+  window.resetBaseMaintenance=()=> {
+    invalidate();slices=[];panel.open=false;message.textContent='';
+    options(bank,[],'Carregue os dados da base');options(period,[],'Selecione o banco');preview.disabled=true;
+  };
+  async function request(path, init={}) {
+    if (!selected || selected.capabilities?.status!=='api_ready') throw new Error('Abra uma empresa disponível para consultar sua base.');
+    controller?.abort();controller=new AbortController();
+    const company=selected.codigo, version=revision, signal=controller.signal;
+    const current=()=>!signal.aborted && revision===version && selected?.codigo===company;
+    const response=await window.adminFetch(`${API()}/api/v1/base-inteligente/${company}/${path}`,{...init,signal},current);
+    if(!current()) return null;
+    if(response.status===404) throw new Error('A exclusão por período aguarda a atualização do serviço. Tente novamente quando a publicação no Railway for liberada.');
+    if(!response.ok) throw new Error(await responseError(response));
+    const data=await response.json();return current()?{data,company,version}:null;
+  }
+  function report(error) {message.textContent=error.name==='AbortError'?'Ação cancelada. Nenhum dado foi alterado.':error.message;}
+  async function loadSlices(keepMessage=false) {
+    invalidate();load.disabled=true;if(!keepMessage)message.textContent='Carregando bancos e períodos…';
+    options(bank,[],'Carregando…');options(period,[],'Selecione o banco');preview.disabled=true;
+    const version=revision;
+    try {
+      const result=await request('recortes');if(!result)return;
+      slices=result.data.banks;
+      window.updateSavedBasePeriods?.(result.company,slices);
+      options(bank,slices.map(item=>[item.bank,label(item.bank)+(item.account?' · conta '+item.account:'')]),'Selecione o banco');
+      if(!keepMessage)message.textContent=slices.length?'Selecione o banco e o período que deseja remover.':'Esta empresa não tem períodos salvos na base.';
+    } catch(error){if(version===revision){options(bank,[],'Carregue novamente');report(error);}}
+    finally {if(version===revision)load.disabled=false;}
+  }
+  load.addEventListener('click',()=>loadSlices());
+  bank.addEventListener('change',()=> {
+    invalidate();message.textContent='';
+    options(period,(slices.find(item=>item.bank===bank.value)?.periods||[]).map(value=>[value,periodLabel(value)]),'Selecione o período');
+    preview.disabled=true;
+  });
+  period.addEventListener('change',()=>{invalidate();message.textContent='';});
+  cancel.addEventListener('click',()=>{invalidate();message.textContent='Exclusão cancelada. Nenhum dado foi removido.';});
+  preview.addEventListener('click',async()=> {
+    invalidate();preview.disabled=true;const version=revision;
+    message.textContent='Conferindo os registros deste período…';
+    try {
+      const result=await request('exclusao-previa?'+new URLSearchParams({bank:bank.value,period:period.value}));if(!result)return;
+      prepared={...result.data,company:result.company,version:result.version};
+      summary.textContent=`Empresa ${result.company} · ${label(prepared.bank)} · ${periodLabel(prepared.period)}: ${prepared.affected} registro(s) afetado(s). ${prepared.removed} será(ão) removido(s); ${prepared.retained} continuará(ão) na base pelos outros períodos.`;
+      box.hidden=false;message.textContent='Confira o recorte acima antes de confirmar.';
+    } catch(error){if(version===revision)report(error);}
+    finally {if(version===revision)preview.disabled=!bank.value||!period.value;}
+  });
+  confirm.addEventListener('click',async()=> {
+    const target=prepared;
+    if(!target || target.version!==revision || target.company!==selected?.codigo || target.bank!==bank.value || target.period!==period.value)return;
+    confirm.disabled=true;preview.disabled=true;load.disabled=true;const version=revision;
+    message.textContent='Excluindo o período selecionado…';
+    try {
+      const result=await request('excluir-recorte',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bank:target.bank,period:target.period,token:target.token})});
+      if(!result)return;
+      message.textContent=`Aprendizado de ${label(target.bank)} · ${periodLabel(target.period)} excluído da empresa ${target.company}. Os demais períodos e bancos foram preservados.`;
+      refreshBaseStats();await loadSlices(true);
+    } catch(error){if(version===revision){invalidate();report(error);}}
+    finally {if(version===revision){confirm.disabled=false;load.disabled=false;preview.disabled=!bank.value||!period.value;}}
+  });
+})();
+
+
+
+================================================================================================
+SEÇÃO 9: assets/js/base-periods.js
+COMPLETO · Consulta de períodos salvos
+================================================================================================
+
+/* Consulta de meses salvos pela mesma rota protegida da manutenção. */
+(() => {
+  const root=document.getElementById('baseSavedPeriods');
+  if(!root)return;
+  const button=document.getElementById('loadSavedPeriods');
+  const list=document.getElementById('savedPeriodsList');
+  const message=document.getElementById('savedPeriodsMessage');
+  let revision=0,controller=null,loadedCompany=null;
+  const label=bank=>bankName(bank==='bb'?'banco_brasil':bank==='itau_512'?'itau':bank);
+  const month=value=>/^\d{4}-(0[1-9]|1[0-2])$/.test(value)?value.slice(5)+'/'+value.slice(0,4):value;
+  function render(banks) {
+    list.replaceChildren();
+    for(const bank of banks) {
+      const row=document.createElement('div');row.className='saved-period-bank';
+      const name=document.createElement('strong');name.textContent=label(bank.bank)+(bank.account?' · conta '+bank.account:'');
+      const months=document.createElement('div');months.className='saved-period-months';
+      for(const period of [...new Set(bank.periods||[])].sort().reverse()) {
+        const chip=document.createElement('span');chip.textContent=month(String(period));months.appendChild(chip);
+      }
+      row.appendChild(name);row.appendChild(months);list.appendChild(row);
+    }
+    list.hidden=!banks.length;
+    message.textContent=banks.length?'Meses com padrões salvos. Um mês listado pode conter apenas parte dos lançamentos.':'Esta empresa ainda não tem períodos gravados na base.';
+    button.textContent='Atualizar períodos';
+  }
+  function reset() {
+    revision++;controller?.abort();loadedCompany=null;
+    list.replaceChildren();list.hidden=true;button.disabled=false;button.textContent='Consultar períodos';
+    root.setAttribute('aria-busy','false');
+    message.textContent='Consulte os meses já aprendidos antes de adicionar novos arquivos.';
+  }
+  async function load() {
+    if(!selected || selected.capabilities?.status!=='api_ready')return;
+    controller?.abort();controller=new AbortController();
+    const company=selected.codigo,version=++revision,signal=controller.signal;
+    const current=()=>!signal.aborted && revision===version && selected?.codigo===company;
+    button.disabled=true;root.setAttribute('aria-busy','true');message.textContent='Consultando períodos gravados…';
+    try {
+      const response=await window.adminFetch(`${API()}/api/v1/base-inteligente/${company}/recortes`,{signal},current);
+      if(!current())return;
+      if(!response.ok)throw new Error(await responseError(response));
+      const data=await response.json();if(!current())return;
+      render(data.banks||[]);loadedCompany=company;
+    } catch(error) {
+      if(current())message.textContent=error.name==='AbortError'?'Consulta cancelada. Clique em Consultar períodos para tentar novamente.':error.message;
+    } finally {
+      if(revision===version){button.disabled=false;root.setAttribute('aria-busy','false');}
+    }
+  }
+  const resetMaintenance=window.resetBaseMaintenance;
+  window.resetBaseMaintenance=()=>{resetMaintenance?.();reset();};
+  window.refreshSavedBasePeriods=()=>{if(loadedCompany===selected?.codigo)return load();};
+  window.updateSavedBasePeriods=(company,banks)=>{if(loadedCompany===company && selected?.codigo===company){revision++;controller?.abort();render(banks);button.disabled=false;root.setAttribute('aria-busy','false');}};
+  button.addEventListener('click',load);
+})();
+
+
+
+================================================================================================
+SEÇÃO 10: backend/app/base_inteligente.py
+COMPLETO · Implementação separada mantida no repositório (as rotas atuais usam classification_service.py)
+================================================================================================
+
+from __future__ import annotations
+
+import io, os, re, sqlite3, unicodedata
+from pathlib import Path
+import pandas as pd
+from openpyxl import load_workbook
+
+from app.registry import CAPABILITIES
+from razync.accede_1000 import identificar_conta_folha_accede_1000
+
+DB_PATH = Path(os.getenv("RAZYNC_DB_PATH", "/data/razync.db"))
+
+
+def _db():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    con=sqlite3.connect(DB_PATH)
+    con.execute("""
+    CREATE TABLE IF NOT EXISTS patterns(
+      company INTEGER NOT NULL,
+      bank TEXT NOT NULL,
+      signature TEXT NOT NULL,
+      nature TEXT NOT NULL,
+      counterpart TEXT NOT NULL,
+      period TEXT NOT NULL,
+      example TEXT,
+      occurrences INTEGER NOT NULL DEFAULT 1,
+      PRIMARY KEY(company,bank,signature,nature,counterpart,period)
+    )
+    """)
+    return con
+
+
+def norm(v):
+    t=unicodedata.normalize("NFKD",str(v or ""))
+    t="".join(c for c in t if not unicodedata.combining(c))
+    return re.sub(r"\s+"," ",t).casefold().strip()
+
+
+def safe(v):
+    if v is None: return ""
+    try:
+        if pd.isna(v): return ""
+    except Exception: pass
+    if isinstance(v,float) and v.is_integer(): return str(int(v))
+    return str(v).strip()
+
+
+def signature(history):
+    texto=norm(history)
+    texto=re.sub(r"\b(?:pagar|pagamento)\b","pago",texto)
+    texto=re.sub(r"\b(?:receber|recebimento)\b","recebido",texto)
+    nature="pago" if re.search(r"\bpago\b",texto) else "recebido" if re.search(r"\brecebido\b",texto) else "outro"
+    m=re.search(r"empresa\s*:\s*(.*?)(?:\s+obs\s*:|$)",texto)
+    empresa=m.group(1) if m else texto
+    empresa=re.sub(r"[^a-z0-9]+"," ",empresa)
+    tokens=[x for x in empresa.split() if not(any(c.isdigit() for c in x) and len(x)>=3)]
+    empresa=" ".join(tokens).strip()
+    obs=""
+    om=re.search(r"\s+obs\s*:\s*(.*)$",texto)
+    if om:
+        bruto=re.sub(r"[^a-z0-9]+"," ",om.group(1))
+        obs=" ".join(x for x in bruto.split() if x.isalpha() and x not in {"doc","documento"})
+    return "|".join([x for x in [nature,empresa,obs] if x]) if empresa else ""
+
+
+def bank_from(value, company=None):
+    t=norm(value); d=re.sub(r"\D","",safe(value))
+    if "btg" in t or "pactual" in t: return "btg"
+    if "daycoval" in t: return "daycoval"
+    if "fibra" in t: return "fibra"
+    if "sicredi" in t: return "sicredi"
+    if "santander" in t: return "santander"
+    if "bradesco" in t: return "bradesco"
+    if "inter" in t: return "inter"
+    if "caixa" in t: return "caixa"
+    if "banco do brasil" in t or t=="bb": return "banco_brasil"
+    if "itau" in t:
+        if company==242:
+            if "509" in d or "509" in t: return "itau_509"
+            if "508" in d or "508" in t: return "itau_508"
+        return "itau"
+    return ""
+
+
+def bank_account(company, bank):
+    banks=CAPABILITIES.get(int(company),{}).get("banks",{})
+    if bank in banks: return str(banks[bank] or "")
+    if bank=="itau" and company==242: return ""
+    return ""
+
+
+def _find_header(raw):
+    for i in range(min(30,len(raw))):
+        names=[norm(x) for x in raw.iloc[i].tolist()]
+        if all(x in names for x in ["historico","debito","credito"]):
+            return i,names
+    return None,None
+
+
+def learn(company:int, content:bytes, filename:str):
+    xls=pd.ExcelFile(io.BytesIO(content))
+    learned=0
+    con=_db()
+    try:
+        for sheet in xls.sheet_names:
+            raw=pd.read_excel(xls,sheet_name=sheet,header=None,dtype=object)
+            idx,names=_find_header(raw)
+            if idx is None: continue
+            df=raw.iloc[idx+1:].copy(); df.columns=[safe(x) for x in raw.iloc[idx].tolist()]
+            mp={norm(c):c for c in df.columns}
+            ch,cd,cc=mp.get("historico"),mp.get("debito"),mp.get("credito")
+            cdata,cdesc=mp.get("data"),mp.get("descricao")
+            if not ch or not cd or not cc: continue
+            for _,row in df.iterrows():
+                hist=safe(row[ch]); debit=safe(row[cd]); credit=safe(row[cc])
+                if not hist or not debit or not credit: continue
+                bank=bank_from(row[cdesc] if cdesc else sheet,company) or bank_from(sheet,company) or bank_from(filename,company)
+                if not bank: continue
+                acct=bank_account(company,bank)
+                if not acct: continue
+                if credit==acct and debit:
+                    nature,counter="pago",debit
+                elif debit==acct and credit:
+                    nature,counter="recebido",credit
+                else:
+                    continue
+                sig=signature(hist)
+                if not sig: continue
+                dt=pd.to_datetime(row[cdata],dayfirst=True,errors="coerce") if cdata else pd.NaT
+                period=dt.strftime("%Y-%m") if not pd.isna(dt) else norm(filename)[:30]
+                con.execute("""INSERT INTO patterns(company,bank,signature,nature,counterpart,period,example,occurrences)
+                  VALUES(?,?,?,?,?,?,?,1)
+                  ON CONFLICT(company,bank,signature,nature,counterpart,period)
+                  DO UPDATE SET occurrences=occurrences+1, example=excluded.example""",
+                  (company,bank,sig,nature,counter,period,hist[:500]))
+                learned+=1
+        con.commit()
+    finally:
+        con.close()
+    return learned
+
+
+def status(company:int):
+    con=_db()
+    try:
+        row=con.execute("SELECT COUNT(*),COUNT(DISTINCT bank),COUNT(DISTINCT period) FROM patterns WHERE company=?",(company,)).fetchone()
+        return {"patterns":row[0],"banks":row[1],"periods":row[2]}
+    finally: con.close()
+
+
+def classify(company:int,content:bytes,filename:str):
+    wb=load_workbook(io.BytesIO(content))
+    con=_db(); summary={"automaticos":0,"somente_banco":0,"fixas_1000":0,"ja_preenchidos":0}
+    try:
+      for ws in wb.worksheets:
+        header=None; mp={}
+        for r in range(1,min(ws.max_row,30)+1):
+            test={norm(ws.cell(r,c).value):c for c in range(1,ws.max_column+1)}
+            if all(x in test for x in ["historico","debito","credito"]):
+                header,mp=r,test; break
+        if not header: continue
+        bank_sheet=bank_from(ws.title,company) or bank_from(filename,company)
+        for r in range(header+1,ws.max_row+1):
+            hist=safe(ws.cell(r,mp["historico"]).value)
+            if not hist: continue
+            debit=safe(ws.cell(r,mp["debito"]).value); credit=safe(ws.cell(r,mp["credito"]).value)
+            if debit and credit:
+                summary["ja_preenchidos"]+=1; continue
+            desc=safe(ws.cell(r,mp.get("descricao",0)).value) if mp.get("descricao") else ""
+            bank=bank_from(desc,company) or bank_sheet
+            acct=bank_account(company,bank)
+            if not acct: continue
+            val=0.0
+            if mp.get("valor"):
+                try: val=float(ws.cell(r,mp["valor"]).value or 0)
+                except Exception: val=0
+            if val>0 and not debit:
+                ws.cell(r,mp["debito"]).value=int(acct) if acct.isdigit() else acct
+                debit=acct; summary["somente_banco"]+=1
+            elif val<0 and not credit:
+                ws.cell(r,mp["credito"]).value=int(acct) if acct.isdigit() else acct
+                credit=acct; summary["somente_banco"]+=1
+
+            if company==1000 and val<0 and not debit:
+                fixed=identificar_conta_folha_accede_1000(hist)
+                if fixed:
+                    ws.cell(r,mp["debito"]).value=int(fixed) if fixed.isdigit() else fixed
+                    debit=fixed; summary["fixas_1000"]+=1
+
+            sig=signature(hist)
+            nature="pago" if val<0 else "recebido" if val>0 else ""
+            if not sig or not nature: continue
+            rows=con.execute("""SELECT counterpart,COUNT(DISTINCT period) periods
+              FROM patterns WHERE company=? AND bank=? AND signature=? AND nature=?
+              GROUP BY counterpart""",(company,bank,sig,nature)).fetchall()
+            eligible=[(cp,p) for cp,p in rows if p>=3]
+            if len(eligible)!=1: continue
+            cp=eligible[0][0]
+            if nature=="pago" and not debit:
+                ws.cell(r,mp["debito"]).value=int(cp) if cp.isdigit() else cp; summary["automaticos"]+=1
+            elif nature=="recebido" and not credit:
+                ws.cell(r,mp["credito"]).value=int(cp) if cp.isdigit() else cp; summary["automaticos"]+=1
+    finally: con.close()
+    out=io.BytesIO(); wb.save(out)
+    return out.getvalue(),summary
+
+
+================================================================================================
+FIM DO CÓDIGO DA BASE INTELIGENTE
