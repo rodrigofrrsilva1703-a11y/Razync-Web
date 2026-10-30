@@ -154,6 +154,15 @@ test('botão flutuante só é montado para a conta selecionada, abre conversa e 
   assert.ok(find(panel,'fiscal-agent-chat-composer'));
   assert.equal(find(body,'fiscal-agent-chat-composer'),undefined);
   assert.equal(find(panel,'fiscal-account-analysis-bar').hidden,true);
+  const expand=find(panel,'fiscal-account-ai-expand');
+  await expand.click();
+  assert.equal(expand.attributes['aria-pressed'],'true');
+  assert.ok(panel.className.includes('is-expanded'));
+  assert.equal(comparison.scrollTop,275);
+  await expand.click();
+  assert.equal(expand.attributes['aria-pressed'],'false');
+  assert.equal(requests.length,1);
+  assert.equal(body.children[0],rendered);
   await find(panel,'fiscal-account-ai-close').click();
   assert.equal(panel.hidden,true);
   assert.ok(!shell.className.includes('fiscal-chat-open'));

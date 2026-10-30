@@ -1450,7 +1450,7 @@
     state.agentMessages.forEach(renderMessage);host.appendChild(thread);
     const suggestions=node("div","fiscal-agent-suggestions");
     const input=node("textarea");input.rows=2;input.maxLength=1000;input.placeholder="Ex.: Por que essa conta não bate? Ou: procure a nota 149599";input.setAttribute("aria-label","Pergunta sobre os documentos desta conta");
-    for(const text of ["Explique a diferença e as pendências","Quais movimentos estão sem vínculo?"]){const b=node("button","",text);b.type="button";b.addEventListener("click",()=>{input.value=text;input.focus();});suggestions.appendChild(b);}
+    for(const [label,text] of [["Explicar diferença","Explique a diferença e as pendências"],["Sem vínculo","Quais movimentos estão sem vínculo?"]]){const b=node("button","",label);b.type="button";b.title=text;b.addEventListener("click",()=>{input.value=text;input.focus();});suggestions.appendChild(b);}
     const permission=node("label","fiscal-agent-permission"),toggle=node("input");toggle.type="checkbox";toggle.checked=false;
     permission.append(toggle,node("span","","Usar IA externa nesta pergunta: envia a pergunta e até 20 evidências estruturadas ao provedor gratuito configurado. Os arquivos, nomes e históricos não são enviados. Evite incluir dados pessoais na pergunta."));
     const send=node("button","fiscal-agent-send","Perguntar");send.type="button";
@@ -1478,10 +1478,12 @@
     cancel.addEventListener("click",()=>state.chatController?.abort());
     const composer = node("div", "fiscal-agent-chat-composer");
     const permissionDetails = node("details", "fiscal-agent-chat-options");
-    permissionDetails.append(node("summary", "", "Opção de IA externa"), permission);
+    permissionDetails.append(node("summary", "", "IA externa · opcional"), permission);
+    toggle.addEventListener("change",()=>{permissionDetails.querySelector("summary").textContent=toggle.checked ? "IA externa · ativada" : "IA externa · opcional";});
     const sendRow = node("div", "fiscal-agent-chat-send-row");
     sendRow.append(send, cancel);
-    composer.append(suggestions, input, permissionDetails, sendRow, status);
+    const inputRow=node("div","fiscal-agent-input-row");inputRow.append(input,sendRow);
+    composer.append(suggestions, inputRow, permissionDetails, status);
     host.append(composer, node("small", "", "Conversa temporária, limitada à empresa, filial, conta e tipo. Confirme as evidências nos documentos originais."));
     host.composer = composer;
     input.addEventListener("keydown", event => {
@@ -1591,8 +1593,14 @@
     closeChat.type = "button";
     closeChat.setAttribute("aria-label", "Fechar conversa e voltar à conferência");
     const chatActions = node("div", "fiscal-account-ai-header-actions");
+    const expandChat = node("button", "fiscal-account-ai-expand", "⤢");
+    expandChat.type="button";expandChat.setAttribute("aria-label","Ampliar assistente");expandChat.setAttribute("aria-pressed","false");
+    expandChat.title="Ampliar assistente";
+    expandChat.addEventListener("click",()=>{state.chatWide=!state.chatWide;paint();});
+    closeChat.textContent="−";closeChat.title="Recolher assistente";
+    closeChat.setAttribute("aria-label","Recolher assistente e voltar à conferência");
     exportButton.textContent = "Exportar";
-    chatActions.append(exportButton, closeChat);
+    chatActions.append(exportButton, expandChat, closeChat);
     chatHeading.append(chatIdentity, chatActions);
     const aiSettings = node("details", "fiscal-account-ai-settings");
     aiSettings.append(node("summary", "", "Configurações de investigação"), aiOption);
@@ -1654,6 +1662,10 @@
       updateLoadingTime();
       if (layout) {
         area.hidden = !state.expanded;
+        area.classList.toggle("is-expanded",Boolean(state.chatWide));
+        expandChat.setAttribute("aria-pressed",String(Boolean(state.chatWide)));
+        expandChat.setAttribute("aria-label",state.chatWide ? "Restaurar tamanho do assistente" : "Ampliar assistente");
+        expandChat.title=state.chatWide ? "Restaurar tamanho" : "Ampliar assistente";
         layout.shell.classList?.toggle("fiscal-chat-open", state.expanded);
       }
       if (state.result && renderedResult !== state.result) {
