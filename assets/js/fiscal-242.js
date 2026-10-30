@@ -1453,6 +1453,21 @@
         ? "Fatos calculados no sistema · apoio de " + answer.provedor + " · " + answer.modelo
         : "Consulta documental · cálculos locais";
       entry.append(node("small","fiscal-agent-source",source));
+      if(answer.ferramentas_ia?.length){
+        const labels={
+          obter_contexto_conta:"Conferir contexto",
+          cruzar_documentos_fiscais_razao:"Cruzar documentos",
+          buscar_movimentos_razao:"Localizar movimentos",
+          testar_hipotese_matematica:"Testar valores",
+          investigar_competencia:"Verificar competência",
+          consultar_indicios:"Revisar indícios"
+        };
+        const steps=node("details","fiscal-agent-tool-steps");
+        steps.append(node("summary","","Investigação realizada · "+answer.ferramentas_ia.length+" consulta(s)"));
+        const list=node("ol");
+        answer.ferramentas_ia.forEach(name=>list.append(node("li","",labels[name] || "Consulta autorizada")));
+        steps.append(list);entry.appendChild(steps);
+      }
       if(answer.titulo)entry.appendChild(node("h5","fiscal-agent-answer-title",answer.titulo));
       if(answer.recorte)entry.appendChild(node("small","fiscal-agent-scope",answer.recorte));
       entry.appendChild(node("p","fiscal-agent-answer-text",answer.interpretacao_ia || answer.explicacao));
