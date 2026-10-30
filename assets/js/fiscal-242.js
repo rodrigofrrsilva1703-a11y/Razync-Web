@@ -1519,7 +1519,13 @@
     if (accuracy === "hipotese" || accuracy === "inconclusiva")
       report.appendChild(node("p", "fiscal-chat-caution", "A causa ainda não está comprovada. Confirme as evidências antes de corrigir lançamentos."));
     const detail = node("details", "fiscal-chat-full-report");
-    detail.append(node("summary", "", "Ver investigação completa"), renderAccountOpinion(result, scope));
+    detail.append(node("summary", "", "Ver investigação completa"));
+    let fullReportLoaded = false;
+    detail.addEventListener("toggle", () => {
+      if (!detail.open || fullReportLoaded) return;
+      detail.appendChild(renderAccountOpinion(result, scope));
+      fullReportLoaded = true;
+    });
     report.appendChild(detail);
     return report;
   }
@@ -1532,7 +1538,7 @@
     let state = accountAnalysisCache.get(key);
     if (!state || state.source !== previewBody || state.file !== file || files.length !== state.files?.length || files.some((item,index)=>item !== state.files[index])) {
       state?.controller?.abort();
-      state = {source:previewBody, file, files, useAI:true, pending:false, result:null, error:"", expanded:false};
+      state = {source:previewBody, file, files, useAI:false, pending:false, result:null, error:"", expanded:false};
       accountAnalysisCache.set(key, state);
     }
     const area = node("section", "fiscal-account-analysis");
