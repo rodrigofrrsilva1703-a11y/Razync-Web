@@ -309,10 +309,10 @@ class DocumentaryAgentTests(unittest.TestCase):
             result=agent.interpret('Explique a diferença', [dict(referencia='RESUMO',diferenca='3698.89'),dict(referencia='R-902',valor=3900.0)])
             self.assertEqual(result['referencias'],['RESUMO','R-902'])
             self.assertEqual(send.call_args.args[0].get_header('User-agent'),'Razync-Web/1.0')
-            agent.interpret('CPF 123.456.789-09 CNPJ 12.345.678/0001-99 e-mail teste@example.com telefone 11987654321', [
+            agent.interpret('CPF 123.456.789-09 CNPJ 12.345.678/0001-99 e-mail teste@example.com telefone +55 (11) 98765-4321', [
                 dict(referencia='RESUMO', diferenca='3698.89'),dict(referencia='R-902',valor=3900.0)])
             external_body = send.call_args.args[0].data.decode()
-            for secret in ('123.456.789-09', '12.345.678/0001-99', 'teste@example.com', '11987654321'):
+            for secret in ('123.456.789-09', '12.345.678/0001-99', 'teste@example.com', '+55 (11) 98765-4321'):
                 self.assertNotIn(secret, external_body)
             self.assertIn('[DOCUMENTO]', external_body)
             self.assertIn('[EMAIL]', external_body)
