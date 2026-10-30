@@ -653,7 +653,8 @@ html[data-theme=dark] .app-shell #fiscalView .fiscal-document-assistant .fiscal-
 #fiscalView .fiscal-account-ai-settings summary {cursor:pointer}
 #fiscalView .fiscal-account-ai-settings .fiscal-hybrid-ai-option {display:flex;gap:8px;margin:8px 0}
 #fiscalView .fiscal-account-ai-chat > .fiscal-account-analysis-bar[hidden] {display:none!important}
-html[data-theme=dark] .app-shell #fiscalView .fiscal-account-ai-chat {background:#141414!important;border-color:#363636!important;box-shadow:0 20px 70px #0009!important}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-dialog-shell > .fiscal-account-analysis.fiscal-account-ai-chat {background:#141414!important;border-color:#363636!important;box-shadow:0 20px 70px #0009!important}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-dialog-shell .fiscal-account-ai-chat .fiscal-agent-send {background:#2864d7!important;border-color:#2864d7!important;color:#fff!important}
 html[data-theme=dark] .app-shell #fiscalView .fiscal-account-ai-chat-heading,
 html[data-theme=dark] .app-shell #fiscalView .fiscal-account-ai-composer-slot {background:#141414!important}
 html[data-theme=dark] .app-shell #fiscalView .fiscal-account-ai-chat-report,
