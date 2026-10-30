@@ -3,6 +3,11 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync('assets/js/fiscal-242.js','utf8');
+test('folha de estilos fiscal mantém todos os blocos completos na publicação',()=>{
+  const css=fs.readFileSync('assets/css/fiscal-account-dialog.css','utf8').replace(/\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g,'');
+  let depth=0;for(const char of css){if(char==='{')depth++;if(char==='}')depth--;assert.ok(depth>=0,'Bloco CSS fechado sem abertura');}
+  assert.equal(depth,0,'Folha CSS incompleta: bloco sem fechamento');
+});
 function setup(){
   class Element {
     constructor(tag,cls='',text=''){
