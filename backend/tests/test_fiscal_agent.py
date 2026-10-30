@@ -38,6 +38,29 @@ class DocumentaryAgentTests(unittest.TestCase):
         self.token = agent.register(self.report, scope, docs, self.investigation)['session']
         self.assertEqual(self.ask('Nota 149599 em outra conta')['encontrados'], 0)
 
+    def test_pergunta_de_acompanhamento_reutiliza_tema_da_conta(self):
+        primeiro = self.ask('Quais movimentos devo olhar primeiro?')
+        self.assertEqual(primeiro['intencao'], 'movimentos')
+        proxima = self.ask('E o que mais posso analisar?')
+        self.assertEqual(proxima['intencao'], 'movimentos')
+        self.assertTrue(proxima['comparacao'])
+        self.assertEqual(self.ask('Quanto deu o fiscal?')['intencao'], 'totais')
+        self.assertEqual(self.ask('E sobre isso, o que conferir?')['intencao'], 'totais')
+
+    def test_ia_gratuita_pode_explicar_total_sem_registros_individuais(self):
+        context = dict(self.investigation, resumo=dict(fiscal='5000',contabil='2900',diferenca='-2100'))
+        self.token = agent.register(self.report, dict(self.scope, origem='resumo'), None, context)['session']
+        with patch.object(agent, 'interpret', return_value=dict(
+            explicacao='A diferença existe, mas faltam documentos.',
+            proximos_passos=['Solicite o acompanhamento fiscal.'],
+            referencias=['CONSULTA'], provedor='teste', modelo='gratuito')) as call:
+            result = self.ask('Por que essa conta não fecha?', True)
+            self.assertEqual(result['intencao'], 'diferenca')
+            self.assertEqual(result['origem'], 'ia')
+            self.assertEqual(result['encontrados'], 0)
+            self.assertEqual(call.call_count, 1)
+            self.assertEqual(call.call_args.args[1][0]['referencia'], 'CONSULTA')
+
     def test_perguntas_abertas_mantem_contexto_da_conta_e_resumo(self):
         examples = {
             'Me ajuda a entender tudo que está acontecendo aqui?': 'geral',
