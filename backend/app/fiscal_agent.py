@@ -89,7 +89,7 @@ def register(report, scope, documentary, investigation):
 
 
 def note_key(value):
-    return str(value or '').lstrip('0') or '0'
+    return (str(value).lstrip('0') or '0') if value not in (None, '') else ''
 
 
 def query_plan(question):
@@ -146,7 +146,10 @@ def select_rows(data, question, plan):
                        and normalized(c['serie']) == plan['serie'] for ref in c['referencias']}
             rows = [r for r in rows if r['referencia'] in allowed or normalized(r.get('serie', '')) == plan['serie']]
         if plan['data']:
-            rows = [r for r in rows if r['data'] == plan['data']]
+            dated_refs = {ref for c in data.get('comparacoes', []) if note_key(c['nota']) in plan['notas']
+                          and c['data'] == plan['data'] and (not plan['serie'] or normalized(c['serie']) == plan['serie'])
+                          for ref in c['referencias']}
+            rows = [r for r in rows if r['data'] == plan['data'] or r['referencia'] in dated_refs]
     elif plan['referencias']:
         rows = [r for r in rows if r['referencia'] in plan['referencias']]
         tool = 'Busca por referência do arquivo'

@@ -67,6 +67,14 @@ class DocumentaryAgentTests(unittest.TestCase):
         self.prepare_note_pair(ambiguous=True)
         self.assertIsNone(self.ask('Compare a nota 149353')['comparacao'])
 
+    def test_document_date_filter_keeps_the_linked_ledger_even_when_dates_differ(self):
+        self.prepare_note_pair()
+        record=agent._sessions[self.token]['data']['records'][0]
+        record['data']='14/08/2026'
+        result=self.ask('Compare nota 149353 série 0 de 13/08/2026')
+        self.assertEqual({r['referencia'] for r in result['evidencias']},{'R-1','S-1'})
+        self.assertEqual(result['comparacao']['diferenca'],'-180.00')
+
     def test_reference_and_negative_exact_amount_search(self):
         self.assertEqual(self.ask('Mostre R-1')['encontrados'],1)
         self.report['lancamentos'][0]['credito']=-3900
