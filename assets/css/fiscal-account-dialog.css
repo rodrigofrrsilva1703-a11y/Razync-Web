@@ -653,88 +653,61 @@ html[data-theme=dark] .app-shell #fiscalView .fiscal-document-assistant .fiscal-
 #fiscalView .fiscal-account-ai-settings summary {cursor:pointer}
 #fiscalView .fiscal-account-ai-settings .fiscal-hybrid-ai-option {display:flex;gap:8px;margin:8px 0}
 #fiscalView .fiscal-account-ai-chat > .fiscal-account-analysis-bar[hidden] {display:none!important}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-dialog-shell > .fiscal-account-analysis.fiscal-account-ai-chat {background:#141414!important;border-color:#363636!important;box-shadow:0 20px 70px #0009!important}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-dialog-shell .fiscal-account-ai-chat .fiscal-agent-send {background:#2864d7!important;border-color:#2864d7!important;color:#fff!important}
-html[data-theme=dark] .app-shell #fiscalView .fiscal-account-ai-chat-heading,
-html[data-theme=dark] .app-shell #fiscalView .fiscal-account-ai-composer-slot {background:#141414!important}
-html[data-theme=dark] .app-shell #fiscalView .fiscal-account-ai-chat-report,
-html[data-theme=dark] .app-shell #fiscalView .fiscal-agent-message > p,
-html[data-theme=dark] .app-shell #fiscalView .fiscal-agent-message > ol {background:transparent!important}
-html[data-theme=dark] .app-shell #fiscalView .fiscal-agent-message > strong {background:#1d2c43!important;color:#c6d9ff!important}
-html[data-theme=dark] .app-shell #fiscalView .fiscal-agent-input-row {border-color:#404040;background:#191919}
-html[data-theme=dark] .app-shell #fiscalView .fiscal-agent-input-row:focus-within {border-color:#5286df}
-@keyframes fiscal-chat-enter {from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-dialog-shell > .fiscal-account-analysis.fiscal-account-ai-chat {back
+/* Conversa: mensagens imediatas, identidade do assistente e espera honesta. */
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-thread {gap:26px;margin:14px 0 8px}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-message {display:flex;flex-direction:column;gap:17px;padding:0;margin:0}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-user {display:flex;flex-direction:column;align-items:flex-end;align-self:flex-end;gap:5px;max-width:88%;min-width:0}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-user-label {font-size:10px;line-height:1.4;color:var(--fiscal-muted,#64748b);padding-right:3px}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-user > strong {display:block;white-space:pre-wrap;overflow-wrap:anywhere;padding:10px 14px;border-radius:15px 15px 4px 15px;background:#e8f0ff;color:#1d4588;font-size:13px;font-weight:500;line-height:1.65}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-answer {display:grid;grid-template-columns:24px minmax(0,1fr);column-gap:8px;row-gap:9px;min-width:0}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-speaker {grid-column:1 / -1;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:650;line-height:24px}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-speaker-icon {display:grid;place-items:center;width:24px;height:24px;flex:none;border:1px solid #d5e1f3;background:#edf4ff;color:#2864d7;border-radius:8px;font-size:13px;line-height:1}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-answer-content {grid-column:2;display:flex;flex-direction:column;gap:8px;min-width:0;overflow-wrap:anywhere}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-answer-content > p {font-size:13px;line-height:1.75;margin:0 0 5px;background:transparent}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-answer-content > .fiscal-agent-source {font-size:10px;line-height:1.5;margin:-5px 0 2px;color:var(--fiscal-muted,#64748b)}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-answer-content > .fiscal-agent-answer-title {margin:3px 0 0}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-answer-content > .fiscal-agent-answer-text {margin:0 0 6px}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-answer-content > .fiscal-agent-scope {display:block;font-size:10px;line-height:1.5;margin:0 0 2px}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-answer-content > .fiscal-agent-error {color:#9c591e;font-size:12px;border-left:2px solid #c9934d;padding-left:10px}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-message:not(.is-pending) .fiscal-agent-answer {animation:fiscal-answer-arrive .22s ease-out both}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-message.is-pending .fiscal-agent-user {animation:fiscal-answer-arrive .16s ease-out both}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-typing {display:flex;flex-wrap:wrap;align-items:center;column-gap:9px;row-gap:9px;padding-bottom:7px}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-typing .fiscal-agent-speaker {flex-basis:100%}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-typing-dots {display:inline-flex;align-items:center;gap:5px;height:20px;margin-left:32px}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-typing-dots i {display:block;width:5px;height:5px;border-radius:50%;background:#477cd5;animation:fiscal-typing-dot 1.25s ease-in-out infinite}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-typing-dots i:nth-child(2) {animation-delay:.16s}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-typing-dots i:nth-child(3) {animation-delay:.32s}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-typing-label {font-size:11px;line-height:1.6;color:var(--fiscal-muted,#64748b)}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-chat-composer {gap:10px}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-input-row {border-radius:14px;padding:6px;align-items:flex-end}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-input-row textarea {min-height:48px;height:48px;max-height:112px;padding:8px 9px;font-size:13px}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-chat-send-row {padding:3px;flex-direction:row;gap:0;align-items:center}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-chat-send-row .fiscal-agent-send,
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-chat-send-row .fiscal-agent-stop {display:grid;place-items:center;box-sizing:border-box;min-height:36px;height:36px;width:36px;max-width:none;padding:0;border-radius:10px;font-size:22px;line-height:1;cursor:pointer}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-chat-send-row .fiscal-agent-stop {font-size:11px;border:1px solid #bdcde2;background:#eaf1fa;color:#28599c}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-send[hidden],
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-stop[hidden] {display:none!important}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-composer-meta {display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 12px}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-chat-options[open] {flex-basis:100%}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-key-hint {font-size:9px;line-height:1.5;color:var(--fiscal-muted,#64748b)}
+#fiscalView .fiscal-account-ai-chat .fiscal-agent-chat-composer .fiscal-agent-status.is-error {margin:0;font-size:11px;line-height:1.5;color:#9c591e}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-user > strong {background:#203657!important;color:#deebff!important;border:1px solid #304d78}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-speaker-icon {background:#1b2a42!important;border-color:#314a6d!important;color:#91b8ff!important}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-typing-dots i {background:#91b8ff}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-stop {background:#20324d!important;border-color:#36527b!important;color:#d5e5ff!important}
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-error,
+html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-status.is-error {color:#e9bd81!important}
+@keyframes fiscal-answer-arrive {from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fiscal-typing-dot {0%,65%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
 @media(max-width:760px) {
-  #fiscalView .fiscal-account-ai-chat,#fiscalView .fiscal-account-ai-chat.is-expanded {inset:104px 8px 70px;width:auto;height:auto;max-height:none;border-radius:12px}
-  #fiscalView .fiscal-account-ai-expand {display:none}
-  #fiscalView .fiscal-account-ai-chat-heading {padding:10px 12px;min-height:58px}
-  #fiscalView .fiscal-account-ai-chat-subtitle {max-width:145px;font-size:10px}
-  #fiscalView .fiscal-account-ai-chat > .fiscal-account-analysis-body {padding:12px}
-  #fiscalView .fiscal-account-ai-composer-slot {padding:10px 12px}
+  #fiscalView .fiscal-account-ai-chat .fiscal-agent-answer {grid-template-columns:20px minmax(0,1fr);column-gap:7px}
+  #fiscalView .fiscal-account-ai-chat .fiscal-agent-speaker-icon {width:20px;height:20px;border-radius:6px}
+  #fiscalView .fiscal-account-ai-chat .fiscal-agent-key-hint {display:none}
 }
-@media(max-height:650px) {
-  #fiscalView .fiscal-account-ai-chat,#fiscalView .fiscal-account-ai-chat.is-expanded {inset:82px 10px 62px auto;height:auto;max-height:none}
-  #fiscalView .fiscal-account-ai-composer-slot {padding:8px 12px}
-  #fiscalView .fiscal-agent-chat-composer .fiscal-agent-suggestions {display:none}
+@media(prefers-reduced-motion:reduce) {
+  #fiscalView .fiscal-account-ai-chat .fiscal-agent-typing-dots i,
+  #fiscalView .fiscal-account-ai-chat .fiscal-agent-message .fiscal-agent-answer,
+  #fiscalView .fiscal-account-ai-chat .fiscal-agent-message.is-pending .fiscal-agent-user {animation:none}
+  #fiscalView .fiscal-account-ai-chat .fiscal-agent-typing-dots i {opacity:.7}
 }
-@media(prefers-reduced-motion:reduce) {#fiscalView .fiscal-account-ai-chat {animation:none;transition:none}}
-
-/* Azul contextual do Razync, com superfícies pretas e contraste de leitura. */
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-dialog-shell > .fiscal-account-analysis.fiscal-account-ai-chat {
-  border-color:#2d3b50!important;border-top-color:#477cd5!important;
-}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-account-ai-avatar {
-  background:#1b2a42!important;color:#91b8ff!important;border:1px solid #314a6d;
-}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-account-ai-chat-subtitle {color:#92afd9!important}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-account-ai-chat-message-head,
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-source {color:#96b6e6!important}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-chat-metrics .is-difference dd {color:#91b8ff!important}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-suggestions button {
-  border-color:#334766!important;color:#bdd2f5!important;background:transparent!important;
-}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-suggestions button:hover,
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-account-ai-header-actions button:hover {background:#1b2a42!important;color:#c8dcff!important}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat details > summary {color:#a4c3f8!important}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-input-row:focus-within {
-  border-color:#5c94ed!important;box-shadow:0 0 0 2px #2864d728;
-}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-fab {border-color:#395b89!important;color:#bed5ff!important;background:#17243a!important}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat button:focus-visible,
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat summary:focus-visible {outline:2px solid #80afff;outline-offset:3px}
-
-/* Respostas por objetivo: conclusão, comparação e evidências em sequência. */
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-answer-title {font-size:14px;line-height:1.45;margin:4px 0 0;font-weight:650;letter-spacing:-.01em}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-scope {font-size:10px;color:var(--fiscal-muted,#64748b)}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-message > .fiscal-agent-answer-text {margin:3px 0 8px;line-height:1.7;font-size:13px}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-message section {margin:0 0 6px;padding:0;background:transparent;box-shadow:none}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-message h6 {font-size:11px;font-weight:650;line-height:1.5;margin:0 0 7px}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-comparison {border-top:1px solid var(--fiscal-line,#dce5ef);border-bottom:1px solid var(--fiscal-line,#dce5ef);padding:11px 0!important}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-comparison dl {display:grid;gap:0;margin:0 0 8px;font-variant-numeric:tabular-nums}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-comparison dl > div {display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:5px 0}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-comparison dt {font-size:11px;color:var(--fiscal-muted,#64748b)}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-comparison dd {font-size:13px;font-weight:600;margin:0;white-space:nowrap}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-comparison .is-difference {border-top:1px solid var(--fiscal-line,#dce5ef);padding-top:9px;margin-top:3px}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-comparison .is-difference dd {color:#2864d7}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-comparison small {font-size:10px;line-height:1.5;color:var(--fiscal-muted,#64748b);display:block}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-message section > ul {margin:0;padding-left:16px;font-size:12px;line-height:1.7}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-message section li {padding-left:0;margin:0 0 5px}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-facts > ul {padding-left:0;list-style:none;font-size:11px}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-confirm {border-left:2px solid #749bd7;padding-left:11px!important;color:var(--fiscal-muted,#64748b)}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-confirm > ul {list-style:none;padding-left:0}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-interpretation {border-top:1px solid var(--fiscal-line,#dce5ef);padding-top:12px!important}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-interpretation p {font-size:12px;line-height:1.75;margin:0 0 8px}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-coverage {font-size:10px;line-height:1.5;color:var(--fiscal-muted,#64748b);margin:2px 0 6px}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-records > h6 {margin:12px 0 6px}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-evidence-record {padding:9px 0;border-bottom:1px solid var(--fiscal-line,#dce5ef)}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-evidence-record > strong {font-size:11px;color:inherit}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-evidence-record > p {font-size:11px;line-height:1.6;margin:4px 0}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-evidence-history {color:var(--fiscal-muted,#64748b)}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-result-actions {display:flex;flex-wrap:wrap;gap:6px;margin:5px 0 9px}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-result-actions button {font:inherit;font-size:11px;min-height:31px;padding:5px 9px;border-radius:7px;background:transparent;color:#28599c;border:1px solid #b8cbe6;cursor:pointer}
-#fiscalView .fiscal-account-ai-chat .fiscal-agent-result-actions button:hover {background:#eef4ff}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-message section {background:transparent!important}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-comparison .is-difference dd,
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-message h6 {color:#a4c3f8!important}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-result-actions button {border-color:#334766!important;background:transparent!important;color:#bdd2f5!important}
-html[data-theme=dark] .app-shell #fiscalView#fiscalView .fiscal-account-ai-chat .fiscal-agent-result-actions button:hover {background:#1b2a42!important}

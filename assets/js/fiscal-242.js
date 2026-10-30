@@ -1425,11 +1425,27 @@
     const session=result.assistente;
     if(!session?.disponivel){host.appendChild(node("p","",session?.motivo || "O assistente ficará disponível após uma nova análise nesta versão do servidor."));return host;}
     const thread=node("div","fiscal-agent-thread");thread.setAttribute("role","log");thread.setAttribute("aria-label","Conversa sobre a conta");
+    thread.setAttribute("aria-relevant","additions");
     state.agentMessages ||= [];
+    const userMessage=question=>{
+      const user=node("div","fiscal-agent-user");
+      user.append(node("span","fiscal-agent-user-label","Você"),node("strong","",question));return user;
+    };
+    const assistantHeading=()=>{
+      const heading=node("div","fiscal-agent-speaker");
+      const avatar=node("span","fiscal-agent-speaker-icon","✦");avatar.setAttribute("aria-hidden","true");
+      heading.append(avatar,node("span","","Razync"));return heading;
+    };
+    const finishMessage=(entry,user)=>{
+      const answer=node("div","fiscal-agent-answer");answer.appendChild(assistantHeading());
+      const content=node("div","fiscal-agent-answer-content");
+      Array.from(entry.children).filter(child=>child!==user).forEach(child=>content.appendChild(child));
+      answer.appendChild(content);entry.appendChild(answer);thread.appendChild(entry);return entry;
+    };
     const renderMessage=message=>{
       const entry=node("article","fiscal-agent-message");
-      entry.append(node("strong","",message.question));
-      if(message.error){entry.appendChild(node("p","",message.error));thread.appendChild(entry);return;}
+      const user=userMessage(message.question);entry.appendChild(user);
+      if(message.error){entry.appendChild(node("p","fiscal-agent-error",message.error));return finishMessage(entry,user);}
 
       const answer=message.answer;
       const source=answer.origem==="ia"
@@ -1510,8 +1526,7 @@
       }
       if(actions.children.length)entry.appendChild(actions);
       if(answer.limites?.length){const limits=node("details");limits.appendChild(node("summary","","Limites desta consulta"));answer.limites.forEach(text=>limits.appendChild(node("p","",text)));entry.appendChild(limits);}
-      thread.appendChild(entry);
-      return entry;
+      return finishMessage(entry,user);
     };
     state.agentMessages.forEach(renderMessage);host.appendChild(thread);
     const suggestions=node("div","fiscal-agent-suggestions");
@@ -1519,14 +1534,21 @@
     for(const [label,text] of [["Explicar diferença","Explique a diferença e as pendências"],["Sem vínculo","Quais movimentos estão sem vínculo?"],["Verificar repetição","Existe duplicidade nesta conta?"]]){const b=node("button","",label);b.type="button";b.title=text;b.addEventListener("click",()=>{input.value=text;input.focus();});suggestions.appendChild(b);}
     const permission=node("label","fiscal-agent-permission"),toggle=node("input");toggle.type="checkbox";toggle.checked=false;
     permission.append(toggle,node("span","","Usar IA externa nesta pergunta: envia a pergunta e até 20 evidências estruturadas ao provedor gratuito configurado. Os arquivos, nomes e históricos não são enviados. Evite incluir dados pessoais na pergunta."));
-    const send=node("button","fiscal-agent-send","Perguntar");send.type="button";
-    const cancel=node("button","","Cancelar espera");cancel.type="button";cancel.hidden=true;
-    const status=node("p","fiscal-agent-status");status.setAttribute("role","status");
+    const send=node("button","fiscal-agent-send","↑");send.type="button";send.setAttribute("aria-label","Perguntar");send.title="Enviar pergunta · Enter";
+    const cancel=node("button","fiscal-agent-stop","■");cancel.type="button";cancel.hidden=true;cancel.title="Parar espera";cancel.setAttribute("aria-label","Cancelar espera");
+    const status=node("p","fiscal-agent-status visually-hidden");status.setAttribute("role","status");
     send.addEventListener("click",async()=>{
-      const question=input.value.trim();if(question.length<3){status.textContent="Escreva uma pergunta com pelo menos três caracteres.";return;}
+      const question=input.value.trim();if(question.length<3){status.className="fiscal-agent-status is-error";status.textContent="Escreva uma pergunta com pelo menos três caracteres.";return;}
       if(state.chatPending)return;
       state.chatPending=true;const controller=new AbortController();state.chatController=controller;
-      send.disabled=true;cancel.hidden=false;input.disabled=true;toggle.disabled=true;status.textContent="Consultando os registros desta seleção…";
+      status.className="fiscal-agent-status visually-hidden";thread.setAttribute("aria-busy","true");
+      const pending=node("article","fiscal-agent-message is-pending"),user=userMessage(question);
+      const waiting=node("div","fiscal-agent-answer fiscal-agent-typing");
+      const dots=node("span","fiscal-agent-typing-dots");dots.setAttribute("aria-hidden","true");
+      for(let i=0;i<3;i++)dots.appendChild(node("i"));
+      waiting.append(assistantHeading(),dots,node("span","fiscal-agent-typing-label",toggle.checked ? "Preparando resposta com IA…" : "Consultando os documentos…"));
+      pending.append(user,waiting);thread.appendChild(pending);state.revealMessage?.(pending);
+      send.disabled=true;send.hidden=true;cancel.hidden=false;input.disabled=true;toggle.disabled=true;permissionDetails.open=false;status.textContent="Consultando os registros desta seleção…";
       const timeout=setTimeout(()=>controller.abort(),45000);
       try{
         const response=await fetch(API()+"/api/v1/conferencia-fiscal/ia/conta/conversa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session:session.session,pergunta:question,usar_ia:toggle.checked}),signal:controller.signal});
@@ -1537,9 +1559,12 @@
         const answer=await response.json();
         if(controller.signal.aborted || state.source!==previewBody || state.result!==result)return;
         if(answer.escopo?.conta!==String(scope.conta) || answer.escopo?.tipo!==scope.tipo || (answer.escopo?.acumulador || "")!==(scope.acumulador || ""))throw new Error("Resposta de outra seleção bloqueada.");
-        const message={question,answer};state.agentMessages.push(message);const entry=renderMessage(message);state.revealMessage?.(entry);input.value="";status.textContent="Resposta pronta. Confira as evidências antes de decidir um ajuste.";
-      }catch(error){status.textContent=controller.signal.aborted ? "Espera encerrada. Nenhum lançamento foi alterado." : error.message || "Não foi possível consultar o assistente.";}
-      finally{clearTimeout(timeout);state.chatPending=false;state.chatController=null;send.disabled=false;cancel.hidden=true;input.disabled=false;toggle.disabled=false;}
+        pending.remove();const message={question,answer};state.agentMessages.push(message);const entry=renderMessage(message);state.revealMessage?.(entry);input.value="";status.textContent="Resposta pronta. Confira as evidências antes de decidir um ajuste.";
+      }catch(error){
+        status.textContent=controller.signal.aborted ? "Espera encerrada. Nenhum lançamento foi alterado." : error.message || "Não foi possível consultar o assistente.";
+        if(state.source===previewBody && state.result===result){pending.remove();const message={question,error:status.textContent};state.agentMessages.push(message);const entry=renderMessage(message);state.revealMessage?.(entry);}
+      }
+      finally{pending.remove();clearTimeout(timeout);state.chatPending=false;state.chatController=null;send.disabled=false;send.hidden=false;cancel.hidden=true;input.disabled=false;toggle.disabled=false;thread.setAttribute("aria-busy","false");}
     });
     cancel.addEventListener("click",()=>state.chatController?.abort());
     const composer = node("div", "fiscal-agent-chat-composer");
@@ -1549,7 +1574,8 @@
     const sendRow = node("div", "fiscal-agent-chat-send-row");
     sendRow.append(send, cancel);
     const inputRow=node("div","fiscal-agent-input-row");inputRow.append(input,sendRow);
-    composer.append(suggestions, inputRow, permissionDetails, status);
+    const meta=node("div","fiscal-agent-composer-meta");meta.append(permissionDetails,node("small","fiscal-agent-key-hint","Enter envia · Shift+Enter quebra a linha"));
+    composer.append(suggestions, inputRow, meta, status);
     host.append(composer, node("small", "", "Conversa temporária, limitada à empresa, filial, conta e tipo. Confirme as evidências nos documentos originais."));
     host.composer = composer;
     input.addEventListener("keydown", event => {

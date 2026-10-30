@@ -71,6 +71,37 @@ test('somente clique envia a seleção e reabrir o parecer não repete a chamada
   assert.equal(requests.length,1);
 });
 
+test('chat mostra pergunta imediatamente, anima espera e substitui pela resposta sem duplicar mensagem',async()=>{
+  const {context,all,find}=setup();let finish;
+  context.setTimeout=()=>1;context.clearTimeout=()=>{};context.money=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+  const scope={conta:'408',tipo:'SAÍDAS',origem:'documentos',acumulador:''};
+  const result={assistente:{disponivel:true,session:'token'}},state={source:context.previewBody,result};
+  context.fetch=()=>new Promise(resolve=>{finish=resolve;});
+  const root=context.renderFiscalAssistant(result,scope,state),input=all(root).find(e=>e.tag==='textarea'),send=find(root,'fiscal-agent-send');
+  input.value='Compare a nota 149353';const pending=send.click();
+  const thread=find(root,'fiscal-agent-thread');
+  assert.equal(thread.children.length,1);
+  assert.ok(all(root).some(e=>e.textContent==='Compare a nota 149353'));
+  assert.equal(find(root,'fiscal-agent-typing-dots').children.length,3);
+  assert.equal(thread.attributes['aria-busy'],'true');assert.equal(send.hidden,true);
+  finish({ok:true,json:async()=>({escopo:scope,origem:'local',intencao:'documento',explicacao:'Compare os registros.',ferramenta:'Busca',exibidos:0,encontrados:0})});await pending;
+  assert.equal(thread.children.length,1);assert.equal(find(root,'fiscal-agent-typing-dots'),undefined);
+  assert.ok(find(root,'fiscal-agent-user'));assert.ok(find(root,'fiscal-agent-answer-content'));
+  assert.equal(thread.attributes['aria-busy'],'false');assert.equal(send.hidden,false);
+});
+
+test('cancelar espera remove a animação, preserva a pergunta e permite nova tentativa',async()=>{
+  const {context,all,find}=setup();context.setTimeout=()=>1;context.clearTimeout=()=>{};
+  const result={assistente:{disponivel:true,session:'token'}},state={source:context.previewBody,result};
+  context.fetch=(url,options)=>new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>reject(new Error('cancelled'))));
+  const root=context.renderFiscalAssistant(result,{conta:'408',tipo:'SAÍDAS'},state),input=all(root).find(e=>e.tag==='textarea'),send=find(root,'fiscal-agent-send');
+  input.value='Procure nota 149353';const pending=send.click();await find(root,'fiscal-agent-stop').click();await pending;
+  assert.equal(find(root,'fiscal-agent-typing-dots'),undefined);
+  assert.ok(find(root,'fiscal-agent-error').textContent.includes('Espera encerrada'));
+  assert.equal(find(root,'fiscal-agent-thread').children.length,1);
+  assert.equal(input.value,'Procure nota 149353');assert.equal(send.disabled,false);assert.equal(send.hidden,false);
+});
+
 test('resposta por nota separa comparação e fatos; ações abrem evidências ou preenchem pergunta sem enviar',async()=>{
   const {context,all,find}=setup();let calls=0;
   context.setTimeout=()=>1;context.clearTimeout=()=>{};context.money=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
