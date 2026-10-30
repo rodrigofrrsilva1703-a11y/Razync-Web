@@ -314,7 +314,7 @@
             throw Error('A carteira tem corte lateral: '+[theme,view,width].join(' / '));
           }
           const first=directoryDoc.querySelector('.company-row').getBoundingClientRect();
-          if(width>=1024 && first.top>420)throw Error('Os filtros ocupam espaço demais antes das empresas: '+first.top);
+          if(width>=1024 && first.top>420)throw Error('Os filtros ocupam espaço demais antes das empresas: '+[theme,view,width,first.top].join(' / '));
           const name=directoryDoc.querySelector('.company-row-name');
           if(name.scrollWidth>name.clientWidth+1)throw Error('O nome da empresa ultrapassa seu cartão.');
           if(first.width<200)throw Error('O cartão da empresa ficou estreito demais.');
