@@ -163,6 +163,36 @@ def _valid_final(text, allowed, context):
     return {"explicacao": explanation, "proximos_passos": steps, "referencias": refs}
 
 
+
+def _step_summary(name, result):
+    """Resultado breve, validado e sem históricos ou dados pessoais."""
+    if "erro" in result:
+        return {"situacao": "nao_executado", "resumo": "Consulta não executada: parâmetros inválidos."}
+    if name == "obter_contexto_conta":
+        return {"situacao": "concluido", "resumo": "Totais e cobertura documental consultados."}
+    if name == "cruzar_documentos_fiscais_razao":
+        if result.get("situacao") == "REQUER_ANEXO_FISCAL":
+            return {"situacao": "dados_insuficientes", "resumo": "Acompanhamento fiscal individual não anexado."}
+        return {"situacao": "concluido", "resumo": str(result.get("total_pendencias", 0)) + " pendência(s) documental(is) identificada(s)."}
+    if name == "buscar_movimentos_razao":
+        found = int(result.get("encontrados", 0))
+        return {"situacao": "concluido", "resumo": str(found) + " movimento(s) no recorte" +
+                ("; exibidos os 15 primeiros." if result.get("limitado") else ".")}
+    if name == "testar_hipotese_matematica":
+        if result.get("tipo_teste") == "SOMA_DIRETA":
+            summary = "Soma testada; " + ("coincide matematicamente." if result.get("fecha") else "não coincide com a diferença.")
+        elif result.get("tipo_teste") == "INVERSAO_DOBRO":
+            summary = str(len(result.get("candidatos", []))) + " candidato(s) à hipótese de inversão."
+        else:
+            summary = str(len(result.get("combinacoes", []))) + " combinação(ões) encontrada(s)."
+        return {"situacao": "concluido", "resumo": summary + " Sem comprovação documental."}
+    if name == "investigar_competencia":
+        return {"situacao": "concluido", "resumo": str(result.get("encontrados", 0)) + " indício(s) de data/competência."}
+    if name == "consultar_indicios":
+        return {"situacao": "concluido", "resumo": str(result.get("total", 0)) + " hipótese(s) do motor fiscal consultada(s)."}
+    return {"situacao": "nao_executado", "resumo": "Ferramenta não reconhecida."}
+
+
 def investigate(question, data, *, option=None):
     from app.fiscal_hybrid_ai import choose_provider
     selected = option or choose_provider()
@@ -175,6 +205,7 @@ def investigate(question, data, *, option=None):
         "instrucao": "Investigue usando as ferramentas disponíveis; não confunda indícios com prova."
     }, ensure_ascii=False)}]
     executed = []
+    steps = []
     allowed = {"CONSULTA", "RESUMO"}
     scoped_refs = set(audit_tools._ref_index(data))
     disclosed = [context]
@@ -189,7 +220,7 @@ def investigate(question, data, *, option=None):
                 pass
             final = _valid_final(reply, allowed, disclosed)
             return {**final, "provedor": selected[0], "modelo": selected[1],
-                    "ferramentas_executadas": executed, "iteracoes": turn + 1,
+                    "ferramentas_executadas": executed, "passos_agente": steps, "iteracoes": turn + 1,
                     "status_diagnostico": "EVIDENCIA_PARCIAL" if data.get("tem_documentos") else "REQUER_ANEXO_FISCAL"}
         if turn >= MAX_MODEL_CALLS - 1 or len(executed) + len(calls) > MAX_TOOL_CALLS:
             raise InvalidAgentReply("Limite de ferramentas por pergunta atingido.")
@@ -207,6 +238,7 @@ def investigate(question, data, *, option=None):
             visible = set(re.findall(r"\b[A-Z]-\d+\b", json.dumps(result, ensure_ascii=False)))
             allowed.update(visible & scoped_refs)
             executed.append(name)
+            steps.append({"ferramenta": name, **_step_summary(name, result)})
             verified.append((call, name, result))
         messages.append({"role": "assistant", "content": reply, "tool_calls": [
             {"id": str(c.get("id") or f"call{turn}_{i}"), "type": "function",
