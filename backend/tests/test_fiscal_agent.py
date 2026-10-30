@@ -38,6 +38,31 @@ class DocumentaryAgentTests(unittest.TestCase):
         self.token = agent.register(self.report, scope, docs, self.investigation)['session']
         self.assertEqual(self.ask('Nota 149599 em outra conta')['encontrados'], 0)
 
+    def test_perguntas_abertas_mantem_contexto_da_conta_e_resumo(self):
+        examples = {
+            'Me ajuda a entender tudo que está acontecendo aqui?': 'geral',
+            'O que você consegue analisar nesta conta?': 'geral',
+            'Quanto deu o fiscal e quanto deu o razão?': 'totais',
+            'Quais lançamentos devo olhar primeiro?': 'movimentos',
+            'Existem registros de outra competência?': 'competencia',
+            'Quais acumuladores estão nessa conta?': 'acumulador',
+            'Tem alguma combinação de valores que explique?': 'combinacao',
+        }
+        for question, intent in examples.items():
+            with self.subTest(question=question):
+                result = self.ask(question)
+                self.assertEqual(result['intencao'], intent)
+                self.assertEqual(result['comparacao']['diferenca'], '3900')
+                self.assertNotIn('Nenhum registro encontrado', result['titulo'])
+                self.assertTrue(result['proximos_passos'])
+                self.assertEqual(result['recorte'], 'Conta 408 · SAÍDAS')
+
+    def test_questions_about_one_note_and_duplicates_still_use_specific_search(self):
+        self.prepare_note_pair()
+        self.assertEqual(agent.query_plan('Qual a diferença da nota 149353?')['intent'], 'documento')
+        self.assertEqual(agent.query_plan('A nota 149353 está duplicada?')['intent'], 'duplicidade')
+        self.assertEqual(self.ask('A nota 149353 está duplicada?')['intencao'], 'duplicidade')
+
     def test_natural_question_why_account_does_not_match_uses_totals(self):
         """Reproduz a pergunta mostrada na conta 362 no chat."""
         questions = [
