@@ -61,6 +61,28 @@ class DocumentaryAgentTests(unittest.TestCase):
             self.assertEqual(call.call_count, 1)
             self.assertEqual(call.call_args.args[1][0]['referencia'], 'CONSULTA')
 
+    def test_chat_aproveita_indicios_calculados_sem_provar_causa(self):
+        investigation = dict(self.investigation, hipoteses=[{
+            'id': 'H1', 'categoria': 'competencia',
+            'titulo': 'Movimento em competência diferente',
+            'explicacao': 'O período precisa ser conferido no relatório.',
+            'grau': 'hipotese', 'referencias': ['R-1'],
+            'falta_confirmar': 'Confirme o documento original e as datas.'
+        }])
+        self.token = agent.register(self.report, self.scope, self.docs, investigation)['session']
+        response = self.ask('O que você encontrou nessa conta?')
+        self.assertIn('Movimento em competência diferente', ' '.join(response['fatos']))
+        self.assertIn('Confirme o documento original', ' '.join(response['pontos_confirmar']))
+        self.assertEqual(response['origem'], 'local')
+        with patch.object(agent, 'interpret', return_value=dict(
+            explicacao='Verifique a data antes de decidir.',
+            proximos_passos=[], referencias=['CONSULTA'], provedor='teste', modelo='teste')) as call:
+            result = self.ask('Existe problema de competência nessa conta?', True)
+            self.assertEqual(result['origem'], 'ia')
+            context = call.call_args.args[1][0]
+            self.assertEqual(context['indicios_calculados'][0]['id'], 'H1')
+            self.assertNotIn('historico', json.dumps(context, ensure_ascii=False))
+
     def test_perguntas_abertas_mantem_contexto_da_conta_e_resumo(self):
         examples = {
             'Me ajuda a entender tudo que está acontecendo aqui?': 'geral',
