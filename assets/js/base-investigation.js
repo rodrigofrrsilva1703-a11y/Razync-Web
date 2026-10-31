@@ -7,7 +7,7 @@
   floating.setAttribute('role','region');floating.setAttribute('aria-label','Assistente da Base Inteligente');
   const windowHeader=document.createElement('header');windowHeader.className='base-ai-window-header';
   const identity=document.createElement('div');identity.className='base-ai-identity';const windowTitle=document.createElement('strong');windowTitle.textContent='Assistente da Base';
-  const subtitle=document.createElement('small');subtitle.textContent='Compare evidências. Revise com clareza.';identity.append(windowTitle,subtitle);
+  const subtitle=document.createElement('small');subtitle.textContent='Compare históricos e revise suas contas.';const brandCopy=document.createElement('div');brandCopy.append(windowTitle,subtitle);identity.append(brandMark(),brandCopy);
   const windowActions=document.createElement('div');windowActions.className='base-ai-window-actions';
   const expand=document.createElement('button');expand.type='button';expand.textContent='⤢';expand.setAttribute('aria-label','Ampliar assistente');expand.setAttribute('aria-pressed','false');
   const minimize=document.createElement('button');minimize.type='button';minimize.textContent='−';minimize.setAttribute('aria-label','Minimizar assistente');
@@ -26,6 +26,10 @@
   const visibilityObserver=new MutationObserver(syncVisibility);
   visibilityObserver.observe(companyPanel,{attributes:true,attributeFilter:['hidden']});
   visibilityObserver.observe(basePane,{attributes:true,attributeFilter:['class']});
+  function brandMark(){
+    const mark=document.createElement('span');mark.className='base-brand-mark';mark.setAttribute('aria-hidden','true');
+    const logo=document.createElement('img');logo.src='./assets/razync-logo-original.png';logo.alt='';logo.width=40;logo.height=40;logo.decoding='async';mark.append(logo);return mark;
+  }
   const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text)e.textContent=text;if(cls)e.className=cls;return e;};
   const bankLabelUI=value=>({bb:'Banco do Brasil',itau_508:'Itaú 508',itau_509:'Itaú 509',itau_512:'Itaú 512'}[value] || (typeof bankName==='function'?bankName(value):value));
   const quantity=(n,singular,plural=singular+'s')=>`${n} ${n===1?singular:plural}`;
@@ -39,7 +43,7 @@
     }
     context={prepared,company,options,onState};
     onState?.('preparing',`${Number(summary.cobertura.pendentes).toLocaleString('pt-BR')} pendência(s) em preparação`);
-    launcher.replaceChildren(node('span','✦','base-ai-launcher-icon'),node('span','Revisar pendências'),node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));
+    launcher.replaceChildren(brandMark(),node('span','Revisar pendências'),node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));
     launcher.hidden=false;
     investigate(); // Local-only preparation; never consumes an AI call.
   }
@@ -49,7 +53,7 @@
     body.querySelectorAll('button').forEach(b=>b.disabled=true);
     body.replaceChildren();
     const loading=node('div',null,'base-ai-loading');loading.setAttribute('aria-busy','true');
-    const symbol=node('span','✦','base-ai-loading-symbol');symbol.setAttribute('aria-hidden','true');
+    const symbol=brandMark();symbol.className+=' base-ai-loading-symbol';
     const status=node('p','Consultando padrões e evidências…','base-ai-loading-status');status.setAttribute('role','status');
     loading.append(symbol,node('h3','Preparando sua comparação'),status,node('p','Buscando históricos aprendidos desta empresa para você conferir as contas.'));
     const skeleton=node('div',null,'base-ai-skeleton');skeleton.setAttribute('aria-hidden','true');
