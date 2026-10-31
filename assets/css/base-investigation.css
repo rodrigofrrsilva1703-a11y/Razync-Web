@@ -8,7 +8,7 @@
 /* Review spans the teaching/classification columns; long tables scroll internally. */
 #companyPanel .base-investigation{grid-column:1/-1;min-width:0;width:100%;box-sizing:border-box}
 /* Same contextual window pattern as the fiscal assistant; no modal blocks the workbook. */
-#baseAiHost .base-ai-launcher{position:fixed;right:24px;bottom:24px;z-index:82;display:flex;align-items:center;gap:8px;min-height:46px;padding:12px 18px;border:1px solid var(--border);border-radius:24px;background:var(--accent-soft);color:var(--text);box-shadow:0 8px 32px #101b3220;font-size:12px;cursor:pointer}
+#baseAiHost .base-ai-launcher{position:fixed;right:24px;bottom:84px;z-index:82;display:flex;align-items:center;gap:8px;min-height:46px;padding:12px 18px;border:1px solid var(--border);border-radius:24px;background:var(--accent-soft);color:var(--text);box-shadow:0 8px 32px #101b3220;font-size:12px;cursor:pointer}
 #baseAiHost .base-ai-window{position:fixed;inset:auto 20px 24px auto;z-index:83;display:flex;flex-direction:column;width:min(760px,calc(100vw - 40px));height:min(700px,calc(100dvh - 116px));max-height:calc(100dvh - 116px);margin:0;border:1px solid var(--border);border-radius:16px;background:var(--surface);color:var(--text);box-shadow:0 20px 64px #101b3230,0 2px 8px #101b3210;overflow:hidden}
 #baseAiHost .base-ai-window.is-expanded{width:min(1100px,calc(100vw - 40px));height:calc(100dvh - 116px)}
 #baseAiHost .base-ai-window[hidden],#baseAiHost .base-ai-launcher[hidden]{display:none!important}
@@ -25,5 +25,5 @@
 #baseAiHost .base-ai-window-body details{margin-top:8px}#baseAiHost .base-ai-window-body summary{font-size:11px;color:var(--accent);cursor:pointer}
 #baseAiHost .base-account-history{margin-top:10px;padding:10px;border-left:2px solid var(--accent);background:var(--surface-2);min-width:190px;max-width:320px;overflow-wrap:anywhere}
 #baseAiHost .base-account-history[hidden]{display:none!important}#baseAiHost .base-account-history-entry{border-top:1px solid var(--border);padding:7px 0;margin-top:7px}
-@media(max-width:760px){#baseAiHost .base-ai-window,#baseAiHost .base-ai-window.is-expanded{inset:76px 8px 8px;width:calc(100vw - 16px);height:auto;max-height:none;border-radius:13px}#baseAiHost .base-ai-window-body{padding:12px}#baseAiHost .base-ai-launcher{right:16px;bottom:18px}}
+@media(max-width:760px){#baseAiHost .base-ai-window,#baseAiHost .base-ai-window.is-expanded{inset:76px 8px 8px;width:calc(100vw - 16px);height:auto;max-height:none;border-radius:13px}#baseAiHost .base-ai-window-body{padding:12px}#baseAiHost .base-ai-launcher{right:16px;bottom:80px}}
 @media(prefers-reduced-motion:no-preference){#baseAiHost .base-ai-window:not([hidden]){animation:razyncAppear .2s ease-out}#baseAiHost .base-ai-launcher{transition:translate .18s}#baseAiHost .base-ai-launcher:hover{translate:0 -2px}}
