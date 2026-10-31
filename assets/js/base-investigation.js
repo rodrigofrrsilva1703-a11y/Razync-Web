@@ -115,13 +115,13 @@
     function updateQueue(){
       queue.replaceChildren();const items=visible();if(!items.includes(active))active=items[0] || null;
       const approved=controls.filter(c=>c.select.checked).length;
-      progress.textContent=`${quantity(controls.length,'pendência')} · ${approved} aprovadas · ${quantity(result.grupos_investigados,'grupo')}`;
+      progress.textContent=`${quantity(controls.length,'pendência')} · aprovações: ${approved} · ${quantity(result.grupos_investigados,'grupo')}`;
       if(typeof apply!=='undefined'){apply.textContent=completed?'Revisões aplicadas':`Gerar Excel com ${quantity(approved,'revisão','revisões')}`;apply.disabled=completed || applying || !approved;}
       filterButtons.forEach(f=>f.control.setAttribute('aria-pressed',String(filter===f.value)));
       if(!items.length){queue.append(node('p','Nenhuma pendência neste filtro.'));return;}
       for(const c of items){
         const entry=button('',()=>{active=c;updateQueue();showDetail();});entry.className='base-review-item';entry.setAttribute('aria-pressed',String(c===active));entry.setAttribute('aria-label',`Comparar ${c.s._aba}, linha ${c.s._linha}`);
-        entry.append(node('strong',`${c.select.checked?'✓ ':''}${c.s._aba} · linha ${c.s._linha}`),node('span',c.s['Histórico']),node('small',c.select.checked?'Aprovada':c.s.conta_sugerida?`Sugestão: ${c.s.conta_sugerida}`:'Escolher conta'));queue.append(entry);
+        entry.append(node('strong',`${c.select.checked?'✓ ':''}${c.s._aba} · linha ${c.s._linha}`),node('span',c.s['Histórico']),node('small',c.select.checked?'Aprovada':c.account.value?`${c.s.conta_sugerida===c.account.value?'Sugestão':'Conta em revisão'}: ${c.account.value}`:'Escolher conta'));queue.append(entry);
       }
     }
     function showDetail(){
