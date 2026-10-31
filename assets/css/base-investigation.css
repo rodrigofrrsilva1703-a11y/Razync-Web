@@ -214,3 +214,21 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
   #companyPanel .tool-pane[data-pane=base] .stack-forms{grid-template-columns:minmax(0,1fr)}
   #companyPanel .tool-pane[data-pane=base] .stack-forms .modern-form{padding:14px}
 }
+/* Routine review: readable queue, one closest example, details on demand. */
+#baseAiHost .base-queue-tools{display:flex;gap:8px;align-items:center;margin-bottom:10px;min-width:0}
+#baseAiHost .base-queue-tools input{flex:1;min-width:0;width:100%;min-height:36px;padding:8px 10px;border:1px solid var(--review-border);border-radius:8px;background:var(--review-paper);color:var(--review-ink);font-size:12px}
+#baseAiHost .base-queue-tools button{flex:none;font-size:11px}
+#baseAiHost .base-queue-tools button[aria-pressed=true]{border-color:var(--review-action);color:var(--review-action)}
+#baseAiHost .base-review-layout{grid-template-columns:220px minmax(0,1fr)}
+#baseAiHost .base-review-queue .base-review-item{flex:0 0 auto;min-height:112px;height:auto;display:grid;gap:5px;align-content:start;overflow:visible}
+#baseAiHost .base-review-queue .base-review-item>span{display:-webkit-box!important;-webkit-line-clamp:2;line-height:1.5;font-size:11px;color:var(--review-ink)!important}
+#baseAiHost .base-review-queue .base-review-item small{display:block!important;font-size:10px;line-height:1.4}
+#baseAiHost .base-review-filters button{display:inline-flex;align-items:center;gap:6px}
+#baseAiHost .base-filter-count{font-size:10px;font-variant-numeric:tabular-nums;opacity:.8}
+#baseAiHost .base-more-histories{margin:12px 0}
+#baseAiHost .base-history-difference,#baseAiHost .base-pending-reason{font-size:11px!important;line-height:1.6!important;padding:9px 10px;border-left:2px solid var(--review-action);background:var(--review-soft);border-radius:0 7px 7px 0}
+#baseAiHost .base-account-history-entry>strong{display:block;font-size:10px;color:var(--review-muted);margin-bottom:7px}
+#baseAiHost .base-draft-notice{padding:12px;border:1px solid var(--review-action);border-radius:9px;background:var(--review-soft);margin-bottom:10px}
+#baseAiHost .base-draft-notice[hidden]{display:none}
+#baseAiHost .base-draft-notice button{margin:5px 6px 0 0}
+@media(max-width:760px){#baseAiHost .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost .base-review-queue{max-height:145px;grid-auto-columns:200px}#baseAiHost .base-review-queue .base-review-item{min-height:124px}#baseAiHost .base-queue-tools{flex-wrap:wrap}#baseAiHost .base-queue-tools input{flex-basis:100%}}

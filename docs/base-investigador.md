@@ -32,3 +32,28 @@ Cada pendência exibe as evidências separadas por conta e origem, identificando
 
 ## Fluxo guiado da Base Inteligente
 A ferramenta apresenta as etapas Ensinar, Classificar e Revisar. Selecionar arquivos atualiza o progresso; importação e classificação exibem seus resultados; após classificar, a preparação local das pendências ocorre automaticamente e a etapa Revisar abre o assistente já preparado. A navegação entre etapas não envia arquivos nem grava dados. Somente as ações existentes de ensinar, classificar e aplicar revisões executam operações; aprovações humanas e aprendizado opcional continuam obrigatórios.
+
+## Revisão para a rotina
+
+O assistente agrupa a fila por grupo do servidor, banco, natureza,
+assinatura e histórico normalizado. O agrupamento é apenas visual:
+nenhuma conta é aprovada ao abrir um grupo. A confirmação continua
+mostrando cada linha, data e valor e permite desmarcar linhas.
+A busca filtra histórico, banco, conta, data e valor; contadores são
+quantidades de lançamentos, enquanto a fila informa seus grupos.
+
+A comparação destaca um exemplo próximo por sobreposição de palavras,
+com igualdade normalizada em primeiro lugar. Isso não é probabilidade
+nem comprovação documental. Exemplos adicionais e todas as evidências
+permanecem disponíveis em detalhes. O motivo resumido explica ausência
+de histórico, semelhança, conflito ou correspondência em outro banco.
+
+Rascunhos usam sessionStorage da aba, por até 24 horas, e guardam apenas
+identificadores de linha, contas escolhidas, aprovações e adiamentos.
+Não guardam arquivos, históricos ou chaves de IA. A retomada é explícita,
+depende do mesmo binário classificado, empresa, opções e evidências
+(SHA-256), e usa uma investigação atual. O armazenamento indisponível
+não bloqueia a revisão. Um Excel regenerado com bytes diferentes pode
+não recuperar o rascunho; não existe sincronização entre computadores.
+Após aplicação, o rascunho é removido e o servidor continua validando
+arquivo, empresa, base e token antes de escrever o Excel.
