@@ -79,3 +79,5 @@ html[data-theme=dark] #baseAiHost{--review-paper:#15181e;--review-soft:#1b212b;-
 #baseAiHost .base-ai-window :is(button,input):focus-visible{outline:2px solid var(--review-action)!important;outline-offset:3px}
 #baseAiHost .base-review-approval{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:14px;font-size:11px}
 #baseAiHost .base-review-approval strong{color:var(--review-action)}
+
+#baseAiHost .base-review-detail>.base-review-navigation{margin:10px 0 14px}

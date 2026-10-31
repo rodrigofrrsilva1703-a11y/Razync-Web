@@ -143,11 +143,11 @@
       if(c.select.checked){approval.append(node('strong','✓ Conta aprovada'));const undo=button('Desfazer aprovação',()=>{c.select.checked=false;updateQueue();showDetail();});undo.disabled=completed || applying;approval.append(undo);}
       else approval.append(node('small','Confira a conta e use Aprovar e próximo.'));received.append(approval);
       saved.append(node('h4','Históricos gravados na conta'),c.historyArea);drawHistory(c);
-      comparison.append(received,saved);detail.append(comparison);
+      comparison.append(received,saved);
       const actions=node('div',null,'base-review-navigation');
       const go=step=>{const items=visible(),i=items.indexOf(active);active=items[(i+step+items.length)%items.length];updateQueue();showDetail();};
       actions.append(button('Anterior',()=>go(-1)),button('Pular / próximo',()=>go(1)));
-      const approveNext=button('Aprovar e próximo',()=>{if(!validAccount(c)){message.textContent='Escolha uma conta histórica compatível antes de aprovar.';return;}c.select.checked=true;message.textContent='Aprovação registrada para o Excel. Nenhum aprendizado foi gravado.';go(1);});approveNext.disabled=completed || applying;approveNext.className='base-review-confirm';actions.append(approveNext);detail.append(actions);
+      const approveNext=button('Aprovar e próximo',()=>{if(!validAccount(c)){message.textContent='Escolha uma conta histórica compatível antes de aprovar.';return;}c.select.checked=true;message.textContent='Aprovação registrada para o Excel. Nenhum aprendizado foi gravado.';go(1);});approveNext.disabled=completed || applying;approveNext.className='base-review-confirm';actions.append(approveNext);detail.append(actions,comparison);
     }
     for(const s of suggestions){
       const select=document.createElement('input');select.type='checkbox';select.setAttribute('aria-label',`Aprovar ${s._aba}, linha ${s._linha}`);
