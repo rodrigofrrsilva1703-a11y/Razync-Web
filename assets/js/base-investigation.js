@@ -177,7 +177,7 @@
     function saveDraft(){if(!draftEnabled || !current.draftKey || completed || applying)return;try{sessionStorage.setItem(current.draftKey,JSON.stringify({time:Date.now(),rows:controls.map(c=>({key:rowKey(c),account:c.account.value,approved:c.select.checked,deferred:c.deferred}))}));}catch{}}
     const message=node('p',null,'helper');message.setAttribute('role','status');
     const matchesFilter=(c,value)=>value==='all' || value==='approved' && c.select.checked || value==='deferred' && c.deferred && !c.select.checked || category(c.s)===value;
-    const matchesSearch=c=>!query || normalized([c.s['Histórico'],c.s._aba,c.account.value,c.s.Valor,String(c.s.Valor).replace('.',','),c.s.Data].join(' ')).includes(query);
+    const matchesSearch=c=>!query || normalized([c.s['Histórico'],c.s._aba,c.account.value,c.s.Valor,String(c.s.Valor).replace('.',','),Number(c.s.Valor).toLocaleString('pt-BR',{minimumFractionDigits:2}),c.s.Data].join(' ')).includes(query);
     const visible=()=>controls.filter(c=>matchesFilter(c,filter) && matchesSearch(c));
     const rowKey=c=>`${c.s._aba}:${c.s._linha}`;
     function groupKey(c){return Number.isInteger(c.s.grupo) && c.s._banco && c.s.assinatura?JSON.stringify([c.s.grupo,c.s._banco,c.s.natureza,c.s.assinatura,normalized(c.s['Histórico'])]):rowKey(c);}
