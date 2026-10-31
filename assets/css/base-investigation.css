@@ -7,3 +7,23 @@
 @media(prefers-reduced-motion:no-preference){.base-investigation:not([hidden]){animation:razyncAppear .25s ease-out}}
 /* Review spans the teaching/classification columns; long tables scroll internally. */
 #companyPanel .base-investigation{grid-column:1/-1;min-width:0;width:100%;box-sizing:border-box}
+/* Same contextual window pattern as the fiscal assistant; no modal blocks the workbook. */
+#baseAiHost .base-ai-launcher{position:fixed;right:24px;bottom:24px;z-index:82;display:flex;align-items:center;gap:8px;min-height:46px;padding:12px 18px;border:1px solid var(--border);border-radius:24px;background:var(--accent-soft);color:var(--text);box-shadow:0 8px 32px #101b3220;font-size:12px;cursor:pointer}
+#baseAiHost .base-ai-window{position:fixed;inset:auto 20px 24px auto;z-index:83;display:flex;flex-direction:column;width:min(760px,calc(100vw - 40px));height:min(700px,calc(100dvh - 116px));max-height:calc(100dvh - 116px);margin:0;border:1px solid var(--border);border-radius:16px;background:var(--surface);color:var(--text);box-shadow:0 20px 64px #101b3230,0 2px 8px #101b3210;overflow:hidden}
+#baseAiHost .base-ai-window.is-expanded{width:min(1100px,calc(100vw - 40px));height:calc(100dvh - 116px)}
+#baseAiHost .base-ai-window[hidden],#baseAiHost .base-ai-launcher[hidden]{display:none!important}
+#baseAiHost .base-ai-window-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;padding:14px 18px;border-bottom:1px solid var(--border)}
+#baseAiHost .base-ai-window-header strong{font-size:14px}#baseAiHost .base-ai-window-header small{display:block;font-size:11px;margin-top:4px;color:var(--muted)}
+#baseAiHost .base-ai-window-actions{display:flex;gap:5px}#baseAiHost .base-ai-window-actions button{display:grid;place-items:center;min-height:32px;width:32px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--text);font-size:21px;cursor:pointer}
+#baseAiHost .base-ai-window-body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:18px}
+#baseAiHost .base-ai-window-body h3{margin:0 0 9px;font-size:16px}#baseAiHost .base-ai-window-body p{font-size:12px;line-height:1.65;color:var(--muted);margin:8px 0}
+#baseAiHost .base-ai-window-body .base-investigation-scroll{max-height:none;overflow:auto}#baseAiHost .base-ai-window-body table{width:100%;border-collapse:collapse;min-width:650px;font-size:12px}
+#baseAiHost .base-ai-window-body th{padding:10px;text-align:left;background:var(--surface-2)}#baseAiHost .base-ai-window-body td{padding:12px 10px;border-top:1px solid var(--border);vertical-align:top}
+#baseAiHost .base-ai-window-body td:nth-child(2){width:28%}#baseAiHost .base-ai-window-body td:nth-child(3){width:36%}#baseAiHost .base-ai-window-body td:nth-child(4){min-width:170px}
+#baseAiHost .base-ai-window-body input[type=text]{width:140px;min-height:38px;padding:8px;font-size:13px}#baseAiHost .base-ai-window-body small{display:block;font-size:11px;line-height:1.6;color:var(--muted);margin-top:5px}
+#baseAiHost .base-ai-window-body button{min-height:34px;font-size:11px;padding:7px 10px;cursor:pointer}#baseAiHost .base-ai-window-body td button{margin-top:8px}
+#baseAiHost .base-ai-window-body details{margin-top:8px}#baseAiHost .base-ai-window-body summary{font-size:11px;color:var(--accent);cursor:pointer}
+#baseAiHost .base-account-history{margin-top:10px;padding:10px;border-left:2px solid var(--accent);background:var(--surface-2);min-width:190px;max-width:320px;overflow-wrap:anywhere}
+#baseAiHost .base-account-history[hidden]{display:none!important}#baseAiHost .base-account-history-entry{border-top:1px solid var(--border);padding:7px 0;margin-top:7px}
+@media(max-width:760px){#baseAiHost .base-ai-window,#baseAiHost .base-ai-window.is-expanded{inset:76px 8px 8px;width:calc(100vw - 16px);height:auto;max-height:none;border-radius:13px}#baseAiHost .base-ai-window-body{padding:12px}#baseAiHost .base-ai-launcher{right:16px;bottom:18px}}
+@media(prefers-reduced-motion:no-preference){#baseAiHost .base-ai-window:not([hidden]){animation:razyncAppear .2s ease-out}#baseAiHost .base-ai-launcher{transition:translate .18s}#baseAiHost .base-ai-launcher:hover{translate:0 -2px}}

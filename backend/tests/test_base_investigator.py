@@ -212,3 +212,17 @@ def test_received_credit_only_and_formula_protection(monkeypatch):
     out,_=agent.apply(242,data,'modelo.xlsx',[{'_aba':'Itaú 508','_linha':2,'Conta da contrapartida':'777'}],r['token'])
     wb=load_workbook(io.BytesIO(out));assert wb.active['D2'].value==508 and wb.active['E2'].value==777
     assert wb.active['D3'].value=='=1+1'
+
+def test_account_history_catalog_is_scoped_and_bounded(monkeypatch):
+    records=[record(),record(bank='bb'),record(nature='recebido',account='777')]
+    setup(monkeypatch,records)
+    report=agent.investigate(242,book(),use_ai=False)
+    payment=next(item for item in report['catalogo_contas'] if item['conta']=='412')
+    assert payment['natureza']=='pago'
+    assert payment['bancos']==['bb','itau_508']
+    assert len(payment['exemplos'])==2
+    assert payment['exemplos'][0]['historico']=='Pago: Empresa: Fornecedor ABC'
+    assert payment['exemplos'][0]['periodos']==['2026-07','2026-08']
+    assert payment['exemplos'][0]['ocorrencias']==20
+    other=agent.investigate(1408,book([[-100,'',512,'Pago: Empresa: Fornecedor ABC']]),use_ai=False)
+    assert other['catalogo_contas']==[]

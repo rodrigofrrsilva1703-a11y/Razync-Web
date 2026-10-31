@@ -15,7 +15,7 @@ from app import classification_service as base, engine
 from app.classification_coverage import _normalized_header, _classified, _needs_replacement, coverage
 from app.migration_services import accounts, slug
 
-VERSION = 'base-investigator-1'
+VERSION = 'base-investigator-2'
 _lock = threading.RLock()
 _cache = OrderedDict()
 _TTL = 1200
@@ -125,10 +125,16 @@ def account_catalog(records, bankaccounts):
         account = debit if nature == 'pago' else credit
         if not nature or not re.fullmatch(r'[1-9][0-9]{0,14}',account) or account in {str(a) for a in bankaccounts.values()}:
             continue
-        item = catalog.setdefault((nature,account), {'natureza':nature,'conta':account,'bancos':set(),'periodos':set(),'ocorrencias':0})
+        item = catalog.setdefault((nature,account), {'natureza':nature,'conta':account,'bancos':set(),'periodos':set(),'ocorrencias':0,'exemplos':[]})
         item['bancos'].add(bank)
         item['periodos'].update(str(p) for p in record.get('periodos',[]))
         item['ocorrencias'] += int(record.get('ocorrencias',0))
+        history = str(record.get('exemplo_historico','')).strip()
+        example = {'historico':history[:600], 'banco':bank,
+                   'periodos':sorted(str(p) for p in record.get('periodos',[])),
+                   'ocorrencias':int(record.get('ocorrencias',0))}
+        if history and example not in item['exemplos'] and len(item['exemplos'])<8:
+            item['exemplos'].append(example)
     return [dict(item,bancos=sorted(item['bancos']),periodos=sorted(item['periodos'])) for item in catalog.values()]
 
 
