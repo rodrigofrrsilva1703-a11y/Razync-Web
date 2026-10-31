@@ -110,3 +110,6 @@ html[data-theme=dark] #baseAiHost{--review-paper:#15181e;--review-soft:#1b212b;-
 @keyframes baseAssistantPulse{0%,100%{opacity:.6;scale:.97}50%{opacity:1;scale:1}}
 @media(prefers-reduced-motion:no-preference){#baseAiHost .base-ai-skeleton i::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,var(--review-selected),transparent);animation:baseSkeletonMove 1.4s ease-in-out infinite}#baseAiHost .base-ai-loading-symbol{animation:baseAssistantPulse 1.8s ease-in-out infinite}#baseAiHost .base-review-ai[aria-busy=true]{animation:baseAssistantPulse 1.8s ease-in-out infinite}}
 @media(max-width:760px){#baseAiHost .base-ai-window-header{padding:12px}#baseAiHost .base-ai-loading{min-height:260px;padding:20px 12px}#baseAiHost .base-history-comparison>section{padding:13px}}
+/* Keep the primary review action distinct from generic dark-theme buttons. */
+html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm{background:#315fc5!important;color:#fff!important;border-color:#4679df!important}
+html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not(:disabled){background:#3d70d7!important}
