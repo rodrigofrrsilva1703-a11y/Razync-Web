@@ -326,6 +326,28 @@
       }
     }
     directoryFrame.remove();
+    // Responsive upload cards must use their own container, including half-width forms.
+    const uploadFrame=document.createElement('iframe');
+    uploadFrame.style.cssText='position:fixed;left:-2000px;top:0;width:600px;height:650px;border:0';
+    const uploadLoaded=new Promise(resolve=>uploadFrame.onload=resolve);
+    const uploadItem='<div class="file-selection-item"><span><strong>Relatorio-com-nome-muito-longo-para-conferencia-da-empresa-e-do-banco.xlsx</strong><small>XLSX · 20 KB</small></span><button type="button" class="file-selection-remove" aria-label="Remover arquivo">×</button></div>';
+    uploadFrame.srcdoc='<!doctype html><html><head>'+homeStyles+'<style>*,*::before,*::after{animation:none!important;transition:none!important}body{margin:0!important}#companyPanel{display:block!important;width:100%!important;margin:0!important;padding:0!important;box-sizing:border-box}form{width:100%;box-sizing:border-box}</style></head><body><section id="companyPanel"><form class="modern-form preparation-form"><div class="file-drop-shell"><input type="file" multiple><div class="file-selection"><div class="file-selection-summary">3 arquivos</div>'+uploadItem.repeat(3)+'</div></div></form></section></body></html>';
+    document.body.append(uploadFrame);await uploadLoaded;
+    const uploadDoc=uploadFrame.contentDocument;
+    for(const theme of ['light','dark']){
+      uploadDoc.documentElement.dataset.theme=theme;
+      for(const width of [600,390]){
+        uploadFrame.style.width=width+'px';
+        const cards=[...uploadDoc.querySelectorAll('.file-selection-item')].map(item=>item.getBoundingClientRect());
+        if(width===600 && Math.abs(cards[0].top-cards[1].top)>2)throw Error('Dois anexos não compartilham a linha em campo de 600px.');
+        if(width===390 && cards[1].top<=cards[0].top)throw Error('Anexos não voltaram a uma coluna no campo estreito.');
+        if(uploadDoc.documentElement.scrollWidth>width+1)throw Error('Anexos criaram rolagem horizontal.');
+        for(const remove of uploadDoc.querySelectorAll('.file-selection-remove')){
+          const rect=remove.getBoundingClientRect();if(rect.width<28 || rect.right>width)throw Error('Remover arquivo ficou inacessível.');
+        }
+      }
+    }
+    uploadFrame.remove();
     state("ok");
   } catch(error) {
     state("failed",String(error.message||error).slice(0,400));
