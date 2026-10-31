@@ -6,8 +6,8 @@
   const floating=document.createElement('section');floating.id='baseInvestigationWindow';floating.className='base-ai-window';floating.hidden=true;
   floating.setAttribute('role','region');floating.setAttribute('aria-label','Assistente da Base Inteligente');
   const windowHeader=document.createElement('header');windowHeader.className='base-ai-window-header';
-  const identity=document.createElement('div');const windowTitle=document.createElement('strong');windowTitle.textContent='✦ Assistente da Base';
-  const subtitle=document.createElement('small');subtitle.textContent='Histórico, evidências e revisão';identity.append(windowTitle,subtitle);
+  const identity=document.createElement('div');identity.className='base-ai-identity';const windowTitle=document.createElement('strong');windowTitle.textContent='Assistente da Base';
+  const subtitle=document.createElement('small');subtitle.textContent='Compare evidências. Revise com clareza.';identity.append(windowTitle,subtitle);
   const windowActions=document.createElement('div');windowActions.className='base-ai-window-actions';
   const expand=document.createElement('button');expand.type='button';expand.textContent='⤢';expand.setAttribute('aria-label','Ampliar assistente');expand.setAttribute('aria-pressed','false');
   const minimize=document.createElement('button');minimize.type='button';minimize.textContent='−';minimize.setAttribute('aria-label','Minimizar assistente');
@@ -41,8 +41,13 @@
     const current=context, version=generation;controller?.abort();controller=new AbortController();const signal=controller.signal;
     body.querySelectorAll('button').forEach(b=>b.disabled=true);
     body.replaceChildren();
-    const status=node('p','Consultando padrões e evidências…','helper');status.setAttribute('role','status');
-    const cancel=button('Cancelar',()=>{controller.abort();mount({...current,summary:{cobertura:{pendentes:1}}});});body.append(status,cancel);
+    const loading=node('div',null,'base-ai-loading');loading.setAttribute('aria-busy','true');
+    const symbol=node('span','✦','base-ai-loading-symbol');symbol.setAttribute('aria-hidden','true');
+    const status=node('p','Consultando padrões e evidências…','base-ai-loading-status');status.setAttribute('role','status');
+    loading.append(symbol,node('h3','Preparando sua comparação'),status,node('p','Buscando históricos aprendidos desta empresa para você conferir as contas.'));
+    const skeleton=node('div',null,'base-ai-skeleton');skeleton.setAttribute('aria-hidden','true');
+    for(let i=0;i<4;i++)skeleton.append(node('i'));loading.append(skeleton);
+    const cancel=button('Cancelar',()=>{controller.abort();mount({...current,summary:{cobertura:{pendentes:1}}});});loading.append(cancel);body.append(loading);
     try {
       current.blob=current.blob || await current.prepared.blob();
       if(signal.aborted || version!==generation)return;
@@ -85,7 +90,7 @@
     const aiStatus=node('p','Históricos consultados na base da empresa. A comparação não precisa esperar pela IA.','base-review-status');aiStatus.setAttribute('role','status');
     const aiButton=button('Priorizar casos com IA',async()=>{
       aiButton.disabled=true;priorityController=new AbortController();const signal=priorityController.signal;
-      aiStatus.textContent='Priorizando casos ambíguos. Você pode continuar comparando os históricos.';
+      aiBar.setAttribute('aria-busy','true');aiStatus.textContent='Priorizando casos ambíguos. Você pode continuar comparando os históricos.';
       const data=new FormData();data.append('file',current.blob,'classificado.xlsx');data.append('options_json',JSON.stringify(current.options));data.append('usar_ia','true');
       try{
         const response=await fetch(`${API()}/api/v1/base-inteligente/${current.company}/sugerir-pendentes`,{method:'POST',body:data,signal});
@@ -95,7 +100,7 @@
         const ids=new Set(prioritized.ia?.prioridades || []);
         controls.sort((a,b)=>Number(ids.has(b.s.grupo))-Number(ids.has(a.s.grupo)));
         aiStatus.textContent=prioritized.ia?.motivo || 'Prioridade mantida pelas evidências locais.';updateQueue();
-      }catch(error){if(!signal.aborted && version===generation)aiStatus.textContent=error.message;}
+      }catch(error){if(!signal.aborted && version===generation)aiStatus.textContent=error.message;}finally{if(version===generation)aiBar.setAttribute('aria-busy','false');}
     });
     const aiBar=node('div',null,'base-review-ai');aiBar.append(aiStatus,aiButton);body.append(aiBar);
     const controls=[],catalog=result.catalogo_contas || [],priority=new Set(result.ia?.prioridades || []);
@@ -132,7 +137,7 @@
       const comparison=node('div',null,'base-history-comparison'),received=node('section',null,'base-history-received'),saved=node('section',null,'base-history-saved');
       received.append(node('h4','Lançamento para revisar'),historyText(s['Histórico'],(s.evidencias || []).flatMap(e=>e.historicos || []).join(' ')),node('small',`${s.Data} · ${Number(s.Valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}`),node('small',`${s._aba} · linha ${s._linha} · ${s.natureza==='pago'?'Pagamento / débito':'Recebimento / crédito'}`));
       const grade=({FORTE:'Sugestão forte',MODERADA:'Sugestão moderada',MANUAL:'Revisão manual'})[s.situacao];
-      received.append(node('span',grade,'base-investigation-grade'),node('p',s.justificativa));
+      const gradeBadge=node('span',grade,'base-investigation-grade');gradeBadge.setAttribute('data-grade',s.situacao);received.append(gradeBadge,node('p',s.justificativa));
       const candidates=node('div',null,'base-account-candidates');
       for(const account of [...new Set((s.evidencias || []).map(e=>e.conta))]){
         const pick=button(`Comparar conta ${account}`,()=>{if(completed || applying)return;c.account.value=account;c.select.checked=false;drawHistory(c);updateQueue();if(active!==c)showDetail();});pick.disabled=completed || applying;candidates.append(pick);
