@@ -133,3 +133,35 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
 #baseAiHost .base-group-review>button{margin:8px 6px 0 0}
 #baseAiHost .base-review-footer:has(p:empty){padding:0;border:0;margin:0}
 @media(max-width:760px){#baseAiHost .base-ai-workbar{flex-direction:column;align-items:stretch}#baseAiHost .base-workbar-actions{display:grid;grid-template-columns:minmax(0,.6fr) minmax(0,1.2fr) minmax(0,1.2fr)}#baseAiHost .base-workbar-actions button{font-size:10px;padding:6px;white-space:normal;min-height:38px}}
+/* Compact Base workspace: classification first, secondary learning beside it. */
+#companyPanel .tool-pane[data-pane=base] .tool-intro{padding:16px 20px!important;display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:22px;align-items:center}
+#companyPanel .tool-pane[data-pane=base] .tool-intro>.tool-visual-icon,#companyPanel .tool-pane[data-pane=base] .tool-feature-list{display:none}
+#companyPanel .tool-pane[data-pane=base] .tool-intro>.company-code,#companyPanel .tool-pane[data-pane=base] .tool-intro>h3,#companyPanel .tool-pane[data-pane=base] .tool-intro>p{grid-column:1;margin:2px 0!important}
+#companyPanel .tool-pane[data-pane=base] #baseStats{grid-column:2;grid-row:1/4;display:flex;gap:18px;margin:0!important}
+#companyPanel .tool-pane[data-pane=base] #baseStats>span{display:flex;align-items:baseline;gap:5px;padding:0!important;border:0!important;background:transparent!important;min-height:0!important}
+#companyPanel .tool-pane[data-pane=base] #baseStats>span strong{font-size:17px!important}
+#companyPanel .tool-pane[data-pane=base] #baseSavedPeriods{grid-column:1/-1;margin-top:10px;padding-top:10px}
+#companyPanel .tool-pane[data-pane=base] #baseSavedPeriods>p{margin:5px 0 0;font-size:11px}
+#companyPanel .tool-pane[data-pane=base] .stack-forms{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}
+#companyPanel #classifyForm{border-top:2px solid var(--accent)!important}
+/* One compact header; the current account stays available above the evidence. */
+#baseAiHost .base-ai-window-header{padding:12px 16px;gap:8px}
+#baseAiHost .base-ai-window-body{padding:12px 16px}
+#baseAiHost .base-review-intro{display:none}
+#baseAiHost .base-review-filters{margin-bottom:10px;gap:5px}
+#baseAiHost .base-review-layout{grid-template-columns:175px minmax(0,1fr);gap:12px}
+#baseAiHost .base-review-detail>small{margin:0 0 6px}
+#baseAiHost .base-review-decision{position:sticky;top:-12px;z-index:3;display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--review-soft);border:1px solid var(--review-border);border-radius:10px;box-shadow:0 4px 12px #101b3209}
+#baseAiHost .base-review-decision>label{display:grid;gap:4px;font-size:11px;font-weight:600;flex:1;margin:0}
+#baseAiHost .base-review-decision input[type=text]{width:100%;max-width:260px;box-sizing:border-box;background:var(--review-paper);color:var(--review-ink);border:1px solid var(--review-border);border-radius:7px}
+#baseAiHost .base-review-decision .base-review-approval{margin:0;max-width:190px;font-size:10px}
+#baseAiHost .base-review-detail>.base-review-navigation{margin:8px 0;padding-bottom:8px}
+#baseAiHost .base-history-comparison{gap:10px;margin-top:0}
+#baseAiHost .base-history-comparison>section{padding:12px}
+#baseAiHost .base-history-comparison h4{margin-bottom:9px;padding-bottom:8px}
+#baseAiHost .base-history-text{line-height:1.65!important}
+#baseAiHost .base-history-received .base-investigation-grade{margin:8px 0 2px}
+#baseAiHost .base-review-options{border-top:1px solid var(--review-border);padding-top:10px;margin-top:12px}
+#baseAiHost .base-review-options>summary{color:var(--review-muted);font-size:11px}
+@media(max-width:900px){#companyPanel .tool-pane[data-pane=base] .tool-intro{grid-template-columns:minmax(0,1fr)}#companyPanel .tool-pane[data-pane=base] #baseStats{grid-column:1;grid-row:auto;margin-top:10px!important;flex-wrap:wrap}#companyPanel .tool-pane[data-pane=base] .stack-forms{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:760px){#baseAiHost .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost .base-review-queue{max-height:98px;grid-auto-columns:160px}#baseAiHost .base-review-decision{top:-12px;flex-wrap:wrap;gap:6px}#baseAiHost .base-review-decision .base-review-approval{max-width:none}#baseAiHost .base-ai-workbar .base-review-progress{font-size:10px!important}#baseAiHost .base-history-comparison{grid-template-columns:minmax(0,1fr)}}
