@@ -63,3 +63,19 @@
 #baseAiHost .base-review-footer p{flex-basis:100%;margin:2px 0!important;font-size:11px!important}
 #baseAiHost .base-ai-window-body .base-investigation-learn{font-size:11px;line-height:1.6;display:flex;align-items:center;gap:7px;margin-top:12px}
 @media(max-width:760px){#baseAiHost .base-ai-window,#baseAiHost .base-ai-window.is-expanded{width:calc(100vw - 16px)}#baseAiHost .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost .base-review-queue{display:grid;grid-auto-flow:column;grid-auto-columns:180px;max-height:120px;overflow:auto;padding-bottom:7px}#baseAiHost .base-history-comparison{grid-template-columns:minmax(0,1fr)}#baseAiHost .base-review-ai{align-items:flex-start;flex-direction:column;gap:7px}#baseAiHost .base-review-footer{bottom:-12px}#baseAiHost .base-review-navigation button{flex:1;font-size:10px}#baseAiHost .base-review-navigation button:last-child{flex-basis:100%}#baseAiHost .base-ai-launcher{right:16px;bottom:80px}}
+
+/* Explicit review surfaces and actions, with equivalent contrast in both themes. */
+#baseAiHost{--review-paper:#fff;--review-soft:#f3f6fb;--review-ink:#233750;--review-muted:#586b82;--review-border:#dce4ef;--review-action:#315fc5;--review-selected:#eaf1fc}
+html[data-theme=dark] #baseAiHost{--review-paper:#15181e;--review-soft:#1b212b;--review-ink:#e9eef7;--review-muted:#b4c0d1;--review-border:#384352;--review-action:#98beff;--review-selected:#22334f}
+#baseAiHost .base-ai-window,#baseAiHost .base-review-footer{background:var(--review-paper)!important;color:var(--review-ink)!important}
+#baseAiHost .base-history-comparison>section{background:var(--review-paper);border-color:var(--review-border)!important}
+#baseAiHost .base-history-saved{background:var(--review-soft)!important}
+#baseAiHost .base-ai-window :is(p,small,h4){color:var(--review-muted)}
+#baseAiHost .base-ai-window .base-history-text{color:var(--review-ink)!important}
+#baseAiHost .base-review-item[aria-pressed=true],#baseAiHost .base-review-filters button[aria-pressed=true]{background:var(--review-selected)!important;border-color:var(--review-action)!important;color:var(--review-ink)!important}
+#baseAiHost .base-ai-window .base-review-confirm{background:#315fc5!important;color:#fff!important;border:1px solid #315fc5!important;border-radius:9px;min-height:40px;padding:10px 16px;font-weight:600}
+#baseAiHost .base-ai-window .base-review-confirm:hover:not(:disabled){background:#244da9!important}
+#baseAiHost .base-ai-window button:disabled{opacity:.5;cursor:default}
+#baseAiHost .base-ai-window :is(button,input):focus-visible{outline:2px solid var(--review-action)!important;outline-offset:3px}
+#baseAiHost .base-review-approval{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:14px;font-size:11px}
+#baseAiHost .base-review-approval strong{color:var(--review-action)}
