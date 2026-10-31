@@ -10,7 +10,7 @@
   const subtitle=document.createElement('small');subtitle.textContent='Compare históricos e revise suas contas.';const brandCopy=document.createElement('div');brandCopy.append(windowTitle,subtitle);identity.append(brandMark(),brandCopy);
   const windowActions=document.createElement('div');windowActions.className='base-ai-window-actions';
   const expand=document.createElement('button');expand.type='button';expand.textContent='⤢';expand.setAttribute('aria-label','Ampliar assistente');expand.setAttribute('aria-pressed','false');
-  const minimize=document.createElement('button');minimize.type='button';minimize.textContent='−';minimize.setAttribute('aria-label','Minimizar assistente');
+  const minimize=document.createElement('button');minimize.type='button';minimize.textContent='×';minimize.setAttribute('aria-label','Fechar assistente');minimize.title='Fechar sem perder sua revisão';
   windowActions.append(expand,minimize);windowHeader.append(identity,windowActions);
   const workbar=document.createElement('div');workbar.className='base-ai-workbar';windowHeader.append(workbar);
   const body=document.createElement('div');body.className='base-ai-window-body';floating.append(windowHeader,body);
@@ -43,7 +43,7 @@
     }
     context={prepared,company,options,onState};
     onState?.('preparing',`${Number(summary.cobertura.pendentes).toLocaleString('pt-BR')} pendência(s) em preparação`);
-    launcher.replaceChildren(brandMark(),node('span','Revisar pendências'),node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));
+    const launcherCopy=node('span',null,'base-launcher-copy');launcherCopy.append(node('small','ASSISTENTE RAZYNC'),node('strong','Revisar pendências'));launcher.replaceChildren(brandMark(),launcherCopy,node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));launcher.title='Abrir comparação de históricos e contas';
     launcher.hidden=false;
     investigate(); // Local-only preparation; never consumes an AI call.
   }
@@ -55,7 +55,8 @@
     const loading=node('div',null,'base-ai-loading');loading.setAttribute('aria-busy','true');
     const symbol=brandMark();symbol.className+=' base-ai-loading-symbol';
     const status=node('p','Consultando padrões e evidências…','base-ai-loading-status');status.setAttribute('role','status');
-    loading.append(symbol,node('h3','Preparando sua comparação'),status,node('p','Buscando históricos aprendidos desta empresa para você conferir as contas.'));
+    const orbit=node('div',null,'base-loading-orbit');orbit.append(symbol);for(let i=0;i<3;i++){const dot=node('i');dot.setAttribute('aria-hidden','true');orbit.append(dot);}loading.append(orbit,node('small','BASE INTELIGENTE','base-loading-eyebrow'),node('h3','Conectando os seus históricos'),status,node('p','Estamos preparando os exemplos e as contas da empresa para você comparar com os lançamentos pendentes.'));
+    const loadingNote=node('span','Sua revisão começa pelas evidências salvas. Nenhuma conta será aprovada automaticamente.','base-loading-note');loading.append(loadingNote);
     const skeleton=node('div',null,'base-ai-skeleton');skeleton.setAttribute('aria-hidden','true');
     for(let i=0;i<4;i++)skeleton.append(node('i'));loading.append(skeleton);
     const cancel=button('Cancelar',()=>{current.onState?.('error','Preparação interrompida');controller.abort();generation++;body.replaceChildren(node('p','Preparação interrompida.'),button('Preparar novamente',investigate));workbar.replaceChildren();});loading.append(cancel);body.append(loading);

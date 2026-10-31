@@ -280,3 +280,58 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
 @media(prefers-reduced-motion:no-preference){#baseAiHost .base-brand-mark::after{animation:baseBrandOrbit 9s linear infinite}#baseAiHost .base-ai-launcher .base-brand-mark img{animation:baseBrandFloat 4.8s ease-in-out infinite}#baseAiHost .base-ai-launcher{transition:transform .2s,box-shadow .2s}#baseAiHost .base-ai-launcher:hover{transform:translateY(-3px);box-shadow:0 12px 32px #101b3228}}
 @media(prefers-reduced-motion:reduce){#baseAiHost .base-brand-mark::after,#baseAiHost .base-brand-mark img{animation:none!important}}
 @media(max-width:760px){#baseAiHost .base-ai-window-header{padding:12px}#baseAiHost .base-ai-identity{gap:10px}#baseAiHost .base-ai-identity strong{font-size:14px}#baseAiHost .base-brand-mark{width:34px;height:34px;border-radius:10px}#baseAiHost .base-ai-window-body{padding:12px}#baseAiHost .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost .base-review-queue{max-height:145px}#baseAiHost .base-review-decision{top:-12px}#baseAiHost .base-history-comparison>section{padding:12px}#baseAiHost .base-ai-launcher{min-height:52px;border-radius:15px}}
+/* Assistant studio v2: branded entry, clear dismissal and a focused workbench. */
+#baseAiHost .base-ai-launcher{gap:13px;padding:11px 13px 11px 12px;border-radius:20px;background:var(--review-paper);box-shadow:0 12px 40px #101b3226;border:1px solid var(--review-border)}
+#baseAiHost .base-ai-launcher .base-brand-mark{width:44px;height:44px;border-radius:14px}
+#baseAiHost .base-launcher-copy{display:grid;gap:4px;text-align:left}
+#baseAiHost .base-launcher-copy small{font-size:8px;font-weight:650;letter-spacing:1.15px;color:var(--review-muted)}
+#baseAiHost .base-launcher-copy strong{font-size:13px;font-weight:650;letter-spacing:-.2px;color:var(--review-ink)}
+#baseAiHost .base-ai-launcher-count{height:28px;min-width:28px;border-radius:9px;background:var(--review-selected);border:1px solid var(--review-border);font-size:11px}
+#baseAiHost .base-ai-window{width:min(1120px,calc(100vw - 32px));height:calc(100dvh - 96px);max-height:780px;right:16px;bottom:16px;border-radius:22px;box-shadow:0 28px 100px #070e263d,0 0 0 1px #ffffff08}
+#baseAiHost .base-ai-window.is-expanded{width:calc(100vw - 32px);height:calc(100dvh - 96px);max-height:none}
+#baseAiHost .base-ai-window-header{position:relative;padding:13px 18px 11px;background:var(--review-soft);gap:10px}
+#baseAiHost .base-ai-window-header::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#14b5d0,#4674df,transparent 90%);pointer-events:none}
+#baseAiHost .base-ai-identity strong{font-size:16px;letter-spacing:-.4px}
+#baseAiHost .base-ai-identity small{font-size:11px}
+#baseAiHost .base-ai-window-actions button{width:36px;height:36px;min-height:36px;background:var(--review-paper);border-radius:11px;line-height:1;font-size:23px;color:var(--review-muted)}
+#baseAiHost .base-ai-window-actions button:last-child:hover{background:#a8434318;color:#c65454;border-color:#c6545460}
+#baseAiHost .base-ai-workbar{border-top-color:var(--review-border);padding-top:10px}
+#baseAiHost .base-workbar-actions button{border-radius:9px;min-height:36px}
+#baseAiHost .base-workbar-actions .base-review-confirm{box-shadow:0 3px 9px #315fc520;font-weight:650}
+#baseAiHost .base-ai-window-body{padding:14px 18px 18px;background:var(--review-paper)}
+#baseAiHost .base-review-filters{border:0;gap:5px;margin-bottom:8px;padding-bottom:6px}
+#baseAiHost .base-review-filters button{border-color:transparent;background:var(--review-soft);border-radius:8px}
+#baseAiHost .base-queue-tools input{background:var(--review-soft);border-color:var(--review-border);border-radius:11px;min-height:40px;padding:10px 13px}
+#baseAiHost .base-review-layout{gap:16px;grid-template-columns:230px minmax(0,1fr)}
+#baseAiHost .base-review-queue{max-height:540px}
+#baseAiHost .base-review-queue .base-review-item{position:relative;border:1px solid var(--review-border);padding:13px;min-height:116px;border-radius:13px;background:var(--review-soft)}
+#baseAiHost .base-review-queue .base-review-item:hover{border-color:var(--review-action)}
+#baseAiHost .base-review-item[aria-pressed=true]{box-shadow:inset 3px 0 0 var(--review-action),0 3px 10px #14243b08}
+#baseAiHost .base-review-decision{background:var(--review-selected);border-color:var(--review-border);padding:12px 14px;gap:16px}
+#baseAiHost .base-review-decision input[type=text]{max-width:240px;font-size:16px;min-height:42px}
+#baseAiHost .base-history-comparison{gap:12px}
+#baseAiHost .base-history-comparison>section{border-radius:14px;padding:16px}
+#baseAiHost .base-history-comparison h4{letter-spacing:.8px;font-size:10px}
+#baseAiHost .base-history-saved .base-account-history>strong{font-size:17px;letter-spacing:-.5px;color:var(--review-ink)}
+#baseAiHost .base-history-text{line-height:1.75!important;font-size:13px!important}
+#baseAiHost .base-account-history-entry{margin-top:14px;padding:14px;background:var(--review-paper);border-radius:11px}
+#baseAiHost .base-pending-reason{border:1px solid var(--review-border);border-left:3px solid var(--review-action);border-radius:9px;font-size:12px!important}
+#baseAiHost .base-ai-loading{min-height:380px;padding:30px 20px;gap:0}
+#baseAiHost .base-loading-orbit{position:relative;display:grid;place-items:center;flex:none;width:124px;height:124px;margin:0 0 22px;border:1px solid var(--review-border);border-radius:50%;background:radial-gradient(circle,var(--review-selected),transparent 68%)}
+#baseAiHost .base-loading-orbit::before{content:'';position:absolute;inset:11px;border:1px dashed var(--review-border);border-radius:50%}
+#baseAiHost .base-loading-orbit .base-brand-mark{width:62px;height:62px;margin:0;border-radius:19px;box-shadow:0 8px 24px #101b321c;animation:none}
+#baseAiHost .base-loading-orbit>i{position:absolute;inset:0;border-radius:50%;pointer-events:none}
+#baseAiHost .base-loading-orbit>i::before{content:'';position:absolute;top:-3px;left:calc(50% - 3px);width:6px;height:6px;border-radius:50%;background:#16b4d0;box-shadow:0 0 12px #16b4d060}
+#baseAiHost .base-loading-orbit>i:nth-of-type(2){inset:12px;transform:rotate(120deg)}
+#baseAiHost .base-loading-orbit>i:nth-of-type(3){transform:rotate(240deg)}
+#baseAiHost .base-loading-orbit>i:nth-of-type(2)::before{background:#6a91ed}
+#baseAiHost .base-ai-loading .base-loading-eyebrow{font-size:9px;letter-spacing:1.8px;color:var(--review-action);font-weight:650;margin-bottom:10px}
+#baseAiHost .base-ai-loading h3{font-size:21px;font-weight:650;letter-spacing:-.6px;margin-bottom:9px}
+#baseAiHost .base-ai-loading>p{max-width:400px;font-size:12px;line-height:1.7}
+#baseAiHost .base-loading-note{max-width:380px;font-size:10px;line-height:1.7;color:var(--review-muted);margin-top:12px}
+#baseAiHost .base-ai-skeleton{width:min(300px,100%);gap:7px;margin:18px 0}
+#baseAiHost .base-ai-skeleton i{height:5px}
+@keyframes baseStudioOrbit{to{rotate:360deg}}
+@media(prefers-reduced-motion:no-preference){#baseAiHost .base-loading-orbit>i{animation:baseStudioOrbit 4s linear infinite}#baseAiHost .base-loading-orbit>i:nth-of-type(2){animation-duration:6s;animation-direction:reverse}#baseAiHost .base-loading-orbit>i:nth-of-type(3){animation-duration:8s}#baseAiHost .base-ai-window-actions button{transition:background .18s,color .18s,border-color .18s}#baseAiHost .base-review-item{transition:background .18s,border-color .18s}}
+@media(prefers-reduced-motion:reduce){#baseAiHost .base-loading-orbit>i{animation:none!important}}
+@media(max-width:760px){#baseAiHost .base-ai-window,#baseAiHost .base-ai-window.is-expanded{inset:68px 8px 8px;width:calc(100vw - 16px);height:auto;max-height:none;border-radius:16px}#baseAiHost .base-ai-window-header{padding:12px}#baseAiHost .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost .base-review-queue{max-height:145px}#baseAiHost .base-ai-window-body{padding:12px}#baseAiHost .base-history-comparison>section{padding:13px}#baseAiHost .base-ai-loading{min-height:300px;padding:20px 8px}#baseAiHost .base-ai-loading h3{font-size:19px}#baseAiHost .base-ai-launcher{padding:9px 11px;gap:10px}#baseAiHost .base-ai-launcher .base-brand-mark{width:38px;height:38px}}
