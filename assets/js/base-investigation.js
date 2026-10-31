@@ -63,11 +63,11 @@
     target.replaceChildren();target.hidden=false;
     const item=catalog.find(c=>c.conta===account.trim() && c.natureza===nature);
     if(!item){target.append(node('p','Selecione uma conta histórica desta natureza para consultar seu uso.'));return;}
-    target.append(node('strong',`Conta ${item.conta}`),node('p',`${item.ocorrencias} ocorrências · ${item.periodos.length} períodos · ${item.bancos.map(bankLabelUI).join(', ')}`));
+    target.append(node('strong',`Conta ${item.conta}`),node('p',`${quantity(item.ocorrencias,'ocorrência')} · ${quantity(item.periodos.length,'período')} · ${item.bancos.map(bankLabelUI).join(', ')}`));
     target.append(node('small',`Períodos: ${item.periodos.join(', ') || 'não comprovados'}`));
     for(const example of item.exemplos || []){
       const entry=node('div',null,'base-account-history-entry');
-      entry.append(node('p',example.historico),node('small',`${bankLabelUI(example.banco)} · ${example.periodos.join(', ') || 'período não comprovado'} · ${example.ocorrencias} ocorrências`));target.append(entry);
+      entry.append(node('p',example.historico),node('small',`${bankLabelUI(example.banco)} · ${example.periodos.join(', ') || 'período não comprovado'} · ${quantity(example.ocorrencias,'ocorrência')}`));target.append(entry);
     }
     target.append(node('small','Exemplos de padrões aprendidos; não representam um razão completo nem comprovam que a conta está ativa.'));
   }
