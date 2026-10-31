@@ -36,6 +36,20 @@ def test_period_evidence(monkeypatch,periods,strength):
     assert not r['sugestoes'][0]['aprovada']
 
 
+def test_evidence_keeps_exact_and_similar_sources_distinct(monkeypatch):
+    exact=record()
+    similar=record(account='413',signature='pago|fornecedor abc contrato')
+    setup(monkeypatch,[exact,similar])
+    suggestion=agent.investigate(242,book(),use_ai=False)['sugestoes'][0]
+    evidence={(item['conta'],item['exata']):item for item in suggestion['evidencias']}
+    assert suggestion['conta_sugerida']=='412'
+    assert suggestion['situacao']=='FORTE'
+    assert evidence[('412',True)]['mesmo_banco'] is True
+    assert evidence[('412',True)]['periodos']==['2026-07','2026-08']
+    assert evidence[('412',True)]['ocorrencias']==20
+    assert evidence[('413',False)]['mesmo_banco'] is True
+
+
 def test_conflicts_require_manual(monkeypatch):
     setup(monkeypatch,[record(),record(account='413')])
     r=agent.investigate(242,book(),use_ai=False)

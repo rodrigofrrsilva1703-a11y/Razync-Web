@@ -22,6 +22,26 @@ async function populated(data=report){const h=setup();h.mount();h.launcher.event
 test('janela inicia fechada e abre pelo botão flutuante sem chamada duplicada',async()=>{const h=await populated();assert.equal(h.window.hidden,false);assert.equal(h.requests.length,1);h.header.children[1].children[1].events.click();assert.equal(h.window.hidden,true);h.launcher.events.click();await flush();assert.equal(h.requests.length,1);});
 test('minimizar e ampliar preservam aprovação e aprendizado começa desmarcado',async()=>{const h=await populated();const inputs=flatten(h.body).filter(e=>e.tag==='input');action(h,'Aprovar e próximo').events.click();const learn=inputs.find(e=>e.type==='checkbox'&&!e.attrs['aria-label']);assert.equal(learn.checked,false);h.header.children[1].children[0].events.click();assert.equal(h.window.classList.contains('is-expanded'),true);h.header.children[1].children[1].events.click();h.launcher.events.click();assert.match(textOf(h.body),/Conta aprovada/);});
 test('históricos aparecem automaticamente ao lado do lançamento sem nova consulta',async()=>{const h=await populated();const text=textOf(h.body);assert.match(text,/Históricos gravados na conta/);assert.match(text,/Pago fornecedor de teste/);assert.match(text,/2026-07/);assert.equal(h.requests.length,1);assert.equal(h.requests[0].options.body.get('usar_ia'),'false');assert.equal(h.nodes['#classifyForm'].afterNode,undefined);});
+test('evidências distinguem assinatura exata, histórico semelhante, banco, períodos e ocorrências',async()=>{
+ const data=JSON.parse(JSON.stringify(report));data.sugestoes[0].evidencias=[
+  {conta:'412',exata:true,mesmo_banco:true,banco:'itau_508',periodos:['2026-07','2026-08'],ocorrencias:20,historicos:['Pago: Empresa: Fornecedor ABC']},
+  {conta:'413',exata:false,mesmo_banco:false,banco:'bb',periodos:['2026-06'],ocorrencias:4,historicos:['Pago: Empresa: Fornecedor ABC contrato']}
+ ];
+ const h=await populated(data),text=textOf(h.body);
+ assert.match(text,/Evidências que fundamentam a análise/);assert.match(text,/Assinatura exata/);assert.match(text,/Histórico semelhante/);
+ assert.match(text,/Mesmo banco/);assert.match(text,/Outro banco/);assert.match(text,/07\/2026, 08\/2026/);assert.match(text,/20 ocorrências/);
+ assert.match(text,/outras contas apenas em históricos semelhantes/);assert.match(text,/conta continua ativa no plano atual/);
+});
+test('conflitos exatos explicam que nenhuma conta foi escolhida automaticamente',async()=>{
+ const data=JSON.parse(JSON.stringify(report));data.sugestoes[0].situacao='MANUAL';data.sugestoes[0].conta_sugerida='';
+ data.sugestoes[0].evidencias=[
+  {conta:'412',exata:true,mesmo_banco:true,banco:'itau_508',periodos:['2026-07'],ocorrencias:3,historicos:[]},
+  {conta:'413',exata:true,mesmo_banco:true,banco:'itau_508',periodos:['2026-08'],ocorrencias:2,historicos:[]}
+ ];
+ const h=await populated(data),text=textOf(h.body);
+ assert.match(text,/Conflito: há evidências do mesmo nível para 2 contas diferentes/);
+ assert.match(text,/Nenhuma conta foi escolhida automaticamente/);
+});
 test('trocar ferramenta oculta a janela e reset invalida resultados em andamento',async()=>{const h=setup();h.mount();h.launcher.events.click();await flush();h.nodes['[data-pane="base"]'].classes.clear();h.observers[0]();assert.equal(h.window.hidden,true);assert.equal(h.launcher.hidden,true);h.ctx.RazyncBaseInvestigation.reset();h.resolve({ok:true,json:async()=>report});await flush();assert.equal(h.body.children.length,0);assert.equal(h.window.hidden,true);});
 
 function twoRows(){const data=JSON.parse(JSON.stringify(report));data.total_pendencias=2;data.grupos_investigados=2;data.sugestoes.push({...data.sugestoes[0],_linha:3,grupo:2,'Histórico':'Segundo teste'});return data;}

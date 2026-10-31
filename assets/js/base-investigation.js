@@ -62,6 +62,7 @@
   }
   const normalized=value=>String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   const words=value=>new Set(normalized(value).split(' ').filter(w=>w.length>2 && !['pago','recebido','empresa','pagamento','recebimento','documento'].includes(w)));
+  const periodLabel=value=>/^\d{4}-\d{2}$/.test(value)?`${value.slice(5)}/${value.slice(0,4)}`:value;
   function historyText(text,reference){
     const paragraph=node('p',null,'base-history-text'),matches=words(reference);
     for(const part of String(text || '').split(/(\s+)/)){
@@ -83,6 +84,37 @@
     }
     if(!examples.length)target.append(node('p','Esta conta não possui exemplos de histórico disponíveis.'));
     target.append(node('small','Exemplos aprendidos, não um razão completo. Palavras destacadas apenas ajudam a comparação; não comprovam a mesma operação.'));
+  }
+  function showEvidence(suggestion,target){
+    const evidence=suggestion.evidencias || [];
+    const accounts=[...new Set(evidence.map(item=>item.conta))];
+    const exactAccounts=[...new Set(evidence.filter(item=>item.exata).map(item=>item.conta))];
+    target.replaceChildren(node('h4','Evidências que fundamentam a análise'));
+    if(exactAccounts.length>1 || (accounts.length>1 && !exactAccounts.length)){
+      const competingAccounts=exactAccounts.length>1?exactAccounts.length:accounts.length;
+      const conflict=node('p',`Conflito: há evidências do mesmo nível para ${competingAccounts} contas diferentes. Nenhuma conta foi escolhida automaticamente.`,'base-evidence-warning');
+      conflict.setAttribute('role','note');target.append(conflict);
+    }else if(accounts.length>1 && exactAccounts.length===1){
+      target.append(node('p','Há outras contas apenas em históricos semelhantes; isso não equivale a uma correspondência exata. Confira os exemplos antes de decidir.','base-evidence-warning'));
+    }else if(!evidence.length){
+      target.append(node('p','Não há evidência histórica compatível para este lançamento.','base-evidence-empty'));
+    }else if(!suggestion.conta_sugerida){
+      target.append(node('p','Candidatos do histórico para conferência; nenhum foi escolhido.','base-evidence-warning'));
+    }
+    for(const item of evidence){
+      const card=node('article',null,'base-evidence-card');
+      const heading=node('strong',`Conta ${item.conta}`);card.append(heading);
+      const badges=node('div',null,'base-evidence-badges');
+      badges.append(node('span',item.exata?'Assinatura exata':'Histórico semelhante',item.exata?'is-exact':'is-similar'));
+      badges.append(node('span',item.mesmo_banco?'Mesmo banco':'Outro banco',item.mesmo_banco?'is-same-bank':'is-other-bank'));
+      card.append(badges);
+      const periods=(item.periodos || []).map(periodLabel);
+      card.append(node('small',`${bankLabelUI(item.banco)} · ${periods.length?periods.join(', '):'período não comprovado'}`));
+      card.append(node('small',quantity(Number(item.ocorrencias)||0,'ocorrência')));
+      for(const history of item.historicos || [])card.append(historyText(history,suggestion['Histórico']));
+      target.append(card);
+    }
+    target.append(node('small','O histórico não confirma se a conta continua ativa no plano atual nem comprova, por si só, a operação.'));
   }
   function render(result,current,version){
     body.replaceChildren();workbar.replaceChildren();
@@ -177,6 +209,7 @@
       const grade=s.situacao==='MANUAL'?({single:'Similaridade a conferir',conflict:'Contas conflitantes',none:'Sem histórico compatível'})[category(s)]:({FORTE:'Sugestão forte',MODERADA:'Sugestão moderada'})[s.situacao];
       const gradeBadge=node('span',grade,'base-investigation-grade');gradeBadge.setAttribute('data-grade',s.situacao);c.grade=gradeBadge;c.originalGrade=grade;received.append(gradeBadge);
       c.summary=node('div',null,'base-evidence-summary');refreshEvidence(c);received.append(c.summary);
+      const evidencePanel=node('section',null,'base-evidence-list');showEvidence(s,evidencePanel);received.append(evidencePanel);
       const candidates=node('div',null,'base-account-candidates');
       for(const account of [...new Set((s.evidencias || []).map(e=>e.conta))]){
         const pick=button(`Comparar conta ${account}`,()=>{if(completed || applying)return;c.account.value=account;c.select.checked=false;c.deferred=false;drawHistory(c);refreshEvidence(c);updateQueue();if(active!==c)showDetail();});pick.disabled=completed || applying;candidates.append(pick);
