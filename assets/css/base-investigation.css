@@ -113,3 +113,23 @@ html[data-theme=dark] #baseAiHost{--review-paper:#15181e;--review-soft:#1b212b;-
 /* Keep the primary review action distinct from generic dark-theme buttons. */
 html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm{background:#315fc5!important;color:#fff!important;border-color:#4679df!important}
 html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not(:disabled){background:#3d70d7!important}
+/* Persistent review bar: actions stay visible while reading evidence. */
+#baseAiHost .base-ai-window-header{flex-wrap:wrap;gap:10px}
+#baseAiHost .base-ai-workbar{flex-basis:100%;display:flex;align-items:center;justify-content:space-between;gap:8px 14px;padding-top:10px;border-top:1px solid var(--review-border)}
+#baseAiHost .base-ai-workbar:empty{display:none}
+#baseAiHost .base-ai-workbar .base-review-progress{padding:0;border:0;background:none;font-size:11px!important;color:var(--review-muted);margin:0!important}
+#baseAiHost .base-workbar-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#baseAiHost .base-workbar-actions button{min-height:35px;padding:7px 10px;border-radius:8px;font-size:11px;line-height:1.4;cursor:pointer}
+#baseAiHost .base-workbar-actions .base-review-confirm{min-height:35px}
+#baseAiHost .base-evidence-summary{padding:10px 0;font-size:11px;line-height:1.6}
+#baseAiHost .base-evidence-summary strong{font-size:12px}
+#baseAiHost .base-evidence-summary details{margin-top:7px}
+#baseAiHost .base-evidence-summary summary{cursor:pointer;color:var(--review-action);font-size:11px}
+#baseAiHost .base-group-review{padding:13px;margin:0 0 14px;border:1px solid var(--review-border);border-radius:11px;background:var(--review-soft);font-size:12px}
+#baseAiHost .base-group-review[hidden]{display:none!important}
+#baseAiHost .base-group-review>label{display:grid;grid-template-columns:18px minmax(0,1fr);align-items:start;gap:4px 8px;padding:10px 0;border-top:1px solid var(--review-border);font-size:11px;line-height:1.6}
+#baseAiHost .base-group-review>label input{width:16px;height:16px;accent-color:var(--review-action);margin-top:3px}
+#baseAiHost .base-group-review>label small{grid-column:2;overflow-wrap:anywhere}
+#baseAiHost .base-group-review>button{margin:8px 6px 0 0}
+#baseAiHost .base-review-footer:has(p:empty){padding:0;border:0;margin:0}
+@media(max-width:760px){#baseAiHost .base-ai-workbar{flex-direction:column;align-items:stretch}#baseAiHost .base-workbar-actions{display:grid;grid-template-columns:minmax(0,.6fr) minmax(0,1.2fr) minmax(0,1.2fr)}#baseAiHost .base-workbar-actions button{font-size:10px;padding:6px;white-space:normal;min-height:38px}}
