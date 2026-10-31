@@ -20,6 +20,40 @@ function harness() {
   context.enhanceFileInput(input);
   return {input,handlers,formHandlers,context};
 }
+
+function selectionHarness() {
+  class Node {
+    constructor(tag) {
+      this.tagName = tag;
+      this.children = [];
+      this.attributes = {};
+      this.classList = {toggle(){}};
+    }
+    setAttribute(name,value) { this.attributes[name] = value; }
+    append(...nodes) { this.children.push(...nodes); }
+    appendChild(node) { this.children.push(node); }
+    replaceChildren(...nodes) { this.children = nodes; }
+    addEventListener() {}
+  }
+  const selection = new Node('div');
+  const shell = {classList:{toggle(){}},querySelector:()=>selection,appendChild(){}};
+  const input = {
+    files:[],
+    classList:{toggle(){}},
+    closest(selector) { return selector === '.file-drop-shell' ? shell : null; }
+  };
+  const context = {
+    document:{createElement:tag=>new Node(tag)},
+    humanFileSize:size=>`${size} B`,
+    selectedFileBankLabel:()=>'Banco Itaú'
+  };
+  vm.createContext(context);
+  const start = app.indexOf('function updateFileSelection(');
+  const end = app.indexOf('\ndocument.addEventListener("change"',start);
+  vm.runInContext(app.slice(start,end),context);
+  return {input,selection,context};
+}
+
 const file=name=>({name,size:20,lastModified:1});
 
 test('seleções sucessivas preservam anexos e remover um arquivo não o reinclui',()=>{
@@ -44,6 +78,17 @@ test('reselecionar o mesmo arquivo não duplica o anexo',()=>{
   const h=harness();h.input.files=[file('julho.xlsx')];h.handlers.change();
   h.input.files=[file('julho.xlsx')];h.handlers.change();
   assert.equal(h.input.files.length,1);
+});
+
+test('cartão de anexo mostra extensão, tamanho e nome acessível completo',()=>{
+  const h=selectionHarness();
+  h.input.files=[file('relatorio-contabil.xlsx')];
+  h.context.updateFileSelection(h.input);
+  const item=h.selection.children[1];
+  const [name,meta]=item.children[1].children;
+  assert.equal(name.textContent,'relatorio-contabil.xlsx');
+  assert.equal(name.attributes['aria-label'],'relatorio-contabil.xlsx');
+  assert.equal(meta.textContent,'XLSX · 20 B · Banco Itaú');
 });
 
 test('backend antigo não recebe múltiplos arquivos em campos que ignorariam os anteriores',async()=>{

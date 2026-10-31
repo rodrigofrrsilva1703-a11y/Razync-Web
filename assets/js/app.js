@@ -1852,9 +1852,14 @@ function updateFileSelection(input) {
     const name = document.createElement("strong");
     name.textContent = file.name;
     name.title = file.name;
+    name.setAttribute("aria-label",file.name);
 
     const meta = document.createElement("small");
-    meta.textContent = `${humanFileSize(file.size)} · ${selectedFileBankLabel(input)}`;
+    const extensionIndex = file.name.lastIndexOf(".");
+    const fileType = extensionIndex > 0 && extensionIndex < file.name.length - 1
+      ? file.name.slice(extensionIndex + 1).toUpperCase()
+      : "Sem extensão";
+    meta.textContent = `${fileType} · ${humanFileSize(file.size)} · ${selectedFileBankLabel(input)}`;
     text.append(name,meta);
 
     const remove = document.createElement("button");

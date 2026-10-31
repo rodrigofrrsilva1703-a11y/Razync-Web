@@ -1,29 +1,37 @@
-#companyPanel .base-cleanup {flex-basis:100%;width:100%;margin-top:14px;padding-top:13px;border-top:1px solid #e1e8f0;min-width:0;}
-#companyPanel .base-cleanup > summary {cursor:pointer;color:#61778e;font-size:11px;line-height:1.6;}
-#companyPanel .base-cleanup p {font-size:11px;line-height:1.65;margin:10px 0;color:#75879a;}
+#companyPanel .base-cleanup {flex-basis:100%;width:100%;margin-top:12px;padding-top:11px;border-top:1px solid var(--border);min-width:0;}
+#companyPanel .base-cleanup > summary {cursor:pointer;color:var(--muted);font-size:11px;line-height:1.6;}
+#companyPanel .base-cleanup p {font-size:11px;line-height:1.65;margin:9px 0;color:var(--muted);}
 #companyPanel .base-cleanup-fields {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0;}
-#companyPanel .base-cleanup-fields label {display:flex;flex-direction:column;gap:6px;font-size:11px;color:#61778e;min-width:0;}
-#companyPanel .base-cleanup-fields select {width:100%;min-height:38px;padding:8px 10px;border:1px solid #cbd8e6;border-radius:8px;background:#fff;color:#385773;font-size:12px;}
+#companyPanel .base-cleanup-fields label {display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--text);min-width:0;}
+#companyPanel .base-cleanup-fields select {width:100%;min-height:38px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:12px;}
 #companyPanel .base-cleanup button {width:auto;min-height:36px;padding:8px 11px;font-size:11px;border-radius:8px;cursor:pointer;}
 #companyPanel .base-cleanup button:disabled {opacity:.5;cursor:default;}
-#companyPanel .base-cleanup-confirmation {margin-top:12px;padding:12px;border:1px solid #e8d5d1;border-radius:9px;background:#fffaf9;}
-#companyPanel #baseCleanupSummary {margin-top:0;color:#67504a;}
+#companyPanel .base-cleanup-confirmation {margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:9px;background:var(--surface);}
+#companyPanel #baseCleanupSummary {margin-top:0;color:var(--text);}
 #companyPanel #confirmBaseCleanup {border:1px solid #9e5750!important;background:#9e5750!important;color:#fff!important;margin-right:7px;}
 #companyPanel .base-cleanup :focus-visible {outline:2px solid #6485a6;outline-offset:3px;}
 @media(max-width:560px) {#companyPanel .base-cleanup-fields {grid-template-columns:1fr;} #companyPanel .base-cleanup button {min-height:44px;}}
 
 /* Aprendizado e classificação compartilham a linha em telas maiores. */
+#companyPanel .tool-pane[data-pane="base"] {
+  container-type:inline-size;
+}
 #companyPanel .tool-pane[data-pane="base"] .stack-forms {
-  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-columns:minmax(0,1fr);
   gap:16px;
   align-items:start;
+}
+@container (min-width:760px) {
+ #companyPanel .tool-pane[data-pane="base"] .stack-forms {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+ }
 }
 #companyPanel .tool-pane[data-pane="base"] .stack-forms > .modern-form {
   grid-column:auto;
   min-width:0;
   min-height:0;
-  padding:18px!important;
-  gap:10px;
+  padding:14px!important;
+  gap:9px;
 }
 #companyPanel .tool-pane[data-pane="base"] .stack-forms > .base-management,
 #companyPanel .tool-pane[data-pane="base"] .base-period-card {grid-column:1/-1;min-width:0;}
@@ -37,20 +45,17 @@
 #companyPanel .tool-pane[data-pane="base"] .file-selection {max-height:160px;}
 #companyPanel .tool-pane[data-pane="base"] .modern-form > .helper:empty {display:none;}
 #companyPanel .tool-pane[data-pane="base"] button[type="submit"] {min-height:42px;padding:10px 12px;font-size:12px;}
-@media(max-width:850px) {
-  #companyPanel .tool-pane[data-pane="base"] .stack-forms {grid-template-columns:minmax(0,1fr);}
-}
 
 /* Meses salvos: somente consulta, junto aos indicadores da base. */
 #companyPanel .base-saved-periods {clear:both;margin-top:14px;padding-top:12px;border-top:1px solid #d7e2ed;min-width:0;}
 #companyPanel .saved-periods-heading {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-#companyPanel .saved-periods-heading>strong {font-size:12px;color:#46627c;font-weight:600;}
+#companyPanel .saved-periods-heading>strong {font-size:12px;color:var(--text);font-weight:600;}
 #companyPanel .saved-periods-heading button {width:auto;min-height:34px;padding:7px 11px!important;font-size:11px;}
-#companyPanel .base-saved-periods #savedPeriodsMessage {font-size:11px;line-height:1.6;color:#758b9f;margin:8px 0 0!important;}
+#companyPanel .base-saved-periods #savedPeriodsMessage {font-size:11px;line-height:1.6;color:var(--muted);margin:8px 0 0!important;}
 #companyPanel #savedPeriodsList {display:grid;gap:9px;margin-top:12px;}
 #companyPanel #savedPeriodsList[hidden] {display:none;}
-#companyPanel .saved-period-bank {display:grid;grid-template-columns:minmax(130px,190px) minmax(0,1fr);align-items:start;gap:10px;padding:9px 11px;border:1px solid #dce6ef;border-radius:9px;background:#ffffffa6;min-width:0;}
-#companyPanel .saved-period-bank>strong {font-size:11px;line-height:1.6;color:#4c6882;font-weight:550;padding-top:3px;overflow-wrap:anywhere;}
+#companyPanel .saved-period-bank {display:grid;grid-template-columns:minmax(130px,190px) minmax(0,1fr);align-items:start;gap:10px;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:var(--surface);min-width:0;}
+#companyPanel .saved-period-bank>strong {font-size:11px;line-height:1.6;color:var(--text);font-weight:550;padding-top:3px;overflow-wrap:anywhere;}
 #companyPanel .saved-period-months {display:flex;flex-wrap:wrap;gap:5px;min-width:0;}
-#companyPanel .saved-period-months>span {display:block;padding:4px 7px;border:1px solid #dce6f0;border-radius:5px;background:#f4f8fc;color:#526e87;font-size:11px;line-height:1.5;font-variant-numeric:tabular-nums;}
+#companyPanel .saved-period-months>span {display:block;padding:4px 7px;border:1px solid var(--border);border-radius:5px;background:var(--surface-2);color:var(--muted);font-size:11px;line-height:1.5;font-variant-numeric:tabular-nums;}
 @media(max-width:600px){#companyPanel .saved-period-bank {grid-template-columns:minmax(0,1fr);gap:7px;}#companyPanel .saved-periods-heading button {min-height:44px;}}
