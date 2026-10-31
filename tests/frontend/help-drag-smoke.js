@@ -330,7 +330,7 @@
     const uploadFrame=document.createElement('iframe');
     uploadFrame.style.cssText='position:fixed;left:-2000px;top:0;width:600px;height:650px;border:0';
     const uploadLoaded=new Promise(resolve=>uploadFrame.onload=resolve);
-    const uploadItem='<div class="file-selection-item"><span><strong>Relatorio-com-nome-muito-longo-para-conferencia-da-empresa-e-do-banco.xlsx</strong><small>XLSX · 20 KB</small></span><button type="button" class="file-selection-remove" aria-label="Remover arquivo">×</button></div>';
+    const uploadItem='<span class="file-selection-item"><i aria-hidden="true"></i><span><strong>Relatorio-com-nome-muito-longo-para-conferencia-da-empresa-e-do-banco.xlsx</strong><small>XLSX · 20 KB</small></span><button type="button" class="file-selection-remove" aria-label="Remover arquivo"><span aria-hidden="true">×</span></button></span>';
     uploadFrame.srcdoc='<!doctype html><html><head>'+homeStyles+'<style>*,*::before,*::after{animation:none!important;transition:none!important}body{margin:0!important}#companyPanel{display:block!important;width:100%!important;margin:0!important;padding:0!important;box-sizing:border-box}form{width:100%;box-sizing:border-box}</style></head><body><section id="companyPanel"><form class="modern-form preparation-form"><div class="file-drop-shell"><input type="file" multiple><div class="file-selection"><div class="file-selection-summary">3 arquivos</div>'+uploadItem.repeat(3)+'</div></div></form></section></body></html>';
     document.body.append(uploadFrame);await uploadLoaded;
     const uploadDoc=uploadFrame.contentDocument;
@@ -343,7 +343,7 @@
         if(width===390 && cards[1].top<=cards[0].top)throw Error('Anexos não voltaram a uma coluna no campo estreito.');
         if(uploadDoc.documentElement.scrollWidth>width+1)throw Error('Anexos criaram rolagem horizontal.');
         for(const remove of uploadDoc.querySelectorAll('.file-selection-remove')){
-          const rect=remove.getBoundingClientRect();if(rect.width<28 || rect.right>width)throw Error('Remover arquivo ficou inacessível.');
+          const rect=remove.getBoundingClientRect(),card=remove.closest('.file-selection-item').getBoundingClientRect(),name=remove.closest('.file-selection-item').querySelector('strong').getBoundingClientRect();if(rect.width<28 || rect.right>card.right || Math.abs(rect.top-name.top)>5 || name.width<65 || name.right>rect.left)throw Error('Nome e botão remover não estão alinhados no cartão real.');
         }
       }
     }

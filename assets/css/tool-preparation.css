@@ -39,11 +39,12 @@
 #companyPanel .preparation-form .reconcile-bank-file{padding:12px;gap:8px}
 #companyPanel .preparation-form .file-selection{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;max-height:260px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;min-width:0;box-sizing:border-box}
 #companyPanel .preparation-form .file-selection-summary{grid-column:1/-1;align-items:center;color:var(--muted);padding:2px 0;font-size:11px}
-#companyPanel .preparation-form .file-selection-item{display:grid;grid-template-columns:minmax(0,1fr) 30px;align-items:center;gap:8px;min-width:0;padding:10px;border:1px solid var(--border);border-radius:9px;background:var(--surface);box-sizing:border-box}
-#companyPanel .preparation-form .file-selection-item>span{display:grid;gap:4px;min-width:0;overflow:hidden}
+#companyPanel .preparation-form .file-selection-item{display:grid;grid-template-columns:16px minmax(0,1fr) 30px;align-items:start;gap:8px;min-width:0;padding:10px;border:1px solid var(--border);border-radius:9px;background:var(--surface);box-sizing:border-box}
+#companyPanel .preparation-form .file-selection-item>i{grid-column:1;grid-row:1;width:16px;height:18px;margin-top:2px}
+#companyPanel .preparation-form .file-selection-item>span{grid-column:2;grid-row:1;display:grid;gap:4px;min-width:0;overflow:hidden}
 #companyPanel .preparation-form .file-selection-item strong{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-width:0;overflow:hidden;overflow-wrap:anywhere;white-space:normal;font-size:12px;line-height:1.45}
 #companyPanel .preparation-form .file-selection-item small{display:block;overflow-wrap:anywhere;font-size:10px;line-height:1.5;color:var(--muted)}
-#companyPanel .preparation-form .file-selection-remove{justify-self:end;align-self:start;min-height:30px;width:30px;padding:0!important;border-radius:7px}
+#companyPanel .preparation-form .file-selection-remove{grid-column:3;grid-row:1;justify-self:end;align-self:start;min-height:30px;width:30px;padding:0!important;border-radius:7px}
 #companyPanel .preparation-form :is(button,input,select):disabled{cursor:not-allowed;opacity:.56}
 #companyPanel .preparation-form :is(button,input,select):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 @container razync-upload (min-width:360px){#companyPanel .preparation-form .file-selection{grid-template-columns:repeat(2,minmax(0,1fr))}}
