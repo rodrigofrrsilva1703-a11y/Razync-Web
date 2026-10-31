@@ -145,7 +145,7 @@
     function updateQueue(){
       queue.replaceChildren();const items=visible();if(!items.includes(active))active=items[0] || null;
       const approved=controls.filter(c=>c.select.checked).length;
-      progress.textContent=`${controls.filter(c=>c.reviewed || c.select.checked).length} de ${controls.length} revisados · ${approved} para aplicar`;approveTop.disabled=!active || active.select.checked || completed || applying;skipTop.disabled=!active || completed || applying;
+      progress.textContent=`${controls.filter(c=>c.reviewed || c.select.checked).length} de ${controls.length} revisados · ${completed?quantity(approved,'revisão aplicada','revisões aplicadas'):`${approved} para aplicar`}`;approveTop.disabled=!active || active.select.checked || completed || applying;skipTop.disabled=!active || completed || applying;
       if(typeof apply!=='undefined'){apply.textContent=completed?'Revisões aplicadas':`Gerar Excel com ${quantity(approved,'revisão','revisões')}`;apply.disabled=completed || applying || !approved;}
       filterButtons.forEach(f=>f.control.setAttribute('aria-pressed',String(filter===f.value)));
       if(!items.length){queue.append(node('p','Nenhuma pendência neste filtro.'));return;}
