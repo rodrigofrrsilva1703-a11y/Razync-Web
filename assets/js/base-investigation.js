@@ -31,9 +31,14 @@
   const quantity=(n,singular,plural=singular+'s')=>`${n} ${n===1?singular:plural}`;
   const button=(text,fn)=>{const e=node('button',text,'secondary-action');e.type='button';e.addEventListener('click',fn);return e;};
   function reset(){generation++;controller?.abort();priorityController?.abort();context=null;wantsOpen=false;body.replaceChildren();workbar.replaceChildren();floating.hidden=true;launcher.hidden=true;launcher.setAttribute('aria-expanded','false');}
-  function mount({prepared,company,options,summary}) {
-    reset();if(!summary?.cobertura?.pendentes)return;
-    context={prepared,company,options};
+  function mount({prepared,company,options,summary,onState}) {
+    reset();
+    if(!summary?.cobertura?.pendentes){
+      onState?.('complete','Nenhuma pendência para revisar');
+      return;
+    }
+    context={prepared,company,options,onState};
+    onState?.('preparing',`${Number(summary.cobertura.pendentes).toLocaleString('pt-BR')} pendência(s) em preparação`);
     launcher.replaceChildren(node('span','✦','base-ai-launcher-icon'),node('span','Revisar pendências'),node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));
     launcher.hidden=false;
     investigate(); // Local-only preparation; never consumes an AI call.
@@ -49,7 +54,7 @@
     loading.append(symbol,node('h3','Preparando sua comparação'),status,node('p','Buscando históricos aprendidos desta empresa para você conferir as contas.'));
     const skeleton=node('div',null,'base-ai-skeleton');skeleton.setAttribute('aria-hidden','true');
     for(let i=0;i<4;i++)skeleton.append(node('i'));loading.append(skeleton);
-    const cancel=button('Cancelar',()=>{controller.abort();generation++;body.replaceChildren(node('p','Preparação interrompida.'),button('Preparar novamente',investigate));workbar.replaceChildren();});loading.append(cancel);body.append(loading);
+    const cancel=button('Cancelar',()=>{current.onState?.('error','Preparação interrompida');controller.abort();generation++;body.replaceChildren(node('p','Preparação interrompida.'),button('Preparar novamente',investigate));workbar.replaceChildren();});loading.append(cancel);body.append(loading);
     try {
       current.blob=current.blob || await current.prepared.blob();
       if(signal.aborted || version!==generation)return;
@@ -58,7 +63,10 @@
       if(!response.ok)throw Error(await responseError(response));
       const result=await response.json();if(signal.aborted || version!==generation)return;
       render(result,current,version);
-    }catch(error){if(signal.aborted || version!==generation)return;status.textContent=error.message;cancel.textContent='Tentar novamente';cancel.onclick=null;body.replaceChildren(status,button('Tentar novamente',investigate));}
+      current.onState?.(result.total_pendencias?'ready':'complete',result.total_pendencias
+        ? `${Number(result.total_pendencias).toLocaleString('pt-BR')} pendência(s) prontas para revisão`
+        : 'Nenhuma pendência elegível para revisão');
+    }catch(error){if(signal.aborted || version!==generation)return;current.onState?.('error','Não foi possível preparar a revisão');status.textContent=error.message;cancel.textContent='Tentar novamente';cancel.onclick=null;body.replaceChildren(status,button('Tentar novamente',investigate));}
   }
   const normalized=value=>String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   const words=value=>new Set(normalized(value).split(' ').filter(w=>w.length>2 && !['pago','recebido','empresa','pagamento','recebimento','documento'].includes(w)));
@@ -283,6 +291,7 @@
         completed=true;updateQueue();showDetail();
         renderClassificationCoverage(summary.cobertura);
         message.textContent=`Revisões aplicadas: ${summary.aplicadas}. Padrões aprendidos: ${summary.aprendizados || 0}.`;
+        current.onState?.('complete',`${Number(summary.aplicadas)||0} revisão(ões) aplicada(s)`);
         const download=button('Baixar Excel revisado',()=>downloadBlob(new Response(blob),`RAZYNC_${current.company}_REVISADO.xlsx`));download.className='preview-download';footer.append(download);
         const previewBody=new FormData();previewBody.append('file',blob,'revisado.xlsx');
         const previewResponse=await fetch(`${API()}/api/v1/modelo-preview`,{method:'POST',body:previewBody,signal});
@@ -291,5 +300,5 @@
       }catch(error){if(signal.aborted || version!==generation)return;message.textContent=completed?'Excel revisado gerado. A prévia não pôde ser atualizada; use Baixar Excel revisado.':error.message;if(!completed){applying=false;controls.forEach(c=>{c.select.disabled=false;c.account.disabled=false;});learn.disabled=false;updateQueue();showDetail();}}
     });quickActions.append(apply);footer.append(message);body.append(footer);updateQueue();showDetail();
   }
-  globalThis.RazyncBaseInvestigation={mount,reset};
+  globalThis.RazyncBaseInvestigation={mount,open:openOrInvestigate,reset};
 })();

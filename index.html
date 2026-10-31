@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="./assets/css/admin-auth.css?v=20261023-1">
   <link rel="stylesheet" href="./assets/css/tool-preparation.css?v=statement-reading-20261026-1">
   <link rel="stylesheet" href="./assets/css/company-directory.css?v=directory-studio-20261030-1">
-  <link rel="stylesheet" href="./assets/css/base-investigation.css?v=compact-review-20261031-1">
+  <link rel="stylesheet" href="./assets/css/base-investigation.css?v=guided-base-20261031-1">
   <link rel="stylesheet" href="./assets/css/themes.css?v=flat-interiors-20261030-2">
   <link rel="stylesheet" href="./assets/css/sidebar-motion.css?v=20261029-1">
   <link rel="stylesheet" href="./assets/css/home-welcome.css?v=home-composition-20261030-1">
@@ -536,6 +536,23 @@
                 <div id="savedPeriodsList" hidden></div>
               </section>
             </div>
+            <nav id="baseWorkflow" class="base-workflow" aria-label="Etapas da Base Inteligente">
+              <button type="button" class="base-workflow-step is-active" data-base-step="learn" aria-current="step" aria-controls="learnForm">
+                <span class="base-workflow-number">01</span>
+                <span class="base-workflow-copy"><strong>Ensinar</strong><small id="baseLearnStepStatus" aria-live="polite">Envie arquivos revisados</small></span>
+                <span class="base-workflow-arrow" aria-hidden="true">→</span>
+              </button>
+              <button type="button" class="base-workflow-step" data-base-step="classify" aria-controls="classifyForm">
+                <span class="base-workflow-number">02</span>
+                <span class="base-workflow-copy"><strong>Classificar</strong><small id="baseClassifyStepStatus" aria-live="polite">Aplique padrões ao modelo</small></span>
+                <span class="base-workflow-arrow" aria-hidden="true">→</span>
+              </button>
+              <button type="button" class="base-workflow-step" data-base-step="review" aria-controls="classificationCoverage">
+                <span class="base-workflow-number">03</span>
+                <span class="base-workflow-copy"><strong>Revisar</strong><small id="baseReviewStepStatus" aria-live="polite">Pendências serão preparadas automaticamente</small></span>
+                <span class="base-workflow-arrow" aria-hidden="true">✓</span>
+              </button>
+            </nav>
             <div class="stack-forms">
               <form id="classifyForm" class="modern-form compact-form preparation-form">
                 <div class="form-card-header">
@@ -729,8 +746,9 @@
   <script src="./assets/js/organizer-jobs.js?v=20261026-1"></script>
   <script src="./assets/js/company-directory.js?v=20261027-1"></script>
   <script src="./assets/js/converter-global.js?v=20261028-1"></script>
-  <script src="./assets/js/base-investigation.js?v=compact-review-20261031-1"></script>
-  <script src="./assets/js/app.js?v=base-investigation-20261030-1"></script>
+  <script src="./assets/js/base-investigation.js?v=guided-base-20261031-1"></script>
+  <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
+  <script src="./assets/js/app.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/migration.js?v=admin-modal-20261021-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>

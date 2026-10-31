@@ -7,13 +7,13 @@ class Element {
 function flatten(e){return e.children.flatMap(child=>typeof child==='object'?[child,...flatten(child)]:[]);}
 function setup(){
  const nodes={'#classifyForm':new Element(),'#companyPanel':new Element(),'[data-pane="base"]':new Element(),'.app-shell':new Element()};nodes['[data-pane="base"]'].classes.add('active');
- const observers=[];let resolve;const pending=new Promise(r=>resolve=r);const requests=[];
+ const observers=[];let resolve;const pending=new Promise(r=>resolve=r);const requests=[],workflowStates=[];
  const ctx={document:{createElement:t=>new Element(t),createTextNode:t=>t,querySelector:s=>nodes[s]},MutationObserver:class{constructor(fn){observers.push(fn);}observe(){}},AbortController,FormData,Blob,
  API:()=>'',fetch:(url,options)=>{requests.push({url,options});return pending;},responseError:async()=>'',bankName:b=>b};
  vm.createContext(ctx);vm.runInContext(fs.readFileSync('assets/js/base-investigation.js','utf8'),ctx);
  const host=nodes['.app-shell'].children[0],launcher=host.children[0],window=host.children[1],header=window.children[0],body=window.children[1];
- const mount=()=>ctx.RazyncBaseInvestigation.mount({company:242,prepared:{blob:async()=>new Blob(['synthetic'])},options:{},summary:{cobertura:{pendentes:1}}});
- return {ctx,nodes,observers,resolve,requests,launcher,window,header,body,mount};
+ const mount=()=>ctx.RazyncBaseInvestigation.mount({company:242,prepared:{blob:async()=>new Blob(['synthetic'])},options:{},summary:{cobertura:{pendentes:1}},onState:(state,message)=>workflowStates.push({state,message})});
+ return {ctx,nodes,observers,resolve,requests,launcher,window,header,body,mount,workflowStates};
 }
 const report={total_pendencias:1,grupos_investigados:1,ia:{},limitacoes:[],token:'synthetic',catalogo_contas:[{conta:'412',natureza:'pago',bancos:['itau_508'],periodos:['2026-07'],ocorrencias:2,exemplos:[{historico:'Pago fornecedor de teste',banco:'itau_508',periodos:['2026-07'],ocorrencias:2}]}],sugestoes:[{_aba:'Itaú',_linha:2,natureza:'pago','Histórico':'Teste',Valor:-1,Data:'15/10/2026',grupo:1,_banco:'itau_508',assinatura:'pago|teste',conta_sugerida:'412',situacao:'MODERADA',justificativa:'Evidência',evidencias:[]}]};
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
@@ -51,7 +51,7 @@ test('alterar uma conta aprovada exige nova aprovação',async()=>{const h=await
 test('IA opcional só reordena a fila sem apagar contas e aprovações',async()=>{const h=await populated(twoRows());action(h,'Aprovar e próximo').events.click();h.ctx.fetch=async(url,options)=>{h.requests.push({url,options});return {ok:true,json:async()=>({...twoRows(),token:'prioritized',ia:{prioridades:[2],motivo:'Prioridade de teste'}})};};await action(h,'Priorizar casos com IA').events.click();assert.equal(h.requests[1].options.body.get('usar_ia'),'true');const first=flatten(h.body).find(e=>e.attrs['aria-label']==='Comparar Itaú, linha 2');first.events.click();assert.match(textOf(h.body),/Conta aprovada/);assert.ok(action(h,'Gerar Excel com 1 revisão'));});
 
 test('prepara pendências locais antes de abrir o assistente',async()=>{const h=setup();h.mount();await flush();assert.equal(h.window.hidden,true);assert.equal(h.requests.length,1);assert.equal(h.requests[0].options.body.get('usar_ia'),'false');h.launcher.events.click();assert.equal(h.requests.length,1);});
-test('cancelar preparação não reinicia consultas automaticamente',async()=>{const h=setup();h.mount();await flush();action(h,'Cancelar').events.click();await flush();assert.equal(h.requests.length,1);assert.match(textOf(h.body),/Preparação interrompida/);});
+test('cancelar preparação não reinicia consultas automaticamente',async()=>{const h=setup();h.mount();await flush();action(h,'Cancelar').events.click();await flush();assert.equal(h.requests.length,1);assert.match(textOf(h.body),/Preparação interrompida/);assert.deepEqual(h.workflowStates.at(-1),{state:'error',message:'Preparação interrompida'});});
 test('fila inicia pelos casos com conta candidata única',async()=>{const data=twoRows();data.sugestoes[0].conta_sugerida='';data.sugestoes[0].evidencias=[];const h=await populated(data);assert.ok(flatten(h.body).find(e=>e.attrs['aria-label']==='Conta para Itaú, linha 3'));assert.ok(action(h,'Contas conflitantes'));assert.ok(action(h,'Sem histórico'));});
 function groupRows(){const data=twoRows();data.grupos_investigados=1;data.sugestoes[1]={...data.sugestoes[0],_linha:3};return data;}
 test('grupo exige confirmação e permite excluir linha antes de aprovar',async()=>{const h=await populated(groupRows());action(h,'Revisar 2 equivalentes').events.click();assert.ok(action(h,'Gerar Excel com 0 revisões'));const second=flatten(h.body).find(e=>e.attrs['aria-label']==='Incluir Itaú, linha 3 no grupo');second.checked=false;action(h,'Aprovar linhas selecionadas').events.click();assert.ok(action(h,'Gerar Excel com 1 revisão'));});

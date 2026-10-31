@@ -29,3 +29,6 @@ Grupos podem ser aprovados mediante uma confirmação separada com seleção ind
 
 ## Transparência das evidências
 Cada pendência exibe as evidências separadas por conta e origem, identificando assinatura exata ou histórico semelhante, banco de origem e relação com o banco do lançamento, períodos, ocorrências e exemplos históricos. Conflitos entre contas no mesmo nível de evidência são destacados sem escolher uma conta. Evidência semelhante permanece distinta da exata; ambas são referências históricas e não confirmam que a conta segue ativa no plano atual. Esses detalhes não alteram a classificação, os critérios de sugestão ou a validação do servidor.
+
+## Fluxo guiado da Base Inteligente
+A ferramenta apresenta as etapas Ensinar, Classificar e Revisar. Selecionar arquivos atualiza o progresso; importação e classificação exibem seus resultados; após classificar, a preparação local das pendências ocorre automaticamente e a etapa Revisar abre o assistente já preparado. A navegação entre etapas não envia arquivos nem grava dados. Somente as ações existentes de ensinar, classificar e aplicar revisões executam operações; aprovações humanas e aprendizado opcional continuam obrigatórios.

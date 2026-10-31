@@ -177,3 +177,40 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
 #baseAiHost .base-review-options>summary{color:var(--review-muted);font-size:11px}
 @media(max-width:900px){#companyPanel .tool-pane[data-pane=base] .tool-intro{grid-template-columns:minmax(0,1fr)}#companyPanel .tool-pane[data-pane=base] #baseStats{grid-column:1;grid-row:auto;margin-top:10px!important;flex-wrap:wrap}#companyPanel .tool-pane[data-pane=base] .stack-forms{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:760px){#baseAiHost .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost .base-review-queue{max-height:98px;grid-auto-columns:160px}#baseAiHost .base-review-decision{top:-12px;flex-wrap:wrap;gap:6px}#baseAiHost .base-review-decision .base-review-approval{max-width:none}#baseAiHost .base-ai-workbar .base-review-progress{font-size:10px!important}#baseAiHost .base-history-comparison{grid-template-columns:minmax(0,1fr)}}
+/* Guided workspace: make the three safe actions visible before the forms. */
+#companyPanel .tool-pane[data-pane=base] .tool-card{display:grid;gap:16px}
+#companyPanel .tool-pane[data-pane=base] .tool-intro{border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:0 10px 28px #14243b08}
+#companyPanel .tool-pane[data-pane=base] .base-workflow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+#companyPanel .tool-pane[data-pane=base] .base-workflow-step{display:flex;align-items:center;gap:10px;min-width:0;padding:12px;border:1px solid transparent;border-radius:11px;background:var(--surface-2);color:var(--text);text-align:left;cursor:pointer;transition:background .16s,border-color .16s,translate .16s}
+#companyPanel .tool-pane[data-pane=base] .base-workflow-step:hover{border-color:var(--border);translate:0 -1px}
+#companyPanel .tool-pane[data-pane=base] .base-workflow-step:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#companyPanel .tool-pane[data-pane=base] .base-workflow-step.is-active{border-color:var(--accent);background:var(--accent-soft)}
+#companyPanel .tool-pane[data-pane=base] .base-workflow-number{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:10px;background:var(--surface);color:var(--muted);font-size:10px;font-weight:750}
+#companyPanel .tool-pane[data-pane=base] .base-workflow-step[data-state=complete] .base-workflow-number{background:var(--accent);color:#fff}
+#companyPanel .tool-pane[data-pane=base] .base-workflow-step[data-state=error] .base-workflow-number{background:#a34e4e;color:#fff}
+#companyPanel .tool-pane[data-pane=base] .base-workflow-copy{display:grid;gap:3px;min-width:0}
+#companyPanel .tool-pane[data-pane=base] .base-workflow-copy strong{font-size:12px}
+#companyPanel .tool-pane[data-pane=base] .base-workflow-copy small{margin:0;color:var(--muted);font-size:10px;line-height:1.4;overflow-wrap:anywhere}
+#companyPanel .tool-pane[data-pane=base] .base-workflow-arrow{margin-left:auto;color:var(--muted);font-size:14px}
+#companyPanel .tool-pane[data-pane=base] .base-workflow-step[data-state=complete] .base-workflow-arrow{color:var(--accent)}
+#companyPanel .tool-pane[data-pane=base] .stack-forms{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+#companyPanel .tool-pane[data-pane=base] .stack-forms #learnForm{order:1}
+#companyPanel .tool-pane[data-pane=base] .stack-forms #classifyForm{order:2}
+#companyPanel .tool-pane[data-pane=base] .stack-forms .base-management{order:3}
+#companyPanel .tool-pane[data-pane=base] .stack-forms .modern-form{align-content:start;gap:12px;padding:18px;border:1px solid var(--border);border-radius:15px;background:var(--surface);box-shadow:0 8px 24px #14243b08}
+#companyPanel .tool-pane[data-pane=base] .stack-forms .modern-form:focus-within{border-color:var(--accent)}
+#companyPanel .tool-pane[data-pane=base] .form-card-header{align-items:center;gap:12px}
+#companyPanel .tool-pane[data-pane=base] .form-card-header strong{font-size:14px}
+#companyPanel .tool-pane[data-pane=base] .form-card-header small{font-size:11px;line-height:1.45}
+#companyPanel .tool-pane[data-pane=base] .stack-forms .modern-form input[type=file]{min-height:44px;padding:10px;border:1px dashed var(--border);border-radius:10px;background:var(--surface-2)}
+#companyPanel .tool-pane[data-pane=base] .base-management{order:3;border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:12px}
+#companyPanel .tool-pane[data-pane=base] .base-management::before{font-size:9px}
+#companyPanel .tool-pane[data-pane=base] #classificationPreview{margin-top:0}
+@media(max-width:760px){
+  #companyPanel .tool-pane[data-pane=base] .tool-card{gap:12px}
+  #companyPanel .tool-pane[data-pane=base] .base-workflow{grid-template-columns:1fr;gap:6px;padding:8px}
+  #companyPanel .tool-pane[data-pane=base] .base-workflow-step{padding:9px}
+  #companyPanel .tool-pane[data-pane=base] .base-workflow-arrow{transform:rotate(90deg)}
+  #companyPanel .tool-pane[data-pane=base] .stack-forms{grid-template-columns:minmax(0,1fr)}
+  #companyPanel .tool-pane[data-pane=base] .stack-forms .modern-form{padding:14px}
+}

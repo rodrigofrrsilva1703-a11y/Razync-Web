@@ -893,6 +893,7 @@ async function refreshBaseStats(learnedStatus=null) {
 }
 function openCompany(company) {
   globalThis.RazyncBaseInvestigation?.reset();
+  window.RazyncBaseWorkflow?.reset();
   cancelReconcilePreview();
   selected = company;
   renderCompanyToolGuide("");
@@ -1243,13 +1244,18 @@ learnForm.addEventListener("submit", async (event) => {
   const button = learnForm.querySelector('[type="submit"]');
   if (button.disabled) return;
   const files = [...$("#learnFiles").files];
-  if (!files.length) return $("#learnMessage").textContent = "Selecione pelo menos um arquivo revisado.";
+  if (!files.length) {
+    $("#learnMessage").textContent = "Selecione pelo menos um arquivo revisado.";
+    window.RazyncBaseWorkflow?.setLearning("error");
+    return;
+  }
   const company = selected.codigo;
   const current = () => selected?.codigo === company;
   const data = new FormData();
   files.forEach(file => data.append("files", file));
   button.disabled = true;
   $("#learnMessage").textContent = "Aprendendo padrões…";
+  window.RazyncBaseWorkflow?.setLearning("processing");
   try {
     const response = await fetch(`${API()}/api/v1/base-inteligente/${company}/aprender`, {method:"POST", body:data});
     if (!response.ok) throw new Error(await responseError(response));
@@ -1257,11 +1263,18 @@ learnForm.addEventListener("submit", async (event) => {
     if (current()) {
       const errors = (result.errors || []).join("; ");
       $("#learnMessage").textContent = `${result.learned} padrão(ões) processado(s).${errors ? ` Alguns arquivos não foram importados: ${errors}` : ""}`;
+      window.RazyncBaseWorkflow?.setLearning("complete", result.learned
+        ? `${Number(result.learned).toLocaleString("pt-BR")} padrão(ões) processados`
+        : "Importação concluída; sem novos padrões");
+      window.RazyncBaseWorkflow?.activate("classify");
       refreshBaseStats(result);
       window.refreshSavedBasePeriods?.();
     }
   } catch (error) {
-    if (current()) $("#learnMessage").textContent = error.message;
+    if (current()) {
+      $("#learnMessage").textContent = error.message;
+      window.RazyncBaseWorkflow?.setLearning("error");
+    }
   } finally {
     button.disabled = false;
   }
@@ -1336,6 +1349,7 @@ function renderClassificationCoverage(coverage) {
 
 function cancelClassificationPreview() {
   globalThis.RazyncBaseInvestigation?.reset();
+  window.RazyncBaseWorkflow?.setReview("empty");
   classificationController?.abort();
   $("#classificationPreview").replaceChildren();
   $("#classificationCoverage").hidden = true;
@@ -1349,7 +1363,11 @@ classifyForm.addEventListener("change", () => {
 classifyForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const file = $("#classifyFile").files[0];
-  if (!file) return $("#classifyMessage").textContent = "Selecione o Modelo Domínio.";
+  if (!file) {
+    $("#classifyMessage").textContent = "Selecione o Modelo Domínio.";
+    window.RazyncBaseWorkflow?.setClassification("error");
+    return;
+  }
   cancelClassificationPreview();
   const controller = new AbortController();
   classificationController = controller;
@@ -1357,6 +1375,7 @@ classifyForm.addEventListener("submit", async (event) => {
   const target = $("#classificationPreview");
   const button = event.submitter;
   button.disabled = true;
+  window.RazyncBaseWorkflow?.setClassification("processing");
   const data = new FormData();
   [...$("#classifyFile").files].forEach(file => data.append("file", file));
   const classifyOptions = {};
@@ -1379,7 +1398,15 @@ classifyForm.addEventListener("submit", async (event) => {
     if (controller.signal.aborted || selected?.codigo !== companyCode) return;
     showWorkflowPreview(result,target);
     renderClassificationCoverage(summary.cobertura);
-    globalThis.RazyncBaseInvestigation?.mount({prepared,company:companyCode,options:classifyOptions,summary});
+    const pending = Math.max(0, Number(summary.cobertura?.pendentes) || 0);
+    window.RazyncBaseWorkflow?.setClassification("complete");
+    window.RazyncBaseWorkflow?.setReview("preparing", pending
+      ? `${pending.toLocaleString("pt-BR")} pendência(s) em preparação`
+      : "Nenhuma pendência encontrada");
+    globalThis.RazyncBaseInvestigation?.mount({
+      prepared,company:companyCode,options:classifyOptions,summary,
+      onState:(state,message)=>window.RazyncBaseWorkflow?.setReview(state,message)
+    });
     const download = document.createElement("button");download.type="button";download.className="preview-download";
     download.textContent="Baixar Excel classificado";
     download.addEventListener("click", async () => {
@@ -1393,6 +1420,7 @@ classifyForm.addEventListener("submit", async (event) => {
   } catch (error) {
     if (controller.signal.aborted || selected?.codigo !== companyCode) return;
     $("#classifyMessage").textContent = error.message;
+    window.RazyncBaseWorkflow?.setClassification("error");
   } finally {
     if (classificationController === controller) button.disabled = false;
   }
