@@ -41,9 +41,9 @@
       onState?.('complete','Nenhuma pendência para revisar');
       return;
     }
-    context={prepared,company,options,onState};
+    context={prepared,company,options,onState};subtitle.textContent=`Empresa ${company} · Comparação de históricos`;
     onState?.('preparing',`${Number(summary.cobertura.pendentes).toLocaleString('pt-BR')} pendência(s) em preparação`);
-    const launcherCopy=node('span',null,'base-launcher-copy');launcherCopy.append(node('small','ASSISTENTE RAZYNC'),node('strong','Revisar pendências'));launcher.replaceChildren(brandMark(),launcherCopy,node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));launcher.title='Abrir comparação de históricos e contas';
+    const launcherCopy=node('span',null,'base-launcher-copy');launcherCopy.append(node('small','ASSISTENTE RAZYNC'),node('strong','Revisar pendências'));launcher.replaceChildren(brandMark(),launcherCopy,node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));launcher.title=`Revisar ${summary.cobertura.pendentes} pendências da empresa ${company}`;
     launcher.hidden=false;
     investigate(); // Local-only preparation; never consumes an AI call.
   }
@@ -170,14 +170,14 @@
     const search=document.createElement('input');search.type='search';search.placeholder='Pesquisar histórico, banco, conta ou valor';search.setAttribute('aria-label','Pesquisar pendências');
     search.addEventListener('input',()=>{query=normalized(search.value);updateQueue();showDetail();});
     const groupToggle=button('Agrupar equivalentes',()=>{grouped=!grouped;groupToggle.setAttribute('aria-pressed',String(grouped));updateQueue();showDetail();});groupToggle.setAttribute('aria-pressed','true');
-    const tools=node('div',null,'base-queue-tools');tools.append(search,groupToggle);body.append(tools);
+    const tools=node('div',null,'base-queue-tools');tools.append(search,groupToggle);
     const filters=node('div',null,'base-review-filters'),filterButtons=[];
     for(const [value,label] of [['all','Todas'],['single','Conta candidata única'],['conflict','Contas conflitantes'],['none','Sem histórico'],['deferred','Adiadas'],['approved','Aprovadas']]){
       const control=button(label,()=>{filter=value;updateQueue();showDetail();});control.setAttribute('aria-pressed',String(value==='all'));filters.append(control);filterButtons.push({value,label,control});
     }
-    body.append(filters);
+
     const layout=node('div',null,'base-review-layout'),queue=node('nav',null,'base-review-queue'),detail=node('section',null,'base-review-detail');
-    queue.setAttribute('aria-label','Pendências para revisar');detail.setAttribute('aria-label','Comparação do lançamento com a base');layout.append(queue,detail);body.append(layout);
+    queue.setAttribute('aria-label','Pendências para revisar');detail.setAttribute('aria-label','Comparação do lançamento com a base');const sidebar=node('aside',null,'base-review-sidebar');sidebar.setAttribute('aria-label','Pesquisar e filtrar pendências');sidebar.append(node('h3','Sua fila de revisão'),tools,filters,queue);layout.append(sidebar,detail);body.append(layout);
     let draftEnabled=false;
     function saveDraft(){if(!draftEnabled || !current.draftKey || completed || applying)return;try{sessionStorage.setItem(current.draftKey,JSON.stringify({time:Date.now(),rows:controls.map(c=>({key:rowKey(c),account:c.account.value,approved:c.select.checked,deferred:c.deferred}))}));}catch{}}
     const message=node('p',null,'helper');message.setAttribute('role','status');
@@ -244,9 +244,10 @@
       saveDraft();
       if(!items.length){queue.append(node('p','Nenhuma pendência neste filtro.'));return;}
       for(const group of queueGroups(items)){
+        const groupValue=group.reduce((sum,item)=>sum+Math.round(Number(item.s.Valor)*100),0)/100;
         const c=group.includes(active)?active:group.find(item=>!item.select.checked && !item.deferred) || group[0];
-        const entry=button('',()=>{active=c;updateQueue();showDetail();});entry.className='base-review-item';entry.setAttribute('aria-pressed',String(c===active));entry.setAttribute('aria-label',`Comparar ${c.s._aba}, linha ${c.s._linha}`);
-        entry.append(node('strong',`${c.select.checked?'✓ ':''}${c.s._aba} · linha ${c.s._linha}`),node('span',c.s['Histórico']),node('small',`${group.length>1?quantity(group.length,'lançamento')+' · ':''}${Number(c.s.Valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}`),node('small',c.select.checked?'Aprovada':c.deferred?'Adiada':c.account.value?`${c.s.conta_sugerida===c.account.value?'Sugestão':'Conta em revisão'}: ${c.account.value}`:'Escolher conta'));queue.append(entry);
+        const entry=button('',()=>{active=c;updateQueue();showDetail();});entry.className='base-review-item';entry.setAttribute('data-review-state',c.select.checked?'approved':c.deferred?'deferred':'pending');entry.setAttribute('aria-pressed',String(c===active));entry.setAttribute('aria-label',`Comparar ${c.s._aba}, linha ${c.s._linha}`);
+        entry.append(node('strong',`${c.select.checked?'✓ ':''}${c.s._aba} · linha ${c.s._linha}`),node('span',c.s['Histórico']),node('small',`${group.length>1?quantity(group.length,'lançamento')+' · Total ':''}${groupValue.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}`),node('small',c.select.checked?'Aprovada':c.deferred?'Adiada':c.account.value?`${c.s.conta_sugerida===c.account.value?'Sugestão':'Conta em revisão'}: ${c.account.value}`:'Escolher conta'));queue.append(entry);
       }
     }
     function showDetail(){

@@ -77,3 +77,5 @@ test('falha de armazenamento não impede revisão e aprovação',async()=>{const
 
 
 test('busca aceita valor com milhar e centavos no formato brasileiro',async()=>{const data=twoRows();data.sugestoes[0].Valor=-2000;const h=await populated(data);const search=flatten(h.body).find(e=>e.attrs['aria-label']==='Pesquisar pendências');search.value='2.000,00';search.events.input();assert.ok(flatten(h.body).find(e=>e.attrs['aria-label']==='Conta para Itaú, linha 2'));assert.equal(flatten(h.body).filter(e=>e.className==='base-review-item').length,1);});
+
+test('grupo mostra total em centavos sem alterar valores ou aprovar linhas',async()=>{const data=groupRows();data.sugestoes[0].Valor=-17.53;data.sugestoes[1].Valor=-18.53;const h=await populated(data);const item=flatten(h.body).find(e=>e.className==='base-review-item');assert.match(textOf(item),/Total -R\$\s*36,06/);assert.equal(data.sugestoes[0].Valor,-17.53);assert.ok(action(h,'Gerar Excel com 0 revisões'));});
