@@ -234,7 +234,7 @@
     }
     const quickActions=node('div',null,'base-workbar-actions');
     const skipTop=button('Adiar',()=>go(1,true)),approveTop=button('Aprovar e próximo',approveActive);
-    approveTop.className='base-review-confirm';quickActions.append(skipTop,approveTop);workbar.append(quickActions);
+    approveTop.className='base-review-confirm';workbar.append(quickActions);
     function updateQueue(){
       queue.replaceChildren();const items=visible();if(!items.includes(active))active=items[0] || null;
       const approved=controls.filter(c=>c.select.checked).length;
@@ -272,7 +272,7 @@
       saved.append(node('h4','Históricos gravados na conta'),c.historyArea);drawHistory(c);
       comparison.append(received,saved);
       const actions=node('div',null,'base-review-navigation');
-      actions.append(button('Anterior',()=>go(-1)),button('Próximo',()=>go(1)));
+      actions.append(button('Anterior',()=>go(-1)),button('Próximo',()=>go(1)),skipTop,approveTop);decision.append(actions);
       const members=equivalents(c).filter(other=>!other.select.checked);
       if(members.length>1){
         const groupBox=node('section',null,'base-group-review');groupBox.hidden=true;
@@ -300,8 +300,8 @@
             message.textContent=`${chosen.length} aprovações registradas. O Excel e o aprendizado só mudam no comando final.`;
             active=controls.find(other=>!other.select.checked) || active;updateQueue();showDetail();
           });confirm.disabled=completed || applying;groupBox.append(confirm,button('Fechar grupo',()=>{groupBox.hidden=true;}));
-        });groupOpen.disabled=completed || applying;actions.append(groupOpen);detail.append(actions,groupBox,comparison);
-      }else detail.append(actions,comparison);
+        });groupOpen.disabled=completed || applying;actions.append(groupOpen);detail.append(groupBox,comparison);
+      }else detail.append(comparison);
     }
     for(const s of suggestions){
       const select=document.createElement('input');select.type='checkbox';select.setAttribute('aria-label',`Aprovar ${s._aba}, linha ${s._linha}`);
