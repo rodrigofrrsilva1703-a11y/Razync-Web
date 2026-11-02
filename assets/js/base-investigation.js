@@ -43,7 +43,7 @@
     }
     context={prepared,company,options,onState};subtitle.textContent=`Empresa ${company} · Comparação de históricos`;
     onState?.('preparing',`${Number(summary.cobertura.pendentes).toLocaleString('pt-BR')} pendência(s) em preparação`);
-    const launcherCopy=node('span',null,'base-launcher-copy');launcherCopy.append(node('small','ASSISTENTE RAZYNC'),node('strong','Revisar pendências'));const wordmark=node('span',null,'base-launcher-wordmark');wordmark.setAttribute('aria-hidden','true');for(const [index,letter] of [...'RAZYNC'].entries()){const glyph=node('span',letter);glyph.setAttribute('style',`--letter-index:${index}`);wordmark.append(glyph);}launcher.replaceChildren(brandMark(),wordmark,launcherCopy,node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));launcher.title=`Revisar ${summary.cobertura.pendentes} pendências da empresa ${company}`;
+    const launcherCopy=node('span',null,'base-launcher-copy');launcherCopy.append(node('small','ASSISTENTE RAZYNC'),node('strong','Revisar pendências'));const animatedMark=brandMark();animatedMark.className+=' base-brand-letter-motion';launcher.replaceChildren(animatedMark,launcherCopy,node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));launcher.title=`Revisar ${summary.cobertura.pendentes} pendências da empresa ${company}`;
     launcher.hidden=false;
     investigate(); // Local-only preparation; never consumes an AI call.
   }
