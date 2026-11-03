@@ -87,7 +87,7 @@ function enhanceFileInput(input) {
     shell.classList.add('company-file-drop');input.classList.add('company-file-input');input.tabIndex=-1;
     const add=document.createElement('button');add.type='button';add.className='company-file-add';add.textContent='＋ Adicionar arquivos';
     add.addEventListener('click',()=>{if(!input.disabled)input.click();});shell.appendChild(add);
-    input.addEventListener('change',()=>{add.textContent=input.files.length?'＋ Adicionar mais arquivos':'＋ Adicionar arquivos';});
+
   }
 
   const hint = document.createElement("span");
@@ -1835,6 +1835,8 @@ function updateFileSelection(input) {
 
   const shell = input.closest(".file-drop-shell");
   shell?.classList.toggle("has-selection", files.length > 0);
+  const addButton = shell?.querySelector(":scope > .company-file-add");
+  if (addButton?.tagName === "BUTTON") addButton.textContent = files.length ? "＋ Adicionar mais arquivos" : "＋ Adicionar arquivos";
   let selection = shell?.querySelector(":scope > .file-selection");
   if (!selection) {
     selection = document.createElement("div");

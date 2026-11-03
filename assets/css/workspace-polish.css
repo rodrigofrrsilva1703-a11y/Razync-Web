@@ -219,3 +219,22 @@ body.sidebar-collapsed #mainSidebar {
 #companyPanel .company-file-add{width:auto!important;max-width:100%;flex:none}
 #companyPanel .file-selection>.file-selection-item:nth-child(2):last-child{grid-column:1/-1}
 #companyPanel .company-reconcile-uploads .company-file-drop.has-selection{min-height:146px!important}
+
+/* One preparation language for standard, role-based and multi-bank forms. */
+#companyPanel#companyPanel .preparation-form .field-group{padding:0!important;border:0!important;border-radius:0;background:transparent!important;box-shadow:none!important;min-width:0}
+#companyPanel#companyPanel .preparation-form .dynamic-fields{gap:14px;align-items:start}
+#companyPanel#companyPanel .company-file-drop{display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:center!important;gap:8px!important;text-align:left!important}
+#companyPanel#companyPanel .company-file-drop.has-selection{justify-content:flex-start!important}
+#companyPanel#companyPanel .company-file-add{align-self:flex-start!important;justify-self:start!important;width:fit-content!important;max-width:100%!important;margin:0!important}
+#companyPanel#companyPanel .file-drop-hint{width:auto!important;justify-content:flex-start!important;text-align:left!important}
+#companyPanel#companyPanel .bank-selector{padding:8px 0!important;border:0!important;background:transparent!important;box-shadow:none!important;gap:8px}
+#companyPanel#companyPanel .bank-selector-head{align-items:center;gap:8px;margin:0}
+#companyPanel#companyPanel .bank-selector-head strong{font-size:12px}
+#companyPanel#companyPanel .bank-selector-head>div>span{font-size:11px;line-height:1.4}
+#companyPanel#companyPanel .bank-selector-options{display:flex!important;flex-wrap:wrap;gap:8px!important;margin:0}
+#companyPanel#companyPanel .bank-choice{flex:0 1 auto;min-height:34px;padding:6px 10px!important;gap:8px;border-radius:7px}
+#companyPanel#companyPanel .bank-choice>span{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px}
+#companyPanel#companyPanel .bank-choice strong{font-size:12px}
+#companyPanel#companyPanel .bank-choice small{font-size:11px}
+#companyPanel#companyPanel .bank-select-all{width:auto!important;min-height:32px;padding:6px 10px!important;font-size:11px}
+@media(max-width:560px){#companyPanel#companyPanel .bank-selector-head{flex-wrap:wrap}#companyPanel#companyPanel .bank-choice{flex:1 1 140px}}
