@@ -222,12 +222,13 @@
       const chosen=matching.length?matching:evidence;
       const same=chosen.some(e=>e.mesmo_banco),exact=chosen.some(e=>e.exata);
       reason.textContent=!chosen.length?'A base não encontrou histórico compatível com este lançamento.':conflict?'Os históricos encontrados apontam para contas diferentes. Compare as referências antes de escolher.':account && !matching.length?'A conta foi escolhida manualmente e não tem evidência específica para este lançamento.':exact?`A base encontrou o mesmo padrão de histórico${same?' neste banco':' em outro banco'}. Isso não confirma a operação atual.`:`A base encontrou apenas textos semelhantes${same?' neste banco':' em outro banco'}. A semelhança não confirma a classificação.`;
-      c.summary.append(node('small','Por que considerar'),reason);
+      const reasoning=node('details',null,'base-reasoning-details');reasoning.append(node('summary','Por que considerar'),reason);c.summary.append(reasoning);
       let check=!evidence.length?'Confira o documento de origem e a natureza da operação antes de escolher uma conta.':conflict?'Confira qual conta corresponde à operação atual; não aprove apenas pela semelhança do texto.':!same?'A referência é de outro banco. Confirme a conta de contrapartida aplicável a este banco.':'Confira a operação e se a conta continua válida no plano de contas.';
       const histories=chosen.flatMap(e=>e.historicos || []);
       const currentNumbers=String(s['Histórico'] || '').match(/\d+/g) || [];
       if(same && histories.length && currentNumbers.length && !histories.some(h=>JSON.stringify(String(h).match(/\d+/g) || [])===JSON.stringify(currentNumbers)))check='Os números do histórico diferem dos exemplos. Confira o documento ou investimento e se a mesma conta se aplica.';
-      const focus=node('section',null,'base-check-focus');focus.setAttribute('role','note');focus.append(node('strong','Confira antes de aprovar'),node('p',check,'base-analysis-check'));c.summary.prepend(focus);
+      const shortCheck=conflict?'Há contas diferentes para este padrão. Confirme a contrapartida.':!evidence.length?'Sem referência suficiente. Confira o documento antes de escolher a conta.':!same?'Referência de outro banco. Confirme a contrapartida.':check.startsWith('Os números')?'Números diferentes. Confirme o documento e a conta.':'Confirme a operação e a conta antes de aprovar.';reasoning.append(node('p',check));
+      const focus=node('section',null,'base-check-focus');focus.setAttribute('role','note');focus.append(node('strong','Confira antes de aprovar'),node('p',shortCheck,'base-analysis-check'));c.summary.prepend(focus);
       const explanation=node('details',null,'base-original-explanation');explanation.append(node('summary','Ver justificativa original'),node('p',s.justificativa));c.summary.append(explanation);
     }
     function pendingReason(s){
@@ -389,6 +390,7 @@
   }
   globalThis.RazyncBaseInvestigation={mount,open:openOrInvestigate,reset,download:async company=>{if(!context || String(context.company)!==String(company) || !context.download)return false;return context.download();}};
 })();
+
 
 
 

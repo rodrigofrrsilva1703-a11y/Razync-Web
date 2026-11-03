@@ -686,3 +686,28 @@ html[data-theme=dark] #baseAiHost button.base-ai-launcher,html[data-theme=dark] 
 #baseAiHost #baseInvestigationWindow .base-comparison-delta>small{font-size:10px;color:var(--review-muted);margin-top:4px}
 #baseAiHost #baseInvestigationWindow .base-comparison-delta>p{font-size:12px!important;line-height:1.5!important;font-weight:600;color:var(--review-ink)!important;margin:0!important;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 html[data-theme=dark] #baseAiHost #baseInvestigationWindow .base-check-focus{background:#2b2518;border-color:#6d5930;border-left-color:#d9aa4e;color:#f0d499}
+
+
+/* Smaller working window; full histories remain visible and wrap naturally. */
+#baseAiHost #baseInvestigationWindow{top:84px;bottom:auto;right:20px;width:min(1040px,calc(100vw - 40px));height:min(700px,calc(100dvh - 108px));max-height:calc(100dvh - 108px)}
+#baseAiHost #baseInvestigationWindow.is-expanded{inset:12px;width:calc(100vw - 24px);height:calc(100dvh - 24px);max-height:none}
+#baseAiHost #baseInvestigationWindow .base-ai-window-header{padding:9px 12px}
+#baseAiHost #baseInvestigationWindow .base-ai-window-body{padding:12px 14px}
+#baseAiHost #baseInvestigationWindow .base-review-toolbar{gap:7px;padding-bottom:9px;margin-bottom:10px}
+#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:185px minmax(0,1fr);gap:14px}
+#baseAiHost #baseInvestigationWindow .base-review-sidebar{max-height:min(490px,calc(100dvh - 300px));padding-right:10px}
+#baseAiHost #baseInvestigationWindow .base-history-comparison>.base-history-received,#baseAiHost #baseInvestigationWindow .base-history-comparison>.base-history-saved{padding:12px!important}
+#baseAiHost #baseInvestigationWindow .base-history-text{white-space:normal;overflow:visible;text-overflow:clip;max-height:none;-webkit-line-clamp:unset}
+#baseAiHost #baseInvestigationWindow .base-evidence-summary{padding:9px 10px;margin:10px 0 6px}
+#baseAiHost #baseInvestigationWindow .base-check-focus{margin:6px 0;padding:8px 10px}
+#baseAiHost #baseInvestigationWindow .base-check-focus>strong{font-size:11px;margin-bottom:3px}
+#baseAiHost #baseInvestigationWindow .base-reasoning-details{margin:5px 0 0}
+#baseAiHost #baseInvestigationWindow .base-reasoning-details>summary{font-size:11px;color:var(--review-action);cursor:pointer;padding:3px 0}
+#baseAiHost #baseInvestigationWindow .base-reasoning-details>p{font-size:12px!important;line-height:1.55!important;margin:6px 0!important}
+#baseAiHost #baseInvestigationWindow .base-comparison-delta{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:5px 8px;padding:8px 10px;margin:9px 0}
+#baseAiHost #baseInvestigationWindow .base-comparison-delta>strong{grid-column:1/-1;margin:0 0 3px}
+#baseAiHost #baseInvestigationWindow .base-comparison-delta>small{grid-column:1;margin:0;align-self:center}
+#baseAiHost #baseInvestigationWindow .base-comparison-delta>p{grid-column:2}
+#baseAiHost #baseInvestigationWindow .base-history-comparison>.base-review-decision{padding:8px 10px;bottom:-12px}
+#baseAiHost #baseInvestigationWindow .base-review-navigation button{padding:6px 8px}
+@media(max-width:760px){#baseAiHost #baseInvestigationWindow{inset:60px 6px 6px;width:calc(100vw - 12px);height:auto;max-height:none}#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-review-sidebar{max-height:none;padding:0}#baseAiHost #baseInvestigationWindow .base-review-toolbar{grid-template-columns:minmax(0,1fr)}}
