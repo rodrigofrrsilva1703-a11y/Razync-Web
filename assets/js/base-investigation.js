@@ -43,7 +43,9 @@
     }
     context={prepared,company,options,onState};subtitle.textContent=`Empresa ${company} · Comparação de históricos`;
     onState?.('preparing',`${Number(summary.cobertura.pendentes).toLocaleString('pt-BR')} pendência(s) em preparação`);
-    const launcherCopy=node('span',null,'base-launcher-copy');launcherCopy.append(node('small','ASSISTENTE RAZYNC'),node('strong','Revisar pendências'));const animatedMark=brandMark();animatedMark.className+=' base-launcher-original';launcher.replaceChildren(animatedMark,launcherCopy,node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));launcher.title=`Revisar ${summary.cobertura.pendentes} pendências da empresa ${company}`;
+    const aiIcon=node('span',null,'base-launcher-ai');aiIcon.setAttribute('aria-hidden','true');
+    aiIcon.innerHTML='<svg viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path class="base-ai-spark-main" d="M14 7.5c.9 6.3 3.2 8.6 9.5 9.5-6.3.9-8.6 3.2-9.5 9.5-.9-6.3-3.2-8.6-9.5-9.5 6.3-.9 8.6-3.2 9.5-9.5Z"/><path class="base-ai-spark-small" d="M25 2.5c.4 3 1.5 4.1 4.5 4.5-3 .4-4.1 1.5-4.5 4.5-.4-3-1.5-4.1-4.5-4.5 3-.4 4.1-1.5 4.5-4.5Z"/></svg>';
+    launcher.replaceChildren(aiIcon,node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));launcher.title=`Assistente IA · Revisar ${summary.cobertura.pendentes} pendências da empresa ${company}`;
     launcher.hidden=false;
     investigate(); // Local-only preparation; never consumes an AI call.
   }
@@ -376,6 +378,7 @@
   }
   globalThis.RazyncBaseInvestigation={mount,open:openOrInvestigate,reset};
 })();
+
 
 
 

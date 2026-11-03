@@ -615,3 +615,24 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
 #baseAiHost #baseInvestigationWindow .base-evidence-list>summary,#baseAiHost #baseInvestigationWindow .base-more-histories>summary,#baseAiHost #baseInvestigationWindow .base-comparison-differences>summary{font-size:12px;padding:4px 0}
 @media(max-width:1100px){#baseAiHost #baseInvestigationWindow .base-review-toolbar{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-review-toolbar .base-queue-tools{max-width:none}#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:200px minmax(0,1fr)}}
 @media(max-width:760px){#baseAiHost #baseInvestigationWindow{inset:60px 6px 6px;width:calc(100vw - 12px)}#baseAiHost #baseInvestigationWindow .base-ai-window-body{padding:12px}#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-review-sidebar{max-height:none;padding:0}#baseAiHost #baseInvestigationWindow .base-history-comparison>.base-review-decision{bottom:-12px}#baseAiHost #baseInvestigationWindow .base-ai-window-header{padding:10px 12px}}
+
+
+/* AI shortcut: a clean symbol with a generous, borderless hit area. */
+#baseAiHost button.base-ai-launcher{width:44px!important;height:44px!important;min-height:44px!important;padding:0!important;right:20px;bottom:84px;display:grid;place-items:center;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:12px!important;gap:0;translate:none;outline-offset:4px}
+#baseAiHost button.base-ai-launcher[hidden]{display:none!important}
+#baseAiHost button.base-ai-launcher::before,#baseAiHost button.base-ai-launcher::after{display:none!important}
+#baseAiHost button.base-ai-launcher .base-launcher-ai{display:grid;place-items:center;width:36px;height:36px;line-height:0;color:#3466cd;border-radius:10px;background:transparent}
+#baseAiHost .base-launcher-ai svg{width:31px;height:31px;overflow:visible;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#baseAiHost .base-ai-spark-main{fill:currentColor;fill-opacity:.08}
+#baseAiHost .base-ai-spark-small{stroke:#259bb8;fill:#259bb8;fill-opacity:.16;transform-origin:25px 7px}
+#baseAiHost button.base-ai-launcher .base-ai-launcher-count{position:absolute;top:-1px!important;right:-3px!important;min-width:17px!important;height:17px!important;padding:0 4px;display:grid;place-items:center;box-sizing:border-box;line-height:1;font-size:9px!important;font-weight:650;font-variant-numeric:tabular-nums;border:0!important;border-radius:6px!important;background:#3466cd!important;color:#fff!important;box-shadow:none!important;pointer-events:none}
+#baseAiHost button.base-ai-launcher:hover,#baseAiHost button.base-ai-launcher:active{border:0!important;background:transparent!important;box-shadow:none!important;translate:none}
+#baseAiHost button.base-ai-launcher:hover .base-launcher-ai{background:#3466cd0e}
+#baseAiHost button.base-ai-launcher:focus-visible{outline:2px solid #537ddd}
+html[data-theme=dark] #baseAiHost .base-launcher-ai{color:#8eb3ff}
+html[data-theme=dark] #baseAiHost .base-ai-spark-small{stroke:#69c6dd;fill:#69c6dd}
+html[data-theme=dark] #baseAiHost button.base-ai-launcher:hover .base-launcher-ai{background:#8eb3ff12}
+@keyframes baseAiSparkle{0%,70%,100%{opacity:.8;transform:scale(1)}85%{opacity:1;transform:scale(1.13)}}
+@media(prefers-reduced-motion:no-preference){#baseAiHost .base-launcher-ai{transition:background .18s,color .18s}#baseAiHost .base-ai-spark-small{animation:baseAiSparkle 3.8s ease-in-out infinite}}
+@media(prefers-reduced-motion:reduce){#baseAiHost .base-ai-spark-small{animation:none!important}}
+@media(max-width:760px){#baseAiHost button.base-ai-launcher{right:16px;bottom:82px}}
