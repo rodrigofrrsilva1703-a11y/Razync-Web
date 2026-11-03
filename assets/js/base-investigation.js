@@ -320,6 +320,7 @@
           });confirm.disabled=completed || applying;groupBox.append(confirm,button('Fechar grupo',()=>{groupBox.hidden=true;}));
         });groupOpen.disabled=completed || applying;actions.append(groupOpen);detail.append(groupBox,comparison);
       }else detail.append(comparison);
+      body.scrollTop=0;
     }
     for(const s of suggestions){
       const select=document.createElement('input');select.type='checkbox';select.setAttribute('aria-label',`Aprovar ${s._aba}, linha ${s._linha}`);
@@ -371,4 +372,5 @@
   }
   globalThis.RazyncBaseInvestigation={mount,open:openOrInvestigate,reset};
 })();
+
 
