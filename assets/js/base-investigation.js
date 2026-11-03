@@ -43,7 +43,7 @@
     }
     context={prepared,company,options,onState};subtitle.textContent=`Empresa ${company} · Comparação de históricos`;
     onState?.('preparing',`${Number(summary.cobertura.pendentes).toLocaleString('pt-BR')} pendência(s) em preparação`);
-    const launcherCopy=node('span',null,'base-launcher-copy');launcherCopy.append(node('small','ASSISTENTE RAZYNC'),node('strong','Revisar pendências'));const animatedMark=node('span',null,'base-rz-letters');animatedMark.setAttribute('aria-hidden','true');animatedMark.append(node('span','R','base-rz-r'),node('span','Z','base-rz-z'));launcher.replaceChildren(animatedMark,launcherCopy,node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));launcher.title=`Revisar ${summary.cobertura.pendentes} pendências da empresa ${company}`;
+    const launcherCopy=node('span',null,'base-launcher-copy');launcherCopy.append(node('small','ASSISTENTE RAZYNC'),node('strong','Revisar pendências'));const animatedMark=brandMark();animatedMark.className+=' base-launcher-original';launcher.replaceChildren(animatedMark,launcherCopy,node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));launcher.title=`Revisar ${summary.cobertura.pendentes} pendências da empresa ${company}`;
     launcher.hidden=false;
     investigate(); // Local-only preparation; never consumes an AI call.
   }
