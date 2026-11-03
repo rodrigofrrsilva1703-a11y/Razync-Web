@@ -711,3 +711,24 @@ html[data-theme=dark] #baseAiHost #baseInvestigationWindow .base-check-focus{bac
 #baseAiHost #baseInvestigationWindow .base-history-comparison>.base-review-decision{padding:8px 10px;bottom:-12px}
 #baseAiHost #baseInvestigationWindow .base-review-navigation button{padding:6px 8px}
 @media(max-width:760px){#baseAiHost #baseInvestigationWindow{inset:60px 6px 6px;width:calc(100vw - 12px);height:auto;max-height:none}#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-review-sidebar{max-height:none;padding:0}#baseAiHost #baseInvestigationWindow .base-review-toolbar{grid-template-columns:minmax(0,1fr)}}
+
+
+/* Each review area scrolls independently; toolbar and options stay in place. */
+#baseAiHost #baseInvestigationWindow .base-ai-window-body:has(.base-review-layout){display:flex;flex-direction:column;overflow:hidden;scrollbar-gutter:auto;gap:0}
+#baseAiHost #baseInvestigationWindow .base-review-toolbar{flex:none}
+#baseAiHost #baseInvestigationWindow .base-review-layout{flex:1;min-height:0;overflow:hidden;align-items:stretch;margin:0}
+#baseAiHost #baseInvestigationWindow .base-review-sidebar{position:static;min-height:0;height:100%;max-height:none;box-sizing:border-box;overflow:hidden}
+#baseAiHost #baseInvestigationWindow .base-review-queue{flex:1;min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--review-border) transparent}
+#baseAiHost #baseInvestigationWindow .base-review-detail{min-height:0;overflow:auto;padding-right:8px;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--review-border) transparent;scroll-padding-bottom:80px}
+#baseAiHost #baseInvestigationWindow .base-history-comparison>.base-review-decision{bottom:0;background:var(--review-paper);z-index:3}
+#baseAiHost #baseInvestigationWindow .base-review-options{flex:none;max-height:125px;overflow:auto;margin:10px 0 0;padding-top:7px}
+#baseAiHost #baseInvestigationWindow .base-investigation-learn{flex:none;margin:7px 0 0}
+#baseAiHost #baseInvestigationWindow .base-review-footer{flex:none;max-height:85px;overflow:auto}
+#baseAiHost #baseInvestigationWindow .base-review-footer:empty{display:none}
+#baseAiHost #baseInvestigationWindow .base-export-review:not([hidden]){flex:0 1 auto;max-height:38%;overflow:auto}
+#baseAiHost #baseInvestigationWindow .base-draft-notice{flex:none;max-height:100px;overflow:auto}
+#baseAiHost #baseInvestigationWindow .base-received-heading{display:flex;align-items:center;justify-content:space-between;gap:7px;flex-wrap:wrap;padding-bottom:9px;margin-bottom:10px;border-bottom:1px solid var(--review-border)}
+#baseAiHost #baseInvestigationWindow .base-received-heading>h4{margin:0;padding:0;border:0;flex:1}
+#baseAiHost #baseInvestigationWindow .base-received-heading .base-account-candidates{display:flex;gap:5px;flex-wrap:wrap;margin:0;padding:0}
+#baseAiHost #baseInvestigationWindow .base-account-candidates button{font-size:11px;padding:5px 8px;min-height:28px;border-radius:6px;margin:0}
+@media(max-width:760px){#baseAiHost #baseInvestigationWindow .base-ai-window-body:has(.base-review-layout){display:block;overflow:auto}#baseAiHost #baseInvestigationWindow .base-review-layout{overflow:visible}#baseAiHost #baseInvestigationWindow .base-review-sidebar{height:auto;max-height:none;overflow:visible}#baseAiHost #baseInvestigationWindow .base-review-queue{max-height:115px}#baseAiHost #baseInvestigationWindow .base-review-detail{overflow:visible;padding:0;scrollbar-gutter:auto}#baseAiHost #baseInvestigationWindow .base-history-comparison>.base-review-decision{bottom:-12px}}
