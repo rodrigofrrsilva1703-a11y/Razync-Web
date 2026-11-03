@@ -187,3 +187,30 @@ body.sidebar-collapsed #mainSidebar {
 #companyPanel .company-reconcile-uploads #reconcileStatementFields{grid-template-columns:minmax(0,1fr)!important;width:100%;box-sizing:border-box}
 #companyPanel .company-reconcile-uploads>.field-group,#companyPanel .company-reconcile-uploads #reconcileStatementFields>.field-group{width:100%!important;padding:10px!important;box-sizing:border-box}
 #companyPanel .company-reconcile-uploads .file-drop-shell.has-selection{min-height:176px}
+
+
+/* Lean preparation controls shared by company workflows. */
+#companyPanel .bank-selector.is-single-bank{display:flex;align-items:center;gap:10px;padding:8px 0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+#companyPanel .bank-selector.is-single-bank .bank-selector-head{display:none}
+#companyPanel .bank-selector.is-single-bank .bank-selector-options{display:flex;flex-wrap:wrap;gap:8px;width:auto;margin:0}
+#companyPanel .bank-selector.is-single-bank .bank-choice{padding:6px 10px!important;min-height:34px;border:1px solid var(--border)!important;background:transparent!important;box-shadow:none!important;border-radius:7px;gap:8px}
+#companyPanel .bank-selector.is-single-bank .bank-choice>span{display:flex;align-items:baseline;gap:6px}
+#companyPanel .bank-selector.is-single-bank .bank-choice strong{font-size:12px}
+#companyPanel .bank-selector.is-single-bank .bank-choice small{font-size:11px}
+#companyPanel .company-reconcile-uploads>.field-group,#companyPanel .company-reconcile-uploads #reconcileStatementFields>.field-group{padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+#companyPanel .company-file-drop{position:relative;min-height:100px!important;padding:12px!important;background:transparent!important;box-shadow:none!important;border-radius:9px}
+#companyPanel .company-file-drop.has-selection{min-height:136px!important}
+#companyPanel .company-file-drop .company-file-input{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;opacity:0;pointer-events:none;overflow:hidden}
+#companyPanel .company-file-add{align-self:flex-start;display:inline-flex;align-items:center;min-height:34px;padding:7px 11px!important;margin:0!important;border:1px solid var(--border)!important;border-radius:7px;background:var(--surface)!important;color:var(--text)!important;box-shadow:none!important;font-size:12px;font-weight:500;cursor:pointer}
+#companyPanel .company-file-add:focus-visible{outline:2px solid #527bd0;outline-offset:3px}
+#companyPanel .file-selection-item{border:0!important;background:transparent!important;padding:5px 0!important;box-shadow:none!important}
+#companyPanel .file-selection-summary{padding:0;font-size:11px}
+#companyPanel .company-period-options{border:0;background:transparent;padding:0;margin:0}
+#companyPanel .company-period-options:has(>fieldset[hidden]){display:none}
+#companyPanel .company-period-options>summary{cursor:pointer;font-size:12px;color:var(--text);padding:7px 0;list-style-position:inside}
+#companyPanel .company-period-options>summary span{font-size:10px;color:var(--muted);margin-left:6px}
+#companyPanel .company-period-options>fieldset{margin-top:8px;padding:10px 12px}
+#companyPanel .preparation-form>button[type=submit],#companyPanel #processButton{width:auto!important;justify-self:start;min-width:160px;min-height:38px;padding:9px 16px!important;margin:0!important;font-size:12px}
+#companyPanel .preparation-form>.helper{margin:0;line-height:1.5}
+#companyPanel .tool-result{margin-top:16px}
+@media(max-width:560px){#companyPanel .preparation-form>button[type=submit],#companyPanel #processButton{width:100%!important}#companyPanel .company-file-drop.has-selection{min-height:120px!important}}

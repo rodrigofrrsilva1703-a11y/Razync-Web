@@ -83,6 +83,12 @@ function enhanceFileInput(input) {
   shell.className = "file-drop-shell";
   input.parentNode.insertBefore(shell, input);
   shell.appendChild(input);
+  if(input.closest("#companyPanel")){
+    shell.classList.add('company-file-drop');input.classList.add('company-file-input');input.tabIndex=-1;
+    const add=document.createElement('button');add.type='button';add.className='company-file-add';add.textContent='＋ Adicionar arquivos';
+    add.addEventListener('click',()=>{if(!input.disabled)input.click();});shell.appendChild(add);
+    input.addEventListener('change',()=>{add.textContent=input.files.length?'＋ Adicionar mais arquivos':'＋ Adicionar arquivos';});
+  }
 
   const hint = document.createElement("span");
   hint.className = "file-drop-hint";
@@ -336,6 +342,7 @@ function workflowBankName(bank) {
 function renderBankSelector(container, banks, options={}) {
   if (!container) return;
   const entries = Object.entries(banks || {});
+  container.classList.toggle("is-single-bank",entries.length===1);
   container.replaceChildren();
   container.hidden = !entries.length;
   if (!entries.length) return;
@@ -2042,4 +2049,5 @@ async function runTaxComparison(balance, revenue, msgElement) {
   const report = await response.blob();
   return {summary, report};
 }
+
 

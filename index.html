@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="./assets/css/workspace.css?v=attachments-20261021-1-base-without-review-20261020-1">
   <link rel="stylesheet" href="./assets/css/tools.css?v=company-tools-20261031-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=fixed-header-home-20261028-3">
-  <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=company-layout-20261103-3">
+  <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=company-forms-20261103-4">
   <link rel="stylesheet" href="./assets/css/refined-theme.css?v=3">
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=period-filter-20261027-1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=tools-20261027-2">
@@ -504,7 +504,7 @@
                 <input id="fileInput" type="file" multiple accept=".pdf,.xls,.xlsx,.csv,.ofx">
               </div>
               <div id="advancedFields" class="dynamic-fields" hidden></div>
-              <fieldset id="standardPeriod" class="period-card standard-period-card"><legend>Período dos lançamentos <span>(opcional)</span></legend><div class="period-fields"><div><label for="processStart">De</label><input id="processStart" type="date"></div><div><label for="processEnd">Até</label><input id="processEnd" type="date"></div></div><p>Deixe em branco para considerar todo o arquivo.</p></fieldset>
+              <details class="company-period-options"><summary>Filtrar por período <span>Opcional</span></summary><fieldset id="standardPeriod" class="period-card standard-period-card"><legend>Período dos lançamentos <span>(opcional)</span></legend><div class="period-fields"><div><label for="processStart">De</label><input id="processStart" type="date"></div><div><label for="processEnd">Até</label><input id="processEnd" type="date"></div></div><p>Deixe em branco para considerar todo o arquivo.</p></fieldset></details>
               <button id="processButton" type="submit">Atualizar prévia</button>
               <div id="processVisualStatus" class="process-visual-status" hidden aria-live="polite">
                 <span class="process-status-icon" aria-hidden="true"></span>
@@ -654,7 +654,7 @@
                   <input id="modelFile" type="file" accept=".xlsx,.xls" multiple></div>
                 <div id="reconcileStatementFields" class="reconcile-bank-files"></div>
               </div>
-              <fieldset class="period-card standard-period-card"><legend>Período da conferência <span>(opcional)</span></legend><div class="period-fields"><div><label for="reconcileStart">De</label><input id="reconcileStart" type="date"></div><div><label for="reconcileEnd">Até</label><input id="reconcileEnd" type="date"></div></div></fieldset>
+              <details class="company-period-options"><summary>Filtrar por período <span>Opcional</span></summary><fieldset class="period-card standard-period-card"><legend>Período da conferência <span>(opcional)</span></legend><div class="period-fields"><div><label for="reconcileStart">De</label><input id="reconcileStart" type="date"></div><div><label for="reconcileEnd">Até</label><input id="reconcileEnd" type="date"></div></div></fieldset></details>
               <button type="submit">Atualizar conferência</button>
               <p id="reconcileMessage" class="helper"></p>
             </form>
@@ -672,7 +672,7 @@
                 <div><strong>Arquivos ZIP</strong><small>Envie uma ou mais francesinhas para consolidar as liquidações.</small></div>
               </div>
               <label for="francesinhasFiles">ZIPs de francesinhas</label><input id="francesinhasFiles" type="file" multiple accept=".zip" required>
-              <fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="francesinhasStart">De</label><input id="francesinhasStart" type="date"></div><div><label for="francesinhasEnd">Até</label><input id="francesinhasEnd" type="date"></div></div><p>Deixe em branco para considerar todas as liquidações.</p></fieldset>
+              <details class="company-period-options"><summary>Filtrar por período <span>Opcional</span></summary><fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="francesinhasStart">De</label><input id="francesinhasStart" type="date"></div><div><label for="francesinhasEnd">Até</label><input id="francesinhasEnd" type="date"></div></div><p>Deixe em branco para considerar todas as liquidações.</p></fieldset></details>
               <button type="submit">Gerar Modelo Domínio das francesinhas</button>
               <p id="francesinhasMessage" class="helper"></p>
             </form>
@@ -750,7 +750,7 @@
   <script src="./assets/js/converter-global.js?v=20261028-1"></script>
   <script src="./assets/js/base-investigation.js?v=base-ai-orbit-20261103-19"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
-  <script src="./assets/js/app.js?v=base-external-download-20261103-13"></script>
+  <script src="./assets/js/app.js?v=company-forms-20261103-4"></script>
   <script src="./assets/js/migration.js?v=admin-modal-20261021-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>
@@ -758,6 +758,7 @@
   <script src="./assets/js/motion.js?v=20261020-2"></script>
 </body>
 </html>
+
 
 
 
