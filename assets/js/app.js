@@ -1217,7 +1217,7 @@ form.addEventListener("submit", async (event) => {
     download.textContent = "Baixar Modelo Domínio";
     download.addEventListener("click", async () => {
       download.disabled=true;
-      try { await prepared.download(); }
+      try { const reviewed=await globalThis.RazyncBaseInvestigation?.download(companyCode);if(!reviewed)await prepared.download(); }
       catch (error) { if (error.name !== "AbortError" && selected?.codigo === companyCode) processMessage.textContent=error.message; }
       finally { download.disabled=false; }
     });
@@ -1403,15 +1403,21 @@ classifyForm.addEventListener("submit", async (event) => {
     window.RazyncBaseWorkflow?.setReview("preparing", pending
       ? `${pending.toLocaleString("pt-BR")} pendência(s) em preparação`
       : "Nenhuma pendência encontrada");
-    globalThis.RazyncBaseInvestigation?.mount({
-      prepared,company:companyCode,options:classifyOptions,summary,
-      onState:(state,message)=>window.RazyncBaseWorkflow?.setReview(state,message)
-    });
     const download = document.createElement("button");download.type="button";download.className="preview-download";
     download.textContent="Baixar Excel classificado";
+    globalThis.RazyncBaseInvestigation?.mount({
+      prepared,company:companyCode,options:classifyOptions,summary,
+      onState:(state,message)=>window.RazyncBaseWorkflow?.setReview(state,message),
+      onReviewChange:approved=>{
+        if(controller.signal.aborted || selected?.codigo!==companyCode)return;
+        download.textContent=approved?`Baixar Excel com ${approved} revisão(ões)`:'Baixar Excel classificado';
+        download.title=approved?'Inclui as contas aprovadas no assistente.':'Baixar o resultado da classificação.';
+        const actions=target.querySelector('.preview-primary-actions');if(actions && !actions.contains(download))actions.append(download);
+      }
+    });
     download.addEventListener("click", async () => {
       download.disabled=true;
-      try { await prepared.download(); }
+      try { const reviewed=await globalThis.RazyncBaseInvestigation?.download(companyCode);if(!reviewed)await prepared.download(); }
       catch (error) { if (error.name !== "AbortError" && selected?.codigo === companyCode) $("#classifyMessage").textContent=error.message; }
       finally { download.disabled=false; }
     });
@@ -2036,3 +2042,4 @@ async function runTaxComparison(balance, revenue, msgElement) {
   const report = await response.blob();
   return {summary, report};
 }
+
