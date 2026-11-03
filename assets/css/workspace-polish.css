@@ -165,7 +165,7 @@ body.sidebar-collapsed #mainSidebar {
 
 
 /* Shared company workspace: equal pane widths and consistent upload rhythm. */
-.app-shell>main:has(#companyPanel:not([hidden])){padding-right:0!important}
+.app-shell>main:has(#companyPanel#companyPanel:not([hidden])){padding-right:0!important}
 #companyPanel .tool-pane,#companyPanel .tool-pane>.tool-card,#companyPanel .tool-pane>.tool-result{width:100%;max-width:none;min-width:0;box-sizing:border-box}
 #companyPanel .preparation-form{padding:16px!important;gap:12px;box-sizing:border-box;min-width:0}
 #companyPanel .file-drop-shell{width:100%;min-width:0;min-height:112px;padding:12px!important;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:8px}
