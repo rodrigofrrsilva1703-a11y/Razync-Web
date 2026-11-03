@@ -555,3 +555,19 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
 #baseAiHost #baseInvestigationWindow .base-review-options{margin-top:18px}
 @media(max-width:1000px) and (min-width:761px){#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:205px minmax(0,1fr);gap:14px}#baseAiHost #baseInvestigationWindow .base-ai-window-body{padding:14px}#baseAiHost #baseInvestigationWindow .base-review-sidebar{padding-right:12px}}
 @media(max-width:760px){#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-review-sidebar{max-height:none;padding:0;border:0}#baseAiHost #baseInvestigationWindow .base-review-filters{grid-template-columns:repeat(3,minmax(0,1fr))}#baseAiHost #baseInvestigationWindow .base-review-filters button:first-child{grid-column:auto}#baseAiHost #baseInvestigationWindow .base-review-queue{max-height:115px}#baseAiHost #baseInvestigationWindow .base-ai-window-body{padding:12px}#baseAiHost #baseInvestigationWindow .base-review-decision{padding:12px}}
+
+
+/* Work flow: full-width filters above the queue, persistent decision controls. */
+#baseAiHost #baseInvestigationWindow .base-review-toolbar{display:flex;flex-direction:column;gap:10px;padding:0 0 14px;margin:0 0 16px;border-bottom:1px solid var(--review-border)}
+#baseAiHost #baseInvestigationWindow .base-review-toolbar .base-queue-tools{margin:0;padding:0;display:block;max-width:360px;width:100%}
+#baseAiHost #baseInvestigationWindow .base-review-toolbar input{width:100%;box-sizing:border-box;min-height:38px;font-size:13px}
+#baseAiHost #baseInvestigationWindow .base-review-toolbar .base-review-filters{display:flex;flex-wrap:wrap;gap:7px;border:0;padding:0;margin:0;order:0}
+#baseAiHost #baseInvestigationWindow .base-review-toolbar .base-review-filters button{flex:none;min-height:34px;gap:10px;padding:7px 12px;font-size:12px;white-space:nowrap}
+#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:230px minmax(0,1fr);gap:20px}
+#baseAiHost #baseInvestigationWindow .base-review-sidebar{max-height:calc(100dvh - 340px);gap:10px}
+#baseAiHost #baseInvestigationWindow .base-review-sidebar>button{order:0}
+#baseAiHost #baseInvestigationWindow .base-review-queue{order:0}
+#baseAiHost #baseInvestigationWindow .base-history-comparison>.base-review-decision{position:sticky;bottom:-18px;z-index:3;background:var(--review-paper);box-shadow:0 -6px 16px #0000000a;border:1px solid var(--review-border);padding:12px 14px}
+#baseAiHost #baseInvestigationWindow .base-review-decision .base-review-confirm{min-width:140px}
+#baseAiHost #baseInvestigationWindow .base-review-navigation{flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:760px){#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-review-sidebar{max-height:none}#baseAiHost #baseInvestigationWindow .base-review-toolbar .base-review-filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:5px}#baseAiHost #baseInvestigationWindow .base-history-comparison>.base-review-decision{bottom:-12px}#baseAiHost #baseInvestigationWindow .base-review-navigation{justify-content:flex-start}}

@@ -179,7 +179,7 @@
     }
 
     const layout=node('div',null,'base-review-layout'),queue=node('nav',null,'base-review-queue'),detail=node('section',null,'base-review-detail');
-    queue.setAttribute('aria-label','Pendências para revisar');detail.setAttribute('aria-label','Comparação do lançamento com a base');const sidebar=node('aside',null,'base-review-sidebar');sidebar.setAttribute('aria-label','Pesquisar e filtrar pendências');sidebar.append(node('h3','Pendências'),tools,groupToggle,filters,queue);layout.append(sidebar,detail);body.append(layout);
+    queue.setAttribute('aria-label','Pendências para revisar');detail.setAttribute('aria-label','Comparação do lançamento com a base');const sidebar=node('aside',null,'base-review-sidebar');sidebar.setAttribute('aria-label','Pesquisar e filtrar pendências');sidebar.append(node('h3','Fila de trabalho'),groupToggle,queue);const toolbar=node('div',null,'base-review-toolbar');toolbar.setAttribute('aria-label','Pesquisar e filtrar revisão');toolbar.append(tools,filters);layout.append(sidebar,detail);body.append(toolbar,layout);
     let draftEnabled=false;
     function saveDraft(){if(!draftEnabled || !current.draftKey || completed || applying)return;try{sessionStorage.setItem(current.draftKey,JSON.stringify({time:Date.now(),rows:controls.map(c=>({key:rowKey(c),account:c.account.value,approved:c.select.checked,deferred:c.deferred}))}));}catch{}}
     const message=node('p',null,'helper');message.setAttribute('role','status');
@@ -241,7 +241,7 @@
       if(markReviewed){active.deferred=true;active.reviewed=false;}
       const items=visible(),index=items.indexOf(active);
       const ordered=items.map((_,offset)=>items[(index+step+offset+items.length)%items.length]);
-      active=(preferPending?ordered.find(c=>!c.select.checked):ordered[0]) || active;updateQueue();showDetail();
+      active=(preferPending?(ordered.find(c=>!c.select.checked && !c.deferred) || ordered.find(c=>!c.select.checked)):ordered[0]) || active;updateQueue();showDetail();
     }
     function approveActive(){
       if(!active || active.select.checked || completed || applying)return;
@@ -250,7 +250,7 @@
       message.textContent='Aprovação registrada para o Excel. Nenhum aprendizado foi gravado.';go(1,false,true);
     }
     const quickActions=node('div',null,'base-workbar-actions');
-    const skipTop=button('Adiar',()=>go(1,true)),approveTop=button('Aprovar e próximo',approveActive);
+    const skipTop=button('Adiar',()=>go(1,true,true)),approveTop=button('Aprovar e próximo',approveActive);
     approveTop.className='base-review-confirm';workbar.append(quickActions);
     function updateQueue(){
       queue.replaceChildren();const items=visible();if(!items.includes(active))active=items[0] || null;
@@ -316,7 +316,7 @@
             if(chosen.some(item=>!eligible.has(item.other) || item.other.select.checked)){message.textContent='O grupo mudou. Confira a seleção novamente.';return;}
             for(const {other} of chosen){other.account.value=account;other.select.checked=true;other.reviewed=true;other.deferred=false;}
             message.textContent=`${chosen.length} aprovações registradas. O Excel e o aprendizado só mudam no comando final.`;
-            active=controls.find(other=>!other.select.checked) || active;updateQueue();showDetail();
+            active=visible().find(other=>!other.select.checked && !other.deferred) || controls.find(other=>!other.select.checked && !other.deferred) || active;updateQueue();showDetail();
           });confirm.disabled=completed || applying;groupBox.append(confirm,button('Fechar grupo',()=>{groupBox.hidden=true;}));
         });groupOpen.disabled=completed || applying;actions.append(groupOpen);detail.append(groupBox,comparison);
       }else detail.append(comparison);
@@ -372,5 +372,6 @@
   }
   globalThis.RazyncBaseInvestigation={mount,open:openOrInvestigate,reset};
 })();
+
 
 
