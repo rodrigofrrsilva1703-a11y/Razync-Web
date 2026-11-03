@@ -183,3 +183,7 @@ body.sidebar-collapsed #mainSidebar {
 #companyPanel .tool-result .preview-primary-actions{flex-wrap:wrap;gap:8px}
 #companyPanel .tool-result .preview-header{gap:12px}
 @media(max-width:760px){#companyPanel .preparation-form{padding:12px!important}#companyPanel .company-reconcile-uploads{grid-template-columns:minmax(0,1fr);gap:12px}#companyPanel .file-drop-shell{min-height:104px}}
+
+#companyPanel .company-reconcile-uploads #reconcileStatementFields{grid-template-columns:minmax(0,1fr)!important;width:100%;box-sizing:border-box}
+#companyPanel .company-reconcile-uploads>.field-group,#companyPanel .company-reconcile-uploads #reconcileStatementFields>.field-group{width:100%!important;padding:10px!important;box-sizing:border-box}
+#companyPanel .company-reconcile-uploads .file-drop-shell.has-selection{min-height:176px}
