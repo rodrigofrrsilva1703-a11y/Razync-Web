@@ -90,7 +90,7 @@
     target.replaceChildren();
     const item=catalog.find(c=>c.conta===account.trim() && c.natureza===nature);
     if(!item){target.append(node('p','Escolha uma conta para comparar os históricos gravados.','base-comparison-empty'));return;}
-    target.append(node('strong',`Conta ${item.conta}`),node('small',`${quantity(item.ocorrencias,'ocorrência')} · ${quantity(item.periodos.length,'período')} · ${item.bancos.map(bankLabelUI).join(', ')}`));
+    target.append(node('strong',`Conta ${item.conta}${item.nome || item.descricao?' — '+(item.nome || item.descricao):''}`),node('small',`${quantity(item.ocorrencias,'ocorrência')} · ${quantity(item.periodos.length,'período')} · ${item.bancos.map(bankLabelUI).join(', ')}`));
     const tokens=words(pendingHistory),score=e=>{
       const candidate=words(e.historico),common=[...candidate].filter(w=>tokens.has(w)).length;
       return normalized(e.historico)===normalized(pendingHistory)?2:common/Math.max(1,new Set([...tokens,...candidate]).size);
@@ -104,7 +104,7 @@
       entry.append(node('strong',index===0?'Exemplo mais próximo pelo texto':'Outro exemplo aprendido'),historyText(example.historico,pendingHistory),node('small',`${bankLabelUI(example.banco)} · ${example.periodos.map(periodLabel).join(', ') || 'período não comprovado'} · ${quantity(example.ocorrencias,'ocorrência')}`));
       if(index===0){target.append(entry);const difference=node('p',null,'base-history-difference');
         const currentOnly=[...tokens].filter(w=>!words(example.historico).has(w)),pastOnly=[...words(example.historico)].filter(w=>!tokens.has(w));
-        difference.textContent=normalized(example.historico)===normalized(pendingHistory)?'Texto igual após normalização. Isso não comprova a mesma operação.':`Diferenças de palavras: atual — ${currentOnly.join(', ') || 'nenhuma'}; exemplo — ${pastOnly.join(', ') || 'nenhuma'}. Confira números e o texto completo.`;const details=node('details',null,'base-comparison-differences');details.append(node('summary','Ver diferenças do texto'),difference);target.append(details);
+        difference.textContent=normalized(example.historico)===normalized(pendingHistory)?'Texto igual após normalização. Isso não comprova a mesma operação.':`Diferenças de palavras: atual — ${currentOnly.join(', ') || 'nenhuma'}; exemplo — ${pastOnly.join(', ') || 'nenhuma'}. Confira números e o texto completo.`;const details=node('details',null,'base-comparison-differences');details.append(node('summary','Ver diferenças do texto'),difference);const important=node('p',normalized(example.historico)===normalized(pendingHistory)?'Texto igual ao exemplo. Confirme a operação atual.':'O texto do lançamento é diferente do exemplo. Confira o beneficiário, a operação e os números destacados.','base-comparison-alert');target.append(important,details);
       }else more.append(entry);
     });
     if(examples.length>1)target.append(more);
@@ -168,7 +168,8 @@
     const category=s=>s.conta_sugerida?'single':candidateAccounts(s).length>1?'conflict':candidateAccounts(s).length===1?'single':'none';
     const rank=s=>({single:0,conflict:1,none:2})[category(s)];
     const suggestions=[...result.sugestoes].sort((a,b)=>rank(a)-rank(b) || Number(priority.has(b.grupo))-Number(priority.has(a.grupo)));
-    let active=null,filter='all',query='',grouped=true,completed=false,applying=false;
+    let active=null,filter='all',query='',grouped=true,completed=false,applying=false;const undoStack=[];let confirmedExport=null;
+    function rememberDecision(items){undoStack.push(items.map(c=>({c,account:c.account.value,approved:c.select.checked,deferred:c.deferred,reviewed:c.reviewed})));}
     const search=document.createElement('input');search.type='search';search.placeholder='Pesquisar histórico, banco, conta ou valor';search.setAttribute('aria-label','Pesquisar pendências');
     search.addEventListener('input',()=>{query=normalized(search.value);updateQueue();showDetail();});
     const groupToggle=button('Agrupar equivalentes',()=>{grouped=!grouped;groupToggle.setAttribute('aria-pressed',String(grouped));updateQueue();showDetail();});groupToggle.setAttribute('aria-pressed','true');
@@ -200,8 +201,8 @@
       const account=c.account.value.trim(),s=c.s;
       const matching=(s.evidencias || []).filter(e=>e.conta===account);
       const periods=new Set(matching.flatMap(e=>e.periodos || []));
-      const suggested=Boolean(account && s.conta_sugerida===account);
-      c.summary.replaceChildren(node('strong',account?`${suggested?'Conta sugerida':'Conta em comparação'}: ${account}`:'Escolha uma conta para comparar'));
+      const suggested=Boolean(account && s.conta_sugerida===account);const accountInfo=catalog.find(item=>item.conta===account && item.natureza===s.natureza);const accountName=accountInfo?.nome || accountInfo?.descricao || '';
+      c.summary.replaceChildren(node('strong',account?`${suggested?'Conta sugerida':'Conta em comparação'}: ${account}${accountName?' — '+accountName:''}`:'Escolha uma conta para comparar'));
       if(matching.length)c.summary.append(node('small',`${quantity(periods.size,'período')} · ${matching.some(e=>e.mesmo_banco)?'há evidência no mesmo banco':'evidências em outro banco'}`));
       else if(account)c.summary.append(node('small','Sem evidência específica para este lançamento. Confira os exemplos abaixo.'));
       const evidence=s.evidencias || [],allAccounts=[...new Set(evidence.map(e=>e.conta))];
@@ -246,14 +247,15 @@
     function approveActive(){
       if(!active || active.select.checked || completed || applying)return;
       if(!validAccount(active)){message.textContent='Escolha uma conta histórica compatível antes de aprovar.';active.account.focus();return;}
-      active.select.checked=true;active.reviewed=true;active.deferred=false;
+      rememberDecision([active]);active.select.checked=true;active.reviewed=true;active.deferred=false;
       message.textContent='Aprovação registrada para o Excel. Nenhum aprendizado foi gravado.';go(1,false,true);
     }
     const quickActions=node('div',null,'base-workbar-actions');
     const skipTop=button('Adiar',()=>go(1,true,true)),approveTop=button('Aprovar e próximo',approveActive);
-    approveTop.className='base-review-confirm';workbar.append(quickActions);
+    approveTop.className='base-review-confirm';
+    const undoLast=button('Desfazer última aprovação',()=>{if(completed || applying)return;const last=undoStack.pop();if(!last)return;for(const row of last){Object.assign(row.c,{reviewed:row.reviewed,deferred:row.deferred});row.c.account.value=row.account;row.c.select.checked=row.approved;}active=last[0].c;filter='all';query='';search.value='';updateQueue();showDetail();message.textContent='Última aprovação desfeita.';});undoLast.disabled=true;quickActions.append(undoLast);workbar.append(quickActions);
     function updateQueue(){
-      queue.replaceChildren();const items=visible();if(!items.includes(active))active=items[0] || null;
+      confirmedExport=null;if(typeof exportReview!=='undefined')exportReview.hidden=true;undoLast.disabled=!undoStack.length || completed || applying;queue.replaceChildren();const items=visible();if(!items.includes(active))active=items[0] || null;
       const approved=controls.filter(c=>c.select.checked).length;
       progress.textContent=`${quantity(approved,'aprovado')} · ${quantity(controls.filter(c=>c.deferred && !c.select.checked).length,'adiado')} · ${quantity(controls.filter(c=>!c.select.checked && !c.deferred).length,'pendente')}`;approveTop.disabled=!active || active.select.checked || !validAccount(active) || completed || applying;skipTop.disabled=!active || active.select.checked || completed || applying;
       if(typeof apply!=='undefined'){apply.textContent=completed?'Revisões aplicadas':`Gerar Excel com ${quantity(approved,'revisão','revisões')}`;apply.disabled=completed || applying || !approved;}
@@ -314,7 +316,7 @@
             if(!chosen.length){message.textContent='Selecione pelo menos uma linha do grupo.';return;}
             const eligible=new Set(equivalents(c));
             if(chosen.some(item=>!eligible.has(item.other) || item.other.select.checked)){message.textContent='O grupo mudou. Confira a seleção novamente.';return;}
-            for(const {other} of chosen){other.account.value=account;other.select.checked=true;other.reviewed=true;other.deferred=false;}
+            rememberDecision(chosen.map(item=>item.other));for(const {other} of chosen){other.account.value=account;other.select.checked=true;other.reviewed=true;other.deferred=false;}
             message.textContent=`${chosen.length} aprovações registradas. O Excel e o aprendizado só mudam no comando final.`;
             active=visible().find(other=>!other.select.checked && !other.deferred) || controls.find(other=>!other.select.checked && !other.deferred) || active;updateQueue();showDetail();
           });confirm.disabled=completed || applying;groupBox.append(confirm,button('Fechar grupo',()=>{groupBox.hidden=true;}));
@@ -335,12 +337,14 @@
     active=controls[0];
     const notice=node('p',result.limitacoes.join(' '),'base-review-limitations');const assistance=node('details',null,'base-review-options');assistance.append(node('summary','Sobre a comparação e a IA opcional'),notice,aiBar);body.append(assistance);
     const learn=document.createElement('input');learn.type='checkbox';learn.checked=false;const label=node('label',null,'base-investigation-learn');label.append(learn,document.createTextNode(' Aprender na Base Inteligente somente as revisões aprovadas'));body.append(label);
-    const footer=node('div',null,'base-review-footer');
+    const footer=node('div',null,'base-review-footer');const exportReview=node('section',null,'base-export-review');exportReview.hidden=true;exportReview.setAttribute('aria-label','Conferir alterações antes de gerar Excel');body.append(exportReview);
     const apply=button('Aplicar revisões e atualizar Excel',async()=>{
       const revisions=controls.filter(c=>c.select.checked).map(c=>({_aba:c.s._aba,_linha:c.s._linha,'Conta da contrapartida':c.account.value.trim()}));
       if(!revisions.length){message.textContent='Selecione as linhas que você revisou e deseja aprovar.';return;}
       if(revisions.some(r=>!/^\d+$/.test(r['Conta da contrapartida']))){message.textContent='Informe a conta contábil de todas as linhas aprovadas.';return;}
-      const remember=learn.checked;applying=true;controls.forEach(c=>{c.select.disabled=true;c.account.disabled=true;});learn.disabled=true;priorityController?.abort();aiButton.disabled=true;apply.disabled=true;updateQueue();controller=new AbortController();const signal=controller.signal;message.textContent='Validando revisões e gerando Excel…';
+      const signature=JSON.stringify({revisions,learn:learn.checked});
+      if(confirmedExport!==signature){exportReview.replaceChildren(node('strong','Confira antes de gerar o Excel'),node('p',`${revisions.length} linha(s) aprovada(s) serão alteradas. ${controls.filter(c=>!c.select.checked).length} permanecerão pendentes. Aprendizado: ${learn.checked?'ativado somente para as linhas aprovadas':'desativado'}.`));for(const r of revisions)exportReview.append(node('small',`${r._aba} · linha ${r._linha} → conta ${r['Conta da contrapartida']}`));exportReview.append(button('Confirmar e gerar Excel',()=>{confirmedExport=signature;apply.click?apply.click():apply.events.click();}),button('Voltar à revisão',()=>{exportReview.hidden=true;confirmedExport=null;}));exportReview.hidden=false;exportReview.scrollIntoView?.({block:'nearest',behavior:'smooth'});return;}
+      confirmedExport=null;exportReview.hidden=true;const remember=learn.checked;applying=true;controls.forEach(c=>{c.select.disabled=true;c.account.disabled=true;});learn.disabled=true;priorityController?.abort();aiButton.disabled=true;apply.disabled=true;updateQueue();controller=new AbortController();const signal=controller.signal;message.textContent='Validando revisões e gerando Excel…';
       const data=new FormData();data.append('file',current.blob,'classificado.xlsx');data.append('revisoes_json',JSON.stringify(revisions));data.append('investigacao_token',result.token);data.append('aprender',String(remember));
       try{
         const response=await fetch(`${API()}/api/v1/base-inteligente/${current.company}/revisar`,{method:'POST',body:data,signal});
@@ -372,6 +376,7 @@
   }
   globalThis.RazyncBaseInvestigation={mount,open:openOrInvestigate,reset};
 })();
+
 
 
 
