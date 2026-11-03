@@ -199,7 +199,7 @@
       }
     }
     document.querySelectorAll('#companyPanel .file-drop-shell,#companyPanel .reconcile-bank-file,#fiscalView .fiscal-upload-item').forEach(upload=>{
-      const boundary=upload.closest('#fiscalSetup') ? upload.querySelector('.file-drop-shell') : upload;
+      const boundary=upload.matches('.reconcile-bank-file') || upload.closest('#fiscalSetup') ? upload.querySelector('.file-drop-shell') : upload;
       if(!boundary)throw Error('Área de anexo ausente.');
       const style=getComputedStyle(boundary);
       if(style.borderTopWidth!=='1px' || style.borderTopStyle==='none')throw Error('O campo de anexo perdeu sua borda.');

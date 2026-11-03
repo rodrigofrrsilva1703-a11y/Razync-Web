@@ -193,7 +193,7 @@ body.sidebar-collapsed #mainSidebar {
 #companyPanel .bank-selector.is-single-bank{display:flex;align-items:center;gap:10px;padding:8px 0!important;border:0!important;background:transparent!important;box-shadow:none!important}
 #companyPanel .bank-selector.is-single-bank .bank-selector-head{display:none}
 #companyPanel .bank-selector.is-single-bank .bank-selector-options{display:flex;flex-wrap:wrap;gap:8px;width:auto;margin:0}
-#companyPanel .bank-selector.is-single-bank .bank-choice{padding:6px 10px!important;min-height:34px;border:1px solid var(--border)!important;background:transparent!important;box-shadow:none!important;border-radius:7px;gap:8px}
+#companyPanel .bank-selector.is-single-bank .bank-choice{padding:6px 10px!important;min-height:34px;border:1px solid var(--border)!important;box-shadow:none!important;border-radius:7px;gap:8px}
 #companyPanel .bank-selector.is-single-bank .bank-choice>span{display:flex;align-items:baseline;gap:6px}
 #companyPanel .bank-selector.is-single-bank .bank-choice strong{font-size:12px}
 #companyPanel .bank-selector.is-single-bank .bank-choice small{font-size:11px}
