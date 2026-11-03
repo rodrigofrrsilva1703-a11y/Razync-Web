@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="./assets/css/workspace.css?v=attachments-20261021-1-base-without-review-20261020-1">
   <link rel="stylesheet" href="./assets/css/tools.css?v=company-tools-20261031-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=fixed-header-home-20261028-3">
-  <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=sidebar-motion-20261027-1">
+  <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=company-layout-20261103-1">
   <link rel="stylesheet" href="./assets/css/refined-theme.css?v=3">
   <link rel="stylesheet" href="./assets/css/preview-tables.css?v=period-filter-20261027-1">
   <link rel="stylesheet" href="./assets/css/motion.css?v=tools-20261027-2">
@@ -649,9 +649,11 @@
               </div>
               <div id="reconcileBankSelector" class="bank-selector"></div>
               <select id="reconcileBank" hidden aria-hidden="true"></select>
-              <label for="modelFile">Modelo Domínio final</label>
-              <input id="modelFile" type="file" accept=".xlsx,.xls" multiple>
-              <div id="reconcileStatementFields" class="reconcile-bank-files"></div>
+              <div class="company-reconcile-uploads">
+                <div class="field-group company-model-upload"><label for="modelFile">Modelo Domínio final</label>
+                  <input id="modelFile" type="file" accept=".xlsx,.xls" multiple></div>
+                <div id="reconcileStatementFields" class="reconcile-bank-files"></div>
+              </div>
               <fieldset class="period-card standard-period-card"><legend>Período da conferência <span>(opcional)</span></legend><div class="period-fields"><div><label for="reconcileStart">De</label><input id="reconcileStart" type="date"></div><div><label for="reconcileEnd">Até</label><input id="reconcileEnd" type="date"></div></div></fieldset>
               <button type="submit">Atualizar conferência</button>
               <p id="reconcileMessage" class="helper"></p>
@@ -756,6 +758,7 @@
   <script src="./assets/js/motion.js?v=20261020-2"></script>
 </body>
 </html>
+
 
 
 

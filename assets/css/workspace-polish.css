@@ -162,3 +162,24 @@ body.sidebar-collapsed #mainSidebar {
 @media(prefers-reduced-motion:reduce) {
  #mainSidebar,body.sidebar-collapsed #mainSidebar,.sidebar-backdrop,body.sidebar-collapsed .sidebar-backdrop,.sidebar-close { transition:none; }
 }
+
+
+/* Shared company workspace: equal pane widths and consistent upload rhythm. */
+.app-shell>main:has(#companyPanel:not([hidden])){padding-right:0!important}
+#companyPanel .tool-pane,#companyPanel .tool-pane>.tool-card,#companyPanel .tool-pane>.tool-result{width:100%;max-width:none;min-width:0;box-sizing:border-box}
+#companyPanel .preparation-form{padding:16px!important;gap:12px;box-sizing:border-box;min-width:0}
+#companyPanel .file-drop-shell{width:100%;min-width:0;min-height:112px;padding:12px!important;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:8px}
+#companyPanel .file-drop-shell.has-selection{justify-content:flex-start}
+#companyPanel .file-drop-shell input[type=file]{width:100%;min-width:0;box-sizing:border-box;font-size:12px}
+#companyPanel .file-drop-hint{font-size:11px;line-height:1.5;margin:0}
+#companyPanel .file-selection{margin:0;width:100%;min-width:0}
+#companyPanel .file-selection-item{padding:8px 10px!important;min-width:0}
+#companyPanel .file-selection-item strong{white-space:normal;overflow-wrap:anywhere;line-height:1.45}
+#companyPanel .company-reconcile-uploads{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start;min-width:0}
+#companyPanel .company-model-upload{display:grid;gap:8px;min-width:0}
+#companyPanel .company-reconcile-uploads #reconcileStatementFields{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0;margin:0}
+#companyPanel .company-reconcile-uploads .field-group{margin:0;min-width:0}
+#companyPanel .company-reconcile-uploads label{font-size:12px;line-height:1.5}
+#companyPanel .tool-result .preview-primary-actions{flex-wrap:wrap;gap:8px}
+#companyPanel .tool-result .preview-header{gap:12px}
+@media(max-width:760px){#companyPanel .preparation-form{padding:12px!important}#companyPanel .company-reconcile-uploads{grid-template-columns:minmax(0,1fr);gap:12px}#companyPanel .file-drop-shell{min-height:104px}}
