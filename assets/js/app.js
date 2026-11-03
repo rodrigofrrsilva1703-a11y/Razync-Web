@@ -83,7 +83,7 @@ function enhanceFileInput(input) {
   shell.className = "file-drop-shell";
   input.parentNode.insertBefore(shell, input);
   shell.appendChild(input);
-  if(input.closest("#companyPanel")){
+  if(input.closest?.("#companyPanel")){
     shell.classList.add('company-file-drop');input.classList.add('company-file-input');input.tabIndex=-1;
     const add=document.createElement('button');add.type='button';add.className='company-file-add';add.textContent='＋ Adicionar arquivos';
     add.addEventListener('click',()=>{if(!input.disabled)input.click();});shell.appendChild(add);
