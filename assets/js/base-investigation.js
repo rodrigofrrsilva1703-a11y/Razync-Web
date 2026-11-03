@@ -106,7 +106,12 @@
       entry.append(node('strong',index===0?'Exemplo mais próximo pelo texto':'Outro exemplo aprendido'),historyText(example.historico,pendingHistory),node('small',`${bankLabelUI(example.banco)} · ${example.periodos.map(periodLabel).join(', ') || 'período não comprovado'} · ${quantity(example.ocorrencias,'ocorrência')}`));
       if(index===0){target.append(entry);const difference=node('p',null,'base-history-difference');
         const currentOnly=[...tokens].filter(w=>!words(example.historico).has(w)),pastOnly=[...words(example.historico)].filter(w=>!tokens.has(w));
-        difference.textContent=normalized(example.historico)===normalized(pendingHistory)?'Texto igual após normalização. Isso não comprova a mesma operação.':`Diferenças de palavras: atual — ${currentOnly.join(', ') || 'nenhuma'}; exemplo — ${pastOnly.join(', ') || 'nenhuma'}. Confira números e o texto completo.`;const details=node('details',null,'base-comparison-differences');details.append(node('summary','Ver diferenças do texto'),difference);const important=node('p',normalized(example.historico)===normalized(pendingHistory)?'Texto igual ao exemplo. Confirme a operação atual.':'O texto do lançamento é diferente do exemplo. Confira o beneficiário, a operação e os números destacados.','base-comparison-alert');target.append(important,details);
+        difference.textContent=normalized(example.historico)===normalized(pendingHistory)?'Texto igual após normalização. Isso não comprova a mesma operação.':`Diferenças de palavras: atual — ${currentOnly.join(', ') || 'nenhuma'}; exemplo — ${pastOnly.join(', ') || 'nenhuma'}. Confira números e o texto completo.`;const details=node('details',null,'base-comparison-differences');details.append(node('summary','Ver diferenças do texto'),difference);const important=node('p',normalized(example.historico)===normalized(pendingHistory)?'Texto igual ao exemplo. Confirme a operação atual.':'O texto do lançamento é diferente do exemplo. Confira o beneficiário, a operação e os números destacados.','base-comparison-alert');const delta=node('div',null,'base-comparison-delta');
+        const actualNumbers=String(pendingHistory).match(/\d[\d.,/\-]*/g) || [],exampleNumbers=String(example.historico).match(/\d[\d.,/\-]*/g) || [];
+        const numbersDiffer=JSON.stringify(actualNumbers)!==JSON.stringify(exampleNumbers);
+        const present=numbersDiffer?actualNumbers:currentOnly,previous=numbersDiffer?exampleNumbers:pastOnly;
+        if(present.length || previous.length){delta.append(node('strong',numbersDiffer?'Números diferentes no histórico':'Trechos diferentes do histórico'),node('small','No lançamento'),node('p',present.slice(0,6).join(' · ') || 'Não informado'),node('small','Na referência da base'),node('p',previous.slice(0,6).join(' · ') || 'Não informado'));if(present.length>6 || previous.length>6)delta.append(node('small','Demais diferenças nos detalhes abaixo.'));target.append(delta);}
+        target.append(important,details);
       }else more.append(entry);
     });
     if(examples.length>1)target.append(more);
@@ -222,7 +227,7 @@
       const histories=chosen.flatMap(e=>e.historicos || []);
       const currentNumbers=String(s['Histórico'] || '').match(/\d+/g) || [];
       if(same && histories.length && currentNumbers.length && !histories.some(h=>JSON.stringify(String(h).match(/\d+/g) || [])===JSON.stringify(currentNumbers)))check='Os números do histórico diferem dos exemplos. Confira o documento ou investimento e se a mesma conta se aplica.';
-      c.summary.append(node('small','O que conferir'),node('p',check,'base-analysis-check'));
+      const focus=node('section',null,'base-check-focus');focus.setAttribute('role','note');focus.append(node('strong','Confira antes de aprovar'),node('p',check,'base-analysis-check'));c.summary.prepend(focus);
       const explanation=node('details',null,'base-original-explanation');explanation.append(node('summary','Ver justificativa original'),node('p',s.justificativa));c.summary.append(explanation);
     }
     function pendingReason(s){
@@ -384,6 +389,7 @@
   }
   globalThis.RazyncBaseInvestigation={mount,open:openOrInvestigate,reset,download:async company=>{if(!context || String(context.company)!==String(company) || !context.download)return false;return context.download();}};
 })();
+
 
 
 
