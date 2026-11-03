@@ -102,12 +102,12 @@
       entry.append(node('strong',index===0?'Exemplo mais próximo pelo texto':'Outro exemplo aprendido'),historyText(example.historico,pendingHistory),node('small',`${bankLabelUI(example.banco)} · ${example.periodos.map(periodLabel).join(', ') || 'período não comprovado'} · ${quantity(example.ocorrencias,'ocorrência')}`));
       if(index===0){target.append(entry);const difference=node('p',null,'base-history-difference');
         const currentOnly=[...tokens].filter(w=>!words(example.historico).has(w)),pastOnly=[...words(example.historico)].filter(w=>!tokens.has(w));
-        difference.textContent=normalized(example.historico)===normalized(pendingHistory)?'Texto igual após normalização. Isso não comprova a mesma operação.':`Diferenças de palavras: atual — ${currentOnly.join(', ') || 'nenhuma'}; exemplo — ${pastOnly.join(', ') || 'nenhuma'}. Confira números e o texto completo.`;target.append(difference);
+        difference.textContent=normalized(example.historico)===normalized(pendingHistory)?'Texto igual após normalização. Isso não comprova a mesma operação.':`Diferenças de palavras: atual — ${currentOnly.join(', ') || 'nenhuma'}; exemplo — ${pastOnly.join(', ') || 'nenhuma'}. Confira números e o texto completo.`;const details=node('details',null,'base-comparison-differences');details.append(node('summary','Ver diferenças do texto'),difference);target.append(details);
       }else more.append(entry);
     });
     if(examples.length>1)target.append(more);
     if(!examples.length)target.append(node('p','Esta conta não possui exemplos de histórico disponíveis.'));
-    target.append(node('small','Exemplos aprendidos, não um razão completo. Palavras destacadas apenas ajudam a comparação; não comprovam a mesma operação.'));
+    
   }
   function showEvidence(suggestion,target){
     const evidence=suggestion.evidencias || [];
@@ -170,14 +170,14 @@
     const search=document.createElement('input');search.type='search';search.placeholder='Pesquisar histórico, banco, conta ou valor';search.setAttribute('aria-label','Pesquisar pendências');
     search.addEventListener('input',()=>{query=normalized(search.value);updateQueue();showDetail();});
     const groupToggle=button('Agrupar equivalentes',()=>{grouped=!grouped;groupToggle.setAttribute('aria-pressed',String(grouped));updateQueue();showDetail();});groupToggle.setAttribute('aria-pressed','true');
-    const tools=node('div',null,'base-queue-tools');tools.append(search,groupToggle);
+    const tools=node('div',null,'base-queue-tools');tools.append(search);
     const filters=node('div',null,'base-review-filters'),filterButtons=[];
     for(const [value,label] of [['all','Todas'],['single','Conta candidata única'],['conflict','Contas conflitantes'],['none','Sem histórico'],['deferred','Adiadas'],['approved','Aprovadas']]){
       const control=button(label,()=>{filter=value;updateQueue();showDetail();});control.setAttribute('aria-pressed',String(value==='all'));filters.append(control);filterButtons.push({value,label,control});
     }
 
     const layout=node('div',null,'base-review-layout'),queue=node('nav',null,'base-review-queue'),detail=node('section',null,'base-review-detail');
-    queue.setAttribute('aria-label','Pendências para revisar');detail.setAttribute('aria-label','Comparação do lançamento com a base');const sidebar=node('aside',null,'base-review-sidebar');sidebar.setAttribute('aria-label','Pesquisar e filtrar pendências');sidebar.append(node('h3','Sua fila de revisão'),tools,filters,queue);layout.append(sidebar,detail);body.append(layout);
+    queue.setAttribute('aria-label','Pendências para revisar');detail.setAttribute('aria-label','Comparação do lançamento com a base');const sidebar=node('aside',null,'base-review-sidebar');sidebar.setAttribute('aria-label','Pesquisar e filtrar pendências');const queueOptions=node('details',null,'base-queue-options');queueOptions.append(node('summary','Filtrar pendências'),groupToggle,filters);sidebar.append(node('h3','Pendências'),tools,queueOptions,queue);layout.append(sidebar,detail);body.append(layout);
     let draftEnabled=false;
     function saveDraft(){if(!draftEnabled || !current.draftKey || completed || applying)return;try{sessionStorage.setItem(current.draftKey,JSON.stringify({time:Date.now(),rows:controls.map(c=>({key:rowKey(c),account:c.account.value,approved:c.select.checked,deferred:c.deferred}))}));}catch{}}
     const message=node('p',null,'helper');message.setAttribute('role','status');
@@ -201,9 +201,9 @@
       const suggested=Boolean(account && s.conta_sugerida===account);
       c.summary.replaceChildren(node('strong',account?`${suggested?'Conta sugerida':'Conta em comparação'}: ${account}`:'Escolha uma conta para comparar'));
       if(matching.length)c.summary.append(node('small',`${quantity(periods.size,'período')} · ${matching.some(e=>e.mesmo_banco)?'há evidência no mesmo banco':'evidências em outro banco'}`));
-      else if(account)c.summary.append(node('small','Sem evidência específica para este lançamento. Confira os exemplos da conta ao lado.'));
+      else if(account)c.summary.append(node('small','Sem evidência específica para este lançamento. Confira os exemplos abaixo.'));
       const reason=node('p',pendingReason(s),'base-pending-reason');c.summary.append(reason);
-      const explanation=node('details');explanation.append(node('summary','Ver justificativa original'),node('p',s.justificativa));c.summary.append(explanation);
+      const explanation=node('details',null,'base-original-explanation');explanation.append(node('summary','Ver justificativa original'),node('p',s.justificativa));c.summary.append(explanation);
     }
     function pendingReason(s){
       const exact=(s.evidencias || []).filter(e=>e.exata),accounts=new Set(exact.map(e=>e.conta));
@@ -238,7 +238,7 @@
     function updateQueue(){
       queue.replaceChildren();const items=visible();if(!items.includes(active))active=items[0] || null;
       const approved=controls.filter(c=>c.select.checked).length;
-      progress.textContent=`${quantity(approved,'aprovado')} · ${quantity(controls.filter(c=>c.deferred && !c.select.checked).length,'adiado')} · ${quantity(controls.filter(c=>!c.select.checked && !c.deferred).length,'pendente')} · ${completed?quantity(approved,'revisão aplicada','revisões aplicadas'):`${approved} para aplicar`}`;approveTop.disabled=!active || active.select.checked || !validAccount(active) || completed || applying;skipTop.disabled=!active || active.select.checked || completed || applying;
+      progress.textContent=`${quantity(approved,'aprovado')} · ${quantity(controls.filter(c=>c.deferred && !c.select.checked).length,'adiado')} · ${quantity(controls.filter(c=>!c.select.checked && !c.deferred).length,'pendente')}`;approveTop.disabled=!active || active.select.checked || !validAccount(active) || completed || applying;skipTop.disabled=!active || active.select.checked || completed || applying;
       if(typeof apply!=='undefined'){apply.textContent=completed?'Revisões aplicadas':`Gerar Excel com ${quantity(approved,'revisão','revisões')}`;apply.disabled=completed || applying || !approved;}
       filterButtons.forEach(f=>{f.control.setAttribute('aria-pressed',String(filter===f.value));const count=controls.filter(c=>matchesFilter(c,f.value) && matchesSearch(c)).length;f.control.replaceChildren(node('span',f.label),node('b',String(count),'base-filter-count'));});
       saveDraft();
@@ -260,7 +260,7 @@
       const grade=s.situacao==='MANUAL'?({single:'Similaridade a conferir',conflict:'Contas conflitantes',none:'Sem histórico compatível'})[category(s)]:({FORTE:'Sugestão forte',MODERADA:'Sugestão moderada'})[s.situacao];
       const gradeBadge=node('span',grade,'base-investigation-grade');gradeBadge.setAttribute('data-grade',s.situacao);c.grade=gradeBadge;c.originalGrade=grade;received.append(gradeBadge);
       c.summary=node('div',null,'base-evidence-summary');refreshEvidence(c);received.append(c.summary);
-      const evidencePanel=node('details',null,'base-evidence-list');evidencePanel.append(node('summary','Ver todas as evidências'));const evidenceBody=node('div');showEvidence(s,evidenceBody);evidencePanel.append(evidenceBody);received.append(evidencePanel);
+      const evidencePanel=node('details',null,'base-evidence-list');evidencePanel.append(node('summary','Evidências e justificativa'));const evidenceBody=node('div');showEvidence(s,evidenceBody);evidencePanel.append(evidenceBody,node('p',s.justificativa));received.append(evidencePanel);
       const candidates=node('div',null,'base-account-candidates');
       for(const account of [...new Set((s.evidencias || []).map(e=>e.conta))]){
         const pick=button(`Comparar conta ${account}`,()=>{if(completed || applying)return;c.account.value=account;c.select.checked=false;c.deferred=false;drawHistory(c);refreshEvidence(c);updateQueue();if(active!==c)showDetail();});pick.disabled=completed || applying;candidates.append(pick);
@@ -270,7 +270,7 @@
       const approval=node('div',null,'base-review-approval');c.approval=approval;
       if(c.select.checked){approval.append(node('strong','✓ Conta aprovada'));const undo=button('Desfazer aprovação',()=>{c.select.checked=false;updateQueue();showDetail();});undo.disabled=completed || applying;approval.append(undo);}
       else approval.append(node('small',c.deferred?'Adiada para conferir depois.':'Confira a conta e use Aprovar e próximo.'));decision.append(approval);
-      saved.append(node('h4','Históricos gravados na conta'),c.historyArea);drawHistory(c);
+      saved.append(node('h4','Referência da base'),c.historyArea);drawHistory(c);
       comparison.append(received,saved);
       const actions=node('div',null,'base-review-navigation');
       actions.append(button('Anterior',()=>go(-1)),button('Próximo',()=>go(1)),skipTop,approveTop);decision.append(actions);
@@ -354,3 +354,4 @@
   }
   globalThis.RazyncBaseInvestigation={mount,open:openOrInvestigate,reset};
 })();
+

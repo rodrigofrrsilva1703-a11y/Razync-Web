@@ -414,3 +414,43 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
 @keyframes baseRZMotion{0%,15%,65%,100%{transform:translateY(0) scale(1) rotate(0)}30%{transform:translateY(-2px) scale(1.07) rotate(-3deg)}46%{transform:translateY(1px) scale(1.03) rotate(2deg)}}
 @media(prefers-reduced-motion:no-preference){#baseAiHost .base-ai-launcher .base-brand-letter-motion img{animation:baseRZMotion 4.5s ease-in-out infinite}}
 @media(prefers-reduced-motion:reduce){#baseAiHost .base-brand-letter-motion img{animation:none!important;transform:none!important}}
+
+
+/* Minimal classification review: one decision, evidence on demand. */
+#baseAiHost .base-ai-launcher{width:40px;height:40px;min-height:40px;padding:4px;border-radius:12px;right:18px;bottom:82px;box-shadow:0 3px 12px #101b321a}
+#baseAiHost .base-ai-launcher .base-brand-mark{width:30px;height:30px;border-radius:8px}
+#baseAiHost .base-ai-launcher .base-ai-launcher-count{height:18px;min-width:18px;font-size:9px;top:-5px;right:-5px;border-radius:6px}
+#baseAiHost .base-ai-launcher .base-brand-letter-motion img{animation:none!important}
+#baseAiHost .base-ai-window{width:min(1040px,calc(100vw - 32px));top:80px;bottom:20px}
+#baseAiHost .base-review-layout{grid-template-columns:210px minmax(0,1fr);gap:20px}
+#baseAiHost .base-review-sidebar{gap:10px;max-height:calc(100dvh - 220px)}
+#baseAiHost .base-review-sidebar .base-review-item{min-height:0;padding:10px;border:0;border-radius:7px;background:transparent}
+#baseAiHost .base-review-item>span{font-size:12px;line-height:1.5}
+#baseAiHost .base-review-item>small{font-size:11px}
+#baseAiHost .base-review-item[aria-pressed=true]{background:var(--review-selected)!important}
+#baseAiHost .base-queue-options>summary{font-size:12px;color:var(--review-muted);cursor:pointer;padding:3px 0}
+#baseAiHost .base-queue-options[open]>button{margin:8px 0}
+#baseAiHost .base-review-sidebar .base-review-filters{margin-top:8px}
+#baseAiHost .base-history-comparison{grid-template-columns:minmax(0,1fr);gap:18px}
+#baseAiHost .base-history-comparison>section{padding:0;border:0;box-shadow:none;background:transparent!important;border-radius:0}
+#baseAiHost .base-history-comparison h4{padding:0;border:0;margin:0 0 8px;font-size:11px;letter-spacing:0;color:var(--review-muted)}
+#baseAiHost .base-history-received>.base-history-text{margin:0 0 8px!important;font-size:15px!important;line-height:1.6!important}
+#baseAiHost .base-investigation-grade{display:none}
+#baseAiHost .base-evidence-summary{border:0;padding:0;margin:12px 0}
+#baseAiHost .base-evidence-summary>strong{display:none}
+#baseAiHost .base-original-explanation{display:none}
+#baseAiHost .base-pending-reason{padding:0!important;background:transparent!important;border:0!important;margin:6px 0!important;color:var(--review-ink)!important;font-size:13px!important}
+#baseAiHost .base-evidence-list{margin:10px 0;padding:0;border:0}
+#baseAiHost .base-evidence-list>summary,#baseAiHost .base-comparison-differences>summary,#baseAiHost .base-more-histories>summary{font-size:12px;color:var(--review-action);cursor:pointer}
+#baseAiHost .base-account-history-entry{padding:0;margin:10px 0;background:transparent;border:0;box-shadow:none}
+#baseAiHost .base-account-history-entry>strong{display:none}
+#baseAiHost .base-history-saved{padding-top:16px!important;border-top:1px solid var(--review-border)!important}
+#baseAiHost .base-account-history>strong{font-size:14px!important}
+#baseAiHost .base-history-saved .base-history-text{font-size:13px!important;line-height:1.6!important;margin:6px 0!important}
+#baseAiHost .base-review-decision{position:static;background:transparent;border:0;padding:0 0 14px;margin-bottom:18px;border-bottom:1px solid var(--review-border);box-shadow:none;border-radius:0}
+#baseAiHost .base-review-approval>small{display:none}
+#baseAiHost .base-ai-window-body{padding:18px}
+#baseAiHost .base-ai-workbar .base-review-progress{max-width:none;font-size:11px!important}
+#baseAiHost .base-ai-window-body .base-review-options{border-top:1px solid var(--review-border);padding-top:10px;margin-top:18px}
+#baseAiHost .base-history-text mark{background:transparent;color:inherit;font-weight:600;padding:0}
+@media(max-width:760px){#baseAiHost .base-ai-window{inset:64px 8px 8px;width:calc(100vw - 16px)}#baseAiHost .base-review-layout{grid-template-columns:minmax(0,1fr);gap:16px}#baseAiHost .base-review-sidebar{max-height:none}#baseAiHost .base-review-sidebar .base-review-queue{max-height:110px}#baseAiHost .base-ai-window-body{padding:14px}#baseAiHost .base-review-sidebar .base-review-item{min-height:0}}
