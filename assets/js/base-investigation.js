@@ -44,7 +44,7 @@
     context={prepared,company,options,onState,onReviewChange};subtitle.textContent=`Empresa ${company} · Comparação de históricos`;
     onState?.('preparing',`${Number(summary.cobertura.pendentes).toLocaleString('pt-BR')} pendência(s) em preparação`);
     const aiIcon=node('span',null,'base-launcher-ai');aiIcon.setAttribute('aria-hidden','true');
-    aiIcon.innerHTML='<svg viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path class="base-ai-spark-main" d="M14 7.5c.9 6.3 3.2 8.6 9.5 9.5-6.3.9-8.6 3.2-9.5 9.5-.9-6.3-3.2-8.6-9.5-9.5 6.3-.9 8.6-3.2 9.5-9.5Z"/><path class="base-ai-spark-small" d="M25 2.5c.4 3 1.5 4.1 4.5 4.5-3 .4-4.1 1.5-4.5 4.5-.4-3-1.5-4.1-4.5-4.5 3-.4 4.1-1.5 4.5-4.5Z"/></svg>';
+    aiIcon.innerHTML='<svg viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false"><defs><linearGradient id="baseAiOrbitGradient" x1="10" y1="35" x2="37" y2="10" gradientUnits="userSpaceOnUse"><stop stop-color="#3869e8"/><stop offset=".55" stop-color="#529cff"/><stop offset="1" stop-color="#3bd2e0"/></linearGradient></defs><g class="base-ai-orbit"><path d="M8 29a17 17 0 0 1 9-20M31 39a17 17 0 0 0 9-20"/><circle cx="11" cy="35" r="1.5"/><circle cx="37" cy="13" r="1.5"/></g><g class="base-ai-core"><path class="base-ai-core-glow" d="M23 12c1.2 7.3 3.8 9.9 11 11-7.2 1.2-9.8 3.8-11 11-1.1-7.2-3.7-9.8-11-11 7.3-1.1 9.9-3.7 11-11Z"/><path class="base-ai-core-star" d="M23 12c1.2 7.3 3.8 9.9 11 11-7.2 1.2-9.8 3.8-11 11-1.1-7.2-3.7-9.8-11-11 7.3-1.1 9.9-3.7 11-11Z"/><path class="base-ai-orbit-spark" d="M35 8c.5 3.3 1.7 4.5 5 5-3.3.5-4.5 1.7-5 5-.5-3.3-1.7-4.5-5-5 3.3-.5 4.5-1.7 5-5Z"/></g></svg>';
     launcher.replaceChildren(aiIcon,node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));launcher.title=`Assistente IA · Revisar ${summary.cobertura.pendentes} pendências da empresa ${company}`;
     launcher.hidden=false;
     investigate(); // Local-only preparation; never consumes an AI call.
@@ -390,6 +390,7 @@
   }
   globalThis.RazyncBaseInvestigation={mount,open:openOrInvestigate,reset,download:async company=>{if(!context || String(context.company)!==String(company) || !context.download)return false;return context.download();}};
 })();
+
 
 
 
