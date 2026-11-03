@@ -214,3 +214,8 @@ body.sidebar-collapsed #mainSidebar {
 #companyPanel .preparation-form>.helper{margin:0;line-height:1.5}
 #companyPanel .tool-result{margin-top:16px}
 @media(max-width:560px){#companyPanel .preparation-form>button[type=submit],#companyPanel #processButton{width:100%!important}#companyPanel .company-file-drop.has-selection{min-height:120px!important}}
+
+/* Keep file actions proportional and a sole filename on the full row. */
+#companyPanel .company-file-add{width:auto!important;max-width:100%;flex:none}
+#companyPanel .file-selection>.file-selection-item:nth-child(2):last-child{grid-column:1/-1}
+#companyPanel .company-reconcile-uploads .company-file-drop.has-selection{min-height:146px!important}
