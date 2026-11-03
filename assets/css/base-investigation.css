@@ -511,3 +511,14 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
 @keyframes baseMarkFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
 @media(prefers-reduced-motion:no-preference){#baseAiHost .base-ai-launcher .base-launcher-original{animation:baseMarkFloat 4s ease-in-out infinite}}
 @media(prefers-reduced-motion:reduce){#baseAiHost .base-ai-launcher .base-launcher-original{animation:none!important}}
+
+
+/* Keep the comparison below its header and preserve readable controls. */
+#baseAiHost #baseInvestigationWindow{display:flex;flex-direction:column;overflow:hidden}
+#baseAiHost #baseInvestigationWindow[hidden]{display:none!important}
+#baseAiHost #baseInvestigationWindow .base-ai-window-header{position:relative;top:auto;flex:none;z-index:2}
+#baseAiHost #baseInvestigationWindow .base-ai-window-body{flex:1;min-height:0;overflow:auto;scroll-padding-top:18px}
+#baseAiHost #baseInvestigationWindow .base-review-sidebar{top:0}
+#baseAiHost #baseInvestigationWindow .base-review-sidebar .base-review-filters button{font-size:12px;padding:8px;min-height:38px}
+#baseAiHost #baseInvestigationWindow .base-review-navigation button{font-size:12px;min-height:36px}
+#baseAiHost #baseInvestigationWindow .base-history-comparison{scroll-margin-top:18px}
