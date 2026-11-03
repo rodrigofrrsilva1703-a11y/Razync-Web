@@ -636,3 +636,5 @@ html[data-theme=dark] #baseAiHost button.base-ai-launcher:hover .base-launcher-a
 @media(prefers-reduced-motion:no-preference){#baseAiHost .base-launcher-ai{transition:background .18s,color .18s}#baseAiHost .base-ai-spark-small{animation:baseAiSparkle 3.8s ease-in-out infinite}}
 @media(prefers-reduced-motion:reduce){#baseAiHost .base-ai-spark-small{animation:none!important}}
 @media(max-width:760px){#baseAiHost button.base-ai-launcher{right:16px;bottom:82px}}
+
+html[data-theme=dark] #baseAiHost button.base-ai-launcher,html[data-theme=dark] #baseAiHost button.base-ai-launcher:hover,html[data-theme=dark] #baseAiHost button.base-ai-launcher:focus,html[data-theme=dark] #baseAiHost button.base-ai-launcher:active{background:transparent!important;background-image:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important}
