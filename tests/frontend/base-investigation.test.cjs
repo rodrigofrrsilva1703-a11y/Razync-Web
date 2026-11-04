@@ -94,3 +94,32 @@ test('ponto de conferência e números diferentes ficam visíveis sem abrir deta
 
 
 test('marca animada usa letras separadas e máscaras únicas a cada montagem',async()=>{const h=setup();h.mount();const first=h.launcher.children[0].innerHTML;assert.match(first,/class="base-rz-letter base-rz-r"/);assert.match(first,/class="base-rz-letter base-rz-z"/);const id=first.match(/mask id="([^"]+)"/)[1];h.mount();const second=h.launcher.children[0].innerHTML;assert.notEqual(second.match(/mask id="([^"]+)"/)[1],id);assert.match(second,/razync-logo-original.png/);});
+
+
+function configureExport(h,{previewPending=false,previewError=false}={}){
+  const downloads=[];let generated=0;
+  h.ctx.Response=Response;h.ctx.renderClassificationCoverage=()=>{};h.ctx.showWorkflowPreview=()=>{};
+  h.ctx.downloadBlob=async response=>downloads.push(await response.text());
+  h.ctx.fetch=async(url,options)=>{
+    if(url.endsWith('/revisar')){generated++;assert.equal(options.body.get('aprender'),'false');return {ok:true,headers:{get:()=>JSON.stringify({aplicadas:1})},blob:async()=>new Blob(['reviewed'])};}
+    if(previewPending)return new Promise(()=>{});
+    if(previewError)throw Error('Preview offline');
+    return {ok:true,json:async()=>({})};
+  };
+  return {downloads,generated:()=>generated};
+}
+test('Excel pronto baixa mesmo quando a atualização da prévia continua pendente',async()=>{
+  const h=await populated(twoRows());action(h,'Aprovar e próximo').events.click();const x=configureExport(h,{previewPending:true});
+  let finished=false;const task=h.ctx.RazyncBaseInvestigation.download(242).then(()=>{finished=true});
+  for(let i=0;i<5;i++)await flush();
+  assert.equal(finished,true,'A prévia opcional bloqueou o arquivo pronto');await task;
+  assert.deepEqual(x.downloads,['reviewed']);assert.equal(x.generated(),1);
+});
+test('confirmar geração no assistente já baixa e mantém o arquivo disponível no topo',async()=>{
+  const h=await populated(twoRows());action(h,'Aprovar e próximo').events.click();const x=configureExport(h,{previewError:true});
+  await action(h,'Gerar Excel com 1 revisão').events.click();assert.equal(x.downloads.length,0);
+  action(h,'Confirmar e gerar Excel').events.click();for(let i=0;i<6;i++)await flush();
+  assert.deepEqual(x.downloads,['reviewed']);assert.equal(x.generated(),1);
+  assert.ok(flatten(h.header).some(e=>e.tag==='button'&&textOf(e)==='Baixar Excel revisado'));
+  await h.ctx.RazyncBaseInvestigation.download(242);assert.equal(x.generated(),1);assert.equal(x.downloads.length,2);
+});

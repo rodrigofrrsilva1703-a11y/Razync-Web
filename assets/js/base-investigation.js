@@ -363,22 +363,41 @@
       try{
         const response=await fetch(`${API()}/api/v1/base-inteligente/${current.company}/revisar`,{method:'POST',body:data,signal});
         if(!response.ok)throw Error(await responseError(response));
-        const summary=JSON.parse(response.headers.get('x-razync-summary') || '{}');const blob=await response.blob();reviewedBlob=blob;
+        const summary=JSON.parse(response.headers.get('x-razync-summary') || '{}');const blob=await response.blob();
         if(signal.aborted || version!==generation)return;
+        reviewedBlob=blob;
         // Freeze the completed approval, preventing accidental repeated learning.
         controls.forEach(c=>{c.select.disabled=true;c.account.disabled=true;});learn.disabled=true;apply.disabled=true;aiButton.disabled=true;priorityController?.abort();
         completed=true;try{if(current.draftKey)sessionStorage.removeItem(current.draftKey);}catch{}updateQueue();showDetail();
         renderClassificationCoverage(summary.cobertura);
         message.textContent=`Revisões aplicadas: ${summary.aplicadas}. Padrões aprendidos: ${summary.aprendizados || 0}.`;
         current.onState?.('complete',`${Number(summary.aplicadas)||0} revisão(ões) aplicada(s)`);
-        const download=button('Baixar Excel revisado',()=>downloadBlob(new Response(blob),`RAZYNC_${current.company}_REVISADO.xlsx`));download.className='preview-download';footer.append(download);
-        const previewBody=new FormData();previewBody.append('file',blob,'revisado.xlsx');
-        const previewResponse=await fetch(`${API()}/api/v1/modelo-preview`,{method:'POST',body:previewBody,signal});
-        if(signal.aborted || version!==generation)return;
-        if(previewResponse.ok)showWorkflowPreview(await previewResponse.json(),document.querySelector('#classificationPreview'));current.onReviewChange?.(controls.filter(c=>c.select.checked).length);
+        const download=button('Baixar Excel revisado',()=>downloadBlob(new Response(blob),`RAZYNC_${current.company}_REVISADO.xlsx`));download.className='preview-download';quickActions.append(download);
+        // Preview refresh is optional: a ready workbook must be downloadable immediately.
+        void (async()=>{
+          try {
+            const previewBody=new FormData();previewBody.append('file',blob,'revisado.xlsx');
+            const previewResponse=await fetch(`${API()}/api/v1/modelo-preview`,{method:'POST',body:previewBody,signal});
+            if(signal.aborted || version!==generation)return;
+            if(!previewResponse.ok)throw Error('Não foi possível atualizar a prévia.');
+            const preview=await previewResponse.json();
+            if(signal.aborted || version!==generation)return;
+            showWorkflowPreview(preview,document.querySelector('#classificationPreview'));
+            current.onReviewChange?.(controls.filter(c=>c.select.checked).length);
+          } catch(error) {
+            if(!signal.aborted && version===generation)message.textContent='Excel revisado pronto para baixar. A prévia não pôde ser atualizada.';
+          }
+        })();
       }catch(error){if(signal.aborted || version!==generation)return;message.textContent=completed?'Excel revisado gerado. A prévia não pôde ser atualizada; use Baixar Excel revisado.':error.message;if(!completed){applying=false;controls.forEach(c=>{c.select.disabled=false;c.account.disabled=false;});learn.disabled=false;updateQueue();showDetail();}if(direct && !completed)throw error;}
     };
-    const apply=button('Aplicar revisões e atualizar Excel',()=>generateReview());
+    const apply=button('Aplicar revisões e atualizar Excel',async()=>{
+      try {
+        await generateReview();
+        if(reviewedBlob && version===generation)await downloadBlob(new Response(reviewedBlob),`RAZYNC_${current.company}_REVISADO.xlsx`);
+      } catch(error) {
+        if(version===generation)message.textContent=error.message || 'Não foi possível baixar o Excel revisado.';
+      }
+    });
     current.download=async()=>{if(!controls.some(c=>c.select.checked))return false;await generateReview(true);if(version!==generation || !reviewedBlob)throw Error('A revisão mudou. Classifique novamente antes de baixar.');await downloadBlob(new Response(reviewedBlob),`RAZYNC_${current.company}_REVISADO.xlsx`);return true;};
     quickActions.append(apply);footer.append(message);body.append(footer);
     let priorDraft;try{priorDraft=JSON.parse(sessionStorage.getItem(current.draftKey));}catch{}
@@ -393,6 +412,7 @@
   }
   globalThis.RazyncBaseInvestigation={mount,open:openOrInvestigate,reset,download:async company=>{if(!context || String(context.company)!==String(company) || !context.download)return false;return context.download();}};
 })();
+
 
 
 
