@@ -90,7 +90,7 @@ test('nome de conta é apresentado somente quando fornecido no catálogo',async(
 
 test('download externo inclui aprovações sem confirmação adicional e reutiliza Excel revisado',async()=>{const h=await populated(twoRows());assert.equal(await h.ctx.RazyncBaseInvestigation.download(242),false);action(h,'Aprovar e próximo').events.click();let generated=0,downloads=[];h.ctx.Response=Response;h.ctx.renderClassificationCoverage=()=>{};h.ctx.showWorkflowPreview=()=>{};h.ctx.downloadBlob=async response=>downloads.push(await response.text());h.ctx.fetch=async(url,options)=>{if(url.endsWith('/revisar')){generated++;const rows=JSON.parse(options.body.get('revisoes_json'));assert.equal(rows.length,1);assert.equal(rows[0]['Conta da contrapartida'],'412');assert.equal(options.body.get('aprender'),'false');return {ok:true,headers:{get:()=>JSON.stringify({aplicadas:1})},blob:async()=>new Blob(['reviewed'])};}return {ok:true,json:async()=>({})};};assert.equal(await h.ctx.RazyncBaseInvestigation.download(242),true);assert.equal(await h.ctx.RazyncBaseInvestigation.download(242),true);assert.equal(generated,1);assert.deepEqual(downloads,['reviewed','reviewed']);assert.equal(await h.ctx.RazyncBaseInvestigation.download(968),false);h.ctx.RazyncBaseInvestigation.reset();assert.equal(await h.ctx.RazyncBaseInvestigation.download(242),false);});
 
-test('ponto de conferência e números diferentes ficam visíveis sem abrir detalhes',async()=>{const data=JSON.parse(JSON.stringify(report));data.sugestoes[0]['Histórico']='Resgate CDB 2290094';data.sugestoes[0].evidencias=[{conta:'412',exata:true,mesmo_banco:true,banco:'itau_508',periodos:['2026-07'],ocorrencias:1,historicos:['Resgate CDB 2010094']}];const h=await populated(data);const focus=flatten(h.body).find(e=>e.className==='base-check-focus');assert.equal(focus.attrs.role,'note');assert.match(textOf(focus),/Confira antes de aprovar/);assert.match(textOf(focus),/Números diferentes/);const delta=flatten(h.body).find(e=>e.className==='base-comparison-delta');assert.match(textOf(delta),/No lançamento2290094/);assert.match(textOf(delta),/Na referência da base2010094/);assert.equal(delta.hidden,false);});
+test('ponto de conferência e números diferentes ficam visíveis sem abrir detalhes',async()=>{const data=JSON.parse(JSON.stringify(report));data.sugestoes[0]['Histórico']='Resgate CDB 2290094';data.sugestoes[0].evidencias=[{conta:'412',exata:true,mesmo_banco:true,banco:'itau_508',periodos:['2026-07'],ocorrencias:1,historicos:['Resgate CDB 2010094']}];const h=await populated(data);const focus=flatten(h.body).find(e=>e.className==='base-check-focus');assert.equal(focus.attrs.role,'note');assert.match(textOf(focus),/Números diferentes no histórico/);assert.match(textOf(focus),/Números diferentes/);const delta=flatten(h.body).find(e=>e.className==='base-comparison-delta');assert.match(textOf(delta),/No lançamento2290094/);assert.match(textOf(delta),/Na referência da base2010094/);assert.equal(delta.hidden,false);});
 
 
 test('marca animada usa letras separadas e máscaras únicas a cada montagem',async()=>{const h=setup();h.mount();const first=h.launcher.children[0].innerHTML;assert.match(first,/class="base-rz-letter base-rz-r"/);assert.match(first,/class="base-rz-letter base-rz-z"/);const id=first.match(/mask id="([^"]+)"/)[1];h.mount();const second=h.launcher.children[0].innerHTML;assert.notEqual(second.match(/mask id="([^"]+)"/)[1],id);assert.match(second,/razync-logo-original.png/);});
@@ -160,4 +160,27 @@ test('resposta atrasada de outra linha nunca aparece na seleção atual',async()
   const pending=action(h,'Analisar lançamento com IA').events.click();action(h,'Próximo').events.click();
   resolve({ok:true,json:async()=>({estado:'concluida',aba:'Itaú',linha:2,provedor:'gemini',analise:{resumo:'Análise da primeira linha',contas:[],conferir:['Documento'],limite:'Conferir'}})});
   await pending;assert.doesNotMatch(textOf(h.body),/Análise da primeira linha/);assert.ok(action(h,'Gerar Excel com 0 revisões'));
+});
+
+test('datas Excel e ISO são legíveis sem alterar os dados da revisão',async()=>{
+ for(const value of [46244,'46244','2026-08-10T00:00:00']){
+  const data=JSON.parse(JSON.stringify(report));data.sugestoes[0].Data=value;
+  const h=await populated(data);assert.match(textOf(h.body),/10\/08\/2026/);
+  assert.equal(data.sugestoes[0].Data,value);
+ }
+});
+test('candidata única abre referência sem preencher conta nem aprovar',async()=>{
+ const data=JSON.parse(JSON.stringify(report));const s=data.sugestoes[0];s.conta_sugerida='';s.situacao='MANUAL';
+ s.evidencias=[{conta:'412',mesmo_banco:true,periodos:['2026-07'],historicos:['Pago fornecedor de teste']}];
+ const h=await populated(data);assert.match(textOf(h.body),/Pago fornecedor de teste/);
+ const input=flatten(h.body).find(e=>e.attrs['aria-label']==='Conta para Itaú, linha 2');
+ assert.equal(input.value,'');assert.equal(action(h,'Aprovar e próximo').disabled,true);assert.equal(h.requests.length,1);
+});
+test('comparação precede a IA e detalhes da resposta começam recolhidos',async()=>{
+ const h=await populated();const grid=flatten(h.body).find(e=>e.className==='base-history-comparison');
+ assert.equal(grid.children[0].className,'base-history-received');assert.equal(grid.children[1].className,'base-history-saved');assert.equal(grid.children[2].className,'base-ai-explanation');
+ h.ctx.fetch=async()=>({ok:true,json:async()=>({estado:'concluida',aba:'Itaú',linha:2,provedor:'groq',modelo:'test',analise:{resumo:'Conferir natureza.',contas:[],conferir:['Confira o documento'],limite:'Conferência humana'}})});
+ await action(h,'Analisar lançamento com IA').events.click();
+ const details=flatten(h.body).find(e=>e.className==='base-ai-explain-details');assert.equal(details.open,false);
+ assert.match(textOf(h.body),/1 lançamento em 1 grupo/);assert.ok(action(h,'Gerar Excel com 0 revisões'));
 });
