@@ -22,6 +22,34 @@ def choose_provider():
     return _choose_provider(exclude=excluded)
 
 
+def _http_diagnostic(exc):
+    """Return only an allowlisted error category; never return upstream text."""
+    status=getattr(exc,'code',None) or getattr(exc,'status_code',None)
+    diagnostic={'http_status':status,'origem_erro':'provedor' if isinstance(exc,urllib.error.HTTPError) else 'limite_local'}
+    if not isinstance(exc,urllib.error.HTTPError):
+        diagnostic['erro_provedor']='limite_local' if status==429 else 'recusa_local'
+        return diagnostic
+    try:
+        text=exc.read(8192).decode('utf-8',errors='replace').lower()
+        try:
+            data=json.loads(text);error=data.get('error',data)
+            if isinstance(error,dict):text=json.dumps(error,ensure_ascii=False)
+        except (ValueError,TypeError):pass
+        rules=[
+            ('bloqueio_de_rede',('cloudflare','error code: 1010','error code: 1020','access denied','just a moment','request blocked','unsupported country','country not supported')),
+            ('chave_invalida',('invalid_api_key','api_key_invalid','invalid api key','incorrect api key','api key not valid','user not found')),
+            ('modelo_indisponivel',('model_not_found','model not found','not found for api version','model_decommissioned','model_deprecated','no endpoints found','does not exist','not supported for generatecontent')),
+            ('cota_excedida',('insufficient_quota','resource_exhausted','rate_limit_exceeded','rate limit','quota exceeded','quota_exceeded','insufficient credits')),
+            ('permissao_negada',('permission_denied','permission denied','organization_restricted','not authorized','not permitted')),
+            ('parametro_invalido',('invalid_request_error','invalid_argument','unsupported parameter','unrecognized request argument')),
+        ]
+        diagnostic['erro_provedor']=next((name for name,patterns in rules if any(pattern in text for pattern in patterns)),'sem_categoria_conhecida')
+    except Exception:
+        diagnostic['erro_provedor']='corpo_indisponivel'
+    finally:exc.close()
+    return diagnostic
+
+
 def interpret(suggestions):
     result={'estado':'indisponivel','chamadas_nesta_execucao':0,
             'motivo':'Investigação local preservada. IA gratuita indisponível.'}
@@ -79,12 +107,14 @@ def interpret(suggestions):
         return dict(result,estado='concluida',provedor=provider,prioridades=ids,
                     motivo='IA priorizou grupos para revisão; contas e justificativas permanecem baseadas no histórico verificado.')
     except (urllib.error.HTTPError, HTTPException) as exc:
-        status=getattr(exc,'code',None) or getattr(exc,'status_code',None)
-        if isinstance(exc,urllib.error.HTTPError):exc.close()
-        code='limite' if status==429 else 'credencial' if status in (401,403) else 'provedor_recusou'
+        diagnostic=_http_diagnostic(exc)
+        result.update(diagnostic)
+        status=diagnostic['http_status']
+        code='limite' if status==429 else 'credencial' if status==401 else 'acesso_negado' if status==403 else 'provedor_recusou'
         if result.get('provedor'):_provider_cooldowns[result['provedor']]=time.monotonic()+(600 if code=='credencial' else 60)
         message={'limite':'O limite temporário da IA foi atingido. Tente novamente mais tarde.',
                  'credencial':'O provedor recusou a autenticação. Tente novamente para consultar outro provedor gratuito configurado.',
+                 'acesso_negado':'O provedor recusou o acesso. Isso pode ser uma restrição de rede ou permissão; a chave não foi alterada.',
                  'provedor_recusou':'O provedor não aceitou a consulta. Sua revisão foi preservada.'}[code]
     except (urllib.error.URLError,TimeoutError,OSError):
         code='conexao';message='A IA não respondeu a tempo. Você pode tentar novamente.'
@@ -95,6 +125,7 @@ def interpret(suggestions):
     if result.get('provedor') and code!='credencial':
         _provider_cooldowns[result['provedor']]=time.monotonic()+60
     # Log only safe metadata, never keys, histories or raw provider bodies.
-    logging.getLogger(__name__).warning('base_ai_failure provider=%s code=%s',result.get('provedor','none'),code)
+    logging.getLogger(__name__).warning('base_ai_failure provider=%s code=%s http_status=%s upstream=%s origin=%s',result.get('provedor','none'),code,result.get('http_status','none'),result.get('erro_provedor','none'),result.get('origem_erro','none'))
     return dict(result,codigo=code,motivo=message)
+
 
