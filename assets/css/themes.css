@@ -320,3 +320,15 @@ html[data-theme="dark"] .app-shell :is(#companyPanel#companyPanel,#converterView
 html[data-theme="dark"] .app-shell #companyPanel#companyPanel .preparation-form :is(.field-group,.bank-selector,.period-card):hover {
  background:transparent!important;background-image:none!important;box-shadow:none!important;
 }
+
+/* Previews share the page canvas; only cards and tables own a surface. */
+html[data-theme="dark"] :is(#companyPanel#companyPanel,.preview-dialog.preview-dialog,#converterView#converterView,#ledgerView#ledgerView) :is(
+ .preview-results,.streamlit-preview,.organizer-preview,.preview-summary-grid,
+ .preview-sheet-switcher,.preview-intro,.preview-note
+) {
+ background:transparent!important;background-image:none!important;box-shadow:none!important;
+}
+html[data-theme="dark"] :is(#companyPanel#companyPanel,.preview-dialog.preview-dialog,#converterView#converterView,#ledgerView#ledgerView) .summary-icon {
+ background:transparent!important;background-image:none!important;box-shadow:none!important;
+ color:#8fb7f4!important;
+}
