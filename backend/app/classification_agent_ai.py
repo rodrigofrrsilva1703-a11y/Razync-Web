@@ -92,6 +92,8 @@ def interpret(suggestions):
         code='resposta_invalida';message='A IA retornou uma resposta incompleta ou incompatível. Tente novamente.'
     except Exception:
         code='falha_interna';message='Não foi possível consultar a IA. Sua revisão foi preservada.'
+    if result.get('provedor') and code!='credencial':
+        _provider_cooldowns[result['provedor']]=time.monotonic()+60
     # Log only safe metadata, never keys, histories or raw provider bodies.
     logging.getLogger(__name__).warning('base_ai_failure provider=%s code=%s',result.get('provedor','none'),code)
     return dict(result,codigo=code,motivo=message)

@@ -288,3 +288,19 @@ def test_base_ai_skips_temporarily_blocked_provider_without_global_routing_chang
     monkeypatch.setattr(ai,'_choose_provider',lambda exclude:seen.append(exclude) or ('gemini','test','synthetic'))
     assert ai.choose_provider()[0]=='gemini'
     assert seen==[{'groq'}]
+
+
+def test_base_ai_timeout_moves_next_explicit_attempt_to_another_provider(monkeypatch):
+    from app import classification_agent_ai as ai
+    from contextlib import contextmanager
+    setup(monkeypatch,[record(),record(account='413')])
+    monkeypatch.setattr(ai,'_provider_cooldowns',{})
+    monkeypatch.setattr(ai,'choose_provider',lambda:('gemini','test','synthetic'))
+    @contextmanager
+    def slot(*args):yield lambda raw:None
+    monkeypatch.setattr(ai,'request_slot',slot)
+    def timeout(*args,**kwargs):raise TimeoutError()
+    monkeypatch.setattr(ai.urllib.request,'urlopen',timeout)
+    r=agent.investigate(242,book())
+    assert r['ia']['codigo']=='conexao'
+    assert ai._provider_cooldowns['gemini']>ai.time.monotonic()
