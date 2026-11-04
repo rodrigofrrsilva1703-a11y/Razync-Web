@@ -390,3 +390,10 @@ def test_api_pending_explanation_contract(monkeypatch):
     response=client.post('/api/v1/base-inteligente/242/analisar-pendente',json=payload)
     assert response.status_code==200 and response.json()['linha']==2
     assert client.post('/api/v1/base-inteligente/968/analisar-pendente',json=payload).status_code==422
+
+
+def test_explanation_rejects_posting_instructions_from_ai():
+    from app.classification_explanation import validate_answer
+    answer={'resumo':'Referência semelhante.','contas':[{'referencia':'C1','explicacao':'Conta de despesa a ser creditada.'}],
+            'conferir':['Confira o documento.'],'limite':'Conferência manual.'}
+    with pytest.raises(ValueError):validate_answer(answer,{'C1':'412'})
