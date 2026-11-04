@@ -21,6 +21,10 @@ PROMPT = (
     'Não liste impostos ou documentos específicos sem evidência; peça a informação que falta para distinguir a operação. '
     'Explique sem jargão por que cada referência ajuda ou é insuficiente: texto, natureza, banco, recorrência e conflitos. '
     'Sem referência, deixe claro que o histórico sozinho não determina a conta. Não cite legislação. '
+    'Inclua exatamente uma comparação para CADA ID recebido, inclusive quando a evidência for insuficiente. '
+    'O campo referencia usa o ID recebido (ex.: C1); nunca use chaves conta ou codigo. '
+    'Formato obrigatório: {"resumo":"...","contas":[{"referencia":"C1","explicacao":"..."}],"conferir":["..."],"limite":"..."}. '
+    'Se não houver referências, contas deve ser uma lista vazia. '
     'Responda apenas JSON com resumo (até 350 caracteres), contas (lista de {referencia, explicacao}, '
     'usando somente IDs C1..C4 recebidos, explicacao até 260 caracteres), conferir '
     '(de 1 a 3 verificações concretas de até 180 caracteres) e limite (até 220 caracteres). '
@@ -124,6 +128,13 @@ def explain(row):
     except (urllib.error.URLError,TimeoutError,OSError):
         if result.get('provedor'):providers._provider_cooldowns[result['provedor']]=time.monotonic()+60
         return dict(result,motivo='A IA não respondeu no prazo. Tente novamente.')
-    except (ValueError,TypeError,KeyError,IndexError,AttributeError):
-        logging.getLogger(__name__).warning('base_explanation_failure provider=%s category=invalid_response',result.get('provedor','none'))
+    except (ValueError,TypeError,KeyError,IndexError,AttributeError) as exc:
+        # Only fixed validation categories enter logs, never model text or entry data.
+        reasons={'Resposta inválida.':'invalid_shape_or_text','Resposta incompleta.':'truncated_response',
+                 'Comparação incompleta.':'missing_reference','Conta sem evidência.':'unknown_reference',
+                 'Código de conta em texto livre.':'account_in_free_text',
+                 'Orientação de lançamento não permitida.':'posting_instruction'}
+        reason=reasons.get(str(exc),'invalid_json_or_structure')
+        logging.getLogger(__name__).warning('base_explanation_failure provider=%s category=invalid_response reason=%s',result.get('provedor','none'),reason)
+        if result.get('provedor'):providers._provider_cooldowns[result['provedor']]=time.monotonic()+60
         return dict(result,motivo='A resposta da IA não passou na validação. Tente novamente.')
