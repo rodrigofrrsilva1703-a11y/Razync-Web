@@ -734,26 +734,17 @@ html[data-theme=dark] #baseAiHost #baseInvestigationWindow .base-check-focus{bac
 @media(max-width:760px){#baseAiHost #baseInvestigationWindow .base-ai-window-body:has(.base-review-layout){display:block;overflow:auto}#baseAiHost #baseInvestigationWindow .base-review-layout{overflow:visible}#baseAiHost #baseInvestigationWindow .base-review-sidebar{height:auto;max-height:none;overflow:visible}#baseAiHost #baseInvestigationWindow .base-review-queue{max-height:115px}#baseAiHost #baseInvestigationWindow .base-review-detail{overflow:visible;padding:0;scrollbar-gutter:auto}#baseAiHost #baseInvestigationWindow .base-history-comparison>.base-review-decision{bottom:-12px}}
 
 
-/* Luminous AI mark. Motion is decorative; the click target stays still. */
-#baseAiHost button.base-ai-launcher{width:48px!important;height:48px!important;min-height:48px!important;right:18px;bottom:84px;isolation:isolate}
-#baseAiHost button.base-ai-launcher .base-launcher-ai{width:46px;height:46px;border-radius:50%;background:transparent!important}
-#baseAiHost .base-launcher-ai svg{width:44px;height:44px;stroke:none;overflow:visible}
-#baseAiHost .base-ai-orbit{transform-origin:24px 24px;stroke:#537ed2;stroke-width:1.1;stroke-linecap:round;opacity:.65}
-#baseAiHost .base-ai-orbit circle{fill:#5e9df2;stroke:none}
-#baseAiHost .base-ai-core{transform-origin:24px 24px}
-#baseAiHost .base-ai-core-star{fill:url(#baseAiOrbitGradient);stroke:#3976d7;stroke-width:.65;stroke-linejoin:round}
-#baseAiHost .base-ai-core-glow{fill:#60a4fa;opacity:.2;filter:blur(4px)}
-#baseAiHost .base-ai-orbit-spark{fill:#33b2cf;stroke:none;transform-origin:35px 13px}
-#baseAiHost button.base-ai-launcher .base-ai-launcher-count{top:0!important;right:-1px!important;background:#3466cd!important;font-size:9px!important;height:16px!important;min-width:16px!important;border-radius:5px!important}
-#baseAiHost button.base-ai-launcher:hover .base-launcher-ai{filter:drop-shadow(0 0 5px #4389ec50)}
-#baseAiHost button.base-ai-launcher:active .base-launcher-ai{transform:scale(.94)}
-html[data-theme=dark] #baseAiHost .base-ai-orbit{stroke:#83b2ff;opacity:.7}
-html[data-theme=dark] #baseAiHost .base-ai-core-star{stroke:#9cc9ff;stroke-width:.7}
-html[data-theme=dark] #baseAiHost .base-ai-core-glow{opacity:.4;fill:#559eff}
-html[data-theme=dark] #baseAiHost .base-ai-orbit-spark{fill:#73e2ed}
-@keyframes baseAiOrbitTurn{to{transform:rotate(360deg)}}
-@keyframes baseAiCoreBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.055)}}
-@keyframes baseAiSmallGlimmer{0%,60%,100%{opacity:.65;transform:scale(.9)}80%{opacity:1;transform:scale(1.1)}}
-@media(prefers-reduced-motion:no-preference){#baseAiHost .base-ai-orbit{animation:baseAiOrbitTurn 14s linear infinite}#baseAiHost .base-ai-core{animation:baseAiCoreBreathe 4s ease-in-out infinite}#baseAiHost .base-ai-orbit-spark{animation:baseAiSmallGlimmer 4.6s ease-in-out infinite}#baseAiHost .base-launcher-ai{transition:filter .2s,transform .15s}}
-@media(prefers-reduced-motion:reduce){#baseAiHost .base-ai-orbit,#baseAiHost .base-ai-core,#baseAiHost .base-ai-orbit-spark{animation:none!important}}
-@media(max-width:760px){#baseAiHost button.base-ai-launcher{right:14px;bottom:82px}}
+/* Traced original letters: arrows and background remain still. */
+#baseAiHost .base-ai-launcher{height:62px;min-height:62px;width:62px;padding:7px;gap:0;border-radius:18px}
+#baseAiHost .base-ai-launcher .base-brand-mark{width:46px;height:46px;border-radius:13px}
+#baseAiHost .base-rz-vector{display:block;width:100%;height:100%;border-radius:inherit;overflow:visible}
+#baseAiHost .base-rz-letter{transform-box:fill-box;transform-origin:center}
+#baseAiHost .base-brand-letter-motion::after{display:none}
+#baseAiHost .base-ai-launcher:hover .base-launcher-copy,#baseAiHost .base-ai-launcher:focus-visible .base-launcher-copy{display:grid;position:absolute;right:calc(100% + 14px);top:50%;transform:translateY(-50%);width:max-content;max-width:190px;padding:10px 12px;border:1px solid var(--review-border);border-radius:10px;background:var(--review-paper);box-shadow:0 6px 22px #101b3220;pointer-events:none}
+@keyframes baseLetterR{0%,12%,70%,100%{transform:translateY(0) rotate(0)}32%{transform:translateY(-30px) rotate(-2deg)}48%{transform:translateY(8px) rotate(1deg)}}
+@keyframes baseLetterZ{0%,24%,82%,100%{transform:translateY(0) rotate(0)}44%{transform:translateY(-30px) rotate(2deg)}60%{transform:translateY(8px) rotate(-1deg)}}
+@media(prefers-reduced-motion:no-preference){#baseAiHost .base-rz-r{animation:baseLetterR 5s ease-in-out infinite}#baseAiHost .base-rz-z{animation:baseLetterZ 5s ease-in-out infinite}}
+@media(prefers-reduced-motion:reduce){#baseAiHost .base-rz-letter{animation:none!important;transform:none!important}}
+
+#baseAiHost button.base-ai-launcher{width:54px!important;height:54px!important;min-height:54px!important}
+#baseAiHost button.base-ai-launcher .base-brand-mark{width:40px;height:40px}

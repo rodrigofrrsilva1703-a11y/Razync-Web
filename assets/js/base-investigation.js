@@ -1,5 +1,7 @@
 /* Optional investigation of the exact classified result, never the original upload. */
 (() => {
+  let brandSequence=0;
+  const letterPaths={"r":"M215,507L215,848L299,848L300,508L299,507ZM215,336L215,423L469,423L483,427L493,432L500,437L510,447L518,459L522,470L523,480L524,481L524,491L523,492L522,502L516,516L509,526L503,532L492,540L484,544L469,548L321,548L321,615L338,631L412,712L496,801L546,800L560,796L574,789L581,784L594,771L456,625L457,624L478,624L479,623L486,623L487,622L503,620L525,613L544,604L560,593L576,578L587,564L595,551L602,535L609,510L610,493L611,492L610,468L606,447L600,429L589,407L577,390L555,368L536,355L512,344L483,337L476,337L475,336Z","z":"M670,863L1038,863L1038,777L749,777L708,823ZM1041,390L1038,388L919,388L787,488L857,488L858,490L781,581L673,701L674,702L675,701L676,702L783,702L784,701L789,702L873,605L945,519L1041,395Z"};
   let context, controller, priorityController, generation=0, wantsOpen=false;
   const launcher=document.createElement('button');launcher.type='button';launcher.className='base-ai-launcher';launcher.hidden=true;
   launcher.textContent='Revisar pendências';launcher.setAttribute('aria-label','Revisar pendências da Base Inteligente');launcher.setAttribute('aria-controls','baseInvestigationWindow');launcher.setAttribute('aria-expanded','false');
@@ -26,8 +28,13 @@
   const visibilityObserver=new MutationObserver(syncVisibility);
   visibilityObserver.observe(companyPanel,{attributes:true,attributeFilter:['hidden']});
   visibilityObserver.observe(basePane,{attributes:true,attributeFilter:['class']});
-  function brandMark(){
+  function brandMark(animated=false){
     const mark=document.createElement('span');mark.className='base-brand-mark';mark.setAttribute('aria-hidden','true');
+    if(animated){
+      const id=`base-rz-mask-${++brandSequence}`;
+      mark.innerHTML=`<svg class="base-rz-vector" viewBox="0 0 1254 1254" aria-hidden="true" focusable="false"><defs><mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="1254" height="1254"><rect width="1254" height="1254" fill="white"/><path d="${letterPaths.r}${letterPaths.z}" fill="black" stroke="black" stroke-width="3"/></mask></defs><image href="./assets/razync-logo-original.png" width="1254" height="1254" mask="url(#${id})"/><g fill="#f3f4f6"><path class="base-rz-letter base-rz-r" d="${letterPaths.r}"/><path class="base-rz-letter base-rz-z" d="${letterPaths.z}"/></g></svg>`;
+      return mark;
+    }
     const logo=document.createElement('img');logo.src='./assets/razync-logo-original.png';logo.alt='';logo.width=40;logo.height=40;logo.decoding='async';mark.append(logo);return mark;
   }
   const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text)e.textContent=text;if(cls)e.className=cls;return e;};
@@ -43,9 +50,7 @@
     }
     context={prepared,company,options,onState,onReviewChange};subtitle.textContent=`Empresa ${company} · Comparação de históricos`;
     onState?.('preparing',`${Number(summary.cobertura.pendentes).toLocaleString('pt-BR')} pendência(s) em preparação`);
-    const aiIcon=node('span',null,'base-launcher-ai');aiIcon.setAttribute('aria-hidden','true');
-    aiIcon.innerHTML='<svg viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false"><defs><linearGradient id="baseAiOrbitGradient" x1="10" y1="35" x2="37" y2="10" gradientUnits="userSpaceOnUse"><stop stop-color="#3869e8"/><stop offset=".55" stop-color="#529cff"/><stop offset="1" stop-color="#3bd2e0"/></linearGradient></defs><g class="base-ai-orbit"><path d="M8 29a17 17 0 0 1 9-20M31 39a17 17 0 0 0 9-20"/><circle cx="11" cy="35" r="1.5"/><circle cx="37" cy="13" r="1.5"/></g><g class="base-ai-core"><path class="base-ai-core-glow" d="M23 12c1.2 7.3 3.8 9.9 11 11-7.2 1.2-9.8 3.8-11 11-1.1-7.2-3.7-9.8-11-11 7.3-1.1 9.9-3.7 11-11Z"/><path class="base-ai-core-star" d="M23 12c1.2 7.3 3.8 9.9 11 11-7.2 1.2-9.8 3.8-11 11-1.1-7.2-3.7-9.8-11-11 7.3-1.1 9.9-3.7 11-11Z"/><path class="base-ai-orbit-spark" d="M35 8c.5 3.3 1.7 4.5 5 5-3.3.5-4.5 1.7-5 5-.5-3.3-1.7-4.5-5-5 3.3-.5 4.5-1.7 5-5Z"/></g></svg>';
-    launcher.replaceChildren(aiIcon,node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));launcher.title=`Assistente IA · Revisar ${summary.cobertura.pendentes} pendências da empresa ${company}`;
+    const launcherCopy=node('span',null,'base-launcher-copy');launcherCopy.append(node('small','ASSISTENTE RAZYNC'),node('strong','Revisar pendências'));const animatedMark=brandMark(true);animatedMark.className+=' base-brand-letter-motion';launcher.replaceChildren(animatedMark,launcherCopy,node('b',String(summary.cobertura.pendentes),'base-ai-launcher-count'));launcher.title=`Revisar ${summary.cobertura.pendentes} pendências da empresa ${company}`;
     launcher.hidden=false;
     investigate(); // Local-only preparation; never consumes an AI call.
   }
