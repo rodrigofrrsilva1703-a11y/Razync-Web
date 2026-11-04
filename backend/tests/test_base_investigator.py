@@ -304,3 +304,89 @@ def test_base_ai_timeout_moves_next_explicit_attempt_to_another_provider(monkeyp
     r=agent.investigate(242,book())
     assert r['ia']['codigo']=='conexao'
     assert ai._provider_cooldowns['gemini']>ai.time.monotonic()
+
+
+
+def test_explanation_is_bound_to_company_row_and_current_base_and_cached(monkeypatch):
+    from app import classification_explanation as ai
+    setup(monkeypatch,[record()]);data=book();r=agent.investigate(242,data,use_ai=False);calls=[]
+    def explain(row):
+        calls.append(row)
+        return {'estado':'concluida','analise':{'resumo':'Referência a conferir','contas':[],'conferir':['Documento'],'limite':'Conferir'}}
+    monkeypatch.setattr(ai,'explain',explain)
+    before=r['sugestoes'][0].copy()
+    first=agent.explain_pending(242,r['token'],'Itaú 508',2)
+    assert first['estado']=='concluida' and first['linha']==2
+    assert agent.explain_pending(242,r['token'],'Itaú 508',2)['cache']
+    assert len(calls)==1 and agent._cache and r['sugestoes'][0]==before
+    for company,sheet,line in [(968,'Itaú 508',2),(242,'Inexistente',2),(242,'Itaú 508',999)]:
+        with pytest.raises(ValueError):agent.explain_pending(company,r['token'],sheet,line)
+    with pytest.raises(ValueError):agent.explain_pending(242,'invalid','Itaú 508',2)
+    assert len(calls)==1
+
+
+def test_explanation_redacts_ids_and_validates_only_proven_accounts():
+    from app.classification_explanation import evidence_context,validate_answer
+    row={'natureza':'pago','Histórico':'Pago: fornecedor CPF 123.456.789-01 CNPJ 12.345.678/0001-90 a@b.com PIX 987654321','situacao':'MANUAL',
+         'evidencias':[{'conta':'412','exata':False,'mesmo_banco':True,'periodos':['2026-01'],'ocorrencias':2,'historicos':['Pago: fornecedor PIX 987654322']}]}
+    payload,accounts=evidence_context(row)
+    import json
+    serialized=json.dumps(payload)
+    for private in ['123.456.789-01','12.345.678/0001-90','a@b.com','987654321','987654322','412']:assert private not in serialized
+    assert payload['referencias'][0]['evidencias'][0]['numeros_divergentes']
+    answer={'resumo':'C1 precisa de conferência.','contas':[{'referencia':'C1','explicacao':'Referência semelhante.'}],'conferir':['Confira o documento.'],'limite':'A referência não confirma a operação.'}
+    valid=validate_answer(answer,accounts)
+    assert valid['contas'][0]['conta']=='412' and 'conta 412' in valid['resumo']
+    answer['contas'][0]['referencia']='C9'
+    with pytest.raises(ValueError):validate_answer(answer,accounts)
+
+
+def test_explanation_inflight_duplicate_does_not_consume_another_ai_call(monkeypatch):
+    from fastapi import HTTPException
+    from app import classification_explanation as ai
+    setup(monkeypatch,[record()]);r=agent.investigate(242,book(),use_ai=False)
+    def explain(row):
+        with pytest.raises(HTTPException) as error:agent.explain_pending(242,r['token'],'Itaú 508',2)
+        assert error.value.status_code==409
+        return {'estado':'concluida','analise':{}}
+    monkeypatch.setattr(ai,'explain',explain)
+    assert agent.explain_pending(242,r['token'],'Itaú 508',2)['estado']=='concluida'
+
+
+def test_explanation_calls_one_provider_with_redacted_context(monkeypatch):
+    import json
+    from contextlib import contextmanager
+    from app import classification_explanation as ai
+    monkeypatch.setattr(ai.providers,'choose_provider',lambda:('gemini','test','synthetic-key'))
+    calls=[]
+    @contextmanager
+    def slot(*args):yield lambda raw:None
+    monkeypatch.setattr(ai,'request_slot',slot)
+    answer={'resumo':'Referência semelhante.','contas':[{'referencia':'C1','explicacao':'Texto a conferir.'}],'conferir':['Confira a natureza no documento.'],'limite':'Aprovação manual necessária.'}
+    class Response:
+        def __enter__(self):return self
+        def __exit__(self,*args):pass
+        def read(self,n):return json.dumps({'candidates':[{'finishReason':'STOP','content':{'parts':[{'text':json.dumps(answer)}]}}]}).encode()
+    def request(req,**kwargs):
+        calls.append(req)
+        content=json.loads(req.data)['contents'][0]['parts'][0]['text']
+        assert '123.456.789-01' not in content and '412' not in content
+        return Response()
+    monkeypatch.setattr(ai.urllib.request,'urlopen',request)
+    row={'natureza':'pago','Histórico':'Pago CPF 123.456.789-01','situacao':'MANUAL','evidencias':[{'conta':'412','exata':True,'mesmo_banco':True,'periodos':['2026-01'],'ocorrencias':1,'historicos':['Pago CPF 123.456.789-01']}]}
+    result=ai.explain(row)
+    assert result['estado']=='concluida' and result['provedor']=='gemini' and len(calls)==1
+    assert result['analise']['contas'][0]['conta']=='412'
+
+
+def test_api_pending_explanation_contract(monkeypatch):
+    from fastapi.testclient import TestClient
+    from app.main import app
+    from app import classification_explanation as ai
+    setup(monkeypatch,[record()]);r=agent.investigate(242,book(),use_ai=False)
+    monkeypatch.setattr(ai,'explain',lambda row:{'estado':'concluida','analise':{'resumo':'Conferir'}})
+    payload={'investigacao_token':r['token'],'aba':'Itaú 508','linha':2}
+    client=TestClient(app)
+    response=client.post('/api/v1/base-inteligente/242/analisar-pendente',json=payload)
+    assert response.status_code==200 and response.json()['linha']==2
+    assert client.post('/api/v1/base-inteligente/968/analisar-pendente',json=payload).status_code==422

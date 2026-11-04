@@ -19,6 +19,39 @@ VERSION = 'base-investigator-2'
 _lock = threading.RLock()
 _cache = OrderedDict()
 _TTL = 1200
+_explanation_cache = OrderedDict()
+_explanation_active = set()
+
+
+def explain_pending(company, token, sheet, line):
+    """Analyze one verified row. The client cannot supply or invent its evidence."""
+    from fastapi import HTTPException
+    from app.classification_explanation import explain
+    if not isinstance(token,str) or not token or not isinstance(sheet,str) or type(line)!=int:
+        raise ValueError('Seleção inválida.')
+    key=(int(company),token,sheet,line)
+    with _lock:
+        ticket=next((copy.deepcopy(v) for v in _cache.values()
+                     if secrets.compare_digest(v['result']['token'],token)),None)
+        if not ticket or time.monotonic()-ticket['time']>_TTL or ticket['company']!=int(company):
+            raise ValueError('Esta revisão expirou. Classifique o arquivo novamente para analisar.')
+        if ticket['basehash']!=fingerprint(base.records(company)):
+            raise ValueError('A base mudou. Classifique novamente antes de analisar.')
+        row=next((r for r in ticket['result']['sugestoes'] if r['_aba']==sheet and r['_linha']==line),None)
+        if row is None:raise ValueError('Lançamento fora desta revisão.')
+        cached=_explanation_cache.get(key)
+        if cached and time.monotonic()-cached[0]<_TTL:return dict(copy.deepcopy(cached[1]),cache=True)
+        if key in _explanation_active:raise HTTPException(409,'A análise deste lançamento já está em andamento.')
+        _explanation_active.add(key)
+    try:
+        result=dict(explain(row),aba=sheet,linha=line,cache=False)
+        if result['estado']=='concluida':
+            with _lock:
+                _explanation_cache[key]=(time.monotonic(),copy.deepcopy(result))
+                while len(_explanation_cache)>128:_explanation_cache.popitem(last=False)
+        return result
+    finally:
+        with _lock:_explanation_active.discard(key)
 
 
 def fingerprint(records):
@@ -251,4 +284,5 @@ def _apply(company, content, filename, revisions, token, remember=False):
         finally:
             con.close()
     return book,summary
+
 

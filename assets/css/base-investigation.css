@@ -757,5 +757,21 @@ html[data-theme=dark] #baseAiHost #baseInvestigationWindow .base-check-focus{bac
 #baseAiHost .base-ai-loading>p{grid-column:2;max-width:440px;font-size:12px;line-height:1.6;margin:0;font-weight:400}
 #baseAiHost .base-ai-loading .base-loading-note{grid-column:2;max-width:440px;font-size:11px;line-height:1.6;margin:0;color:var(--review-muted)}
 #baseAiHost .base-ai-loading>button{grid-column:2;justify-self:start;margin:10px 0 0;padding:6px 10px;font-size:11px;min-height:30px}
+#baseAiHost .base-ai-explanation{padding:0 0 12px;margin:0 0 12px;border:0;border-bottom:1px solid var(--review-border);background:transparent;min-width:0}
+#baseAiHost .base-ai-explain-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+#baseAiHost .base-ai-explain-title{font-size:12px;color:var(--review-ink)}
+#baseAiHost .base-ai-explain-toolbar button{padding:6px 10px;min-height:30px;font-size:11px;color:var(--review-action);border-color:var(--review-border);background:transparent}
+#baseAiHost .base-ai-explain-status,#baseAiHost .base-ai-explain-summary{font-size:12px;line-height:1.65;margin:7px 0;color:var(--review-ink);overflow-wrap:anywhere}
+#baseAiHost .base-ai-explain-status{font-size:11px;color:var(--review-muted)}
+#baseAiHost .base-ai-explain-status.is-busy{position:relative;padding-left:27px;min-height:20px}
+#baseAiHost .base-ai-explain-status.is-busy::before{content:'';position:absolute;left:0;top:1px;width:16px;height:16px;border:2px solid var(--task-track,#dbe5f5);border-top-color:var(--task-accent,#356bd6);border-radius:50%;animation:razyncTaskOrbit 1s ease-in-out infinite}
+#baseAiHost .base-ai-explain-provider{display:block;font-size:10px;color:var(--review-action);margin-top:7px}
+#baseAiHost .base-ai-explain-account{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;margin:8px 0;font-size:11px;line-height:1.6}
+#baseAiHost .base-ai-explain-account strong{color:var(--review-action);font-size:11px;white-space:nowrap}
+#baseAiHost .base-ai-explain-label{display:block;margin-top:10px;font-size:11px}
+#baseAiHost .base-ai-explain-checks{margin:5px 0 8px;padding-left:17px;font-size:11px;line-height:1.7}
+#baseAiHost .base-ai-explain-limit{display:block;font-size:10px;color:var(--review-muted);line-height:1.6}
+@media(prefers-reduced-motion:reduce){#baseAiHost .base-ai-explain-status.is-busy::before{animation:none!important}}
 @media(prefers-reduced-motion:reduce){#baseAiHost .base-ai-loading .base-loading-orbit::before{animation:none!important}}
+
 

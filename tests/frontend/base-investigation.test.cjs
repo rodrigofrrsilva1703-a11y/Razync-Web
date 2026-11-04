@@ -138,3 +138,26 @@ test('falha de rede da IA também permite repetir sem refazer a classificação'
   await action(h,'Priorizar casos com IA').events.click();assert.equal(action(h,'Tentar IA novamente').disabled,false);
   assert.match(textOf(h.body),/Conexão interrompida/);assert.ok(action(h,'Gerar Excel com 0 revisões'));
 });
+
+
+test('análise do lançamento usa apenas sua seleção e preserva aprovações e conta',async()=>{
+  const h=await populated(twoRows());let calls=0;h.ctx.fetch=async(url,options)=>{
+    calls++;assert.match(url,/\/242\/analisar-pendente$/);const body=JSON.parse(options.body);
+    assert.deepEqual(body,{investigacao_token:'synthetic',aba:'Itaú',linha:2});
+    return {ok:true,json:async()=>({estado:'concluida',aba:'Itaú',linha:2,provedor:'gemini',modelo:'test',analise:{resumo:'Histórico compatível; confira o documento.',contas:[{conta:'412',explicacao:'Referência histórica.'}],conferir:['Confira a operação no documento.'],limite:'A conta precisa ser aprovada por você.'}})};
+  };
+  await action(h,'Analisar lançamento com IA').events.click();assert.equal(calls,1);
+  assert.match(textOf(h.body),/Histórico compatível/);assert.ok(action(h,'Gerar Excel com 0 revisões'));
+  assert.equal(action(h,'Análise pronta').disabled,true);assert.equal(h.requests.length,1);
+});
+test('falha de análise permite tentar novamente sem aprovar nem editar a conta',async()=>{
+  const h=await populated(twoRows());h.ctx.fetch=async()=>({ok:true,json:async()=>({estado:'indisponivel',aba:'Itaú',linha:2,motivo:'Limite temporário.'})});
+  await action(h,'Analisar lançamento com IA').events.click();assert.match(textOf(h.body),/Limite temporário/);
+  assert.equal(action(h,'Tentar análise novamente').disabled,false);assert.ok(action(h,'Gerar Excel com 0 revisões'));
+});
+test('resposta atrasada de outra linha nunca aparece na seleção atual',async()=>{
+  const h=await populated(twoRows());let resolve;h.ctx.fetch=()=>new Promise(r=>resolve=r);
+  const pending=action(h,'Analisar lançamento com IA').events.click();action(h,'Próximo').events.click();
+  resolve({ok:true,json:async()=>({estado:'concluida',aba:'Itaú',linha:2,provedor:'gemini',analise:{resumo:'Análise da primeira linha',contas:[],conferir:['Documento'],limite:'Conferir'}})});
+  await pending;assert.doesNotMatch(textOf(h.body),/Análise da primeira linha/);assert.ok(action(h,'Gerar Excel com 0 revisões'));
+});

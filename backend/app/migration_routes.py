@@ -268,6 +268,21 @@ async def suggest_pending(company_code: int, file: UploadFile = File(...), optio
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
+class PendingExplanation(BaseModel):
+    investigacao_token: str
+    aba: str
+    linha: int
+
+
+@router.post('/base-inteligente/{company_code}/analisar-pendente')
+async def explain_pending(company_code: int, payload: PendingExplanation):
+    from app.ai_classification_agent import explain_pending as explain
+    try:
+        return await run_in_threadpool(explain,company_code,payload.investigacao_token,payload.aba,payload.linha)
+    except ValueError as exc:
+        raise HTTPException(422,str(exc)) from exc
+
+
 @router.post('/modelo-dominio-txt')
 async def export_txt(
     file: UploadFile = File(...),
@@ -312,3 +327,4 @@ async def export_txt(
         return download(content, 'RAZYNC_MODELO_DOMINIO.txt', mime='text/plain; charset=utf-8')
     except Exception as exc:
         raise HTTPException(422,str(exc)) from exc
+

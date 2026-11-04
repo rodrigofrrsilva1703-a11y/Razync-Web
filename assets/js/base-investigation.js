@@ -2,7 +2,7 @@
 (() => {
   let brandSequence=0;
   const letterPaths={"r":"M215,507L215,848L299,848L300,508L299,507ZM215,336L215,423L469,423L483,427L493,432L500,437L510,447L518,459L522,470L523,480L524,481L524,491L523,492L522,502L516,516L509,526L503,532L492,540L484,544L469,548L321,548L321,615L338,631L412,712L496,801L546,800L560,796L574,789L581,784L594,771L456,625L457,624L478,624L479,623L486,623L487,622L503,620L525,613L544,604L560,593L576,578L587,564L595,551L602,535L609,510L610,493L611,492L610,468L606,447L600,429L589,407L577,390L555,368L536,355L512,344L483,337L476,337L475,336Z","z":"M670,863L1038,863L1038,777L749,777L708,823ZM1041,390L1038,388L919,388L787,488L857,488L858,490L781,581L673,701L674,702L675,701L676,702L783,702L784,701L789,702L873,605L945,519L1041,395Z"};
-  let context, controller, priorityController, generation=0, wantsOpen=false;
+  let context, controller, priorityController, explanationController, generation=0, wantsOpen=false;
   const launcher=document.createElement('button');launcher.type='button';launcher.className='base-ai-launcher';launcher.hidden=true;
   launcher.textContent='Revisar pendências';launcher.setAttribute('aria-label','Revisar pendências da Base Inteligente');launcher.setAttribute('aria-controls','baseInvestigationWindow');launcher.setAttribute('aria-expanded','false');
   const floating=document.createElement('section');floating.id='baseInvestigationWindow';floating.className='base-ai-window';floating.hidden=true;
@@ -41,7 +41,7 @@
   const bankLabelUI=value=>({bb:'Banco do Brasil',itau_508:'Itaú 508',itau_509:'Itaú 509',itau_512:'Itaú 512'}[value] || (typeof bankName==='function'?bankName(value):value));
   const quantity=(n,singular,plural=singular+'s')=>`${n} ${n===1?singular:plural}`;
   const button=(text,fn)=>{const e=node('button',text,'secondary-action');e.type='button';e.addEventListener('click',fn);return e;};
-  function reset(){generation++;controller?.abort();priorityController?.abort();context=null;wantsOpen=false;body.replaceChildren();workbar.replaceChildren();floating.hidden=true;launcher.hidden=true;launcher.setAttribute('aria-expanded','false');}
+  function reset(){generation++;controller?.abort();priorityController?.abort();explanationController?.abort();context=null;wantsOpen=false;body.replaceChildren();workbar.replaceChildren();floating.hidden=true;launcher.hidden=true;launcher.setAttribute('aria-expanded','false');}
   function mount({prepared,company,options,summary,onState,onReviewChange}) {
     reset();
     if(!summary?.cobertura?.pendentes){
@@ -289,9 +289,43 @@
         entry.append(node('strong',`${c.select.checked?'✓ ':''}${c.s._aba} · linha ${c.s._linha}`),node('span',c.s['Histórico']),node('small',`${group.length>1?quantity(group.length,'lançamento')+' · Total ':''}${groupValue.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}`),node('small',c.select.checked?'Aprovada':c.deferred?'Adiada':c.account.value?`${c.s.conta_sugerida===c.account.value?'Sugestão':'Conta em revisão'}: ${c.account.value}`:'Escolher conta'));queue.append(entry);
       }
     }
+    function paintExplanation(c){
+      const panel=c.explanationPanel;if(!panel)return;panel.replaceChildren();
+      const toolbar=node('div',null,'base-ai-explain-toolbar');
+      const title=node('strong','Análise do lançamento','base-ai-explain-title');
+      const trigger=button(c.explaining?'Cancelar análise':c.explanation?'Análise pronta':c.explanationError?'Tentar análise novamente':'Analisar lançamento com IA',async()=>{
+        if(c.explaining){c.explanationRequest?.abort();return;}
+        if(completed || applying || c.explanation)return;
+        explanationController?.abort();const request=new AbortController();explanationController=request;c.explanationRequest=request;
+        c.explaining=true;c.explanationError='';paintExplanation(c);
+        try{
+          const response=await fetch(`${API()}/api/v1/base-inteligente/${current.company}/analisar-pendente`,{
+            method:'POST',headers:{'Content-Type':'application/json'},signal:request.signal,
+            body:JSON.stringify({investigacao_token:result.token,aba:c.s._aba,linha:c.s._linha})});
+          if(!response.ok)throw Error(await responseError(response));
+          const data=await response.json();if(request.signal.aborted || version!==generation)return;
+          if(data.aba!==c.s._aba || data.linha!==c.s._linha)throw Error('A resposta não corresponde a este lançamento.');
+          if(data.estado!=='concluida' || !data.analise)throw Error(data.motivo || 'A IA não concluiu esta análise.');
+          c.explanation=data;
+        }catch(error){if(version===generation)c.explanationError=request.signal.aborted?'Análise cancelada. Suas aprovações foram mantidas.':error.message || 'Não foi possível analisar este lançamento.';}
+        finally{c.explaining=false;if(version===generation && active===c)paintExplanation(c);}
+      });trigger.disabled=Boolean(c.explanation) || completed || applying;
+      toolbar.append(title,trigger);panel.append(toolbar);
+      const status=node('p',c.explaining?'Comparando o histórico e as referências…':c.explanationError || 'Explica as evidências deste item. Você continua decidindo a conta.','base-ai-explain-status'+(c.explaining?' is-busy':''));status.setAttribute('role','status');status.setAttribute('aria-live','polite');panel.append(status);
+      if(c.explanation){
+        status.hidden=true;const answer=c.explanation.analise;
+        const provider={gemini:'Gemini',groq:'Groq',openrouter:'OpenRouter'}[c.explanation.provedor] || 'IA';
+        panel.append(node('small',provider+(c.explanation.modelo?' · '+c.explanation.modelo:''),'base-ai-explain-provider'),node('p',answer.resumo,'base-ai-explain-summary'));
+        for(const item of answer.contas || []){const row=node('div',null,'base-ai-explain-account');row.append(node('strong','Conta '+item.conta),node('span',item.explicacao));panel.append(row);}
+        const checks=node('ul',null,'base-ai-explain-checks');for(const check of answer.conferir || [])checks.append(node('li',check));
+        panel.append(node('strong','Confira agora','base-ai-explain-label'),checks,node('small',answer.limite,'base-ai-explain-limit'));
+      }
+    }
     function showDetail(){
       detail.replaceChildren();if(!active){detail.append(node('p','Selecione outra opção nos filtros para continuar.'));return;}
       const c=active,s=c.s;
+      c.explanationPanel=node('section',null,'base-ai-explanation');c.explanationPanel.setAttribute('aria-label','Análise do lançamento com IA');
+      detail.append(c.explanationPanel);paintExplanation(c);
       const position=visible().indexOf(c)+1;
       detail.append(node('small',`${position} de ${quantity(visible().length,'lançamento')} · ${quantity(queueGroups(visible()).length,'item na fila','itens na fila')}`));
       const comparison=node('div',null,'base-history-comparison'),received=node('section',null,'base-history-received'),saved=node('section',null,'base-history-saved');
@@ -421,6 +455,7 @@
   }
   globalThis.RazyncBaseInvestigation={mount,open:openOrInvestigate,reset,download:async company=>{if(!context || String(context.company)!==String(company) || !context.download)return false;return context.download();}};
 })();
+
 
 
 
