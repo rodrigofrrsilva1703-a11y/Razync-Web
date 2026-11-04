@@ -60,12 +60,10 @@
     body.querySelectorAll('button').forEach(b=>b.disabled=true);
     body.replaceChildren();
     const loading=node('div',null,'base-ai-loading');loading.setAttribute('aria-busy','true');
-    const symbol=brandMark();symbol.className+=' base-ai-loading-symbol';
-    const status=node('p','Consultando padrões e evidências…','base-ai-loading-status');status.setAttribute('role','status');
-    const orbit=node('div',null,'base-loading-orbit');orbit.append(symbol);for(let i=0;i<3;i++){const dot=node('i');dot.setAttribute('aria-hidden','true');orbit.append(dot);}loading.append(orbit,node('small','BASE INTELIGENTE','base-loading-eyebrow'),node('h3','Conectando os seus históricos'),status,node('p','Estamos preparando os exemplos e as contas da empresa para você comparar com os lançamentos pendentes.'));
-    const loadingNote=node('span','Sua revisão começa pelas evidências salvas. Nenhuma conta será aprovada automaticamente.','base-loading-note');loading.append(loadingNote);
-    const skeleton=node('div',null,'base-ai-skeleton');skeleton.setAttribute('aria-hidden','true');
-    for(let i=0;i<4;i++)skeleton.append(node('i'));loading.append(skeleton);
+    const orbit=node('div',null,'base-loading-orbit');orbit.setAttribute('aria-hidden','true');
+    const status=node('p','Consultando padrões e exemplos da empresa…','base-ai-loading-status');status.setAttribute('role','status');
+    loading.append(orbit,node('h3','Preparando sua revisão'),status,
+      node('span','Você poderá comparar os históricos antes de aprovar.','base-loading-note'));
     const cancel=button('Cancelar',()=>{current.onState?.('error','Preparação interrompida');controller.abort();generation++;body.replaceChildren(node('p','Preparação interrompida.'),button('Preparar novamente',investigate));workbar.replaceChildren();});loading.append(cancel);body.append(loading);
     try {
       current.blob=current.blob || await current.prepared.blob();
@@ -395,6 +393,7 @@
   }
   globalThis.RazyncBaseInvestigation={mount,open:openOrInvestigate,reset,download:async company=>{if(!context || String(context.company)!==String(company) || !context.download)return false;return context.download();}};
 })();
+
 
 
 
