@@ -1,5 +1,8 @@
 """One optional free-only call. Only anonymous evidence descriptors leave the server."""
 import json
+import logging
+import urllib.error
+from fastapi import HTTPException
 import urllib.request
 from app.fiscal_hybrid_ai import choose_provider
 from app.ai_budget import request_slot
@@ -15,8 +18,9 @@ def interpret(suggestions):
     try:
         option=choose_provider()
         if not option:
-            return result
+            return dict(result,codigo='sem_provedor_disponivel',motivo='Nenhum provedor gratuito está disponível neste momento. Tente novamente mais tarde; sua revisão foi preservada.')
         provider,model,key=option
+        result.update(provedor=provider,modelo=model)
         groups={}
         for s in suggestions:
             if s['situacao']=='MANUAL' and s['evidencias'] and s['grupo'] not in groups:
@@ -25,18 +29,22 @@ def interpret(suggestions):
                                    'periodos':len(e['periodos'])} for e in s['evidencias'][:4]]}
             if len(groups)>=12:
                 break
+        if not groups:
+            return dict(result,estado='dispensada',codigo='sem_conflitos',motivo='Não há grupos com evidências conflitantes para priorizar.')
         text=json.dumps(list(groups.values()),separators=(',',':'))
         if provider=='gemini':
             url=f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
             headers={'Content-Type':'application/json','x-goog-api-key':key}
             body={'systemInstruction':{'parts':[{'text':PROMPT}]},'contents':[{'role':'user','parts':[{'text':text}]}],
-                  'generationConfig':{'temperature':0,'maxOutputTokens':256,'responseMimeType':'application/json'}}
+                  'generationConfig':{'temperature':0,'maxOutputTokens':512,'responseMimeType':'application/json'}}
         else:
             url='https://api.groq.com/openai/v1/chat/completions' if provider=='groq' else 'https://openrouter.ai/api/v1/chat/completions'
             headers={'Content-Type':'application/json','Authorization':'Bearer '+key}
             body={'model':model,'messages':[{'role':'system','content':PROMPT},{'role':'user','content':text}],
                   'temperature':0,'response_format':{'type':'json_object'}}
-            body['max_completion_tokens' if provider=='groq' else 'max_tokens']=256
+            body['max_completion_tokens' if provider=='groq' else 'max_tokens']=1024 if provider=='groq' else 512
+            if provider=='groq':
+                body['reasoning_effort']='low' if model.startswith('openai/') else 'none'
             if provider=='openrouter':
                 body['provider']={'allow_fallbacks':False,'data_collection':'deny','max_price':{'prompt':0,'completion':0}}
         with request_slot(provider,model if provider!='openrouter' else 'free',body) as usage:
@@ -48,18 +56,32 @@ def interpret(suggestions):
         if provider=='gemini':
             choice=raw['candidates'][0]
             if choice.get('finishReason')!='STOP':
-                raise ValueError()
+                raise ValueError('resposta_incompleta')
             answer=json.loads(''.join(p.get('text','') for p in choice['content']['parts'] if not p.get('thought')))
         else:
             choice=raw['choices'][0]
             if choice.get('finish_reason')!='stop' or choice['message'].get('tool_calls'):
-                raise ValueError()
+                raise ValueError('resposta_incompleta')
             answer=json.loads(choice['message']['content'])
         ids=answer.get('prioridades')
         if set(answer)!={'prioridades'} or not isinstance(ids,list) or len(ids)>8 or any(type(i)!=int or i not in groups for i in ids) or len(set(ids))!=len(ids):
             raise ValueError()
         return dict(result,estado='concluida',provedor=provider,prioridades=ids,
                     motivo='IA priorizou grupos para revisão; contas e justificativas permanecem baseadas no histórico verificado.')
+    except (urllib.error.HTTPError, HTTPException) as exc:
+        status=getattr(exc,'code',None) or getattr(exc,'status_code',None)
+        if isinstance(exc,urllib.error.HTTPError):exc.close()
+        code='limite' if status==429 else 'credencial' if status in (401,403) else 'provedor_recusou'
+        message={'limite':'O limite temporário da IA foi atingido. Tente novamente mais tarde.',
+                 'credencial':'O provedor recusou a autenticação da IA. A configuração precisa ser verificada.',
+                 'provedor_recusou':'O provedor não aceitou a consulta. Sua revisão foi preservada.'}[code]
+    except (urllib.error.URLError,TimeoutError,OSError):
+        code='conexao';message='A IA não respondeu a tempo. Você pode tentar novamente.'
+    except (ValueError,TypeError,KeyError,IndexError,AttributeError):
+        code='resposta_invalida';message='A IA retornou uma resposta incompleta ou incompatível. Tente novamente.'
     except Exception:
-        # Provider failures must never erase local evidence or trigger another call.
-        return result
+        code='falha_interna';message='Não foi possível consultar a IA. Sua revisão foi preservada.'
+    # Log only safe metadata, never keys, histories or raw provider bodies.
+    logging.getLogger(__name__).warning('base_ai_failure provider=%s code=%s',result.get('provedor','none'),code)
+    return dict(result,codigo=code,motivo=message)
+

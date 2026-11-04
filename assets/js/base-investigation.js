@@ -159,6 +159,7 @@
     intro.append(node('h3','Compare e revise'));body.append(intro);progress.setAttribute('role','status');progress.setAttribute('aria-live','polite');workbar.append(progress);
     const aiStatus=node('p','Comparação pelos padrões salvos. A IA opcional apenas organiza a fila; não escolhe nem aprova contas.','base-review-status');aiStatus.setAttribute('role','status');
     const aiButton=button('Priorizar casos com IA',async()=>{
+      let succeeded=false;
       aiButton.disabled=true;priorityController=new AbortController();const signal=priorityController.signal;
       aiBar.setAttribute('aria-busy','true');aiStatus.textContent='Priorizando casos ambíguos. Você pode continuar comparando os históricos.';
       const data=new FormData();data.append('file',current.blob,'classificado.xlsx');data.append('options_json',JSON.stringify(current.options));data.append('usar_ia','true');
@@ -166,11 +167,19 @@
         const response=await fetch(`${API()}/api/v1/base-inteligente/${current.company}/sugerir-pendentes`,{method:'POST',body:data,signal});
         if(!response.ok)throw Error(await responseError(response));
         const prioritized=await response.json();if(signal.aborted || version!==generation || completed)return;
+        const interpretation=prioritized.ia || {};
+        if(interpretation.estado && interpretation.estado!=='concluida'){
+          aiStatus.textContent=interpretation.motivo || 'A IA não concluiu esta consulta. Você pode tentar novamente.';
+          aiButton.textContent=interpretation.estado==='dispensada'?'Priorizar casos com IA':'Tentar IA novamente';
+          return;
+        }
         // Preserve every draft and approval. Only reorder the navigation queue.
         const ids=new Set(prioritized.ia?.prioridades || []);
         controls.sort((a,b)=>Number(ids.has(b.s.grupo))-Number(ids.has(a.s.grupo)));
-        aiStatus.textContent=prioritized.ia?.motivo || 'Prioridade mantida pelas evidências locais.';updateQueue();
-      }catch(error){if(!signal.aborted && version===generation)aiStatus.textContent=error.message;}finally{if(version===generation)aiBar.setAttribute('aria-busy','false');}
+        const provider={groq:'Groq',gemini:'Gemini',openrouter:'OpenRouter'}[interpretation.provedor];
+        aiStatus.textContent=(provider?`${provider}${interpretation.modelo?' · '+interpretation.modelo:''}: `:'')+(interpretation.motivo || 'Prioridade mantida pelas evidências locais.');
+        succeeded=true;aiButton.textContent='Prioridades atualizadas';updateQueue();
+      }catch(error){if(!signal.aborted && version===generation)aiStatus.textContent=error.message;}finally{if(version===generation){aiBar.setAttribute('aria-busy','false');aiButton.disabled=succeeded || completed || applying;if(!succeeded && aiButton.textContent==='Priorizar casos com IA')aiButton.textContent='Tentar IA novamente';}}
     });
     const aiBar=node('div',null,'base-review-ai');aiBar.append(aiStatus,aiButton);
     const controls=[],catalog=result.catalogo_contas || [],priority=new Set(result.ia?.prioridades || []);
@@ -412,6 +421,7 @@
   }
   globalThis.RazyncBaseInvestigation={mount,open:openOrInvestigate,reset,download:async company=>{if(!context || String(context.company)!==String(company) || !context.download)return false;return context.download();}};
 })();
+
 
 
 

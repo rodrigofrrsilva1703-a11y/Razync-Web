@@ -154,7 +154,9 @@ def investigate(company, content, options=None, use_ai=True):
             cached = copy.deepcopy(_cache[key]['result'])
             cached['cache'] = True
             cached['ia']['chamadas_nesta_execucao'] = 0
-            return cached
+            # Keep successful responses cached; an explicit click may retry a failed provider.
+            if not (use_ai and cached['ia'].get('estado') == 'indisponivel'):
+                return cached
     rows = eligible(company,content,options)
     groups = defaultdict(list)
     for row in rows:
@@ -249,3 +251,4 @@ def _apply(company, content, filename, revisions, token, remember=False):
         finally:
             con.close()
     return book,summary
+

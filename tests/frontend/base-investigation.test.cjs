@@ -123,3 +123,18 @@ test('confirmar geração no assistente já baixa e mantém o arquivo disponíve
   assert.ok(flatten(h.header).some(e=>e.tag==='button'&&textOf(e)==='Baixar Excel revisado'));
   await h.ctx.RazyncBaseInvestigation.download(242);assert.equal(x.generated(),1);assert.equal(x.downloads.length,2);
 });
+
+
+test('falha da IA libera nova tentativa e preserva as aprovações',async()=>{
+  const h=await populated(twoRows());action(h,'Aprovar e próximo').events.click();
+  let attempts=0;h.ctx.fetch=async()=>{attempts++;return {ok:true,json:async()=>attempts===1?{ia:{estado:'indisponivel',motivo:'Limite temporário.'}}:{ia:{estado:'concluida',provedor:'groq',modelo:'test',prioridades:[2],motivo:'Ordem conferida.'}}};};
+  await action(h,'Priorizar casos com IA').events.click();assert.equal(action(h,'Tentar IA novamente').disabled,false);
+  assert.ok(action(h,'Gerar Excel com 1 revisão'));assert.match(textOf(h.body),/Limite temporário/);
+  await action(h,'Tentar IA novamente').events.click();assert.equal(attempts,2);assert.ok(action(h,'Gerar Excel com 1 revisão'));
+  assert.equal(action(h,'Prioridades atualizadas').disabled,true);assert.match(textOf(h.body),/Groq · test/);
+});
+test('falha de rede da IA também permite repetir sem refazer a classificação',async()=>{
+  const h=await populated(twoRows());h.ctx.fetch=async()=>{throw Error('Conexão interrompida')};
+  await action(h,'Priorizar casos com IA').events.click();assert.equal(action(h,'Tentar IA novamente').disabled,false);
+  assert.match(textOf(h.body),/Conexão interrompida/);assert.ok(action(h,'Gerar Excel com 0 revisões'));
+});

@@ -240,3 +240,42 @@ def test_account_history_catalog_is_scoped_and_bounded(monkeypatch):
     assert payment['exemplos'][0]['ocorrencias']==20
     other=agent.investigate(1408,book([[-100,'',512,'Pago: Empresa: Fornecedor ABC']]),use_ai=False)
     assert other['catalogo_contas']==[]
+
+
+
+def test_ai_failed_request_can_be_retried_without_losing_evidence(monkeypatch):
+    from app import classification_agent_ai as ai
+    setup(monkeypatch,[record(),record(account='413')])
+    calls=[]
+    def interpret(rows):
+        calls.append(1)
+        return {'estado':'indisponivel' if len(calls)==1 else 'concluida','chamadas_nesta_execucao':1,'prioridades':[1]}
+    monkeypatch.setattr(ai,'interpret',interpret)
+    data=book();first=agent.investigate(242,data);second=agent.investigate(242,data);third=agent.investigate(242,data)
+    assert first['ia']['estado']=='indisponivel' and second['ia']['estado']=='concluida'
+    assert first['sugestoes']==second['sugestoes'] and len(calls)==2
+    assert third['cache'] and third['ia']['chamadas_nesta_execucao']==0
+
+
+def test_groq_priority_uses_bounded_reasoning_and_reports_provider(monkeypatch):
+    import json
+    from app import classification_agent_ai as ai
+    from contextlib import contextmanager
+    setup(monkeypatch,[record(),record(account='413')])
+    monkeypatch.setattr(ai,'choose_provider',lambda:('groq','openai/gpt-oss-120b','synthetic'))
+    @contextmanager
+    def slot(*args):yield lambda raw:None
+    monkeypatch.setattr(ai,'request_slot',slot)
+    class Response:
+        def __enter__(self):return self
+        def __exit__(self,*args):pass
+        def read(self,n):return json.dumps({'choices':[{'finish_reason':'stop','message':{'content':json.dumps({'prioridades':[1]})}}]}).encode()
+    def request(req,**kwargs):
+        body=json.loads(req.data)
+        assert body['reasoning_effort']=='low' and body['max_completion_tokens']==1024
+        assert 'Fornecedor' not in req.data.decode() and '412' not in req.data.decode()
+        return Response()
+    monkeypatch.setattr(ai.urllib.request,'urlopen',request)
+    r=agent.investigate(242,book())
+    assert r['ia']['estado']=='concluida' and r['ia']['provedor']=='groq'
+    assert r['ia']['modelo']=='openai/gpt-oss-120b' and r['ia']['prioridades']==[1]
