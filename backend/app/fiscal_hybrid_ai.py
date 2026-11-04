@@ -22,7 +22,7 @@ CRITERIA = {"documentos": "Priorize a conferência dos documentos e seus víncul
     "detalhamento": "Complete os documentos faltantes antes de decidir qualquer ajuste."}
 
 
-def choose_provider():
+def choose_provider(exclude=()):
     options = []
     if groq_fiscal.is_enabled():
         try:
@@ -40,7 +40,7 @@ def choose_provider():
                 options.append(("openrouter", model, os.getenv("OPENROUTER_API_KEY")))
         except HTTPException:
             pass
-    available = [option for option in options if not provider_wait_seconds(option[0])]
+    available = [option for option in options if option[0] not in exclude and not provider_wait_seconds(option[0])]
     primary = os.getenv("RAZYNC_AI_PRIMARY", "groq")
     available.sort(key=lambda item: item[0] != primary)
     return available[0] if available else None
@@ -126,3 +126,4 @@ def interpret(investigation):
     except (urllib.error.URLError, TimeoutError, OSError):
         pass
     return base
+

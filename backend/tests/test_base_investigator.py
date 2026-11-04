@@ -279,3 +279,12 @@ def test_groq_priority_uses_bounded_reasoning_and_reports_provider(monkeypatch):
     r=agent.investigate(242,book())
     assert r['ia']['estado']=='concluida' and r['ia']['provedor']=='groq'
     assert r['ia']['modelo']=='openai/gpt-oss-120b' and r['ia']['prioridades']==[1]
+
+
+def test_base_ai_skips_temporarily_blocked_provider_without_global_routing_change(monkeypatch):
+    from app import classification_agent_ai as ai
+    seen=[]
+    monkeypatch.setattr(ai,'_provider_cooldowns',{'groq':ai.time.monotonic()+60,'gemini':ai.time.monotonic()-1})
+    monkeypatch.setattr(ai,'_choose_provider',lambda exclude:seen.append(exclude) or ('gemini','test','synthetic'))
+    assert ai.choose_provider()[0]=='gemini'
+    assert seen==[{'groq'}]
