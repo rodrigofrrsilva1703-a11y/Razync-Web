@@ -810,7 +810,7 @@ html[data-theme=dark] #baseAiHost{--review-paper:#111214;--review-soft:#18191c;-
 @media(max-width:1000px){#baseAiHost #baseInvestigationWindow .base-review-toolbar{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:195px minmax(0,1fr)}}
 @media(max-width:760px){#baseAiHost #baseInvestigationWindow{width:calc(100vw - 12px)}#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-ai-workbar{flex-basis:100%;flex-wrap:wrap}#baseAiHost #baseInvestigationWindow .base-review-toolbar .base-review-filters{flex-wrap:wrap;overflow:visible}#baseAiHost #baseInvestigationWindow .base-workbar-actions{display:flex;flex-wrap:wrap}#baseAiHost #baseInvestigationWindow .base-history-comparison{grid-template-columns:minmax(0,1fr)}}
 /* Compact review: readable histories and a decision row that never covers content. */
-#baseAiHost #baseInvestigationWindow{top:68px;height:min(740px,calc(100dvh - 84px));max-height:calc(100dvh - 84px)}
+#baseAiHost #baseInvestigationWindow{top:68px;height:min(660px,calc(100dvh - 84px));max-height:calc(100dvh - 84px)}
 #baseAiHost #baseInvestigationWindow.is-expanded{inset:12px;height:calc(100dvh - 24px);max-height:none}
 #baseAiHost #baseInvestigationWindow .base-ai-window-header{padding:8px 12px}
 #baseAiHost #baseInvestigationWindow .base-ai-window-body{padding:10px 12px}
