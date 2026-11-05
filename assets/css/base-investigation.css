@@ -809,3 +809,52 @@ html[data-theme=dark] #baseAiHost{--review-paper:#111214;--review-soft:#18191c;-
 #baseAiHost #baseInvestigationWindow .base-queue-tools>input{color:var(--review-ink);background:var(--review-paper)}
 @media(max-width:1000px){#baseAiHost #baseInvestigationWindow .base-review-toolbar{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:195px minmax(0,1fr)}}
 @media(max-width:760px){#baseAiHost #baseInvestigationWindow{width:calc(100vw - 12px)}#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-ai-workbar{flex-basis:100%;flex-wrap:wrap}#baseAiHost #baseInvestigationWindow .base-review-toolbar .base-review-filters{flex-wrap:wrap;overflow:visible}#baseAiHost #baseInvestigationWindow .base-workbar-actions{display:flex;flex-wrap:wrap}#baseAiHost #baseInvestigationWindow .base-history-comparison{grid-template-columns:minmax(0,1fr)}}
+/* Compact review: readable histories and a decision row that never covers content. */
+#baseAiHost #baseInvestigationWindow{top:68px;height:min(740px,calc(100dvh - 84px));max-height:calc(100dvh - 84px)}
+#baseAiHost #baseInvestigationWindow.is-expanded{inset:12px;height:calc(100dvh - 24px);max-height:none}
+#baseAiHost #baseInvestigationWindow .base-ai-window-header{padding:8px 12px}
+#baseAiHost #baseInvestigationWindow .base-ai-window-body{padding:10px 12px}
+#baseAiHost #baseInvestigationWindow .base-review-toolbar{padding-bottom:8px;margin-bottom:8px;gap:8px}
+#baseAiHost #baseInvestigationWindow .base-review-layout{gap:12px;grid-template-columns:205px minmax(0,1fr)}
+#baseAiHost #baseInvestigationWindow .base-review-detail{display:flex;flex-direction:column;overflow:hidden;padding:0;scrollbar-gutter:auto;scroll-padding-bottom:0}
+#baseAiHost #baseInvestigationWindow .base-review-reading{flex:1;min-height:0;overflow:auto;padding-right:6px;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--review-border) transparent}
+#baseAiHost #baseInvestigationWindow .base-review-reading>small{font-size:10.5px;margin:0 0 5px;line-height:1.4}
+#baseAiHost #baseInvestigationWindow .base-history-comparison{gap:8px;margin-top:5px;align-items:start}
+#baseAiHost #baseInvestigationWindow .base-history-comparison>.base-history-received,#baseAiHost #baseInvestigationWindow .base-history-comparison>.base-history-saved{padding:10px!important;border-radius:8px;min-height:0}
+#baseAiHost #baseInvestigationWindow .base-history-comparison h4{font-size:10px;letter-spacing:.3px;padding-bottom:6px;margin:0 0 7px}
+#baseAiHost #baseInvestigationWindow .base-received-heading{padding-bottom:6px;margin-bottom:7px;gap:5px}
+#baseAiHost #baseInvestigationWindow .base-received-heading h4{padding:0;margin:0}
+#baseAiHost #baseInvestigationWindow .base-history-text,#baseAiHost #baseInvestigationWindow .base-history-received>.base-history-text,#baseAiHost #baseInvestigationWindow .base-history-saved .base-history-text{font-size:12px!important;line-height:1.5!important;margin:3px 0 6px!important;white-space:normal;overflow:visible;max-height:none;-webkit-line-clamp:unset}
+#baseAiHost #baseInvestigationWindow .base-history-received>small,#baseAiHost #baseInvestigationWindow .base-account-history>small,#baseAiHost #baseInvestigationWindow .base-account-history-entry>small{font-size:10.5px;line-height:1.45;margin-top:3px}
+#baseAiHost #baseInvestigationWindow .base-history-received>small:first-of-type{font-size:11.5px}
+#baseAiHost #baseInvestigationWindow .base-evidence-summary{gap:3px;margin:7px 0 0;padding:0}
+#baseAiHost #baseInvestigationWindow .base-evidence-summary>strong{font-size:11px;line-height:1.4;font-weight:550}
+#baseAiHost #baseInvestigationWindow .base-check-focus{margin:4px 0;padding:3px 0 3px 8px;background:transparent!important;border:0;border-left:2px solid #b98a35}
+#baseAiHost #baseInvestigationWindow .base-check-focus>strong{font-size:11px;line-height:1.4;margin-bottom:2px}
+#baseAiHost #baseInvestigationWindow .base-check-focus .base-analysis-check{font-size:11px!important;line-height:1.45!important;margin:0!important}
+#baseAiHost #baseInvestigationWindow .base-reasoning-details,#baseAiHost #baseInvestigationWindow .base-evidence-list{margin:4px 0 0}
+#baseAiHost #baseInvestigationWindow .base-reasoning-details>summary,#baseAiHost #baseInvestigationWindow .base-evidence-list>summary,#baseAiHost #baseInvestigationWindow .base-more-histories>summary,#baseAiHost #baseInvestigationWindow .base-comparison-differences>summary{font-size:10.5px;line-height:1.4;padding:2px 0}
+#baseAiHost #baseInvestigationWindow .base-account-history>strong{font-size:12px!important;line-height:1.4}
+#baseAiHost #baseInvestigationWindow .base-account-history-entry{padding:3px 0;margin:5px 0 0}
+#baseAiHost #baseInvestigationWindow .base-comparison-delta{padding:5px 0;margin:6px 0;gap:2px 6px}
+#baseAiHost #baseInvestigationWindow .base-comparison-delta>strong{font-size:10.5px;margin-bottom:2px}
+#baseAiHost #baseInvestigationWindow .base-comparison-delta>p{font-size:11px!important;line-height:1.4!important}
+#baseAiHost #baseInvestigationWindow .base-account-candidates button{min-height:26px;font-size:10.5px;padding:4px 6px}
+#baseAiHost #baseInvestigationWindow .base-ai-explanation{padding:7px 0!important}
+#baseAiHost #baseInvestigationWindow .base-ai-explain-title{font-size:11px}
+#baseAiHost #baseInvestigationWindow .base-ai-explain-toolbar button{min-height:27px;font-size:10.5px;padding:4px 8px}
+#baseAiHost #baseInvestigationWindow .base-ai-explain-summary{font-size:11.5px!important;line-height:1.5!important;margin:5px 0!important}
+#baseAiHost #baseInvestigationWindow .base-ai-explain-details>summary{font-size:10.5px;padding:2px 0}
+#baseAiHost #baseInvestigationWindow .base-ai-explain-status[hidden]{display:none!important}
+#baseAiHost #baseInvestigationWindow .base-review-detail>.base-review-decision{position:static;flex:none;display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:5px 10px;padding:8px 0 0;margin:6px 0 0;border:0;border-top:1px solid var(--review-border);border-radius:0;background:var(--review-paper);box-shadow:none;box-sizing:border-box;min-width:0}
+#baseAiHost #baseInvestigationWindow .base-review-decision>label{grid-row:1;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:550;white-space:nowrap;margin:0;min-width:0}
+#baseAiHost #baseInvestigationWindow .base-review-decision input[type=text]{width:150px;max-width:100%;min-width:95px;min-height:32px;box-sizing:border-box;padding:5px 8px;font-size:12px;letter-spacing:0;flex:0 1 150px}
+#baseAiHost #baseInvestigationWindow .base-review-decision .base-review-navigation{grid-row:1;grid-column:2;display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;align-self:center}
+#baseAiHost #baseInvestigationWindow .base-review-navigation button{min-height:32px;padding:5px 8px;font-size:10.5px!important;line-height:1.3}
+#baseAiHost #baseInvestigationWindow .base-review-navigation .base-review-confirm{min-width:120px}
+#baseAiHost #baseInvestigationWindow .base-review-decision .base-review-approval{grid-row:2;grid-column:1/-1;font-size:11px}
+#baseAiHost #baseInvestigationWindow .base-review-approval[hidden]{display:none!important}
+#baseAiHost #baseInvestigationWindow .base-review-options{padding-top:5px;margin-top:7px}
+#baseAiHost #baseInvestigationWindow .base-investigation-learn{margin-top:5px;font-size:10.5px;line-height:1.4}
+@media(max-width:1050px){#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:185px minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-review-detail>.base-review-decision{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-review-decision .base-review-navigation{grid-row:2;grid-column:1;justify-content:flex-start}#baseAiHost #baseInvestigationWindow .base-review-decision .base-review-approval{grid-row:3}}
+@media(max-width:760px){#baseAiHost #baseInvestigationWindow{top:60px;height:calc(100dvh - 66px);max-height:calc(100dvh - 66px)}#baseAiHost #baseInvestigationWindow .base-ai-window-body:has(.base-review-layout){display:flex;overflow:hidden}#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:8px;overflow:hidden}#baseAiHost #baseInvestigationWindow .base-review-sidebar{height:auto;max-height:110px;overflow:hidden}#baseAiHost #baseInvestigationWindow .base-review-sidebar>h3{display:none}#baseAiHost #baseInvestigationWindow .base-review-queue{display:flex;flex-direction:row;overflow:auto;max-height:74px}#baseAiHost #baseInvestigationWindow .base-review-queue .base-review-item{flex:0 0 190px}#baseAiHost #baseInvestigationWindow .base-review-toolbar .base-review-filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}#baseAiHost #baseInvestigationWindow .base-history-comparison{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-review-decision>label{white-space:normal}#baseAiHost #baseInvestigationWindow .base-review-reading{padding-right:3px}}

@@ -184,3 +184,17 @@ test('comparação precede a IA e detalhes da resposta começam recolhidos',asyn
  const details=flatten(h.body).find(e=>e.className==='base-ai-explain-details');assert.equal(details.open,false);
  assert.match(textOf(h.body),/1 lançamento em 1 grupo/);assert.ok(action(h,'Gerar Excel com 0 revisões'));
 });
+
+test('conta e aprovação ficam fora da área rolável dos históricos',async()=>{
+ const h=await populated();const detail=flatten(h.body).find(e=>e.className==='base-review-detail');
+ assert.equal(detail.children[0].className,'base-review-reading');assert.equal(detail.children[1].className,'base-review-decision');
+ assert.equal(flatten(detail.children[0]).some(e=>e.className==='base-review-decision'),false);
+ const account=flatten(detail.children[1]).find(e=>e.attrs['aria-label']==='Conta para Itaú, linha 2');assert.ok(account);
+ action(h,'Aprovar e próximo').events.click();
+ const approval=flatten(h.body).find(e=>e.className==='base-review-approval');assert.equal(approval.hidden,false);assert.match(textOf(approval),/Conta aprovada/);
+});
+test('estado inicial da IA não ocupa linha de explicação; erro permanece visível',async()=>{
+ const h=await populated();let status=flatten(h.body).find(e=>e.className==='base-ai-explain-status');assert.equal(status.hidden,true);
+ h.ctx.fetch=async()=>{throw Error('Conexão indisponível')};await action(h,'Analisar lançamento com IA').events.click();
+ status=flatten(h.body).find(e=>e.className==='base-ai-explain-status');assert.equal(status.hidden,false);assert.match(textOf(status),/Conexão indisponível/);
+});

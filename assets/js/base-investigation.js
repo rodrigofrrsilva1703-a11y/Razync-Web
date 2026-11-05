@@ -225,6 +225,7 @@
     function drawHistory(c){showAccountHistory(c.account.value || c.comparisonAccount || '',c.s.natureza,catalog,c.historyArea,c.s['Histórico'],c.s.evidencias || []);}
     function refreshEvidence(c){
       if(!c.summary)return;
+      if(c.approval)c.approval.hidden=!c.select.checked;
       if(c.approval && !c.select.checked)c.approval.replaceChildren(node('small',c.deferred?'Adiada para conferir depois.':'Confira a conta e use Aprovar e próximo.'));
       if(c.grade){c.grade.textContent=c.account.value.trim() && c.account.value.trim()!==c.s.conta_sugerida?'Conta escolhida para conferir':c.originalGrade;}
       const account=c.account.value.trim(),s=c.s;
@@ -321,7 +322,7 @@
         finally{c.explaining=false;if(version===generation && active===c)paintExplanation(c);}
       });trigger.disabled=Boolean(c.explanation) || completed || applying;
       toolbar.append(title,trigger);panel.append(toolbar);
-      const status=node('p',c.explaining?'Comparando o histórico e as referências…':c.explanationError || 'Explica as evidências deste item. Você continua decidindo a conta.','base-ai-explain-status'+(c.explaining?' is-busy':''));status.setAttribute('role','status');status.setAttribute('aria-live','polite');panel.append(status);
+      const status=node('p',c.explaining?'Comparando o histórico e as referências…':c.explanationError || 'Explica as evidências deste item. Você continua decidindo a conta.','base-ai-explain-status'+(c.explaining?' is-busy':''));status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.hidden=!c.explaining && !c.explanationError;panel.append(status);
       if(c.explanation){
         status.hidden=true;const answer=c.explanation.analise;
         const provider={gemini:'Gemini',groq:'Groq',openrouter:'OpenRouter'}[c.explanation.provedor] || 'IA';
@@ -336,10 +337,11 @@
     function showDetail(){
       detail.replaceChildren();if(!active){detail.append(node('p','Selecione outra opção nos filtros para continuar.'));return;}
       const c=active,s=c.s;
+      const reading=node('div',null,'base-review-reading');reading.setAttribute('aria-label','Históricos e evidências do lançamento');
       c.explanationPanel=node('section',null,'base-ai-explanation');c.explanationPanel.setAttribute('aria-label','Análise do lançamento com IA');
       paintExplanation(c);
       const position=visible().indexOf(c)+1;
-      detail.append(node('small',`Lançamento ${position} de ${visible().length} · ${quantity(visible().length,'lançamento')} em ${quantity(queueGroups(visible()).length,'grupo')}`));
+      reading.append(node('small',`Lançamento ${position} de ${visible().length} · ${quantity(visible().length,'lançamento')} em ${quantity(queueGroups(visible()).length,'grupo')}`));
       const comparison=node('div',null,'base-history-comparison'),received=node('section',null,'base-history-received'),saved=node('section',null,'base-history-saved');
       const receivedHeading=node('div',null,'base-received-heading');receivedHeading.append(node('h4','Lançamento para revisar'));received.append(receivedHeading,historyText(s['Histórico'],(s.evidencias || []).flatMap(e=>e.historicos || []).join(' ')),node('small',`${displayDate(s.Data)} · ${Number(s.Valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}`),node('small',`${s._aba} · linha ${s._linha} · ${s.natureza==='pago'?'Pagamento / débito':'Recebimento / crédito'}`));
       const grade=s.situacao==='MANUAL'?({single:'Similaridade a conferir',conflict:'Contas conflitantes',none:'Sem histórico compatível'})[category(s)]:({FORTE:'Sugestão forte',MODERADA:'Sugestão moderada'})[s.situacao];
@@ -352,11 +354,11 @@
       }
       if(s.evidencias.length>1 || !s.conta_sugerida)receivedHeading.append(candidates);
       const label=node('label','Conta de contrapartida');label.append(c.account);const decision=node('div',null,'base-review-decision');decision.append(label,c.list);
-      const approval=node('div',null,'base-review-approval');c.approval=approval;
+      const approval=node('div',null,'base-review-approval');approval.hidden=!c.select.checked;c.approval=approval;
       if(c.select.checked){approval.append(node('strong','✓ Conta aprovada'));const undo=button('Desfazer aprovação',()=>{c.select.checked=false;updateQueue();showDetail();});undo.disabled=completed || applying;approval.append(undo);}
       else approval.append(node('small',c.deferred?'Adiada para conferir depois.':'Confira a conta e use Aprovar e próximo.'));decision.append(approval);
       saved.append(node('h4','Referência da base'),c.historyArea);drawHistory(c);
-      comparison.append(received,saved,c.explanationPanel,decision);
+      comparison.append(received,saved,c.explanationPanel);
       const actions=node('div',null,'base-review-navigation');
       actions.append(button('Anterior',()=>go(-1)),button('Próximo',()=>go(1)),skipTop,approveTop);decision.append(actions);
       const members=equivalents(c).filter(other=>!other.select.checked);
@@ -386,13 +388,14 @@
             message.textContent=`${chosen.length} aprovações registradas. O Excel e o aprendizado só mudam no comando final.`;
             active=visible().find(other=>!other.select.checked && !other.deferred) || controls.find(other=>!other.select.checked && !other.deferred) || active;updateQueue();showDetail();
           });confirm.disabled=completed || applying;groupBox.append(confirm,button('Fechar grupo',()=>{groupBox.hidden=true;}));
-        });groupOpen.disabled=completed || applying;actions.append(groupOpen);detail.append(groupBox,comparison);
-      }else detail.append(comparison);
+        });groupOpen.disabled=completed || applying;actions.append(groupOpen);reading.append(groupBox,comparison);
+      }else reading.append(comparison);
+      detail.append(reading,decision);reading.scrollTop=0;
       detail.scrollTop=0;
     }
     for(const s of suggestions){
       const select=document.createElement('input');select.type='checkbox';select.setAttribute('aria-label',`Aprovar ${s._aba}, linha ${s._linha}`);
-      const account=document.createElement('input');account.type='text';account.inputMode='numeric';account.value=s.conta_sugerida;account.maxLength=15;account.placeholder='Escolha ou digite a conta';account.setAttribute('aria-label',`Conta para ${s._aba}, linha ${s._linha}`);
+      const account=document.createElement('input');account.type='text';account.inputMode='numeric';account.value=s.conta_sugerida;account.maxLength=15;account.placeholder='Digite ou selecione';account.setAttribute('aria-label',`Conta para ${s._aba}, linha ${s._linha}`);
       const list=document.createElement('datalist');list.id=`baseAccounts-${s._linha}-${controls.length}`;account.setAttribute('list',list.id);
       for(const item of catalog){if(item.natureza!==s.natureza)continue;const option=document.createElement('option');option.value=item.conta;option.label=`${item.bancos.map(bankLabelUI).join(', ')} · ${quantity(item.periodos.length,'período')}`;list.append(option);}
       const unique=candidateAccounts(s);const comparisonAccount=unique.length===1 && catalog.some(item=>item.conta===unique[0] && item.natureza===s.natureza)?unique[0]:'';
