@@ -12,7 +12,7 @@ from app.excel import _template_bytes, gerar_modelo_abas
 from app.registry import CAPABILITIES
 
 COLUNAS = ['DESCRIÇÃO', 'DATA', 'VALOR', 'DÉBITO', 'CRÉDITO', 'HISTÓRICO']
-SLUGS = {1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
+SLUGS = {1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
          242: 'eletro_forte', 1408: 'eletro_forte_filial_1408',
          266: 'nova_geracao_matriz', 1396: 'nova_geracao_filial',
          285: 'lcarlos', 968: 'radani', 1000: 'accede_automacao',
@@ -95,6 +95,9 @@ def statement(code, bank, content, filename):
             from app.bb_consultas import parece_extrato_bb_consultas, ler_extrato_bb_consultas
             if parece_extrato_bb_consultas(content):
                 return pd.DataFrame(ler_extrato_bb_consultas(content), columns=COLUNAS)
+        if code == 1522 and bank == 'santander':
+            from app.santander_consolidado_1522 import read_statement
+            return read_statement(content, filename)
         if code == 734:
             from app.bank_734 import read_bank_pdf
             return read_bank_pdf(bank, content, filename)
@@ -286,6 +289,9 @@ def _workflow_1408(roles):
 def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
+        if code == 1522:
+            from app.santander_consolidado_1522 import workflow_1522
+            return workflow_1522(roles, options)
         if code == 734:
             from app.bank_734 import workflow_734
             return workflow_734(roles, options)

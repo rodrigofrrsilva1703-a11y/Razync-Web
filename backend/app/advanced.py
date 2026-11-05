@@ -410,7 +410,7 @@ def _aplicar_conta(df: pd.DataFrame, conta: str) -> pd.DataFrame:
 
 
 def workflow_modelo(company_code: int, roles: dict[str, list[tuple[str, bytes]]], options: dict) -> tuple[bytes, str]:
-    if company_code in {266, 1001}:
+    if company_code in {266, 1001, 1522}:
         # Os dois fluxos possuem regras adicionais mantidas numa implementação
         # canônica: Banco do Brasil 200076-8 (266) e PDF Santander (1001).
         from app.migration_services import workflow as workflow_atual

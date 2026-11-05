@@ -120,6 +120,11 @@
       intro:"A Dias e Pereira aceita relatórios Nibo em PDF e o extrato original do Banco do Brasil no formato Consultas.",
       note:"Envie cada PDF no banco correspondente: Itaú 508 ou Banco do Brasil 8. No BB Consultas, os movimentos de Rende Fácil são separados do saldo."
     },
+    1522: {
+      intro:"A empresa 1522 utiliza o extrato consolidado mensal do Santander para gerar o Modelo Domínio.",
+      note:"Conta contábil Santander 513. Envie um PDF por mês; os complementos dos históricos são preservados e os saldos são conferidos.",
+      extrato:"Use o extrato consolidado original do Santander. A movimentação da conta corrente já inclui aplicações e resgates; a seção de investimentos não é duplicada."
+    },
     1530: {
       intro:"A empresa 1530 utiliza o extrato Itaú para gerar o Modelo Domínio.",
       note:"Conta Itaú configurada: 508. Confirme o período e confira os históricos."

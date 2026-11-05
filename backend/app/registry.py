@@ -146,6 +146,15 @@ CAPABILITIES = {
         "options": [],
         "banks": {"itau": "512"},
     },
+    1522: {
+        "status": "api_ready", "workflow": "advanced",
+        "roles": [{"name":"santander", "label":"Extrato Santander consolidado (PDF)", "accept":".pdf", "multiple":True}],
+        "banks": {"santander":"513"},
+        "options": [
+            {"name":"data_inicial", "label":"Data inicial (opcional)", "type":"date"},
+            {"name":"data_final", "label":"Data final (opcional)", "type":"date"},
+        ],
+    },
     1529: {
         "status": "api_ready",
         "workflow": "advanced",
