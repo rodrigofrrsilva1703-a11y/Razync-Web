@@ -158,7 +158,7 @@
         step(1,"Escolha os bancos", "Marque no seletor os bancos que serão processados: "+names+"."),
         step(2,"Envie os extratos", "Anexe um ou vários extratos no campo específico de cada banco selecionado."),
         step(3,"Defina o período (opcional)", "Preencha as duas datas, De e Até, ou deixe em branco para usar todos os lançamentos."),
-        step(4,"Confira o resultado", "Atualize a prévia e verifique os movimentos separados por banco antes de baixar.")
+        step(4,"Confira o resultado", "Clique em Gerar prévia e verifique os movimentos separados por banco antes de baixar.")
       ];
     } else if (type === "advanced") {
       const required = docs.filter(role=>!role.optional);
@@ -179,14 +179,14 @@
           (optionalLabel ? "Quando disponíveis, inclua: "+optionalLabel+"." : "")+
           (hasManualPeriod ? (optionalLabel ? " " : "")+"Se quiser limitar os lançamentos, informe as datas De e Até." : "")
         ),
-        step(4,"Revise a prévia", "Clique em Atualizar prévia e confira datas, valores e históricos antes de baixar o Modelo Domínio.")
+        step(4,"Revise a prévia", "Clique em Gerar prévia e confira datas, valores e históricos antes de baixar o Modelo Domínio.")
       ];
     } else {
       steps = [
         step(1,"Selecione o banco", "Escolha o banco indicado para a empresa"+(names ? ": "+names+"." : ".")),
         step(2,"Envie os extratos", "Anexe um ou vários arquivos de extrato no campo Arquivos."),
         step(3,"Período (opcional)", "Preencha De e Até para filtrar o período, ou deixe as datas em branco."),
-        step(4,"Confira os lançamentos", "Atualize a prévia e revise as datas, os valores e os históricos do Modelo Domínio.")
+        step(4,"Confira os lançamentos", "Clique em Gerar prévia e revise as datas, os valores e os históricos do Modelo Domínio.")
       ];
     }
     return {
@@ -205,7 +205,9 @@
       steps:[
         step(1,"Ensinar à base", "Na seção Ensinar à base, envie planilhas já conferidas, com as contas contábeis preenchidas corretamente."),
         step(2,"Classificar Modelo Domínio", "Anexe um Modelo Domínio da empresa "+code+" para aplicar os padrões aprendidos."),
-        step(3,"Revisar classificações", "Confira a prévia, as contas preenchidas e as pendências antes de baixar.")
+        step(3,"Compare no assistente", "Abra o assistente para revisar as pendências. Use os filtros no topo e compare o lançamento com a referência da base, lado a lado. A análise com IA é opcional e deve ser acionada para o lançamento desejado."),
+        step(4,"Escolha e aprove a conta", "Confira os históricos completos, selecione ou informe uma conta compatível e clique em Aprovar e próximo. Use Adiar se ainda precisar conferir documentos."),
+        step(5,"Baixe o Excel revisado", "Depois de aprovar, use o download na área do resultado, fora do assistente, para baixar o Excel com as revisões. Se quiser ensinar esses ajustes à base, marque Aprender na Base Inteligente somente as revisões aprovadas.")
       ],
       note:extra?.base || "Não misture modelos de outras empresas: os padrões são organizados por empresa e banco."
     };
@@ -222,7 +224,8 @@
           "Confira o banco configurado: "+names+"."),
         step(2,"Envie o Modelo Domínio", "Anexe o arquivo final, com os lançamentos da empresa "+code+"."),
         step(3,"Anexe os extratos", "Envie os extratos correspondentes nos campos de cada banco selecionado."),
-        step(4,"Confira as diferenças", "Atualize a conferência, analise as entradas e saídas por dia e confira os lançamentos divergentes.")
+        step(4,"Confira as diferenças", "Clique em Atualizar conferência e revise entradas, saídas e lançamentos sem correspondência. Totais diários iguais não dispensam a conferência individual."),
+        step(5,"Aplicações e resgates (opcional)", "No resultado, abra Aplicações e resgates · prévia e TXT. Escolha um banco com todas as entradas e saídas diárias batendo; outro banco divergente não bloqueia esse banco. Informe a conta de aplicação e resgate e o saldo anterior, gere a prévia, confira os débitos e créditos e use Salvar TXT ou Baixar TXT.")
       ],
       note:extra?.extrato || "O status “Batendo” exige que tanto a diferença de entradas quanto a diferença de saídas seja zero."
     };

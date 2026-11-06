@@ -87,7 +87,7 @@ test('ajuda da 266 abre, arrasta, fecha, lembra a posição e não aparece em ou
   assert.equal(node('#companyToolGuide').style.left.endsWith('px'),true);
   context.renderCompanyToolGuide('base');
   assert.equal(node('#companyToolGuide').hidden,true);
-  assert.equal(node('#companyToolGuideSteps').children.length,3);
+  assert.equal(node('#companyToolGuideSteps').children.length,5);
 
   trigger.handlers.click();
   listeners.keydown({key:'Escape'});

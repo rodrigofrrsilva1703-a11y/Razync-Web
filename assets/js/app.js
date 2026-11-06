@@ -488,7 +488,7 @@ const COMPANY_TOOL_GUIDES = {
         ["1", "Selecione os bancos", "Marque Itaú 508, Bradesco 9, Fibra 506 e/ou Banco do Brasil 8. Para o Banco do Brasil, o relatório precisa trazer a conta bancária 200076-8 na coluna Conta."],
         ["2", "Envie a planilha consolidada", "Anexe a planilha mensal recebida da empresa. Não precisa separar um arquivo para cada banco."],
         ["3", "Informe o período se necessário", "Deixe De/Até em branco para considerar todo o arquivo ou use as datas para limitar os lançamentos."],
-        ["4", "Confira antes de baixar", "Revise a prévia gerada. O Modelo Domínio final fica separado por banco em abas próprias."]
+        ["4", "Confira antes de baixar", "Clique em Gerar prévia e revise os lançamentos. O Modelo Domínio final fica separado por banco em abas próprias."]
       ],
       note: "Contas contábeis: Itaú 508 · Bradesco 9 · Fibra 506 · Banco do Brasil 8. Identificação bancária do BB: 200076-8."
     },
@@ -498,7 +498,9 @@ const COMPANY_TOOL_GUIDES = {
       steps: [
         ["1", "Ensine com arquivo revisado", "Em “Ensinar à base”, envie um Modelo Domínio da 266 que já esteja conferido e com as contas corretas."],
         ["2", "Classifique o arquivo novo", "Em “Classificar arquivo”, envie o Modelo Domínio que ainda precisa receber as classificações aprendidas."],
-        ["3", "Revise a prévia", "Confira os lançamentos classificados antes de baixar. Os padrões ficam separados por empresa e banco."]
+        ["3", "Compare no assistente", "Abra o assistente, use os filtros no topo e compare o lançamento com a referência da base, lado a lado. A análise com IA é opcional, por lançamento."],
+        ["4", "Confira e aprove", "Leia os históricos, escolha uma conta compatível e clique em Aprovar e próximo. Use Adiar quando ainda precisar conferir os documentos."],
+        ["5", "Baixe o Excel revisado", "Use o download na área do resultado, fora do assistente, para baixar as revisões aprovadas. Marque Aprender na Base Inteligente somente as revisões aprovadas apenas se quiser ensinar os ajustes à base."]
       ],
       note: "Use arquivos da própria empresa 266 para não misturar padrões com outras empresas."
     },
@@ -509,7 +511,8 @@ const COMPANY_TOOL_GUIDES = {
         ["1", "Selecione os bancos", "Escolha somente os bancos que serão conferidos: Itaú 508, Bradesco 9, Fibra 506 e/ou Banco do Brasil 8."],
         ["2", "Envie o Modelo Domínio final", "Use o arquivo já organizado e, se necessário, classificado pela Base Inteligente."],
         ["3", "Anexe os extratos correspondentes", "Envie o extrato de cada banco selecionado no campo que aparece para ele."],
-        ["4", "Analise o status diário", "Saldo Entrada = Entrada Modelo − Entrada Extrato e Saldo Saída = Saída Modelo − Saída Extrato. Só fica “Batendo” quando os dois saldos forem zero."]
+        ["4", "Analise o status diário", "Clique em Atualizar conferência. Saldo Entrada = Entrada Modelo − Entrada Extrato e Saldo Saída = Saída Modelo − Saída Extrato. Só fica “Batendo” quando os dois saldos forem zero. Revise também os lançamentos sem correspondência individual."],
+        ["5", "Aplicações e resgates (opcional)", "No resultado, abra Aplicações e resgates · prévia e TXT. Escolha o banco com todos os saldos diários batendo, mesmo que outro esteja divergente. Informe a conta de aplicação e resgate e o saldo anterior, gere a prévia, confira e salve o TXT."]
       ],
       note: "Se apenas entradas ou apenas saídas estiverem corretas, o dia continua como Divergente."
     }
