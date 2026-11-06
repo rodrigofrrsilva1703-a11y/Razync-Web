@@ -2679,9 +2679,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .fiscal-upload-item > .fiscal-file-selected { display:none; }
 
 /* Ajuda contextual: identificação visível e leitura confortável. */
-.company-tool-help {width:116px;height:44px;}
-.company-tool-help-button {display:flex;align-items:center;justify-content:center;gap:8px;width:116px;height:44px;min-width:116px;border-radius:22px;font-size:12px;font-weight:650;}
-.company-help-symbol {display:grid;place-items:center;width:19px;height:19px;border:1px solid currentColor;border-radius:50%;font-size:12px;line-height:1;}
 .company-tool-guide {width:min(410px,calc(100vw - 32px));}
 .company-tool-guide-heading {padding:14px 16px;}
 .company-tool-guide-heading strong {font-size:14px;color:#253c55;}
@@ -2695,5 +2692,5 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .company-tool-guide-index {width:25px;height:25px;font-size:11px;}
 .company-tool-guide-note {font-size:11px;line-height:1.6;color:#435971;}
 .company-tool-guide:focus-visible {outline:2px solid #7095b5;outline-offset:2px;}
-@media(max-width:760px){.company-tool-help,.company-tool-help-button{width:112px;min-width:112px;height:44px;}.company-tool-guide{width:min(390px,calc(100vw - 24px));}}
+@media(max-width:760px){.company-tool-guide{width:min(390px,calc(100vw - 24px));}}
 html[data-theme="dark"] .company-tool-guide-note {background:var(--surface-2);color:var(--muted);}
