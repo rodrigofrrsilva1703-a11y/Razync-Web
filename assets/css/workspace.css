@@ -2694,3 +2694,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .company-tool-guide:focus-visible {outline:2px solid #7095b5;outline-offset:2px;}
 @media(max-width:760px){.company-tool-guide{width:min(390px,calc(100vw - 24px));}}
 html[data-theme="dark"] .company-tool-guide-note {background:var(--surface-2);color:var(--muted);}
+
+/* Always visible, including when a field already has attachments. */
+.file-accepted-formats {display:block;flex:0 0 auto;max-width:100%;margin:0;padding:0 2px;color:var(--muted,#5b6e85);font-size:11px;line-height:1.5;font-weight:500;overflow-wrap:anywhere;}
