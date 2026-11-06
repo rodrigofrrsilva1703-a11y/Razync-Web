@@ -60,7 +60,7 @@
     if(wrapper.hidden) throw Error("Botão oculto na empresa 266");
     const before=button.getBoundingClientRect();
     if(before.width<30||before.height<30)throw Error("Botão sem dimensões visíveis");
-    if(document.elementFromPoint(before.left+before.width/2,before.top+before.height/2)!==button){
+    if(!button.contains(document.elementFromPoint(before.left+before.width/2,before.top+before.height/2))){
       throw Error("Botão coberto por outro elemento");
     }
 
@@ -88,7 +88,7 @@
     if(Math.abs(after.left-(before.left+dx))>3 || Math.abs(after.top-(before.top+dy))>3){
       throw Error("Botão não deslocou no layout: "+JSON.stringify({before:[before.left,before.top],after:[after.left,after.top],dx,dy}));
     }
-    if(document.elementFromPoint(after.left+after.width/2,after.top+after.height/2)!==button){
+    if(!button.contains(document.elementFromPoint(after.left+after.width/2,after.top+after.height/2))){
       throw Error("Botão movido não pode receber clique");
     }
     await pause(300);
