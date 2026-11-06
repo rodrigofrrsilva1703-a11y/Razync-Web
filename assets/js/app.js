@@ -982,7 +982,7 @@ function closeCompany() {
   closeCompanyToolHelp();
   $("#companyToolHelp").hidden = true;
   cancelReconcilePreview();
-  cancelAutomaticPreview();
+  cancelOrganizerPreview();
   cancelClassificationPreview();
   panel.hidden = true;
   workspace.hidden = !activePortfolio;
@@ -1067,13 +1067,11 @@ function clearToolResult(id) {
   target.replaceChildren();
 }
 
-let autoPreviewTimer;
 let previewController;
 let previewVersion = 0;
 let organizerRunning = false;
-function cancelAutomaticPreview() {
+function cancelOrganizerPreview() {
   organizerRunning = false;
-  clearTimeout(autoPreviewTimer);
   previewController?.abort();
   previewVersion++;
   form.querySelectorAll("button.is-loading").forEach(button => {
@@ -1092,8 +1090,8 @@ function updateUploadProgress() {
   const names=missing.map(input=>form.querySelector(`label[for="${input.id}"]`)?.textContent.trim() || "arquivo");
   progress.textContent=required.length ? `${required.length-missing.length} de ${required.length} campos obrigatórios preenchidos${missing.length ? " · Falta: "+names.join(", ") : " · Pronto para prévia"}` : `${filled.length} campo(s) com arquivos · Selecione pelo menos um para conferir`;
 }
-function scheduleAutomaticPreview() {
-  cancelAutomaticPreview();
+function prepareOrganizerPreview() {
+  cancelOrganizerPreview();
   updateUploadProgress();
   $("#workflowPreview").replaceChildren();
   processMessage.textContent = "";
@@ -1104,8 +1102,8 @@ function scheduleAutomaticPreview() {
   const hasFiles = inputs.some(input => !input.disabled && input.files.length);
   if (!hasFiles || missing.length || !form.checkValidity()) {
     setProcessStage("upload", "Aguardando arquivos", missing.length
-      ? "Complete os arquivos obrigatórios para mostrar a prévia automaticamente."
-      : "A prévia aparece automaticamente após selecionar os arquivos.");
+      ? "Complete os arquivos obrigatórios e clique em Gerar prévia."
+      : "Selecione os arquivos e clique em Gerar prévia.");
     return;
   }
   try { readPeriod("#processStart","#processEnd"); }
@@ -1114,19 +1112,13 @@ function scheduleAutomaticPreview() {
     return;
   }
   const fileCount = inputs.reduce((count,input) => count + (input.disabled ? 0 : input.files.length),0);
-  if (fileCount > 1 || workflow === "advanced") {
-    setProcessStage("upload", `${fileCount} arquivo(s) prontos`, "Termine de anexar os documentos e clique em Gerar prévia para processar o lote uma única vez.");
-    return;
-  }
-  setProcessStage("upload", "Preparando prévia automática", "Os arquivos estão prontos. A prévia será atualizada em instantes.");
-  autoPreviewTimer = setTimeout(() => form.requestSubmit(processButton), 800);
+  setProcessStage("upload", `${fileCount} arquivo(s) prontos`, "Confira os anexos e clique em Gerar prévia para processar.");
 }
-form.addEventListener("change", scheduleAutomaticPreview);
+form.addEventListener("change", prepareOrganizerPreview);
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!selected || organizerRunning) return;
-  clearTimeout(autoPreviewTimer);
   previewController?.abort();
   const controller = new AbortController();
   previewController = controller;
@@ -1162,7 +1154,6 @@ form.addEventListener("submit", async (event) => {
       data.append("roles_json", JSON.stringify(roles));
       data.append("options_json", JSON.stringify(options));
       endpoint = `${API()}/api/v1/workflow/${selected.codigo}`;
-      if (event.submitter?.dataset.output) endpoint += `/${event.submitter.dataset.output}`;
     } else if (workflow === "standard_multi_bank") {
       const banks = [];
       for (const input of $$("[data-bank]")) {
@@ -1190,8 +1181,8 @@ form.addEventListener("submit", async (event) => {
     setProcessStage("processing", "Gerando prévia…");
     $("#workflowPreview").replaceChildren();
     let response = await fetch(endpoint, { method: "POST", body: data, signal:controller.signal, headers:{
-      "X-Razync-Preview":["reports","preview"].includes(event.submitter?.dataset.output) ? "0" : "1",
-      "X-Razync-Background":workflow === "advanced" && !event.submitter?.dataset.output ? "1" : "0"
+      "X-Razync-Preview":"1",
+      "X-Razync-Background":workflow === "advanced" ? "1" : "0"
     } });
     if (currentVersion !== previewVersion) return;
     response = await RazyncOrganizer.wait(response, {signal:controller.signal, onProgress:status => {
@@ -1201,20 +1192,6 @@ form.addEventListener("submit", async (event) => {
     }});
     if (currentVersion !== previewVersion) return;
     if (!response.ok) throw new Error(await responseError(response));
-    if (event.submitter?.dataset.output === "preview") {
-      if(selected?.codigo!==companyCode)return;
-      showWorkflowPreview(await response.json());
-      processMessage.textContent = "";
-      setProcessStage("review", "Prévia concluída", "Confira os lançamentos e os totais antes de baixar.");
-      return;
-    }
-    if (event.submitter?.dataset.output === "reports") {
-      await downloadBlob(response, `RAZYNC_${companyCode}_RELATORIOS.zip`);
-      $("#workflowPreview").replaceChildren();
-      processMessage.textContent = "";
-      setProcessStage("review", "Relatórios gerados", "Os arquivos foram preparados e baixados com sucesso.");
-      return;
-    }
     const prepared = await RazyncResults.workbookPreview(response, {endpoint, snapshot:data,
       signal:controller.signal, filename:`RAZYNC_${companyCode}_MODELO_DOMINIO.xlsx`});
     if (selected?.codigo !== companyCode || currentVersion !== previewVersion) return;
@@ -1230,6 +1207,29 @@ form.addEventListener("submit", async (event) => {
     });
     download.className = "preview-download";
     ($("#workflowPreview .preview-primary-actions") || $("#workflowPreview")).append(download);
+    if (workflow === "advanced" && Number(companyCode) !== 1408) {
+      const reports = document.createElement("button");
+      reports.type = "button";
+      reports.className = "secondary-action";
+      reports.textContent = Number(companyCode) === 242 ? "Baixar relatórios individuais e consolidado" : "Baixar modelo e conferências";
+      reports.addEventListener("click", async () => {
+        if (reports.disabled) return;
+        reports.disabled = true;
+        reports.classList.add("is-loading");
+        try {
+          const response = await fetch(`${endpoint}/reports`, {method:"POST", body:data, signal:controller.signal});
+          if (currentVersion !== previewVersion) return;
+          if (!response.ok) throw new Error(await responseError(response));
+          await downloadBlob(response, `RAZYNC_${companyCode}_RELATORIOS.zip`);
+        } catch (error) {
+          if (error.name !== "AbortError" && currentVersion === previewVersion) processMessage.textContent = error.message;
+        } finally {
+          reports.disabled = false;
+          reports.classList.remove("is-loading");
+        }
+      });
+      ($("#workflowPreview .preview-primary-actions") || $("#workflowPreview")).append(reports);
+    }
     processMessage.textContent = "";
     setProcessStage("review", "Modelo pronto para conferência", "Revise a prévia e baixe o Modelo Domínio quando estiver tudo certo.");
   } catch (error) {

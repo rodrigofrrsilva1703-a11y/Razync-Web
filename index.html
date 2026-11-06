@@ -505,13 +505,11 @@
               </div>
               <div id="advancedFields" class="dynamic-fields" hidden></div>
               <details class="company-period-options"><summary>Filtrar por período <span>Opcional</span></summary><fieldset id="standardPeriod" class="period-card standard-period-card"><legend>Período dos lançamentos <span>(opcional)</span></legend><div class="period-fields"><div><label for="processStart">De</label><input id="processStart" type="date"></div><div><label for="processEnd">Até</label><input id="processEnd" type="date"></div></div><p>Deixe em branco para considerar todo o arquivo.</p></fieldset></details>
-              <button id="processButton" type="submit">Atualizar prévia</button>
+              <button id="processButton" type="submit">Gerar prévia</button>
               <div id="processVisualStatus" class="process-visual-status" hidden aria-live="polite">
                 <span class="process-status-icon" aria-hidden="true"></span>
                 <div><strong id="processStatusTitle">Preparando processamento</strong><small id="processStatusText">Aguarde enquanto o Razync organiza os arquivos.</small></div>
               </div>
-              <button id="previewWorkflow" type="submit" data-output="preview" class="secondary-action" hidden>Pré-visualizar lançamentos</button>
-              <button id="reportPackage" type="submit" data-output="reports" class="secondary-action" hidden>Baixar relatórios individuais e consolidado</button>
               <p id="processMessage" class="helper"></p>
             </form>
           </div>
@@ -750,8 +748,8 @@
   <script src="./assets/js/converter-global.js?v=20261028-1"></script>
   <script src="./assets/js/base-investigation.js?v=compact-review-20261105-3"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
-  <script src="./assets/js/app.js?v=company-forms-20261103-4"></script>
-  <script src="./assets/js/migration.js?v=admin-modal-20261021-1"></script>
+  <script src="./assets/js/app.js?v=manual-preview-20261106-1"></script>
+  <script src="./assets/js/migration.js?v=manual-preview-20261106-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>
   <script src="./assets/js/base-periods.js?v=20261026-1"></script>

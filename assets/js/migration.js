@@ -13,13 +13,10 @@ $(".tool-tabs").appendChild(francesinhasTab);
 renderWorkflow = function(company) {
   migratedRenderWorkflow(company);
   enableMobileDateFields(advancedFields);
-  $("#toolDescription").textContent += " A prévia aparece automaticamente quando os arquivos obrigatórios estiverem preenchidos.";
+  $("#toolDescription").textContent += " Anexe os documentos e clique em Gerar prévia para conferir os lançamentos.";
   const companyCode = Number(company.codigo);
   const eletro = [242,1408].includes(companyCode);
   $("#standardPeriod").hidden = companyCode === 1408;
-  $("#reportPackage").hidden = company.capabilities?.workflow !== "advanced" || companyCode === 1408;
-  $("#reportPackage").textContent = companyCode === 242 ? "Baixar relatórios individuais e consolidado" : "Baixar modelo e conferências";
-  $("#previewWorkflow").hidden = true;
   $("#eletro242Classification").hidden = companyCode !== 242;
   $("#eletro1408Classification").hidden = companyCode !== 1408;
 
@@ -46,7 +43,7 @@ renderWorkflow = function(company) {
 };
 
 openCompany = function(company) {
-  cancelAutomaticPreview();
+  cancelOrganizerPreview();
   cancelClassificationPreview();
   // File inputs and their visual state must not carry documents across companies.
   document.querySelectorAll("#companyPanel form").forEach(f => f.reset());
