@@ -32,7 +32,7 @@ renderWorkflow = function(company) {
     if (learnLabel) learnLabel.textContent = "Planilhas já classificadas da 1408";
     if (classifyLabel) classifyLabel.textContent = "Modelo Domínio consolidado para classificar";
   } else {
-    $("#learnFiles").accept = ".xls,.xlsx,.zip,.csv,.json";
+    $("#learnFiles").accept = ".xls,.xlsx,.zip,.json";
     if (learnLabel) learnLabel.textContent = "Arquivos revisados";
     if (classifyLabel) classifyLabel.textContent = "Modelo Domínio para classificar";
   }

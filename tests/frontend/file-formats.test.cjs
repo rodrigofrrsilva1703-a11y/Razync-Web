@@ -40,9 +40,9 @@ test('campos dinâmicos e mudança para o contêiner de upload mantêm o texto j
   assert.equal(label.parentElement,shell);
   assert.ok(!field.children.includes(label));
 });
-test('MIME e extensões equivalentes não repetem formatos e accept vazio não inventa restrições',()=>{
+test('MIME não repete formatos e accept vazio não anuncia suporte genérico',()=>{
   const h=setup('application/pdf, .PDF, application/vnd.ms-excel,.xlsx,');
   assert.equal(h.label().textContent,'Formatos aceitos: PDF, XLS, XLSX');
   h.input.accept='';h.notify([{type:'attributes',target:h.input}]);
-  assert.equal(h.label().textContent,'Formatos aceitos: todos os tipos de arquivo');
+  assert.equal(h.label().textContent,'Consulte os formatos nas instruções da ferramenta.');
 });

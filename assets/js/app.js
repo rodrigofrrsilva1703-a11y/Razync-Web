@@ -759,7 +759,7 @@ function syncReconcileBankFields(selectedBanks = selectedReconcileBanks()) {
   });
 }
 
-function renderReconcileBankFields(banks) {
+function renderReconcileBankFields(banks, company=selected) {
   const host = $("#reconcileStatementFields");
   if (!host) return;
   host.replaceChildren();
@@ -777,7 +777,7 @@ function renderReconcileBankFields(banks) {
     input.id = id;
     input.type = "file";
     input.multiple = true;
-    input.accept = ".pdf,.xls,.xlsx,.csv,.ofx";
+    input.accept = RazyncFileFormats.statementAccept(company, bank);
     input.dataset.reconcileBank = bank;
 
     group.append(label,input);
@@ -794,7 +794,7 @@ function renderWorkflow(company) {
 
   fillBankSelect(bankSelect, banks);
   fillBankSelect($("#reconcileBank"), banks);
-  renderReconcileBankFields(banks);
+  renderReconcileBankFields(banks, company);
   const reconcileMode = Object.keys(banks).length > 1 ? "multi" : "single";
   renderBankSelector(reconcilePicker, banks, {
     mode:reconcileMode,
@@ -859,14 +859,16 @@ function renderWorkflow(company) {
       wrap.innerHTML = `
         <label for="bankfiles_${RazyncDOM.escapeHTML(bank)}">${RazyncDOM.escapeHTML(bankLabel(bank, account))} <span class="optional">(opcional)</span></label>
         <input id="bankfiles_${RazyncDOM.escapeHTML(bank)}" data-bank="${RazyncDOM.escapeHTML(bank)}" type="file" multiple
-          accept=".pdf,.xls,.xlsx,.csv,.ofx">
+          accept="${RazyncDOM.escapeHTML(RazyncFileFormats.statementAccept(company, bank))}">
       `;
       advancedFields.appendChild(wrap);
     }
     renderBankSelector(organizerPicker,banks,{mode:"multi",controlBankFields:true});
     $("#toolDescription").textContent = "Selecione os bancos e envie os arquivos correspondentes. O Razync gera uma aba para cada banco processado.";
   } else {
-    renderBankSelector(organizerPicker,banks,{mode:"single",selectElement:bankSelect});
+    const syncStatementFormats = () => { fileInput.accept = RazyncFileFormats.statementAccept(company, bankSelect.value); };
+    renderBankSelector(organizerPicker,banks,{mode:"single",selectElement:bankSelect,onSelectionChange:syncStatementFormats});
+    syncStatementFormats();
     $("#toolDescription").textContent = "Selecione o banco, envie um ou vários arquivos e gere o Modelo Domínio.";
   }
 }
