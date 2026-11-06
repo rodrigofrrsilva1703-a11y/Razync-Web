@@ -2,19 +2,28 @@
 (() => {
   const dialog=document.getElementById('adminAuthDialog');
   const input=document.getElementById('adminAccess'), error=document.getElementById('adminAuthError');
+  const toggle=document.getElementById('adminPasswordToggle');
+  function setPasswordVisible(visible) {
+    input.type=visible?'text':'password';
+    const label=visible?'Ocultar senha':'Mostrar senha';
+    toggle.setAttribute('aria-pressed',String(visible));
+    toggle.setAttribute('aria-label',label);
+    toggle.title=label;
+  }
+  toggle.addEventListener('click',()=>{setPasswordVisible(input.type==='password');input.focus();});
   let cached='', pending=null, previousFocus=null;
   const aborted=()=>new DOMException('Ação administrativa cancelada.','AbortError');
   function finish(token) {
     if(!pending)return;
-    const waiting=pending;pending=null;input.value='';dialog.close();
+    const waiting=pending;pending=null;input.value='';setPasswordVisible(false);dialog.close();
     previousFocus?.focus?.();previousFocus=null;
     if(token)waiting.resolve(token);else waiting.reject(aborted());
   }
-  window.clearAdminAccess=()=>{cached='';finish(null);input.value='';};
+  window.clearAdminAccess=()=>{cached='';finish(null);input.value='';setPasswordVisible(false);};
   window.requestAdminAccess=(retry=false)=> {
     if(cached && !retry)return Promise.resolve(cached);
     if(pending)return pending.promise;
-    cached='';input.value='';error.hidden=!retry;
+    cached='';input.value='';setPasswordVisible(false);error.hidden=!retry;
     error.textContent=retry?'Senha inválida. Confira e tente novamente.':'';
     previousFocus=document.activeElement;
     const promise=new Promise((resolve,reject)=>{pending={resolve,reject};});

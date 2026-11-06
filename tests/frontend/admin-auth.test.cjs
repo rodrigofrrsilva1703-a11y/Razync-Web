@@ -4,7 +4,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
 function setup(responses=[200]) {
   const nodes=new Map(),calls=[];let restored=0;
   const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',hidden:true,open:false,
-    addEventListener(event,fn){this[event]=fn;},reportValidity:()=>true,focus(){},
+    setAttribute(key,value){this[key]=value;},addEventListener(event,fn){this[event]=fn;},reportValidity:()=>true,focus(){},
     showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(id);};
   const scope={window:{},document:{getElementById:node,activeElement:{focus(){restored++;}}},DOMException,
     fetch:async(url,init)=>{calls.push({url,init});return {status:responses.shift()??200};}};
@@ -55,4 +55,26 @@ test('cadastro usa o mesmo diálogo e o campo não pede geração de senha',()=>
   assert.doesNotMatch(html,/companyCreateKey/);
   const workspace=fs.readFileSync('assets/js/workspace-ui.js','utf8');
   assert.match(workspace,/window\.adminFetch\(`\$\{API\(\)\}\/api\/v1\/companies/);
+});
+
+test('olho alterna a visibilidade sem enviar senha e volta a ocultar ao reabrir',async()=>{
+  const {scope,node,calls}=setup();
+  const first=scope.window.adminFetch('/protected');
+  const rejected=assert.rejects(first,{name:'AbortError'});
+  node('adminAccess').value='valor-de-teste';
+  assert.equal(node('adminAccess').type,'password');
+  node('adminPasswordToggle').click();
+  assert.equal(node('adminAccess').type,'text');
+  assert.equal(node('adminPasswordToggle')['aria-label'],'Ocultar senha');
+  assert.equal(node('adminAccess').value,'valor-de-teste');
+  assert.equal(calls.length,0);
+  node('adminPasswordToggle').click();
+  assert.equal(node('adminAccess').type,'password');
+  node('adminPasswordToggle').click();
+  node('adminAuthCancel').click();await rejected;
+  assert.equal(node('adminAccess').type,'password');
+  const second=scope.window.adminFetch('/protected');
+  const cancelled=assert.rejects(second,{name:'AbortError'});
+  assert.equal(node('adminPasswordToggle')['aria-pressed'],'false');
+  scope.window.clearAdminAccess();await cancelled;
 });

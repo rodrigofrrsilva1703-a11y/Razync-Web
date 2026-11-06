@@ -25,7 +25,7 @@
   <link rel="razync-lazy-stylesheet" data-lazy-tool="fiscal" href="./assets/css/fiscal-account-dialog.css?v=fiscal-agent-steps-20261030-1">
   <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=home-composed-20261027-11">
   <link rel="stylesheet" href="./assets/css/base-maintenance.css?v=company-tools-20261031-1">
-  <link rel="stylesheet" href="./assets/css/admin-auth.css?v=20261023-1">
+  <link rel="stylesheet" href="./assets/css/admin-auth.css?v=password-eye-20261106-1">
   <link rel="stylesheet" href="./assets/css/tool-preparation.css?v=company-upload-three-parts-20261031-3">
   <link rel="stylesheet" href="./assets/css/company-directory.css?v=directory-studio-20261030-1">
   <link rel="stylesheet" href="./assets/css/base-investigation.css?v=compact-review-20261105-3">
@@ -722,7 +722,10 @@
       <h2 id="adminAuthTitle">Acesso administrativo</h2>
       <p id="adminAuthDescription">Informe a senha administrativa para continuar esta ação.</p>
       <label for="adminAccess">Senha administrativa</label>
+      <div class="admin-password-field">
       <input id="adminAccess" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" required>
+        <button id="adminPasswordToggle" type="button" aria-label="Mostrar senha" title="Mostrar senha" aria-controls="adminAccess" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="password-eye-slash" d="m3 3 18 18"/></svg></button>
+      </div>
       <p id="adminAuthError" role="alert" hidden></p>
       <div class="admin-auth-actions"><button id="adminAuthCancel" type="button">Cancelar</button><button id="adminAuthConfirm" type="button">Continuar</button></div>
     </div>
@@ -740,7 +743,7 @@
   <script src="./assets/js/portfolios.js?v=wallet-folder-20261029-4"></script>
   <script src="./assets/js/reconciliation-preview.js?v=period-filter-20261027-1"></script>
   <script src="./assets/js/tasks-ui.js?v=catalog-cache-20261025-1"></script>
-  <script src="./assets/js/admin-auth.js?v=20261023-1"></script>
+  <script src="./assets/js/admin-auth.js?v=password-eye-20261106-1"></script>
   <script src="./assets/js/lazy-assets.js?v=20261024-2"></script>
   <script src="./assets/js/workbook-result.js?v=base-investigation-20261030-1"></script>
   <script src="./assets/js/organizer-jobs.js?v=20261026-1"></script>

@@ -15,3 +15,11 @@
 #adminAuthDialog #adminAuthConfirm {background:#315979;border-color:#315979;color:#fff;}
 #adminAuthDialog :focus-visible {outline:2px solid #7095b5;outline-offset:3px;}
 @media(max-width:560px){#adminAuthDialog .admin-auth-actions button {min-height:44px;}}
+
+#adminAuthDialog .admin-password-field {position:relative;}
+#adminAuthDialog .admin-password-field input {padding-right:48px;}
+#adminAuthDialog #adminPasswordToggle {position:absolute;right:3px;top:3px;display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:6px;background:transparent;color:inherit;cursor:pointer;opacity:.7;}
+#adminAuthDialog #adminPasswordToggle:hover {opacity:1;background:color-mix(in srgb,currentColor 8%,transparent);}
+#adminPasswordToggle .password-eye-slash {display:none;}
+#adminPasswordToggle[aria-pressed="true"] .password-eye-slash {display:block;}
+#adminAccess::-ms-reveal {display:none;}
