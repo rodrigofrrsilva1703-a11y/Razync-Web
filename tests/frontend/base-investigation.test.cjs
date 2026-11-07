@@ -52,7 +52,7 @@ test('IA opcional só reordena a fila sem apagar contas e aprovações',async()=
 
 test('prepara pendências locais antes de abrir o assistente',async()=>{const h=setup();h.mount();await flush();assert.equal(h.window.hidden,true);assert.equal(h.requests.length,1);assert.equal(h.requests[0].options.body.get('usar_ia'),'false');h.launcher.events.click();assert.equal(h.requests.length,1);});
 test('cancelar preparação não reinicia consultas automaticamente',async()=>{const h=setup();h.mount();await flush();action(h,'Cancelar').events.click();await flush();assert.equal(h.requests.length,1);assert.match(textOf(h.body),/Preparação interrompida/);assert.deepEqual(h.workflowStates.at(-1),{state:'error',message:'Preparação interrompida'});});
-test('fila inicia pelos casos com conta candidata única',async()=>{const data=twoRows();data.sugestoes[0].conta_sugerida='';data.sugestoes[0].evidencias=[];const h=await populated(data);assert.ok(flatten(h.body).find(e=>e.attrs['aria-label']==='Conta para Itaú, linha 3'));assert.ok(action(h,'Contas conflitantes'));assert.ok(action(h,'Sem histórico'));});
+test('fila inicia pelos casos com conta candidata única',async()=>{const data=twoRows();data.sugestoes[0].conta_sugerida='';data.sugestoes[0].evidencias=[];const h=await populated(data);assert.ok(flatten(h.body).find(e=>e.attrs['aria-label']==='Conta para Itaú, linha 3'));assert.ok(action(h,'Várias contas'));assert.ok(action(h,'Sem referência'));});
 function groupRows(){const data=twoRows();data.grupos_investigados=1;data.sugestoes[1]={...data.sugestoes[0],_linha:3};return data;}
 test('grupo exige confirmação e permite excluir linha antes de aprovar',async()=>{const h=await populated(groupRows());action(h,'Revisar 2 equivalentes').events.click();assert.ok(action(h,'Gerar Excel com 0 revisões'));const second=flatten(h.body).find(e=>e.attrs['aria-label']==='Incluir Itaú, linha 3 no grupo');second.checked=false;action(h,'Aprovar linhas selecionadas').events.click();assert.ok(action(h,'Gerar Excel com 1 revisão'));});
 test('conta alterada impede confirmar um grupo com a conta antiga',async()=>{const h=await populated(groupRows());action(h,'Revisar 2 equivalentes').events.click();const account=flatten(h.body).find(e=>e.attrs['aria-label']==='Conta para Itaú, linha 2');account.value='999';action(h,'Aprovar linhas selecionadas').events.click();assert.match(textOf(h.window),/A conta mudou/);assert.ok(action(h,'Gerar Excel com 0 revisões'));});
@@ -182,7 +182,7 @@ test('comparação precede a IA e detalhes da resposta começam recolhidos',asyn
  h.ctx.fetch=async()=>({ok:true,json:async()=>({estado:'concluida',aba:'Itaú',linha:2,provedor:'groq',modelo:'test',analise:{resumo:'Conferir natureza.',contas:[],conferir:['Confira o documento'],limite:'Conferência humana'}})});
  await action(h,'Analisar lançamento com IA').events.click();
  const details=flatten(h.body).find(e=>e.className==='base-ai-explain-details');assert.equal(details.open,false);
- assert.match(textOf(h.body),/1 lançamento em 1 grupo/);assert.ok(action(h,'Gerar Excel com 0 revisões'));
+ assert.match(textOf(h.body),/Item 1 de 1/);assert.ok(action(h,'Gerar Excel com 0 revisões'));
 });
 
 test('conta e aprovação ficam fora da área rolável dos históricos',async()=>{
@@ -197,4 +197,29 @@ test('estado inicial da IA não ocupa linha de explicação; erro permanece vis�
  const h=await populated();let status=flatten(h.body).find(e=>e.className==='base-ai-explain-status');assert.equal(status.hidden,true);
  h.ctx.fetch=async()=>{throw Error('Conexão indisponível')};await action(h,'Analisar lançamento com IA').events.click();
  status=flatten(h.body).find(e=>e.className==='base-ai-explain-status');assert.equal(status.hidden,false);assert.match(textOf(status),/Conexão indisponível/);
+});
+
+function visibleCopy(element){
+ if(element.hidden)return '';
+ if(element.tag==='details' && !element.open)return visibleCopy(element.children.find(e=>e.tag==='summary') || {});
+ return (element.textContent || '')+(element.children || []).map(child=>typeof child==='string'?child:visibleCopy(child)).join('');
+}
+test('tela direta preserva históricos completos e recolhe justificativas repetidas',async()=>{
+ const data=JSON.parse(JSON.stringify(report));const history='Pagamento referente ao documento e fornecedor, com descrição integral. '.repeat(20);
+ data.sugestoes[0]['Histórico']=history;
+ const h=await populated(data);const details=flatten(h.body).find(e=>e.className==='base-case-details');
+ assert.equal(details.open,false);assert.match(textOf(details),/Por que considerar/);
+ const visible=visibleCopy(h.body);assert.ok(visible.includes(history));
+ assert.match(visible,/Confira o documento e escolha a conta/);
+ assert.doesNotMatch(visible,/O histórico não confirma se a conta continua ativa|Isso não confirma a operação atual/);
+ assert.match(visible,/Entender esta pendência/);assert.equal(h.requests.length,1);
+});
+test('conta fora do catálogo explica o bloqueio e não aprova até selecionar uma compatível',async()=>{
+ const h=await populated();const input=flatten(h.body).find(e=>e.attrs['aria-label']==='Conta para Itaú, linha 2');
+ let hint=flatten(h.body).find(e=>e.className==='base-decision-help');assert.equal(hint.hidden,true);
+ input.value='999';input.events.input();hint=flatten(h.body).find(e=>e.className==='base-decision-help');
+ assert.equal(hint.hidden,false);assert.match(textOf(hint),/Conta não encontrada/);assert.equal(input.attrs['aria-invalid'],'true');
+ assert.equal(action(h,'Aprovar e próximo').disabled,true);assert.ok(action(h,'Gerar Excel com 0 revisões'));
+ input.value='412';input.events.input();assert.equal(hint.hidden,true);assert.equal(action(h,'Aprovar e próximo').disabled,false);
+ assert.equal(h.requests.length,1);
 });

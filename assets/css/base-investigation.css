@@ -860,3 +860,25 @@ html[data-theme=dark] #baseAiHost{--review-paper:#111214;--review-soft:#18191c;-
 @media(max-width:760px){#baseAiHost #baseInvestigationWindow{top:60px;height:calc(100dvh - 66px);max-height:calc(100dvh - 66px)}#baseAiHost #baseInvestigationWindow .base-ai-window-body:has(.base-review-layout){display:flex;overflow:hidden}#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:8px;overflow:hidden}#baseAiHost #baseInvestigationWindow .base-review-sidebar{height:auto;max-height:110px;overflow:hidden}#baseAiHost #baseInvestigationWindow .base-review-sidebar>h3{display:none}#baseAiHost #baseInvestigationWindow .base-review-queue{display:flex;flex-direction:row;overflow:auto;max-height:74px}#baseAiHost #baseInvestigationWindow .base-review-queue .base-review-item{flex:0 0 190px}#baseAiHost #baseInvestigationWindow .base-review-toolbar .base-review-filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}#baseAiHost #baseInvestigationWindow .base-history-comparison{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-review-decision>label{white-space:normal}#baseAiHost #baseInvestigationWindow .base-review-reading{padding-right:3px}}
 #baseAiHost #baseInvestigationWindow .base-received-heading>h4{flex:1 0 130px;min-width:130px;overflow-wrap:normal;word-break:normal}
 #baseAiHost #baseInvestigationWindow .base-received-heading .base-account-candidates{max-width:100%;flex-wrap:wrap}
+
+/* Direct review: one instruction, two histories and one decision. */
+#baseAiHost #baseInvestigationWindow .base-case-details {margin-top:8px;font-size:11px;line-height:1.5;color:var(--review-muted);}
+#baseAiHost #baseInvestigationWindow .base-case-details>summary,#baseAiHost #baseInvestigationWindow .base-reference-details>summary {cursor:pointer;font-size:11px;line-height:1.5;padding:3px 0;color:var(--review-muted);}
+#baseAiHost #baseInvestigationWindow .base-case-details[open] {padding-top:6px;}
+#baseAiHost #baseInvestigationWindow .base-case-details>strong {display:block;margin:7px 0 4px;font-size:11px;}
+#baseAiHost #baseInvestigationWindow .base-case-details p {font-size:11px!important;line-height:1.5!important;}
+#baseAiHost #baseInvestigationWindow .base-check-focus {margin:7px 0 3px;padding:4px 0 4px 8px;}
+#baseAiHost #baseInvestigationWindow .base-check-focus>strong {font-size:11.5px;font-weight:650;}
+#baseAiHost #baseInvestigationWindow .base-reference-details {margin-top:6px;}
+#baseAiHost #baseInvestigationWindow .base-reference-details>small {display:block;font-size:10.5px;line-height:1.5;margin:4px 0;}
+#baseAiHost #baseInvestigationWindow .base-comparison-delta {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2px 10px;}
+#baseAiHost #baseInvestigationWindow .base-comparison-delta>strong {grid-column:1/-1;}
+#baseAiHost #baseInvestigationWindow .base-comparison-delta>small:nth-child(2) {grid-row:2;grid-column:1;}
+#baseAiHost #baseInvestigationWindow .base-comparison-delta>p:nth-child(3) {grid-row:3;grid-column:1;overflow-wrap:anywhere;}
+#baseAiHost #baseInvestigationWindow .base-comparison-delta>small:nth-child(4) {grid-row:2;grid-column:2;}
+#baseAiHost #baseInvestigationWindow .base-comparison-delta>p:nth-child(5) {grid-row:3;grid-column:2;overflow-wrap:anywhere;}
+#baseAiHost #baseInvestigationWindow .base-decision-help {grid-column:1/-1;grid-row:2;font-size:11px;line-height:1.4;color:var(--review-muted);margin:0;}
+#baseAiHost #baseInvestigationWindow .base-decision-help[hidden] {display:none;}
+#baseAiHost #baseInvestigationWindow .base-review-decision .base-review-approval {grid-row:3;}
+#baseAiHost #baseInvestigationWindow .base-ai-explain-title[hidden] {display:none;}
+@media(max-width:1050px){#baseAiHost #baseInvestigationWindow .base-decision-help{grid-row:3}#baseAiHost #baseInvestigationWindow .base-review-decision .base-review-approval{grid-row:4}}
