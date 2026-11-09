@@ -21,9 +21,30 @@ function selectedFileBankLabel(input) {
   return "Identificado no processamento";
 }
 
+function createPreviewCommand(title, meta) {
+  const command = document.createElement("div");
+  command.className = "preview-commandbar";
+  const info = document.createElement("div");
+  info.className = "preview-command-info";
+  const ready = document.createElement("span");
+  ready.className = "preview-ready-dot";
+  ready.setAttribute("aria-hidden", "true");
+  const text = document.createElement("div");
+  const heading = document.createElement("strong");
+  heading.textContent = title;
+  const detail = document.createElement("small");
+  detail.textContent = meta;
+  text.append(heading, detail);
+  info.append(ready, text);
+  const actions = document.createElement("div");
+  actions.className = "preview-primary-actions";
+  command.append(info, actions);
+  return {command, actions};
+}
+
 function initializeWorkspaceUI() {
   initializeCompanyControls();
-  const targets = "#workflowPreview, #classificationPreview, #reconcileResult, #ledgerResult";
+  const targets = ".standard-preview";
   const main = document.querySelector("main");
   const bar = document.createElement("div");
   bar.className = "mobile-preview-actions"; bar.hidden = true;
@@ -40,7 +61,9 @@ function initializeWorkspaceUI() {
     dialog.setAttribute("aria-label", "Prévia expandida");
     const anchor = document.createComment("preview-position"); target.before(anchor);
     const header = document.createElement("div"); header.className = "preview-dialog-header";
-    const title = document.createElement("strong"); title.textContent = "Conferir prévia";
+    const title = document.createElement("strong");
+    title.textContent = target.querySelector(".preview-command-info strong")?.textContent || "Conferir prévia";
+    dialog.setAttribute("aria-label", title.textContent);
     const close = document.createElement("button"); close.type = "button"; close.textContent = "Fechar prévia";
     close.addEventListener("click", () => dialog.close()); header.append(title, close);
     anchor.parentNode.append(dialog); dialog.append(header, target);
@@ -57,11 +80,11 @@ function initializeWorkspaceUI() {
     frame = null;
     if (expanded && !expanded.target.querySelector("table")) expanded.dialog.close();
     main.querySelectorAll(targets).forEach(target => {
-      if (!target.querySelector("table") || target.querySelector(".preview-expand")) return;
+      if (!target.getClientRects().length || !target.querySelector("table") || target.querySelector(".preview-expand") || expanded?.target === target) return;
       const button = document.createElement("button"); button.type = "button";
       button.className = "preview-expand"; button.textContent = "Expandir prévia";
       button.addEventListener("click", () => expandPreview(target, button));
-      const toolbar = target.querySelector(".preview-primary-actions, .daily-toolbar");
+      const toolbar = target.querySelector(".preview-primary-actions");
       if (toolbar) toolbar.append(button); else target.prepend(button);
     });
     activeTarget = [...main.querySelectorAll(targets)].find(target =>

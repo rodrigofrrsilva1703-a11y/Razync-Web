@@ -129,36 +129,23 @@ function metricChip(label, value) {
   return item;
 }
 
-function showWorkflowPreview(data, target = $("#workflowPreview")) {
+function showWorkflowPreview(data, target = $("#workflowPreview"), options = {}) {
   target.replaceChildren();
 
   const sheets = data.sheets || [];
   const diagnostics = data.diagnostics || [];
+  const primaryIndex = options.primarySheet ? sheets.findIndex(sheet => sheet.name === options.primarySheet) : -1;
+  const totals = primaryIndex >= 0 ? [sheets[primaryIndex]] : sheets;
   const money = value => new Intl.NumberFormat("pt-BR",{
     style:"currency",currency:"BRL"
   }).format(Number(value || 0));
 
-  const totalCount = sheets.reduce((sum, sheet) => sum + Number(sheet.count || 0), 0);
-  const totalEntradas = sheets.reduce((sum, sheet) => sum + Number(sheet.entradas || 0), 0);
-  const totalSaidas = sheets.reduce((sum, sheet) => sum + Number(sheet.saidas || 0), 0);
+  const totalCount = totals.reduce((sum, sheet) => sum + Number(sheet.count || 0), 0);
+  const totalEntradas = totals.reduce((sum, sheet) => sum + Number(sheet.entradas || 0), 0);
+  const totalSaidas = totals.reduce((sum, sheet) => sum + Number(sheet.saidas || 0), 0);
 
-  const command = document.createElement("div");
-  command.className = "preview-commandbar";
-  const commandInfo = document.createElement("div");
-  commandInfo.className = "preview-command-info";
-  const ready = document.createElement("span");
-  ready.className = "preview-ready-dot";
-  ready.setAttribute("aria-hidden","true");
-  const commandText = document.createElement("div");
-  const commandTitle = document.createElement("strong");
-  commandTitle.textContent = "Prévia pronta para conferência";
-  const commandMeta = document.createElement("small");
-  commandMeta.textContent = `${totalCount} lançamento(s) em ${sheets.length} aba(s)`;
-  commandText.append(commandTitle, commandMeta);
-  commandInfo.append(ready, commandText);
-  const primaryActions = document.createElement("div");
-  primaryActions.className = "preview-primary-actions";
-  command.append(commandInfo, primaryActions);
+  const {command} = createPreviewCommand(options.title || "Prévia pronta para conferência",
+    `${totalCount.toLocaleString("pt-BR")} lançamento(s) em ${sheets.length} aba(s)`);
   target.appendChild(command);
 
   const summaryGrid = document.createElement("div");
@@ -167,7 +154,7 @@ function showWorkflowPreview(data, target = $("#workflowPreview")) {
     ["Lançamentos", totalCount.toLocaleString("pt-BR"), "summary-icon summary-icon-rows"],
     ["Entradas", money(totalEntradas), "summary-icon summary-icon-in"],
     ["Saídas", money(totalSaidas), "summary-icon summary-icon-out"],
-    ["Abas / bancos", String(sheets.length), "summary-icon summary-icon-sheets"],
+    [options.sheetLabel || "Abas / bancos", String(sheets.length), "summary-icon summary-icon-sheets"],
   ].forEach(([label,value,iconClass]) => {
     const card = document.createElement("div");
     card.className = "preview-summary-item";
@@ -195,20 +182,20 @@ function showWorkflowPreview(data, target = $("#workflowPreview")) {
   const heading = document.createElement("h3");
   heading.textContent = "Confira o Modelo Domínio antes de baixar";
   const description = document.createElement("p");
-  description.textContent = "Revise datas, valores, contas e históricos. Você pode filtrar os lançamentos dentro de cada tabela.";
+  description.textContent = options.description || "Revise datas, valores, contas e históricos. Você pode filtrar os lançamentos dentro de cada tabela.";
   introText.append(eyebrow, heading, description);
   intro.appendChild(introText);
   target.appendChild(intro);
 
   const sheetBlocks = [];
-  const pendingCount = sheets.reduce((sum, sheet) => sum + (sheet.rows || []).filter(row => previewRowIssues(sheet.columns || [], row).length).length, 0);
+  const pendingCount = totals.reduce((sum, sheet) => sum + (sheet.rows || []).filter(row => previewRowIssues(sheet.columns || [], row).length).length, 0);
   if (pendingCount) {
     const notice = document.createElement("div"); notice.className = "preview-pending-summary";
     const text = document.createElement("span"); text.textContent = `${pendingCount} linha(s) da prévia precisam de revisão: confira as datas.`;
     const onlyPending = document.createElement("button"); onlyPending.type = "button"; onlyPending.textContent = "Ver apenas pendências";
     onlyPending.addEventListener("click", () => {
       target.querySelectorAll(".preview-sheet").forEach(block => block.hidden = false);
-      target.querySelectorAll(".preview-sheet-switcher button").forEach(button => button.classList.toggle("active", button.dataset.sheetIndex === "-1"));
+      target.querySelector('.preview-sheet-switcher button[data-sheet-index="-1"]')?.click();
       target.querySelectorAll(".preview-table-tools input").forEach(input => input.value = "");
       target.querySelectorAll(".preview-table-tools select").forEach(select => { select.value = "pending"; select.dispatchEvent(new Event("change")); });
       target.querySelector(".preview-table-tools")?.scrollIntoView({behavior:"smooth", block:"center"});
@@ -228,9 +215,13 @@ function showWorkflowPreview(data, target = $("#workflowPreview")) {
       button.type = "button";
       button.textContent = label;
       button.dataset.sheetIndex = String(index);
-      if (index === -1) button.classList.add("active");
+      button.classList.toggle("active", index === primaryIndex);
+      button.setAttribute("aria-pressed", String(index === primaryIndex));
       button.addEventListener("click", () => {
-        switcher.querySelectorAll("button").forEach(item => item.classList.toggle("active", item === button));
+        switcher.querySelectorAll("button").forEach(item => {
+          item.classList.toggle("active", item === button);
+          item.setAttribute("aria-pressed", String(item === button));
+        });
         sheetBlocks.forEach((block, blockIndex) => {
           block.hidden = index !== -1 && blockIndex !== index;
         });
@@ -247,6 +238,7 @@ function showWorkflowPreview(data, target = $("#workflowPreview")) {
     const block = document.createElement("section");
     block.className = "preview-sheet";
     block.dataset.previewSheetIndex = String(sheetIndex);
+    block.hidden = primaryIndex >= 0 && sheetIndex !== primaryIndex;
     sheetBlocks.push(block);
 
     const header = document.createElement("div");

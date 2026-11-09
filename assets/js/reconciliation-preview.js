@@ -35,7 +35,7 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
   if (!target) return;
   target.replaceChildren();
   target.hidden = false;
-  target.className = "daily-reconciliation";
+  target.classList.add("daily-reconciliation");
 
   const normalized = rows.map(row => {
     const balances = reconciliationBalances(row,kind);
@@ -51,6 +51,8 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
   const okCount = normalized.filter(row => row.ok).length;
   const reviewCount = normalized.length - okCount;
 
+  const {command, actions} = createPreviewCommand(kind === "razao" ? "Prévia da conciliação com razão" : "Prévia da conferência com extrato",
+    `${normalized.length.toLocaleString("pt-BR")} ${multiBank ? "registro(s) de banco e dia" : "dia(s) analisado(s)"}`);
   const summary = document.createElement("div");
   summary.className = "daily-summary";
   summary.innerHTML = `
@@ -132,7 +134,7 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
   if (download) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "daily-download";
+    button.className = "daily-download preview-download";
     button.textContent = "Baixar relatório Excel";
     button.addEventListener("click", async () => {
       button.disabled = true;
@@ -141,7 +143,7 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
       try { await download(); }
       finally { button.disabled = false; button.textContent = old; }
     });
-    toolbar.appendChild(button);
+    actions.appendChild(button);
   }
 
   const scroll = document.createElement("div");
@@ -239,7 +241,7 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
   applyFilters();
 
   scroll.appendChild(table);
-  target.append(summary,rule,toolbar,scroll);
+  target.append(command,summary,rule,toolbar,scroll);
   if (movements.length) target.appendChild(renderStatementMovements(movements));
 }
 

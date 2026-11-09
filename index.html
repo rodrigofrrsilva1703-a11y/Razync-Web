@@ -34,6 +34,7 @@
   <link rel="stylesheet" href="./assets/css/home-welcome.css?v=home-composition-20261030-1">
   <link rel="stylesheet" href="./assets/css/global-tool-preparation.css?v=20261029-1">
   <link rel="stylesheet" href="./assets/css/site-access.css?v=20261109-4">
+  <link rel="stylesheet" href="./assets/css/preview-layout.css?v=20261109-1">
 </head>
 <body class="sidebar-collapsed" data-site-locked>
   <section id="siteAccess" aria-labelledby="siteAccessTitle">
@@ -212,7 +213,7 @@
             <p id="globalConverterMessage" class="helper" role="status" aria-live="polite"></p>
           </form>
         </div>
-        <div id="globalConverterResult" class="preview-results" hidden></div>
+        <div id="globalConverterResult" class="preview-results standard-preview" hidden></div>
         <button type="button" id="globalConverterDownload" class="preview-download" hidden>Baixar Modelo Domínio (.xlsx)</button>
       </section>
 
@@ -235,7 +236,7 @@
             <p id="ledgerMessage" class="helper"></p>
           </form>
         </div>
-        <div id="ledgerResult" class="daily-reconciliation global-daily-result" hidden></div>
+        <div id="ledgerResult" class="daily-reconciliation standard-preview" hidden></div>
       </section>
 
       <section id="fiscalView" class="global-view">
@@ -351,7 +352,11 @@
               </div>
               <button type="button" id="fiscal242NextStepButton">Investigar documentos <span aria-hidden="true">↗</span></button>
             </div>
-            <div class="fiscal-results-card" id="fiscal242ResultsCard">
+            <div class="fiscal-results-card standard-preview" id="fiscal242ResultsCard">
+              <div class="preview-commandbar">
+                <div class="preview-command-info"><span class="preview-ready-dot" aria-hidden="true"></span><div><strong>Prévia da conferência fiscal × contábil</strong><small>Compare as contas e abra os lançamentos de cada uma.</small></div></div>
+                <div class="preview-primary-actions"><button type="button" class="preview-download" id="fiscal242Download">Baixar relatório Excel</button></div>
+              </div>
               <div class="fiscal-results-heading">
                 <div><span class="fiscal-section-eyebrow">COMPARATIVO</span><h3>Contas e acumuladores</h3><p>Uma linha por conta e tipo de operação. As descrições são dos acumuladores fiscais.</p></div>
                 <div class="fiscal-results-controls">
@@ -502,9 +507,6 @@
               <p class="fiscal-ai-no-results" id="fiscal242AIEmpty" hidden>Nenhum parecer corresponde à busca ou ao filtro. Os resultados continuam disponíveis ao limpar os filtros.</p>
             </section>
             </div>
-            <div class="fiscal-download-row">
-              <button type="button" class="secondary-action" id="fiscal242Download">Baixar relatório Excel (opcional)</button>
-            </div>
           </section>
         </section>
 
@@ -565,7 +567,7 @@
               <p id="processMessage" class="helper"></p>
             </form>
           </div>
-          <div id="workflowPreview" class="preview-results streamlit-preview organizer-preview" aria-live="polite"></div>
+          <div id="workflowPreview" class="preview-results standard-preview streamlit-preview organizer-preview" aria-live="polite"></div>
         </section>
 
         <section class="tool-pane" data-pane="base">
@@ -676,7 +678,7 @@
                 </details>
               </div>
             </div>
-            <div id="classificationPreview" class="preview-results streamlit-preview" aria-live="polite"></div>
+            <div id="classificationPreview" class="preview-results standard-preview streamlit-preview" aria-live="polite"></div>
           </div>
         </section>
 
@@ -709,7 +711,7 @@
               <p id="reconcileMessage" class="helper"></p>
             </form>
           </div>
-          <div id="reconcileResult" class="tool-result" hidden></div>
+          <div id="reconcileResult" class="daily-reconciliation standard-preview" hidden></div>
         </section>
 
 
@@ -786,7 +788,7 @@
   <script src="./assets/js/site-access.js?v=20261109-4"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
-  <script src="./assets/js/workspace-ui.js?v=preview-helpers-20261103-1"></script>
+  <script src="./assets/js/workspace-ui.js?v=standard-preview-20261109-1"></script>
   <script src="./assets/js/company-guides.js?v=context-help-20261106-1"></script>
   <script type="text/plain" data-lazy-tool="investments" src="./assets/js/bank-investments.js?v=20261020-8"></script>
   <script src="./assets/js/dom-utils.js?v=20261020-1"></script>
@@ -794,19 +796,19 @@
   <script src="./assets/js/home-showcase.js?v=continuous-20261029-3"></script>
   <script src="./assets/js/home-interactions.js?v=screen-motion-20261029-5"></script>
   <script src="./assets/js/portfolios.js?v=wallet-folder-20261029-4"></script>
-  <script src="./assets/js/reconciliation-preview.js?v=period-filter-20261027-1"></script>
+  <script src="./assets/js/reconciliation-preview.js?v=standard-preview-20261109-1"></script>
   <script src="./assets/js/tasks-ui.js?v=catalog-cache-20261025-1"></script>
   <script src="./assets/js/admin-auth.js?v=password-eye-20261106-1"></script>
   <script src="./assets/js/lazy-assets.js?v=20261024-2"></script>
   <script src="./assets/js/workbook-result.js?v=base-investigation-20261030-1"></script>
   <script src="./assets/js/organizer-jobs.js?v=20261026-1"></script>
   <script src="./assets/js/company-directory.js?v=20261027-1"></script>
-  <script src="./assets/js/converter-global.js?v=20261028-1"></script>
+  <script src="./assets/js/converter-global.js?v=standard-preview-20261109-1"></script>
   <script src="./assets/js/base-investigation.js?v=direct-review-20261106-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
   <script src="./assets/js/app.js?v=private-access-20261109-1"></script>
-  <script src="./assets/js/migration.js?v=precise-formats-20261106-2"></script>
+  <script src="./assets/js/migration.js?v=standard-preview-20261109-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>
   <script src="./assets/js/base-periods.js?v=20261026-1"></script>
