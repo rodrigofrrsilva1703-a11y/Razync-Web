@@ -6,13 +6,15 @@ import shutil
 
 ROOT = Path(__file__).resolve().parents[1]
 
-def build(output):
+def build(output, private_catalog=False):
     output = Path(output).resolve()
     # Never overwrite a checkout or delete an existing user directory.
     if output.exists():
         raise ValueError('A pasta de saída deve ser nova.')
     output.mkdir(parents=True)
     shutil.copytree(ROOT / 'assets', output / 'assets')
+    if private_catalog:
+        (output / 'assets/data/companies.json').unlink(missing_ok=True)
     shutil.copyfile(ROOT / 'indisponivel.html', output / 'indisponivel.html')
     html = (ROOT / 'index.html').read_text(encoding='utf-8')
     pattern = re.compile(r'(?P<run><link\b[^>]*href="\./assets/css/[^\"]+"[^>]*>(?:\s*<link\b[^>]*href="\./assets/css/[^\"]+"[^>]*>)*)')
@@ -53,4 +55,6 @@ def build(output):
 if __name__ == '__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--output',required=True)
-    build(parser.parse_args().output)
+    parser.add_argument('--private-catalog', action='store_true')
+    args = parser.parse_args()
+    build(args.output, private_catalog=args.private_catalog)

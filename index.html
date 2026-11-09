@@ -33,8 +33,25 @@
   <link rel="stylesheet" href="./assets/css/sidebar-motion.css?v=20261029-1">
   <link rel="stylesheet" href="./assets/css/home-welcome.css?v=home-composition-20261030-1">
   <link rel="stylesheet" href="./assets/css/global-tool-preparation.css?v=20261029-1">
+  <link rel="stylesheet" href="./assets/css/site-access.css?v=1">
 </head>
-<body class="sidebar-collapsed">
+<body class="sidebar-collapsed" data-site-locked>
+  <section id="siteAccess" aria-labelledby="siteAccessTitle">
+    <div class="site-access-card">
+      <img src="./assets/razync-logo-original.png" alt="" width="48" height="48">
+      <h1 id="siteAccessTitle">Entrar no Razync</h1>
+      <p id="siteAccessStatus" role="status">Verificando acesso…</p>
+      <form id="siteAccessForm" hidden>
+        <label for="siteAccessEmail">E-mail</label>
+        <input id="siteAccessEmail" type="email" autocomplete="username" required maxlength="254">
+        <label for="siteAccessPassword">Senha</label>
+        <input id="siteAccessPassword" type="password" autocomplete="current-password" required maxlength="512">
+        <button type="submit">Entrar</button>
+      </form>
+      <button id="siteAccessRetry" type="button" hidden>Tentar novamente</button>
+      <noscript>Ative o JavaScript para entrar.</noscript>
+    </div>
+  </section>
   <div class="app-shell">
     <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
     <aside id="mainSidebar" class="sidebar" role="dialog" aria-modal="true" aria-label="Navegação principal" aria-hidden="true" tabindex="-1" inert>
@@ -44,6 +61,7 @@
         <span><strong>Razync</strong><small>Automação contábil</small></span>
       </a>
       <div class="nav-caption">ÁREA DE TRABALHO</div>
+      <button id="siteAccessExit" type="button" hidden>Sair da conta</button>
 
     <nav class="main-nav" aria-label="Navegação principal">
       <button class="main-nav-btn active" data-view="companies" aria-label="Empresas"><span class="nav-label">Empresas</span></button>
@@ -731,6 +749,7 @@
     </div>
   </dialog>
   <script src="./assets/js/config.js"></script>
+  <script src="./assets/js/site-access.js?v=1"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
   <script src="./assets/js/workspace-ui.js?v=preview-helpers-20261103-1"></script>
@@ -752,7 +771,7 @@
   <script src="./assets/js/base-investigation.js?v=direct-review-20261106-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
-  <script src="./assets/js/app.js?v=precise-formats-20261106-2"></script>
+  <script src="./assets/js/app.js?v=private-access-20261109-1"></script>
   <script src="./assets/js/migration.js?v=precise-formats-20261106-2"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>
