@@ -79,3 +79,28 @@ def test_first_login_can_be_tested_before_locking_the_site(client, monkeypatch):
     assert client.get("/api/v1/acesso/config").json() == {"required": False, "available": True}
     headers = sign_in(client)
     assert client.get("/api/v1/acesso/sessao", headers=headers).status_code == 200
+
+
+def test_persistent_session_survives_worker_restart_expires_and_revokes(client, monkeypatch, tmp_path):
+    from types import SimpleNamespace
+    import time
+    clock = [1_800_000_000]
+    monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", str(tmp_path))
+    monkeypatch.setattr(site_access, "time", SimpleNamespace(time=lambda: clock[0], monotonic=time.monotonic))
+    headers = sign_in(client)
+    monkeypatch.setattr(site_access, "_sessions", site_access.OrderedDict())
+    clock[0] += site_access.TTL - 60
+    assert client.get("/api/v1/tasks", headers=headers).status_code == 200
+    clock[0] += site_access.TTL - 60
+    assert client.get("/api/v1/tasks", headers=headers).status_code == 200
+    clock[0] += site_access.TTL + 1
+    assert client.get("/api/v1/tasks", headers=headers).status_code == 401
+    headers = sign_in(client)
+    for _ in range(site_access.MAX_AGE // (6 * 3600) - 1):
+        clock[0] += 6 * 3600
+        assert client.get("/api/v1/tasks", headers=headers).status_code == 200
+    clock[0] += 6 * 3600
+    assert client.get("/api/v1/tasks", headers=headers).status_code == 401
+    headers = sign_in(client)
+    assert client.post("/api/v1/acesso/sair", headers=headers).status_code == 200
+    assert client.get("/api/v1/tasks", headers=headers).status_code == 401

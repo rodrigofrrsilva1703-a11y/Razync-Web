@@ -738,6 +738,7 @@ function activateTool(name) {
     pane.setAttribute("aria-hidden", String(!active));
     pane.style.display = active ? "block" : "none";
   });
+  window.RazyncWorkspaceResume?.save();
   if (name === "base" && selected?.capabilities?.status === "api_ready") {
     refreshBaseStats();
   }
@@ -980,6 +981,7 @@ function openCompany(company) {
   $("#reconcileMessage").textContent = "";
   clearToolResult("#reconcileResult");
   clearToolResult("#taxResult");
+  window.RazyncWorkspaceResume?.save();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -1768,7 +1770,7 @@ apiStatus.addEventListener("click", () => {
 });
 
 initializeTaskUI();
-loadCompanies();
+const initialCatalog = loadCompanies();
 checkApi();
 enhanceFileInputs(document);
 
@@ -1802,6 +1804,7 @@ async function showGlobalView(name) {
   document.querySelectorAll(".main-nav-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.view === name);
   });
+  window.RazyncWorkspaceResume?.save();
   if (name === "fiscal") {
     renderCompanyToolGuide("fiscal-global");
   }

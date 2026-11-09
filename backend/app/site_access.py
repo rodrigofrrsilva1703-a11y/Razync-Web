@@ -1,10 +1,13 @@
 """Optional private access for the entire application, independent of admin actions."""
 from collections import OrderedDict
 from contextvars import ContextVar
+from contextlib import contextmanager
+from pathlib import Path
 import hashlib
 import json
 import os
 import secrets
+import sqlite3
 from threading import Lock
 import time
 from urllib.error import HTTPError, URLError
@@ -19,7 +22,9 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 router = APIRouter(prefix="/api/v1/acesso")
 PUBLIC = {("GET", "/health"), ("GET", "/api/v1/acesso/config"), ("POST", "/api/v1/acesso/entrar")}
-TTL = 8 * 60 * 60
+TTL = 12 * 60 * 60
+MAX_AGE = 7 * 24 * 60 * 60
+TOUCH_INTERVAL = 5 * 60
 _sessions = OrderedDict()
 _attempts = OrderedDict()
 _lock = Lock()
@@ -49,26 +54,81 @@ def fingerprint(token):
     return hashlib.sha256(token.encode()).digest()
 
 
+@contextmanager
+def session_database(volume):
+    path = Path(volume) / "razync_sessions.sqlite3"
+    # Restrictive permissions on the database; only hashes of session tokens are saved.
+    fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
+    os.close(fd)
+    db = sqlite3.connect(path, timeout=3)
+    try:
+        db.execute("CREATE TABLE IF NOT EXISTS sessions (digest BLOB PRIMARY KEY, "
+                   "email TEXT NOT NULL, expires REAL NOT NULL, last_seen REAL NOT NULL)")
+        with db:
+            yield db
+    finally:
+        db.close()
+
+
 def session(request):
     token = request.headers.get("x-razync-session", "")
     if len(token) != 43:
         return None
+    digest = fingerprint(token)
+    volume = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
+    now = time.time()
+    if volume:
+        with session_database(volume) as db:
+            entry = db.execute("SELECT email, expires, last_seen FROM sessions WHERE digest=?", (digest,)).fetchone()
+            if not entry:
+                return None
+            email, expires, last_seen = entry
+            if expires <= now or last_seen + TTL <= now or email not in allowlist():
+                db.execute("DELETE FROM sessions WHERE digest=?", (digest,))
+                return None
+            if last_seen + TOUCH_INTERVAL <= now:
+                db.execute("UPDATE sessions SET last_seen=? WHERE digest=? AND last_seen<?", (now, digest, now))
+            return email
     with _lock:
-        entry = _sessions.get(fingerprint(token))
+        entry = _sessions.get(digest)
         if not entry:
             return None
-        email, deadline = entry
-        if deadline <= time.monotonic() or email not in allowlist():
-            _sessions.pop(fingerprint(token), None)
+        email, expires, last_seen = entry
+        if expires <= now or last_seen + TTL <= now or email not in allowlist():
+            _sessions.pop(digest, None)
             return None
+        _sessions[digest] = email, expires, now
+        _sessions.move_to_end(digest)
         return email
+
+
+def save_session(token, email):
+    now = time.time()
+    digest = fingerprint(token)
+    volume = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
+    if volume:
+        with session_database(volume) as db:
+            db.execute("DELETE FROM sessions WHERE expires <= ? OR last_seen <= ?", (now, now - TTL))
+            db.execute("INSERT INTO sessions VALUES (?,?,?,?)", (digest, email, now + MAX_AGE, now))
+            db.execute("DELETE FROM sessions WHERE digest IN (SELECT digest FROM sessions ORDER BY last_seen DESC LIMIT -1 OFFSET 256)")
+        return
+    with _lock:
+        for key, (_, expires, last_seen) in list(_sessions.items()):
+            if expires <= now or last_seen + TTL <= now:
+                _sessions.pop(key, None)
+        _sessions[digest] = email, now + MAX_AGE, now
+        while len(_sessions) > 256:
+            _sessions.popitem(last=False)
 
 
 class SiteAccessMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         if not enabled() or request.method == "OPTIONS" or (request.method, request.url.path) in PUBLIC:
             return await call_next(request)
-        email = session(request)
+        try:
+            email = await run_in_threadpool(session, request)
+        except (sqlite3.Error, OSError):
+            return reply(503, detail="Não foi possível verificar a sessão agora.")
         if not email:
             return reply(401, detail="Entre no Razync para continuar.")
         request.state.site_email = email
@@ -147,24 +207,33 @@ async def login(request: Incoming):
     if not valid:
         return reply(401, detail="E-mail ou senha inválidos.")
     token = secrets.token_urlsafe(32)
-    with _lock:
-        for key, (_, deadline) in list(_sessions.items()):
-            if deadline <= now:
-                _sessions.pop(key, None)
-        _sessions[fingerprint(token)] = email, now + TTL
-        while len(_sessions) > 256:
-            _sessions.popitem(last=False)
+    try:
+        await run_in_threadpool(save_session, token, email)
+    except (sqlite3.Error, OSError):
+        return reply(503, detail="Não foi possível iniciar a sessão agora.")
     return reply(200, session=token, email=email)
 
 
 @router.get("/sessao")
 def whoami(request: Incoming):
-    email = session(request)
+    try:
+        email = getattr(request.state, "site_email", None) or session(request)
+    except (sqlite3.Error, OSError):
+        return reply(503, detail="Não foi possível verificar a sessão agora.")
     return reply(200, email=email) if email else reply(401, detail="Sessão encerrada.")
 
 
 @router.post("/sair")
 def logout(request: Incoming):
-    with _lock:
-        _sessions.pop(fingerprint(request.headers.get("x-razync-session", "")), None)
+    digest = fingerprint(request.headers.get("x-razync-session", ""))
+    volume = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
+    try:
+        if volume:
+            with session_database(volume) as db:
+                db.execute("DELETE FROM sessions WHERE digest=?", (digest,))
+        else:
+            with _lock:
+                _sessions.pop(digest, None)
+    except (sqlite3.Error, OSError):
+        return reply(503, detail="Não foi possível encerrar a sessão no servidor.")
     return reply(200, ok=True)

@@ -46,7 +46,7 @@ test('seletor de empresas preserva código e nome sem interpretar HTML',()=> {
 
 test('carregamento inicial busca empresas uma única vez e preenche o seletor de tarefas',async()=> {
   const app=read('app');
-  assert.equal((app.match(/^loadCompanies\(\);/gm)||[]).length,1);
+  assert.equal((app.match(/^(?:const initialCatalog = )?loadCompanies\(\);/gm)||[]).length,1);
   const catalog=[{codigo:242,nome:'Eletro Forte'}];
   let requests=0,rendered=0,populated;
   const context={API:()=>'/api',companies:[],activePortfolio:null,

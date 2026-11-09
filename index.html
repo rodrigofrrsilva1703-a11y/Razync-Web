@@ -33,7 +33,7 @@
   <link rel="stylesheet" href="./assets/css/sidebar-motion.css?v=20261029-1">
   <link rel="stylesheet" href="./assets/css/home-welcome.css?v=home-composition-20261030-1">
   <link rel="stylesheet" href="./assets/css/global-tool-preparation.css?v=20261029-1">
-  <link rel="stylesheet" href="./assets/css/site-access.css?v=20261109-4">
+  <link rel="stylesheet" href="./assets/css/site-access.css?v=session-resume-1">
   <link rel="stylesheet" href="./assets/css/preview-layout.css?v=20261109-1">
 </head>
 <body class="sidebar-collapsed" data-site-locked>
@@ -46,16 +46,17 @@
         </div>
         <div class="site-access-welcome-copy">
           <p class="site-access-eyebrow">Sua área de trabalho</p>
-          <p class="site-access-welcome-title">Sua rotina contábil começa aqui.</p>
-          <p>Organize arquivos, confira lançamentos e retome suas classificações.</p>
+          <p class="site-access-welcome-title">Seu trabalho contábil, em um só lugar.</p>
+          <p>Organize arquivos, confira saldos e classifique seus lançamentos.</p>
         </div>
+        <ol class="site-access-steps" aria-hidden="true"><li>Organizar</li><li>Conferir</li><li>Classificar</li></ol>
         <div class="site-access-art" aria-hidden="true"><i></i><i></i><i></i></div>
       </div>
       <div class="site-access-content">
       <div class="site-access-heading">
         <span class="site-access-tag"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Acesso restrito</span>
         <h1 id="siteAccessTitle">Entrar no Razync</h1>
-        <p>Use sua conta autorizada para acessar a área de trabalho.</p>
+        <p>Entre com seu e-mail e senha para acessar suas ferramentas.</p>
       </div>
       <form id="siteAccessForm" method="post" hidden>
         <div class="site-access-field">
@@ -69,7 +70,8 @@
             <button id="siteAccessShow" type="button" aria-controls="siteAccessPassword" aria-label="Mostrar senha" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/><path class="site-access-eye-off" d="M3 3l18 18"/></svg></button>
           </div>
         </div>
-        <button class="site-access-submit" type="submit">Entrar <span aria-hidden="true">→</span></button>
+        <button class="site-access-submit" type="submit">Entrar <span class="site-access-submit-indicator" aria-hidden="true">→</span></button>
+        <p class="site-access-session-note">Sua sessão continua ativa ao recarregar esta aba.</p>
       </form>
       <p id="siteAccessStatus" role="status">Verificando acesso…</p>
       <button id="siteAccessRetry" type="button" hidden>Tentar novamente</button>
@@ -785,7 +787,7 @@
     </div>
   </dialog>
   <script src="./assets/js/config.js"></script>
-  <script src="./assets/js/site-access.js?v=20261109-4"></script>
+  <script src="./assets/js/site-access.js?v=session-resume-1"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
   <script src="./assets/js/workspace-ui.js?v=standard-preview-20261109-1"></script>
@@ -795,7 +797,7 @@
   <script src="./assets/js/home-motion.js?v=20261027-2"></script>
   <script src="./assets/js/home-showcase.js?v=continuous-20261029-3"></script>
   <script src="./assets/js/home-interactions.js?v=screen-motion-20261029-5"></script>
-  <script src="./assets/js/portfolios.js?v=wallet-folder-20261029-4"></script>
+  <script src="./assets/js/portfolios.js?v=session-resume-1"></script>
   <script src="./assets/js/reconciliation-preview.js?v=standard-preview-20261109-1"></script>
   <script src="./assets/js/tasks-ui.js?v=catalog-cache-20261025-1"></script>
   <script src="./assets/js/admin-auth.js?v=password-eye-20261106-1"></script>
@@ -807,8 +809,9 @@
   <script src="./assets/js/base-investigation.js?v=direct-review-20261106-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
-  <script src="./assets/js/app.js?v=private-access-20261109-1"></script>
+  <script src="./assets/js/app.js?v=session-resume-1"></script>
   <script src="./assets/js/migration.js?v=standard-preview-20261109-1"></script>
+  <script src="./assets/js/workspace-resume.js?v=1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>
   <script src="./assets/js/base-periods.js?v=20261026-1"></script>

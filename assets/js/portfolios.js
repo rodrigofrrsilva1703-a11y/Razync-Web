@@ -115,6 +115,7 @@ function selectPortfolio(id) {
   $(".hero h1").textContent = "Empresas de " + portfolio.name;
   $(".hero p").textContent = "Pesquise uma empresa e acesse suas ferramentas.";
   resetCompanyFilters();
+  window.RazyncWorkspaceResume?.save();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
@@ -126,6 +127,7 @@ function showPortfolioPicker() {
   workspace.hidden = true;
   $(".hero").hidden = true;
   renderPortfolios();
+  window.RazyncWorkspaceResume?.save();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 document.querySelector("#backToPortfolios").addEventListener("click", showPortfolioPicker);

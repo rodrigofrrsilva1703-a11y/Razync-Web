@@ -136,3 +136,24 @@ html[data-theme="dark"] #siteAccess{
   #siteAccess .site-access-card,.site-access-art{animation:none}
   #siteAccess .site-access-submit{transition:none;transform:none!important}
 }
+
+/* Quiet hierarchy, legible fields and clear submission feedback. */
+#siteAccess .site-access-welcome-copy { padding-bottom:0; }
+.site-access-steps {
+  display:flex; flex-wrap:wrap; gap:8px; margin:0; padding:0; list-style:none;
+  position:relative; z-index:1;
+}
+.site-access-steps li {
+  font-size:11px; padding:5px 9px; border:1px solid var(--login-line);
+  border-radius:99px; color:var(--login-muted); background:var(--login-card);
+}
+#siteAccess .site-access-session-note { font-size:11px; text-align:center; }
+#siteAccess .site-access-submit[aria-busy="true"] .site-access-submit-indicator {
+  width:13px; height:13px; border:2px solid currentColor; border-right-color:transparent;
+  border-radius:50%; color:#fff; font-size:0; animation:site-access-progress .7s linear infinite;
+}
+@keyframes site-access-progress { to {transform:rotate(360deg)} }
+@media(max-width:630px) { .site-access-steps {display:none} }
+@media(prefers-reduced-motion:reduce) {
+  #siteAccess .site-access-submit[aria-busy="true"] .site-access-submit-indicator {animation:none}
+}
