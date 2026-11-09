@@ -33,7 +33,7 @@
   <link rel="stylesheet" href="./assets/css/sidebar-motion.css?v=20261029-1">
   <link rel="stylesheet" href="./assets/css/home-welcome.css?v=home-composition-20261030-1">
   <link rel="stylesheet" href="./assets/css/global-tool-preparation.css?v=20261029-1">
-  <link rel="stylesheet" href="./assets/css/site-access.css?v=20261109-3">
+  <link rel="stylesheet" href="./assets/css/site-access.css?v=20261109-4">
 </head>
 <body class="sidebar-collapsed" data-site-locked>
   <section id="siteAccess" aria-labelledby="siteAccessTitle">
@@ -85,7 +85,6 @@
         <span><strong>Razync</strong><small>Automação contábil</small></span>
       </a>
       <div class="nav-caption">ÁREA DE TRABALHO</div>
-      <button id="siteAccessExit" type="button" hidden>Sair da conta</button>
 
     <nav class="main-nav" aria-label="Navegação principal">
       <button class="main-nav-btn active" data-view="companies" aria-label="Empresas"><span class="nav-label">Empresas</span></button>
@@ -93,6 +92,17 @@
       <button class="main-nav-btn" data-view="ledger" aria-label="Conciliação com Razão"><span class="nav-label">Conciliação com Razão</span></button>
       <button class="main-nav-btn" data-view="fiscal" aria-label="Conferência Fiscal × Contábil"><span class="nav-label">Conferência Fiscal × Contábil</span></button>
     </nav>
+      <div id="siteAccessAccount" class="sidebar-account" hidden>
+        <span id="siteAccessInitials" class="sidebar-account-avatar" aria-hidden="true"></span>
+        <div class="sidebar-account-identity">
+          <strong id="siteAccessName" dir="auto">Minha conta</strong>
+          <span>Sessão ativa</span>
+        </div>
+        <button id="siteAccessExit" type="button" title="Sair da conta" aria-label="Sair da conta">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5m4-12 4 4-4 4m-5-4h11"/></svg>
+          <span>Sair</span>
+        </button>
+      </div>
       <div class="sidebar-note"><span class="sidebar-dot"></span><div>Rotina organizada<small>Do documento à conferência.</small></div></div>
     </aside>
     <header class="topbar"><button id="sidebarToggle" type="button" class="sidebar-toggle" aria-controls="mainSidebar" aria-expanded="false" aria-label="Abrir menu lateral"><span class="toggle-lines" aria-hidden="true"><span class="toggle-stroke"></span><span class="toggle-stroke"></span><span class="toggle-stroke"></span></span><span class="sidebar-toggle-label">Menu</span><svg class="sidebar-toggle-hint" viewBox="0 0 14 14" aria-hidden="true"><path d="m5 3 4 4-4 4"/></svg></button><div class="home-header-brand"><img src="./assets/razync-logo-original.png" alt="" width="32" height="32"><span><strong>Razync</strong><small>Automação contábil</small></span></div><div class="topbar-title"><span>Área de trabalho</span><strong id="currentSection">Empresas</strong></div><div class="topbar-actions"><span id="portfolioDate" class="home-header-date">Seu espaço de trabalho</span><button id="themeToggle" class="theme-toggle" type="button" aria-label="Ativar modo escuro" aria-pressed="false"><svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 13.1A8.7 8.7 0 0 1 10.9 3.2 8.8 8.8 0 1 0 20.8 13.1Z"/></svg><svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></svg><span id="themeToggleLabel">Claro</span></button><button id="apiStatus" class="status-pill connection-pill" type="button" data-connection="checking" aria-label="Verificando conexão com o servidor. Clique para tentar novamente." title="Clique para verificar a conexão novamente."><span class="connection-indicator" aria-hidden="true"></span><span class="connection-label" aria-live="polite">Conectando ao servidor…</span></button></div></header>
@@ -773,7 +783,7 @@
     </div>
   </dialog>
   <script src="./assets/js/config.js"></script>
-  <script src="./assets/js/site-access.js?v=20261109-2"></script>
+  <script src="./assets/js/site-access.js?v=20261109-4"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
   <script src="./assets/js/workspace-ui.js?v=preview-helpers-20261103-1"></script>

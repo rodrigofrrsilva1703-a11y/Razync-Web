@@ -2,6 +2,9 @@
   const root = document.body, screen = document.querySelector('#siteAccess');
   const form = document.querySelector('#siteAccessForm'), status = document.querySelector('#siteAccessStatus');
   const exit = document.querySelector('#siteAccessExit'), retry = document.querySelector('#siteAccessRetry');
+  const account = document.querySelector('#siteAccessAccount');
+  const accountName = document.querySelector('#siteAccessName');
+  const accountInitials = document.querySelector('#siteAccessInitials');
   const base = (window.RAZYNC_CONFIG?.apiBase || '').replace(/\/$/, '');
   const original = window.fetch.bind(window), prefix = '/api/v1/acesso';
   const key = 'razync:private-session:v1';
@@ -17,13 +20,21 @@
     if (token) headers.set('X-Razync-Session', token);
     return original(base + prefix + path, { ...options, headers, cache:'no-store', redirect:'error' });
   }
-  function unlocked() {
+  function unlocked(email) {
+    const words = typeof email === 'string'
+      ? email.split('@', 1)[0].match(/\p{L}[\p{L}\p{M}]*/gu) || []
+      : [];
+    const name = words.map(word => word[0].toLocaleUpperCase('pt-BR') + word.slice(1)).join(' ') || 'Minha conta';
+    accountName.textContent = name;
+    accountName.title = name;
+    accountInitials.textContent = words.slice(0, 2).map(word => word[0].toLocaleUpperCase('pt-BR')).join('') || 'RZ';
+    account.hidden = !required;
     delete root.dataset.siteLocked;
     screen.hidden = true;
-    exit.hidden = !required;
     release();
   }
   function locked(message, canLogin) {
+    account.hidden = true;
     root.dataset.siteLocked = '';
     screen.hidden = false;
     form.hidden = !canLogin;
@@ -47,7 +58,11 @@
       persist(stored());
       if (token) {
         const response = await call('/sessao', { signal:AbortSignal.timeout(10000) });
-        if (response.ok) { unlocked(); return; }
+        if (response.ok) {
+          const data = await response.json();
+          unlocked(data.email);
+          return;
+        }
         if (response.status !== 401) throw Error();
         persist('');
       }
@@ -98,7 +113,7 @@
         return;
       }
       persist(data.session);
-      unlocked();
+      unlocked(data.email);
     } catch { status.textContent = 'Não foi possível conectar. Tente novamente.'; }
     finally { password.value = ''; setPasswordVisible(false); button.disabled = false; }
   });

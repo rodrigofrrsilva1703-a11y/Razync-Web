@@ -1,5 +1,5 @@
 body[data-site-locked] .app-shell {display:none!important}
-#siteAccess[hidden],#siteAccess [hidden],#siteAccessExit[hidden]{display:none!important}
+#siteAccess[hidden],#siteAccess [hidden],#siteAccessAccount[hidden]{display:none!important}
 #siteAccess{
   --login-bg:#f4f6fa;--login-card:#fff;--login-ink:#192338;--login-muted:#536279;
   --login-line:#dce3ee;--login-field:#f9fbfe;--login-accent:#2857c8;
@@ -43,7 +43,27 @@ html[data-theme="dark"] #siteAccess{
 #siteAccess button:disabled{opacity:.65;cursor:wait}
 #siteAccessStatus:not(:empty){margin-top:13px}
 #siteAccessStatus:empty{display:none}
-#siteAccessExit{margin:8px 12px;align-self:flex-start}
+#mainSidebar .sidebar-account:not([hidden]) + .sidebar-note{display:none}
+#mainSidebar .sidebar-account{
+  margin-top:auto;padding:13px 5px 2px;border-top:1px solid #ffffff22;
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;
+}
+.sidebar-account-avatar{
+  display:grid;place-items:center;width:34px;height:34px;border-radius:10px;
+  background:#71aaff26;color:#d9e9ff;font-size:11px;font-weight:800;letter-spacing:.04em;
+}
+.sidebar-account-identity{display:grid;gap:3px;min-width:0}
+.sidebar-account-identity strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f3f7ff;font-size:13px;line-height:1.2}
+.sidebar-account-identity span{color:#aebfd5;font-size:10px;line-height:1.2}
+#siteAccessExit{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:44px;
+  padding:0 8px;border:0;border-radius:8px;background:transparent;color:#c9d7ec;
+  font:inherit;font-size:11px;font-weight:650;cursor:pointer;transition:background-color .18s,color .18s;
+}
+#siteAccessExit svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#siteAccessExit:hover{background:#ffffff12;color:#fff}
+#siteAccessExit:focus-visible{outline:2px solid #8cbaff;outline-offset:2px}
+#siteAccessExit:disabled{opacity:.55;cursor:wait}
 
 /* Private entry: a quiet welcome panel and a high-contrast form. */
 #siteAccess{
