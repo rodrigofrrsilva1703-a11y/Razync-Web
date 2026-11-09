@@ -1,0 +1,11 @@
+body[data-site-locked] .app-shell {display:none!important}
+#siteAccess[hidden],#siteAccess [hidden],#siteAccessExit[hidden]{display:none!important}
+#siteAccess{min-height:100dvh;display:grid;place-items:center;padding:24px;background:var(--surface-2,#f3f5f8);color:var(--text,#182132)}
+.site-access-card{width:min(100%,390px);padding:30px;border:1px solid var(--border,#e3e8ef);border-radius:16px;background:var(--surface,#fff)}
+.site-access-card h1{font-size:24px;margin:14px 0 8px}
+.site-access-card p{font-size:14px;line-height:1.5;color:var(--muted,#556175)}
+.site-access-card form{display:grid;gap:10px}
+.site-access-card input{width:100%;padding:11px 12px;border:1px solid var(--border,#cbd5e1);border-radius:8px;background:var(--surface,#fff);color:inherit;font:inherit}
+.site-access-card button{min-height:42px;padding:8px 15px;border:0;border-radius:8px;background:#2459c3;color:#fff;font:inherit;cursor:pointer}
+.site-access-card button:disabled{opacity:.65}
+#siteAccessExit{margin:8px 12px;align-self:flex-start}

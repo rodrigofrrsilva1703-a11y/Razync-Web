@@ -1688,6 +1688,7 @@ async function loadCompanies() {
   // O catálogo já consultado permite abrir a carteira enquanto a API acorda.
   // A resposta do servidor continua sendo a fonte das atualizações.
   const cacheKey = `razync:companies:v1:${API()}`;
+  const privateCatalog = () => globalThis.RazyncSiteAccess?.isPrivate() === true;
   const validCatalog = items => Array.isArray(items) && items.length > 0 &&
     items.every(item => item && Number.isFinite(Number(item.codigo)) && typeof item.nome === "string");
   function applyCatalog(items) {
@@ -1699,7 +1700,8 @@ async function loadCompanies() {
     if (activePortfolio) filterCompanies();
   }
   try {
-    const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
+    if (privateCatalog()) localStorage.removeItem(cacheKey);
+    const cached = privateCatalog() ? null : JSON.parse(localStorage.getItem(cacheKey) || "null");
     if (validCatalog(cached)) applyCatalog(cached);
   } catch { /* Armazenamento indisponível ou cache antigo: consultar normalmente. */ }
   try {
@@ -1707,9 +1709,9 @@ async function loadCompanies() {
     if (!response.ok) throw new Error();
     const items = await response.json();
     applyCatalog(items);
-    try { localStorage.setItem(cacheKey, JSON.stringify(items)); } catch { /* Cache opcional. */ }
+    try { if (!privateCatalog()) localStorage.setItem(cacheKey, JSON.stringify(items)); } catch { /* Cache opcional. */ }
   } catch {
-    if (companies.length) return;
+    if (companies.length || privateCatalog()) return;
     try {
       const response = await fetch("./assets/data/companies.json");
       if (!response.ok) throw new Error();

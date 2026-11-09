@@ -49,12 +49,13 @@ jobs:
 
       - name: Prepare static site
         run: |
-          python3 tools/build_frontend.py --output _site
+          python3 tools/build_frontend.py --output _site --private-catalog
 
       - name: Smoke test frontend runtime
         run: |
           rm -rf _smoke
           cp -R _site _smoke
+          cp assets/data/companies.json _smoke/assets/data/companies.json
           printf 'window.RAZYNC_CONFIG={apiBase:""};' > _smoke/assets/js/config.js
           cp tests/frontend/help-drag-smoke.js _smoke/assets/js/help-drag-smoke.js
           python3 - <<'PY'

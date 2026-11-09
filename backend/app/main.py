@@ -52,13 +52,17 @@ extra = os.getenv("RAZYNC_FRONTEND_ORIGINS", "")
 origins.extend([x.strip() for x in extra.split(",") if x.strip()])
 
 
+from app.site_access import SiteAccessMiddleware, router as site_access_router
+
+app.include_router(site_access_router)
+app.add_middleware(SiteAccessMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["Content-Disposition", "X-Razync-Summary"],
+    expose_headers=["Content-Disposition", "X-Razync-Summary", "X-Razync-Login-Required"],
 )
 
 
