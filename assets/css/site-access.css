@@ -1,11 +1,46 @@
 body[data-site-locked] .app-shell {display:none!important}
 #siteAccess[hidden],#siteAccess [hidden],#siteAccessExit[hidden]{display:none!important}
-#siteAccess{min-height:100dvh;display:grid;place-items:center;padding:24px;background:var(--surface-2,#f3f5f8);color:var(--text,#182132)}
-.site-access-card{width:min(100%,390px);padding:30px;border:1px solid var(--border,#e3e8ef);border-radius:16px;background:var(--surface,#fff)}
-.site-access-card h1{font-size:24px;margin:14px 0 8px}
-.site-access-card p{font-size:14px;line-height:1.5;color:var(--muted,#556175)}
-.site-access-card form{display:grid;gap:10px}
-.site-access-card input{width:100%;padding:11px 12px;border:1px solid var(--border,#cbd5e1);border-radius:8px;background:var(--surface,#fff);color:inherit;font:inherit}
-.site-access-card button{min-height:42px;padding:8px 15px;border:0;border-radius:8px;background:#2459c3;color:#fff;font:inherit;cursor:pointer}
-.site-access-card button:disabled{opacity:.65}
+#siteAccess{
+  --login-bg:#f4f6fa;--login-card:#fff;--login-ink:#192338;--login-muted:#536279;
+  --login-line:#dce3ee;--login-field:#f9fbfe;--login-accent:#2857c8;
+  min-height:100dvh;display:grid;place-items:center;padding:clamp(16px,5vw,56px);
+  background:radial-gradient(ellipse at 50% 0,#e7edf9 0,transparent 56%),var(--login-bg);
+  color:var(--login-ink);
+}
+html[data-theme="dark"] #siteAccess{
+  --login-bg:#090a0d;--login-card:#121419;--login-ink:#eef1f7;--login-muted:#a7b1c3;
+  --login-line:#303642;--login-field:#181b23;--login-accent:#4473ea;
+  background:radial-gradient(ellipse at 50% 0,#141b2c 0,transparent 56%),var(--login-bg);
+}
+#siteAccess .site-access-card{
+  width:min(100%,430px);padding:clamp(22px,5vw,36px);border:1px solid var(--login-line);
+  border-radius:20px;background:var(--login-card);box-shadow:0 14px 50px #0a122215;
+}
+.site-access-brand{display:flex;align-items:center;gap:12px;padding-bottom:22px;border-bottom:1px solid var(--login-line)}
+.site-access-brand img{border-radius:10px}
+.site-access-brand strong,.site-access-brand span{display:block}
+.site-access-brand strong{font-size:17px;line-height:1.2}
+.site-access-brand span{font-size:12px;color:var(--login-muted);margin-top:3px}
+.site-access-heading{margin:23px 0}
+.site-access-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:650;color:var(--login-muted)}
+#siteAccess svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#siteAccess h1{font-size:clamp(24px,6vw,29px);line-height:1.2;letter-spacing:-.035em;margin:7px 0}
+#siteAccess p{font-size:13px;line-height:1.5;color:var(--login-muted);margin:0}
+#siteAccess form{display:grid;gap:15px;margin:0;padding:0;background:transparent;border:0;box-shadow:none}
+.site-access-field{display:grid;gap:6px}
+#siteAccess label{font-size:13px;font-weight:650;color:var(--login-ink)}
+#siteAccess input{box-sizing:border-box;width:100%;min-height:45px;padding:10px 12px;border:1px solid var(--login-line);border-radius:9px;background:var(--login-field);color:var(--login-ink);font-size:16px;margin:0}
+#siteAccess input::placeholder{color:var(--login-muted);opacity:.85}
+#siteAccess :is(input,button):focus-visible{outline:2px solid var(--login-accent);outline-offset:2px}
+.site-access-password{position:relative}
+#siteAccessPassword{padding-right:47px!important}
+#siteAccessShow{position:absolute;inset:3px 4px 3px auto;width:39px;display:grid;place-items:center;border:0;border-radius:6px;background:transparent;color:var(--login-muted);cursor:pointer}
+#siteAccessShow:hover{color:var(--login-ink);background:var(--login-line)}
+.site-access-eye-off{display:none}
+#siteAccessShow[aria-pressed="true"] .site-access-eye-off{display:block}
+#siteAccess .site-access-submit,#siteAccessRetry{display:flex;align-items:center;justify-content:center;gap:9px;min-height:45px;padding:10px 16px;margin:4px 0 0;border:0;border-radius:9px;background:var(--login-accent);color:#fff;font-size:14px;font-weight:650;cursor:pointer}
+#siteAccess .site-access-submit:hover,#siteAccessRetry:hover{filter:brightness(1.08)}
+#siteAccess button:disabled{opacity:.65;cursor:wait}
+#siteAccessStatus:not(:empty){margin-top:13px}
+#siteAccessStatus:empty{display:none}
 #siteAccessExit{margin:8px 12px;align-self:flex-start}

@@ -33,21 +33,35 @@
   <link rel="stylesheet" href="./assets/css/sidebar-motion.css?v=20261029-1">
   <link rel="stylesheet" href="./assets/css/home-welcome.css?v=home-composition-20261030-1">
   <link rel="stylesheet" href="./assets/css/global-tool-preparation.css?v=20261029-1">
-  <link rel="stylesheet" href="./assets/css/site-access.css?v=1">
+  <link rel="stylesheet" href="./assets/css/site-access.css?v=20261109-2">
 </head>
 <body class="sidebar-collapsed" data-site-locked>
   <section id="siteAccess" aria-labelledby="siteAccessTitle">
     <div class="site-access-card">
-      <img src="./assets/razync-logo-original.png" alt="" width="48" height="48">
-      <h1 id="siteAccessTitle">Entrar no Razync</h1>
-      <p id="siteAccessStatus" role="status">Verificando acesso…</p>
-      <form id="siteAccessForm" hidden>
-        <label for="siteAccessEmail">E-mail</label>
-        <input id="siteAccessEmail" type="email" autocomplete="username" required maxlength="254">
-        <label for="siteAccessPassword">Senha</label>
-        <input id="siteAccessPassword" type="password" autocomplete="current-password" required maxlength="512">
-        <button type="submit">Entrar</button>
+      <div class="site-access-brand">
+        <img src="./assets/razync-logo-original.png" alt="" width="44" height="44">
+        <div><strong>Razync</strong><span>Automação contábil</span></div>
+      </div>
+      <div class="site-access-heading">
+        <span class="site-access-tag"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Acesso restrito</span>
+        <h1 id="siteAccessTitle">Entrar no Razync</h1>
+        <p>Use sua conta autorizada para acessar a área de trabalho.</p>
+      </div>
+      <form id="siteAccessForm" method="post" hidden>
+        <div class="site-access-field">
+          <label for="siteAccessEmail">E-mail</label>
+          <input id="siteAccessEmail" type="email" autocomplete="username" required maxlength="254" placeholder="Seu e-mail">
+        </div>
+        <div class="site-access-field">
+          <label for="siteAccessPassword">Senha</label>
+          <div class="site-access-password">
+            <input id="siteAccessPassword" type="password" autocomplete="current-password" required maxlength="512" placeholder="Sua senha">
+            <button id="siteAccessShow" type="button" aria-controls="siteAccessPassword" aria-label="Mostrar senha" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/><path class="site-access-eye-off" d="M3 3l18 18"/></svg></button>
+          </div>
+        </div>
+        <button class="site-access-submit" type="submit">Entrar <span aria-hidden="true">→</span></button>
       </form>
+      <p id="siteAccessStatus" role="status">Verificando acesso…</p>
       <button id="siteAccessRetry" type="button" hidden>Tentar novamente</button>
       <noscript>Ative o JavaScript para entrar.</noscript>
     </div>
@@ -749,7 +763,7 @@
     </div>
   </dialog>
   <script src="./assets/js/config.js"></script>
-  <script src="./assets/js/site-access.js?v=1"></script>
+  <script src="./assets/js/site-access.js?v=20261109-2"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
   <script src="./assets/js/workspace-ui.js?v=preview-helpers-20261103-1"></script>

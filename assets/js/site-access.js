@@ -51,7 +51,7 @@
         if (response.status !== 401) throw Error();
         persist('');
       }
-      locked('Entre com seu e-mail autorizado.', true);
+      locked('', true);
     } catch {
       locked('Não foi possível verificar o acesso. Tente novamente.', false);
     } finally { retry.disabled = false; }
@@ -74,10 +74,18 @@
     }
     return response;
   };
+  const password = document.querySelector('#siteAccessPassword');
+  const showPassword = document.querySelector('#siteAccessShow');
+  function setPasswordVisible(visible) {
+    password.type = visible ? 'text' : 'password';
+    showPassword.setAttribute('aria-pressed', String(visible));
+    showPassword.setAttribute('aria-label', visible ? 'Ocultar senha' : 'Mostrar senha');
+  }
+  showPassword.addEventListener('click', () => setPasswordVisible(password.type === 'password'));
   form.addEventListener('submit', async event => {
     event.preventDefault();
-    const email = document.querySelector('#siteAccessEmail'), password = document.querySelector('#siteAccessPassword');
-    const button = form.querySelector('button');
+    const email = document.querySelector('#siteAccessEmail');
+    const button = form.querySelector('button[type=submit]');
     if (button.disabled) return;
     button.disabled = true;
     status.textContent = 'Validando acesso…';
@@ -92,7 +100,7 @@
       persist(data.session);
       unlocked();
     } catch { status.textContent = 'Não foi possível conectar. Tente novamente.'; }
-    finally { password.value = ''; button.disabled = false; }
+    finally { password.value = ''; setPasswordVisible(false); button.disabled = false; }
   });
   exit.addEventListener('click', async () => {
     exit.disabled = true;
