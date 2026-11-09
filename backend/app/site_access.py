@@ -1,5 +1,6 @@
 """Optional private access for the entire application, independent of admin actions."""
 from collections import OrderedDict
+from contextvars import ContextVar
 import hashlib
 import json
 import os
@@ -22,6 +23,7 @@ TTL = 8 * 60 * 60
 _sessions = OrderedDict()
 _attempts = OrderedDict()
 _lock = Lock()
+current_owner = ContextVar('site_access_owner', default=None)
 
 
 def enabled():
@@ -70,7 +72,11 @@ class SiteAccessMiddleware(BaseHTTPMiddleware):
         if not email:
             return reply(401, detail="Entre no Razync para continuar.")
         request.state.site_email = email
-        response = await call_next(request)
+        scope = current_owner.set(email)
+        try:
+            response = await call_next(request)
+        finally:
+            current_owner.reset(scope)
         response.headers["Cache-Control"] = "no-store"
         return response
 

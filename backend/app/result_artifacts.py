@@ -9,6 +9,7 @@ import time
 from collections import OrderedDict
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
+from app.site_access import current_owner
 from app.report_helpers import _download, _excel_report, _preview_records
 
 TTL_SECONDS = 900
@@ -36,7 +37,7 @@ def store(data, filename):
             _, old = _items.popitem(last=False)
             _bytes -= len(old['data'])
         token = secrets.token_urlsafe(32)
-        _items[token] = {'data':data, 'filename':filename, 'expires':time.monotonic()+TTL_SECONDS}
+        _items[token] = {'owner':current_owner.get(), 'data':data, 'filename':filename, 'expires':time.monotonic()+TTL_SECONDS}
         _bytes += len(data)
         return token
 
@@ -44,7 +45,7 @@ def retrieve(token):
     with _guard:
         _prune()
         item = _items.get(token)
-        if item is not None:
+        if item is not None and item['owner'] == current_owner.get():
             _items.move_to_end(token)
             return item['data'], item['filename']
     raise HTTPException(404, 'Resultado temporário expirou. Refaça o download pela conferência.')

@@ -12,6 +12,7 @@ from fastapi.concurrency import run_in_threadpool
 from app.attachments import upload_group
 from fastapi.responses import JSONResponse
 from app import fiscal_ai, ai_result_cache
+from app.site_access import current_owner
 from app.fiscal_ai_audit import ANALYSIS_VERSION
 from app.ai_budget import provider_wait_seconds
 
@@ -59,7 +60,7 @@ def _merge_results(results, accounts):
             "modelo_usado": "; ".join(dict.fromkeys(result.get("modelo_usado", "") for result in results))}
 
 def _cache_digest(report):
-    payload = ANALYSIS_VERSION + ":" + json.dumps(report, ensure_ascii=False, sort_keys=True, default=str)
+    payload = ANALYSIS_VERSION + ":privacy-1:" + (current_owner.get() or "") + ":" + json.dumps(report, ensure_ascii=False, sort_keys=True, default=str)
     return ai_result_cache.stable_digest(payload) or hmac.new(_cache_secret, payload.encode("utf-8"), hashlib.sha256).hexdigest()
 
 def _prune_cache():
@@ -96,6 +97,8 @@ def _get(token):
         if session is None or session["expires"] <= time.monotonic():
             discard(token)
             raise HTTPException(410, "A sessão de análise expirou. Anexe os arquivos novamente.")
+        if session["owner"] != current_owner.get():
+            raise HTTPException(404, "Sessão de análise não encontrada.")
         return session
 
 
@@ -143,7 +146,7 @@ def prepare(report):
             discard(expired)
         if len(_sessions) >= MAX_SESSIONS:
             raise HTTPException(503, "O servidor está com várias análises abertas. Aguarde alguns minutos.")
-        session = {"expires": now + TTL_SECONDS, "batches": batches, "active_providers": set()}
+        session = {"owner": current_owner.get(), "expires": now + TTL_SECONDS, "batches": batches, "active_providers": set()}
         _sessions[token] = session
     # Limpeza também acontece sem novas requisições, inclusive dados financeiros.
     timer = threading.Timer(TTL_SECONDS, discard, args=(token,))
@@ -394,5 +397,7 @@ async def batch(token: str, batch_id: int):
 
 @router.delete("/{token}")
 def cancel(token: str):
-    discard(token)
+    with _guard:
+        _get(token)
+        discard(token)
     return {"ok": True}

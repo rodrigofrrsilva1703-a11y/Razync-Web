@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+from app.document_privacy import mask_identifiers
 import os
 import sqlite3
 import urllib.request
@@ -82,6 +83,8 @@ def _save(con, company, records):
         prepared = []
         for source in records[offset:offset + batch_size]:
             record = dict(source)
+            if "exemplo_historico" in record:
+                record["exemplo_historico"] = mask_identifiers(record["exemplo_historico"])[:500]
             record['empresa'] = slug(company)
             record['id'] = hashlib.sha256(f"{record['empresa']}|{record['banco']}|{record['assinatura']}|{record['debito']}|{record['credito']}".encode()).hexdigest()
             prepared.append(record)

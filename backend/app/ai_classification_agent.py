@@ -15,7 +15,9 @@ from app import classification_service as base, engine
 from app.classification_coverage import _normalized_header, _classified, _needs_replacement, coverage
 from app.migration_services import accounts, slug
 
-VERSION = 'base-investigator-2'
+from app.site_access import current_owner
+
+VERSION = 'base-investigator-3'
 _lock = threading.RLock()
 _cache = OrderedDict()
 _TTL = 1200
@@ -33,7 +35,7 @@ def explain_pending(company, token, sheet, line):
     with _lock:
         ticket=next((copy.deepcopy(v) for v in _cache.values()
                      if secrets.compare_digest(v['result']['token'],token)),None)
-        if not ticket or time.monotonic()-ticket['time']>_TTL or ticket['company']!=int(company):
+        if not ticket or ticket['owner'] != current_owner.get() or time.monotonic()-ticket['time']>_TTL or ticket['company']!=int(company):
             raise ValueError('Esta revisão expirou. Classifique o arquivo novamente para analisar.')
         if ticket['basehash']!=fingerprint(base.records(company)):
             raise ValueError('A base mudou. Classifique novamente antes de analisar.')
@@ -177,7 +179,7 @@ def investigate(company, content, options=None, use_ai=True):
     records = base.records(company)
     digest = fingerprint(records)
     filehash = hashlib.sha256(content).hexdigest()
-    key = fingerprint([VERSION,company,filehash,digest,options,bool(use_ai)])
+    key = fingerprint([VERSION,current_owner.get(),company,filehash,digest,options,bool(use_ai)])
     with _lock:
         now = time.monotonic()
         for old in list(_cache):
@@ -225,7 +227,7 @@ def investigate(company, content, options=None, use_ai=True):
         result['ia'] = interpret(suggestions)
     result['token'] = secrets.token_urlsafe(32)
     with _lock:
-        _cache[key]={'time':time.monotonic(),'result':copy.deepcopy(result),'company':company,'filehash':filehash,
+        _cache[key]={'owner':current_owner.get(),'time':time.monotonic(),'result':copy.deepcopy(result),'company':company,'filehash':filehash,
                      'basehash':digest,'options':options}
         while len(_cache)>32:
             _cache.popitem(last=False)
@@ -240,7 +242,7 @@ def apply(company, content, filename, revisions, token, remember=False):
 def _apply(company, content, filename, revisions, token, remember=False):
     with _lock:
         ticket = next((copy.deepcopy(v) for v in _cache.values() if secrets.compare_digest(v['result']['token'],token)),None)
-    if not ticket or time.monotonic()-ticket['time']>_TTL:
+    if not ticket or ticket['owner'] != current_owner.get() or time.monotonic()-ticket['time']>_TTL:
         raise ValueError('Investigação expirada. Investigue as pendências novamente.')
     if ticket['company']!=int(company) or ticket['filehash']!=hashlib.sha256(content).hexdigest() or ticket['basehash']!=fingerprint(base.records(company)):
         raise ValueError('Arquivo, empresa ou base alterados. Investigue novamente antes de aplicar.')

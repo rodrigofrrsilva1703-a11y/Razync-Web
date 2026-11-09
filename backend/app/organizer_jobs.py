@@ -7,6 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse, Response
+from app.document_privacy import mask_identifiers
+from app.site_access import current_owner
 
 router = APIRouter(prefix='/api/v1/organizador')
 _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='organizador')
@@ -53,7 +55,7 @@ def submit(work, size, count):
         if size > MAX_INPUT_BYTES or sum(job['size'] for job in pending) + size > MAX_INPUT_BYTES:
             raise HTTPException(413, 'Este lote excede a memória disponível. Divida os anexos em lotes menores.')
         token = secrets.token_urlsafe(32)
-        job = dict(state='queued', cancelled=False, size=size, current=0, total=count)
+        job = dict(owner=current_owner.get(), state='queued', cancelled=False, size=size, current=0, total=count)
         _jobs[token] = job
         job['future'] = _executor.submit(_run, job, work)
     return JSONResponse({'job_token':token}, status_code=202, headers={'Cache-Control':'no-store'})
@@ -61,6 +63,7 @@ def submit(work, size, count):
 
 def _run(job, work):
     handle = _current.set(job)
+    owner_handle = current_owner.set(job["owner"])
     try:
         progress()
         with _guard:
@@ -87,18 +90,19 @@ def _run(job, work):
             job['state'] = 'cancelled'
     except Exception as exc:
         with _guard:
-            job.update(state='error', error=str(exc))
+            job.update(state='error', error=mask_identifiers(str(exc))[:500])
     finally:
         with _guard:
             job['finished'] = time.monotonic()
             job['size'] = 0
+        current_owner.reset(owner_handle)
         _current.reset(handle)
 
 
 def _get(token):
     _prune()
     job = _jobs.get(token)
-    if job is None:
+    if job is None or job['owner'] != current_owner.get():
         raise HTTPException(404, 'O processamento expirou ou o servidor reiniciou. Gere o lote novamente.')
     return job
 

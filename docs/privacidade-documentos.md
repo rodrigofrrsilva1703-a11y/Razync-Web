@@ -1,0 +1,7 @@
+# Tratamento dos documentos no Razync
+
+- A conciliação, a conversão e a exportação contábil usam os dados originais. A redução de dados ocorre na cópia enviada ao provedor de IA. Históricos de texto livre são convertidos em pistas operacionais; referências, datas e valores estruturados continuam disponíveis para explicar as evidências. Isso reduz identificação direta, mas não torna o conteúdo anônimo.
+- Relatórios temporários, lotes do organizador e sessões de revisão são vinculados à conta que os criou quando o acesso privado está ativado. Um código de resultado não substitui a autorização. Os resultados temporários têm limite de armazenamento e expiração.
+- Novos exemplos gravados para o aprendizado passam por mascaramento de identificadores reconhecíveis. A assinatura e os nomes necessários à classificação local continuam disponíveis. A mudança não apaga nem regrava registros anteriores e não altera a retenção das cópias existentes.
+- A API em produção não registra URLs via log de acesso do Uvicorn, para evitar que códigos temporários apareçam nesse log. Logs da plataforma e backups têm controles separados. A documentação da migração descreve as cópias do volume e o procedimento de recuperação.
+- Antes de mudar retenção ou remover dados anteriores, confirme quais cópias são necessárias para recuperação, quem pode acessá-las e a política do escritório. Ao conferir uma nova publicação, use arquivos fictícios e duas contas para verificar o isolamento.

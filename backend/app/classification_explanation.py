@@ -8,6 +8,7 @@ import urllib.request
 from fastapi import HTTPException
 from app import classification_agent_ai as providers
 from app.ai_budget import request_slot
+from app.document_privacy import operation_clues
 
 PROMPT = (
     'Você apoia uma revisão de classificação contábil. Compare somente o lançamento e as referências fornecidas. '
@@ -34,13 +35,7 @@ PROMPT = (
 
 
 def safe_history(value):
-    text=str(value or '')[:800]
-    text=re.sub(r'\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b','[CPF]',text)
-    text=re.sub(r'\b\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}\b','[CNPJ]',text)
-    text=re.sub(r'[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}','[EMAIL]',text)
-    text=re.sub(r'https?://\S+','[LINK]',text)
-    text=re.sub(r'\b\d{5,}\b','[NÚMERO]',text)
-    return text[:220]
+    return operation_clues(value)
 
 
 def evidence_context(row):

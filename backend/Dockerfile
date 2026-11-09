@@ -20,4 +20,4 @@ COPY backend/legacy /app/legacy
 COPY backend/resources /app/resources
 
 EXPOSE 8000
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn app.main:app --no-access-log --host 0.0.0.0 --port ${PORT:-8000}"]

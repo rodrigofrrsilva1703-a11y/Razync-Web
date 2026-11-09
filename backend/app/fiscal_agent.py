@@ -476,11 +476,9 @@ def interpret(question, facts):
     provider, model, key = option
     # Envio automático: mascarar identificadores presentes na pergunta
     # antes de consultar um provedor externo gratuito.
-    safe_question = question[:1000]
-    safe_question = re.sub(r'(?<!\d)(?:\d{3}\.?\d{3}\.?\d{3}-?\d{2}|\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2})(?!\d)', '[DOCUMENTO]', safe_question)
-    safe_question = re.sub(r'[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}', '[EMAIL]', safe_question)
-    safe_question = re.sub(r'(?<!\d)(?:\+?55\s*)?\(?\d{2}\)?[\s.-]*9?\d{4}[\s.-]*\d{4}(?!\d)', '[TELEFONE]', safe_question)
-    text = json.dumps({'pergunta': safe_question, 'evidencias': facts}, ensure_ascii=False, default=str)
+    from app.document_privacy import operation_clues, provider_context
+    safe_question = operation_clues(question, references=True).replace("[CPF]", "[DOCUMENTO]").replace("[CNPJ]", "[DOCUMENTO]")
+    text = json.dumps({'pergunta': safe_question, 'evidencias': provider_context(facts)}, ensure_ascii=False, default=str)
     if provider == 'gemini':
         body = {'systemInstruction': {'parts': [{'text': PROMPT}]}, 'contents': [{'role': 'user', 'parts': [{'text': text}]}],
                 'generationConfig': {'temperature': 0, 'maxOutputTokens': 1200, 'responseMimeType': 'application/json'}}

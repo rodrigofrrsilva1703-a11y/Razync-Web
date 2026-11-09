@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 from openpyxl import load_workbook
 
+from app.document_privacy import mask_identifiers
 from app.registry import CAPABILITIES
 from razync.accede_1000 import identificar_conta_folha_accede_1000
 
@@ -132,7 +133,7 @@ def learn(company:int, content:bytes, filename:str):
                   VALUES(?,?,?,?,?,?,?,1)
                   ON CONFLICT(company,bank,signature,nature,counterpart,period)
                   DO UPDATE SET occurrences=occurrences+1, example=excluded.example""",
-                  (company,bank,sig,nature,counter,period,hist[:500]))
+                  (company,bank,sig,nature,counter,period,mask_identifiers(hist)[:500]))
                 learned+=1
         con.commit()
     finally:

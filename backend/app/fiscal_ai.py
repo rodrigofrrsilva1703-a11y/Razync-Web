@@ -1,5 +1,6 @@
 """Revisão fiscal via OpenRouter (com fallback) ou Gemini legado."""
 import copy
+from app.document_privacy import provider_context
 import json
 import logging
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -613,7 +614,7 @@ def _gemini_free_key():
 
 def _compact_transport(payload):
     payload = copy.deepcopy(payload)
-    context = json.loads(payload["contents"][0]["parts"][0]["text"])
+    context = provider_context(json.loads(payload["contents"][0]["parts"][0]["text"]))
     for group in context.get("grupos", []):
         group["resumo"] = compact_summary(group.get("resumo"))
         for record in group.get("lancamentos", []):
@@ -622,19 +623,6 @@ def _compact_transport(payload):
             for redundant in ("debito", "credito"):
                 if redundant + "_brl" in record:
                     record.pop(redundant, None)
-    # Redação local de identificadores óbvios antes de transmitir texto.
-    # Mantém valores, datas e referências intactos para a análise contábil.
-    def redact(value):
-        if isinstance(value, dict):
-            return {k: redact(v) for k, v in value.items()}
-        if isinstance(value, list):
-            return [redact(v) for v in value]
-        if not isinstance(value, str):
-            return value
-        value = re.sub(r"\b\d{2}[.]?\d{3}[.]?\d{3}[/]?\d{4}[-]?\d{2}\b", "[CNPJ]", value)
-        value = re.sub(r"\b\d{3}[.]?\d{3}[.]?\d{3}[-]?\d{2}\b", "[CPF]", value)
-        return re.sub(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", "[EMAIL]", value)
-    context = redact(context)
     payload["contents"][0]["parts"][0]["text"] = json.dumps(context, ensure_ascii=False, separators=(",", ":"))
     return payload
 

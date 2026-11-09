@@ -4,6 +4,7 @@ Todas as consultas são somente leitura e restritas ao escopo temporário da con
 Não há geração de código, arquivos, SQL, operações de escrita, retries ou modelo pago.
 """
 import json
+from app.document_privacy import operation_clues, provider_context
 import re
 import urllib.error
 import urllib.request
@@ -199,9 +200,9 @@ def investigate(question, data, *, option=None):
     if not selected:
         raise UnsupportedTools("Nenhum provedor gratuito disponível.")
     context = audit_tools.execute(data, "obter_contexto_conta", {})
-    safe_question = _sanitize(question)
+    safe_question = operation_clues(question, references=True)
     messages = [{"role": "user", "content": json.dumps({
-        "pergunta": safe_question, "contexto_inicial": context,
+        "pergunta": safe_question, "contexto_inicial": provider_context(context),
         "instrucao": "Investigue usando as ferramentas disponíveis; não confunda indícios com prova."
     }, ensure_ascii=False)}]
     executed = []
@@ -246,5 +247,5 @@ def investigate(question, data, *, option=None):
             for i, (c, n, _) in enumerate(verified)]})
         for i, (call, name, result) in enumerate(verified):
             messages.append({"role": "tool", "tool_call_id": str(call.get("id") or f"call{turn}_{i}"),
-                             "name": name, "content": json.dumps(result, ensure_ascii=False, default=str)})
+                             "name": name, "content": json.dumps(provider_context(result), ensure_ascii=False, default=str)})
     raise InvalidAgentReply("Investigação excedeu o limite de iterações.")

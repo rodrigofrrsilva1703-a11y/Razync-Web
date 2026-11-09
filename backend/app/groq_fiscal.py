@@ -9,6 +9,7 @@ from app.fiscal_ai_strategy import REVIEW_PROMPT, output_budget, compact_summary
 from collections import Counter
 from decimal import Decimal, InvalidOperation
 import json
+from app.document_privacy import provider_context
 import logging
 import os
 import re
@@ -270,7 +271,7 @@ def _complete(payload, key, model, *, _tried_models=None, _deadline=None):
             "model": model,
             "messages": [
                 {"role": "system", "content": REVIEW_PROMPT},
-                {"role": "user", "content": json.dumps(compact, ensure_ascii=False, separators=(",", ":"))},
+                {"role": "user", "content": json.dumps(provider_context(compact), ensure_ascii=False, separators=(",", ":"))},
             ],
             "temperature": 0.2,
             "reasoning_effort": "none" if model.startswith("qwen/") else "low",
