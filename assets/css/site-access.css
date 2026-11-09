@@ -44,3 +44,75 @@ html[data-theme="dark"] #siteAccess{
 #siteAccessStatus:not(:empty){margin-top:13px}
 #siteAccessStatus:empty{display:none}
 #siteAccessExit{margin:8px 12px;align-self:flex-start}
+
+/* Private entry: a quiet welcome panel and a high-contrast form. */
+#siteAccess{
+  --login-ink:#142033;--login-field:#f8fafc;--login-value:#111827;
+  --login-welcome:#edf3fc;--login-glow:#3772e829;
+  background:radial-gradient(ellipse at 15% 12%,var(--login-glow),transparent 48%),var(--login-bg);
+}
+html[data-theme="dark"] #siteAccess{
+  --login-ink:#f4f7fc;--login-field:#151821;--login-value:#f8faff;
+  --login-welcome:#121722;--login-glow:#3772e82b;
+  background:radial-gradient(ellipse at 15% 12%,var(--login-glow),transparent 48%),var(--login-bg);
+}
+#siteAccess .site-access-card{
+  width:min(100%,840px);display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1fr);
+  padding:0;overflow:hidden;border-radius:22px;box-shadow:0 24px 75px #08111e18;
+  animation:login-enter 460ms cubic-bezier(.2,.7,.2,1) both;
+}
+.site-access-welcome{
+  position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;
+  gap:clamp(30px,6vw,75px);padding:clamp(24px,5vw,40px);
+  background:var(--login-welcome);border-right:1px solid var(--login-line);
+}
+#siteAccess .site-access-brand{padding:0;border:0}
+#siteAccess .site-access-welcome-copy{position:relative;z-index:1;padding-bottom:40px}
+#siteAccess .site-access-eyebrow{font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--login-muted)}
+#siteAccess .site-access-welcome-title{
+  font-size:clamp(26px,4vw,36px);font-weight:750;line-height:1.14;letter-spacing:-.04em;
+  margin:8px 0 12px;color:var(--login-ink)
+}
+.site-access-art{
+  position:absolute;z-index:0;pointer-events:none;right:-76px;bottom:-125px;width:290px;height:290px;
+  border-radius:50%;background:radial-gradient(circle,var(--login-glow),transparent 69%);
+  animation:login-drift 11s ease-in-out infinite alternate
+}
+.site-access-art i{position:absolute;inset:17px;border:1px solid var(--login-glow);border-radius:50%}
+.site-access-art i:nth-child(2){inset:40px}
+.site-access-art i:nth-child(3){inset:65px}
+.site-access-content{display:flex;flex-direction:column;justify-content:center;padding:clamp(24px,5vw,40px);min-width:0}
+#siteAccess .site-access-heading{margin:0 0 24px}
+#siteAccess .site-access-tag{padding:5px 8px;border:1px solid var(--login-line);border-radius:999px}
+#siteAccess .site-access-tag svg{width:13px;height:13px}
+#siteAccess .site-access-heading h1{margin-top:12px}
+#siteAccess :is(#siteAccessEmail,#siteAccessPassword){
+  color:var(--login-value)!important;-webkit-text-fill-color:var(--login-value)!important;
+  background:var(--login-field)!important;caret-color:var(--login-value);
+  font-weight:500;min-height:46px;
+}
+#siteAccess :is(#siteAccessEmail,#siteAccessPassword)::placeholder{
+  color:var(--login-muted)!important;-webkit-text-fill-color:var(--login-muted)!important;
+  font-weight:400;opacity:1;
+}
+#siteAccess :is(#siteAccessEmail,#siteAccessPassword):is(:-webkit-autofill,:autofill){
+  -webkit-text-fill-color:var(--login-value)!important;
+  box-shadow:0 0 0 1000px var(--login-field) inset!important;
+  caret-color:var(--login-value);
+}
+#siteAccess .site-access-submit{transition:filter 150ms ease,transform 150ms ease}
+#siteAccess .site-access-submit:hover:not(:disabled){transform:translateY(-1px)}
+#siteAccess .site-access-submit:active:not(:disabled){transform:translateY(1px)}
+@keyframes login-enter{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+@keyframes login-drift{from{transform:translate(0,0)}to{transform:translate(-24px,-16px)}}
+@media(max-width:630px){
+  #siteAccess .site-access-card{max-width:440px;grid-template-columns:1fr}
+  .site-access-welcome{gap:14px;border-right:0;border-bottom:1px solid var(--login-line)}
+  #siteAccess .site-access-welcome-copy{padding-bottom:0}
+  #siteAccess .site-access-welcome-copy p:last-child,#siteAccess .site-access-eyebrow{display:none}
+  #siteAccess .site-access-welcome-title{font-size:20px;margin:0}
+}
+@media(prefers-reduced-motion:reduce){
+  #siteAccess .site-access-card,.site-access-art{animation:none}
+  #siteAccess .site-access-submit{transition:none;transform:none!important}
+}
