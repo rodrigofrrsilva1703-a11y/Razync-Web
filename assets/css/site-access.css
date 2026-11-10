@@ -83,8 +83,8 @@ html[data-theme="dark"] #siteAccess {
 }
 .site-access-welcome {
   position:relative; isolation:isolate; overflow:hidden; min-width:0;
-  display:grid; align-content:center; justify-items:start; gap:clamp(24px,5vh,52px);
-  padding:clamp(32px,5.6vw,104px);
+  display:grid; align-content:center; justify-items:start; gap:clamp(12px,4dvh,42px);
+  padding:clamp(18px,5dvh,72px) clamp(24px,5.6vw,104px);
   background:radial-gradient(ellipse at 96% 82%,#172c53,transparent 67%),#0c1018;
 }
 .site-access-welcome::before {
@@ -100,7 +100,7 @@ html[data-theme="dark"] #siteAccess {
 #siteAccess p {font-size:14px; line-height:1.55; color:var(--login-muted); margin:0}
 #siteAccess .site-access-eyebrow {font-size:11px; font-weight:750; text-transform:uppercase; letter-spacing:.17em; color:#b1c7ff}
 #siteAccess .site-access-welcome-title {
-  margin:12px 0 16px; color:#f6f8ff; font-size:clamp(40px,5.55vw,92px);
+  margin:12px 0 16px; color:#f6f8ff; font-size:clamp(34px,min(5.55vw,10dvh),92px);
   line-height:.99; font-weight:760; letter-spacing:-.064em;
 }
 .site-access-welcome-title em {font-style:normal; color:#9ebdff}
@@ -112,21 +112,31 @@ html[data-theme="dark"] #siteAccess {
   background:#131e31; color:#e3ebfb; box-shadow:0 14px 36px #03091455;
   font-size:13px;
 }
-.site-access-demo figcaption,.site-access-demo-file,.site-access-demo-result {
+.site-access-demo figcaption,.site-access-demo-result {
   display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px;
 }
 .site-access-demo figcaption {justify-content:space-between}
 .site-access-demo figcaption strong {font-size:14px}
-.site-access-demo figcaption span,.site-access-demo small {color:#b4c3dc; font-size:11px}
-.site-access-demo-file {
-  padding:8px 10px; border:1px solid #6686b655; border-radius:8px; background:#1b2b45;
+.site-access-demo figcaption span {color:#b4c3dc; font-size:11px}
+.site-access-demo-steps {
+  position:relative; isolation:isolate; display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:4px; margin:0; padding:4px 0 9px; list-style:none;
 }
-.site-access-demo-file small {margin-inline-start:auto}
+.site-access-demo-steps::before,.site-access-demo-steps::after {
+  content:""; position:absolute; z-index:-1; inset:auto 0 0; height:2px; border-radius:4px;
+  background:#6686b655;
+}
+.site-access-demo-steps::after {background:#85baff; transform-origin:left}
+.site-access-demo-steps li {
+  display:flex; align-items:center; justify-content:center; gap:5px; min-width:0;
+  padding:5px 2px; text-align:center; font-size:11px; line-height:1.2; color:#c6d9f9;
+  border:1px solid #6686b655; border-radius:7px; background:#1b2b45;
+}
 .site-access-demo svg {
-  width:16px; height:16px; flex:none; fill:none; stroke:currentColor;
+  width:15px; height:15px; flex:none; fill:none; stroke:currentColor;
   stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;
 }
-.site-access-demo-file svg {color:#a4c5ff}
+.site-access-demo-steps svg {color:#9cc8ff}
 #siteAccess .site-access-demo table {
   width:100%; border-collapse:collapse; color:inherit; background:transparent;
   font-size:inherit; font-variant-numeric:tabular-nums;
@@ -144,14 +154,26 @@ html[data-theme="dark"] #siteAccess {
   border-radius:6px; background:#244440; color:#bcebd8; font-weight:650;
 }
 .site-access-demo-match svg {width:13px;height:13px}
-@media(prefers-reduced-motion:no-preference) {
-  .site-access-demo-file {animation:login-demo-reveal .55s ease-out both}
-  .site-access-demo tbody {animation:login-demo-reveal .6s .8s ease-out both}
-  .site-access-demo tbody tr:first-child {animation:login-demo-compare 1.15s 1.55s ease-out both}
-  .site-access-demo-result {animation:login-demo-reveal .55s 2.8s ease-out both}
+.site-access-demo-pending {
+  padding:3px 7px; border-radius:6px; background:#403526; color:#ffdbab; font-weight:650;
 }
+@media(prefers-reduced-motion:no-preference) {
+  .site-access-demo-steps::after {animation:login-demo-progress 4.6s ease both}
+  .site-access-demo-steps li {animation:login-demo-step .85s ease-out both}
+  .site-access-demo-steps li:nth-child(2) {animation-delay:1.25s}
+  .site-access-demo-steps li:nth-child(3) {animation-delay:3.05s}
+  .site-access-demo tbody td:nth-child(2) {animation:login-demo-reveal .45s .45s ease-out both}
+  .site-access-demo tbody td:nth-child(3) {animation:login-demo-reveal .55s 1.35s ease-out both}
+  .site-access-demo tbody tr:first-child {animation:login-demo-scan 1.1s 1.8s ease-out both}
+  .site-access-demo-result {animation:login-demo-reveal .6s 3.05s ease-out both}
+}
+@keyframes login-demo-progress {
+  0%{transform:scaleX(0)} 24%,30%{transform:scaleX(.33)}
+  57%,65%{transform:scaleX(.67)} 88%,100%{transform:scaleX(1)}
+}
+@keyframes login-demo-step {0%,100%{background:#1b2b45}35%{background:#345b99;border-color:#a3cbff}}
 @keyframes login-demo-reveal {from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
-@keyframes login-demo-compare {0%,100%{background:transparent}40%{background:#315489}}
+@keyframes login-demo-scan {0%,100%{background:transparent}40%{background:#315489}}
 .site-access-content {
   min-width:0; display:grid; grid-template-rows:auto 1fr; gap:22px;
   padding:clamp(22px,4vw,64px);
@@ -236,23 +258,47 @@ html[data-theme="dark"] #siteAccess {
 }
 @keyframes site-access-progress {to{transform:rotate(360deg)}}
 @keyframes login-studio-enter {from{opacity:.6;transform:translateY(6px)}to{opacity:1;transform:none}}
-@media(max-width:760px) {
-  #siteAccess .site-access-card {grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto 1fr}
+@media(max-height:720px) {
+  .site-access-content {padding-block:12px;gap:4px}
+  .site-access-form-panel {padding:0}
+  .site-access-heading {margin-bottom:14px}
+  #siteAccess .site-access-heading h1 {margin:7px 0 4px}
+  #siteAccess form {gap:10px}
+  .site-access-field {gap:4px}
+  #siteAccess :is(#siteAccessEmail,#siteAccessPassword) {min-height:44px;padding-block:8px!important}
+  #siteAccess .site-access-submit {min-height:44px}
+}
+@media(max-width:760px) and (orientation:portrait), (max-width:580px) {
+  #siteAccess .site-access-card {
+    position:relative; grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto auto;
+    align-content:start;
+  }
   .site-access-welcome {display:contents}
   .site-access-welcome-copy {display:none}
-  .site-access-brand {
-    grid-row:1; padding:16px 20px; background:#0c1018;
-  }
-  .site-access-brand img {width:36px; height:36px}
-  .site-access-content {grid-row:2; padding:12px 20px 18px; gap:4px}
-  .site-access-form-panel {padding:0}
-  .site-access-heading {margin-bottom:18px}
+  .site-access-brand {grid-row:1;padding:9px 16px;background:#0c1018}
+  .site-access-brand img {width:34px;height:34px}
+  .site-access-content {grid-row:2;display:block;padding:9px 16px 12px}
+  .site-access-controls {position:absolute;inset:8px 16px auto auto}
   #siteAccessTheme {min-height:36px}
+  .site-access-form-panel {padding:0}
+  .site-access-heading {margin-bottom:10px}
+  #siteAccess .site-access-heading h1 {font-size:28px;margin:5px 0 3px}
+  #siteAccess form {gap:8px}
+  .site-access-field {gap:3px}
   .site-access-demo {
-    grid-row:3; align-self:start; justify-self:center;
-    width:min(calc(100% - 40px),400px); margin:0 0 max(20px,env(safe-area-inset-bottom));
-    padding:12px; gap:7px; font-size:12px;
+    grid-row:3;justify-self:center;width:min(calc(100% - 32px),400px);
+    margin:0 0 max(8px,env(safe-area-inset-bottom));padding:9px;gap:6px;font-size:11px;
   }
+  #siteAccess .site-access-demo :is(th,td) {padding-block:4px}
+  .site-access-demo-steps li {font-size:10px}
+}
+@media(max-height:520px) and (min-width:581px) and (orientation:landscape) {
+  .site-access-welcome {padding:12px 18px;gap:9px}
+  .site-access-welcome-copy {display:none}
+  .site-access-demo {padding:10px;gap:7px;font-size:11px}
+  #siteAccess .site-access-demo :is(th,td) {padding-block:5px}
+  .site-access-content {padding-inline:18px}
+  #siteAccessTheme {min-height:34px}
 }
 @media(prefers-reduced-motion:reduce) {
   #siteAccess *,#siteAccess *::before,#siteAccess *::after {animation:none!important;transition:none!important}
