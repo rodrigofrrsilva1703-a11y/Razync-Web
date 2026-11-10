@@ -340,7 +340,7 @@ def _excel_tem_data_tipificada(file_bytes: bytes) -> bool:
                         for value in sample.iloc[row_index + 1:row_index + 45, col]:
                             if isinstance(value, (pd.Timestamp, datetime, date)):
                                 return True
-                            if isinstance(value, str) and re.match(r"^\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}(?:\\s|$)", value.strip()):
+                            if isinstance(value, str) and re.match(r"^\d{4}[-/]\d{1,2}[-/]\d{1,2}(?:\s|$)", value.strip()):
                                 return True
                     break
     except Exception:
