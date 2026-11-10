@@ -295,7 +295,9 @@ def conciliar_razao(extrato: pd.DataFrame, razao: pd.DataFrame):
     ).groupby("DATA",as_index=False)[["ENTRADAS_EXTRATO","SAIDAS_EXTRATO"]].sum()
 
     r=razao.copy()
-    r["DATA"]=pd.to_datetime(r["DATA"],errors="coerce").dt.normalize()
+    # Razão Domínio utiliza DD/MM/AAAA; o padrão americano inverteria
+    # 08/04/2026 para agosto e criaria divergências artificiais.
+    r["DATA"]=pd.to_datetime(r["DATA"],dayfirst=True,errors="coerce").dt.normalize()
     diario_r=r.groupby("DATA",as_index=False)[["ENTRADAS_RAZAO","SAIDAS_RAZAO"]].sum()
     out=pd.merge(diario_e,diario_r,on="DATA",how="outer").fillna(0)
     out["DIFERENÇA ENTRADAS"]=(out["ENTRADAS_RAZAO"]-out["ENTRADAS_EXTRATO"]).round(2)
