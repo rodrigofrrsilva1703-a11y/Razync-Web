@@ -1,7 +1,7 @@
 """Leitores bancários da empresa 625 - Valean.
 
 Converte extratos PDF do Banco do Brasil, Caixa e Sicredi para o padrão
-do Modelo Domínio. A Caixa usa OCR apenas quando o PDF não possui texto.
+do Modelo Domínio. Caixa e Sicredi usam OCR quando o PDF não possui texto.
 """
 
 from __future__ import annotations
@@ -187,8 +187,141 @@ def processar_bb_625(conteudo: bytes) -> pd.DataFrame:
     return _finalizar(registros, "Banco do Brasil")
 
 
-def processar_sicredi_625(conteudo: bytes) -> pd.DataFrame:
+def _texto_ocr_sicredi(conteudo: bytes) -> str:
+    import csv
+    import subprocess
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
+
+    import fitz
+    import numpy as np
+    from PIL import Image
+
+    def ocr(imagem, destino, *opcoes):
+        dados = io.BytesIO()
+        imagem.save(dados, format="PNG")
+        try:
+            return subprocess.run(
+                ["tesseract", "stdin", str(destino), "-l", "eng", "--psm", "6", *opcoes],
+                input=dados.getvalue(), capture_output=True, check=True, timeout=25,
+            ).stdout.decode("utf-8", errors="replace")
+        except (OSError, subprocess.SubprocessError) as erro:
+            raise ValueError("Não foi possível executar a leitura OCR do Sicredi.") from erro
+
+    data = re.compile(r"\d{2}/\d{2}/\d{4}")
+    inicio_linha = re.compile(r"(?m)^\s*(?=\S)(" + data.pattern + r")(?=\s)")
+    paginas = []
+    with fitz.open(stream=conteudo, filetype="pdf") as documento, TemporaryDirectory() as pasta:
+        if len(documento) > 12:
+            raise ValueError("Divida o extrato Sicredi sem texto em arquivos de até 12 páginas.")
+        saida = Path(pasta) / "sicredi"
+        for pagina in documento:
+            if pagina.rect.width * pagina.rect.height > 1_000_000:
+                raise ValueError("Página grande demais para leitura OCR do Sicredi.")
+            pix = pagina.get_pixmap(dpi=400, colorspace=fitz.csRGB, alpha=False, annots=False)
+            rgb = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, 3).copy()
+            vermelho, verde, azul = rgb.transpose(2, 0, 1).astype(np.int16)
+            # Marcas azuis impressas sobre as colunas confundem o OCR dos valores.
+            rgb[(azul - vermelho > 35) & (azul - verde > 20)] = 255
+            imagem = Image.fromarray(rgb)
+            ocr(imagem, saida, "-c", "preserve_interword_spaces=1", "txt", "tsv")
+            texto = saida.with_suffix(".txt").read_text(encoding="utf-8")
+            total_datas = len(inicio_linha.findall(texto))
+            if total_datas:
+                with saida.with_suffix(".tsv").open(encoding="utf-8") as arquivo:
+                    caixas = [
+                        tuple(int(item[chave]) for chave in ("left", "top", "width", "height"))
+                        for item in csv.DictReader(arquivo, delimiter="\t")
+                        if data.fullmatch(item["text"] or "")
+                    ]
+                if not caixas:
+                    raise ValueError("Não foi possível localizar a coluna de datas do Sicredi.")
+                # As datas dos lançamentos ocupam a coluna alinhada mais à esquerda.
+                esquerda = min(caixa[0] for caixa in caixas)
+                coluna = [caixa for caixa in caixas if caixa[0] - esquerda < 18]
+                if len(coluna) != total_datas:
+                    raise ValueError("Não foi possível confirmar a coluna de datas do Sicredi.")
+                area = (
+                    max(0, esquerda - 8), max(0, min(y for _, y, _, _ in coluna) - 8),
+                    max(x + largura for x, _, largura, _ in coluna) + 8,
+                    max(y + altura for _, y, _, altura in coluna) + 8,
+                )
+                datas = ocr(imagem.crop(area), "stdout", "-c", "tessedit_char_whitelist=0123456789/").split()
+                if len(datas) != total_datas or not all(data.fullmatch(valor) for valor in datas):
+                    raise ValueError("Não foi possível confirmar todas as datas do Sicredi.")
+                valores = iter(datas)
+                texto = inicio_linha.sub(lambda match: match.group().replace(match[1], next(valores), 1), texto)
+            paginas.append(texto)
+    return "\n".join(paginas)
+
+
+def _sicredi_ocr_registros(texto: str) -> list[dict]:
+    moeda = re.compile(r"(?<![\d.,])-?\d+(?:[.,]\d{3})*,\d{2}(?![\d.,])")
+    data_linha = re.compile(r"^(\d{2}/\d{2}/\d{4})\b")
+    movimento_inicio = re.compile(
+        r"^(?:DEBITO|PAGAMENTO|RECEBIMENTO|LIBERACAO|TRANSF|TED|PIX|APLIC|RESG)\b"
+    )
+
+    def centavos(valor):
+        return int(valor.replace(".", "").replace(",", ""))
+
+    registros = []
+    saldo = None
+    prefixo = ""
+    ultima_data = None
+    periodo = re.search(r"periodo\s+(\d{2}/\d{2}/\d{4})\s+a\s+(\d{2}/\d{2}/\d{4})",
+                        _normalizar(texto))
+    if not periodo:
+        raise ValueError("Não foi possível confirmar o período do extrato Sicredi.")
+    inicio, fim = pd.to_datetime(list(periodo.groups()), format="%d/%m/%Y", errors="coerce")
+    if pd.isna(inicio) or pd.isna(fim) or inicio > fim:
+        raise ValueError("Período inválido na leitura do extrato Sicredi.")
+    for original in texto.splitlines():
+        linha = original.strip()
+        valores = list(moeda.finditer(linha))
+        if re.match(r"^SALDO(?: ANTERIOR)?\s+-?\d", linha, re.I) and len(valores) == 1:
+            saldo_lido = centavos(valores[0].group())
+            if saldo is not None and saldo != saldo_lido:
+                raise ValueError("A sequência dos saldos do Sicredi não fecha entre páginas.")
+            saldo = saldo_lido
+            prefixo = ""
+            continue
+        data_match = data_linha.match(linha)
+        if not data_match:
+            prefixo = linha if movimento_inicio.match(_normalizar(linha).upper()) else ""
+            continue
+        data = pd.to_datetime(data_match.group(), format="%d/%m/%Y", errors="coerce")
+        if pd.isna(data) or not inicio <= data <= fim or (ultima_data is not None and data < ultima_data):
+            raise ValueError("Data inválida ou fora do período no extrato Sicredi.")
+        if saldo is None or len(valores) < 2:
+            raise ValueError("Não foi possível confirmar todos os valores e saldos do Sicredi.")
+        movimento, saldo_final = valores[-2:]
+        novo_saldo = centavos(saldo_final.group())
+        diferenca = novo_saldo - saldo
+        # O sinal pode desaparecer no OCR. O saldo confirma o sinal e o módulo.
+        if not diferenca or abs(diferenca) != abs(centavos(movimento.group())):
+            raise ValueError(f"A leitura do Sicredi não fecha com o saldo em {data_match.group()}.")
+        detalhe = linha[data_match.end():movimento.start()].strip()
+        historico = re.split(r"\s{2,}", detalhe, maxsplit=1)[0]
+        if prefixo and not movimento_inicio.match(_normalizar(historico).upper()):
+            historico = f"{prefixo} {historico}".strip()
+        prefixo = ""
+        registros.append(_registro("sicredi", data, diferenca / 100, historico))
+        saldo, ultima_data = novo_saldo, data
+    return registros
+
+
+def processar_sicredi_625(conteudo: bytes, *, titular: str | None = None) -> pd.DataFrame:
     texto = _texto_pdf(conteudo)
+    usa_ocr = not texto.strip()
+    if usa_ocr:
+        texto = _texto_ocr_sicredi(conteudo)
+        if "sicredi" not in _normalizar(texto):
+            raise ValueError("O PDF sem texto não foi identificado como extrato Sicredi.")
+    if titular and _normalizar(titular) not in _normalizar(texto):
+        raise ValueError("Sicredi: o titular do extrato não corresponde à empresa selecionada.")
+    if usa_ocr:
+        return _finalizar(_sicredi_ocr_registros(texto), "Sicredi")
     moeda = re.compile(r"-?\d{1,3}(?:\.\d{3})*,\d{2}")
     registros = []
     for linha in texto.splitlines():

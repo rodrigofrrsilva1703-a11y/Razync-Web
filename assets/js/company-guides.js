@@ -78,8 +78,8 @@
       note:"Envie as planilhas SIG originais. Contas: Itaú 508 e Sicredi 505."
     },
     1001: {
-      intro:"A Accede Equipamentos utiliza planilhas SIG do Itaú e Sicredi e extratos PDF do Aplicativo Santander Empresas para montar o Modelo Domínio.",
-      note:"Envie o Santander em PDF (conta 513). Itaú 508 e Sicredi 505 continuam em planilhas SIG. O PDF pode abranger mais de um mês; selecione o período desejado."
+      intro:"A Accede Equipamentos utiliza planilha SIG do Itaú, Sicredi em SIG ou PDF e extratos PDF do Aplicativo Santander Empresas para montar o Modelo Domínio.",
+      note:"Envie o Santander em PDF (conta 513). Itaú 508 em SIG. Sicredi 505 em SIG ou PDF. O PDF pode abranger mais de um mês; selecione o período desejado."
     },
     1064: {
       intro:"A Tech Control utiliza a planilha SIG do Sicredi para produzir os lançamentos contábeis.",

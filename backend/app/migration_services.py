@@ -86,10 +86,20 @@ def normalize_selected_banks(values):
     return normalized
 
 
+def _sicredi_pdf_1001(content):
+    from app.advanced import _aplicar_conta
+    from razync.valean_625 import processar_sicredi_625
+
+    frame = processar_sicredi_625(content, titular="ACCEDE EQUIPAMENTOS")
+    return _aplicar_conta(frame, accounts(1001)["sicredi"])
+
+
 def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
     with engine.processing_context(slug(code)):
+        if code == 1001 and bank == 'sicredi' and content.startswith(b'%PDF'):
+            return _sicredi_pdf_1001(content)
         # Na 1529, valida o PDF Consultas sem alterar leitores das outras empresas.
         if code == 1529 and bank in {'banco_brasil', 'bb'} and str(filename).lower().endswith('.pdf'):
             from app.bb_consultas import parece_extrato_bb_consultas, ler_extrato_bb_consultas
@@ -388,6 +398,13 @@ def _workflow(code, roles, options):
                                 part['DATA'], format='%d/%m/%Y', errors='raise'
                             )
                             frames.append(part)
+                    elif bank == 'sicredi' and code == 1001:
+                        frames = [
+                            _sicredi_pdf_1001(content)
+                            if content.startswith(b'%PDF')
+                            else engine.processar_planilha_accede_sig(content, bank, slug(code))
+                            for _, content in roles[bank]
+                        ]
                     else:
                         frames = [
                             engine.processar_planilha_accede_sig(content, bank, slug(code))
@@ -407,7 +424,7 @@ def _workflow(code, roles, options):
                 if code == 1064:
                     raise ValueError('Envie a planilha SIG do Sicredi.')
                 if code == 1001:
-                    raise ValueError('Envie a planilha SIG do Itaú, Sicredi e/ou Santander.')
+                    raise ValueError('Envie a planilha SIG do Itaú, o Sicredi em SIG ou PDF, ou o extrato PDF do Santander.')
                 raise ValueError('Envie a planilha SIG do Itaú e/ou Sicredi.')
             filename = 'TECH_CONTROL_1064_SICREDI_505_MODELO_DOMINIO.xlsx' if code == 1064 else f'ACCEDE_{code}_MODELO_DOMINIO.xlsx'
             return engine.gerar_excel_nova_geracao(data, _template_bytes()), filename

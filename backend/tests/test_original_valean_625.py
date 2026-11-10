@@ -42,3 +42,25 @@ def test_datas_sao_validas_no_modelo(monkeypatch):
     df = processar_extrato_625(b"pdf", "sicredi")
     assert pd.Timestamp(df.iloc[0]["DATA"]) == pd.Timestamp("2027-04-10")
 
+
+
+def test_sicredi_ocr_confere_sinal_pelo_saldo_e_rejeita_leitura_inconsistente(monkeypatch):
+    import pytest
+    from razync import valean_625 as sicredi
+
+    texto = (
+        "Sicredi\nAssociado: Empresa Teste\n"
+        "Dados referentes ao periodo 01/02/2026 a 28/02/2026.\n"
+        "SALDO 5.000,00\n"
+        "02/02/2026 PAGAMENTO PIX    PIX_DEB    1,200,00  3.800,00\n"
+        "03/02/2026 TED RECEBIDA    001234    200,00  4.000,00\n"
+    )
+    monkeypatch.setattr(sicredi, "_texto_pdf", lambda _: "")
+    monkeypatch.setattr(sicredi, "_texto_ocr_sicredi", lambda _: texto)
+    resultado = sicredi.processar_sicredi_625(b"pdf", titular="Empresa Teste")
+    assert resultado["VALOR"].tolist() == [-1200, 200]
+    with pytest.raises(ValueError, match="titular"):
+        sicredi.processar_sicredi_625(b"pdf", titular="Outra Empresa")
+    monkeypatch.setattr(sicredi, "_texto_ocr_sicredi", lambda _: texto.replace("3.800,00", "3.700,00"))
+    with pytest.raises(ValueError, match="não fecha"):
+        sicredi.processar_sicredi_625(b"pdf")

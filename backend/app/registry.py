@@ -88,7 +88,7 @@ CAPABILITIES = {
         "workflow": "advanced",
         "roles": [
             {"name": "itau", "label": "SIG Itaú", "accept": ".xls,.xlsx", "multiple": True, "optional": True},
-            {"name": "sicredi", "label": "SIG Sicredi", "accept": ".xls,.xlsx", "multiple": True, "optional": True},
+            {"name": "sicredi", "label": "Sicredi 505 (SIG ou PDF)", "accept": ".xls,.xlsx,.pdf", "multiple": True, "optional": True},
             {"name": "santander", "label": "Extrato Santander (PDF)", "accept": ".pdf", "multiple": True, "optional": True},
         ],
         "banks": {"itau": "508", "sicredi": "505", "santander": "513"},
