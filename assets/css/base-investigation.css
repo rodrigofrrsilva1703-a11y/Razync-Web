@@ -493,14 +493,8 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
 #baseAiHost .base-ai-launcher,#baseAiHost .base-ai-launcher:hover,#baseAiHost .base-ai-launcher:active{width:48px;height:46px;min-height:46px;padding:0;border:0!important;border-radius:0;background:transparent!important;background-image:none!important;box-shadow:none!important;backdrop-filter:none;overflow:visible}
 #baseAiHost .base-ai-launcher::before,#baseAiHost .base-ai-launcher::after{display:none!important}
 #baseAiHost .base-ai-launcher:focus-visible{outline:2px solid #537ddd;outline-offset:5px;border-radius:5px}
-#baseAiHost .base-rz-letters{display:flex;align-items:center;justify-content:center;font-family:Arial,Helvetica,sans-serif;font-size:34px;font-weight:900;font-style:italic;letter-spacing:-5px;line-height:1;color:#315fc5;filter:drop-shadow(0 2px 4px #14243b12);padding-right:5px}
-#baseAiHost .base-rz-letters>span{display:inline-block;transform-origin:center}
 #baseAiHost .base-rz-z{color:#159fb7}
 #baseAiHost .base-ai-launcher-count{top:-3px!important;right:-4px!important;border:0!important;min-width:17px!important;height:17px!important;font-size:9px!important}
-@keyframes baseLetterR{0%,15%,80%,100%{transform:translateY(0) rotate(0)}35%{transform:translateY(-4px) rotate(-6deg)}55%{transform:translateY(1px) rotate(2deg)}}
-@keyframes baseLetterZ{0%,25%,90%,100%{transform:translateY(0) rotate(0)}45%{transform:translateY(-4px) rotate(6deg)}65%{transform:translateY(1px) rotate(-2deg)}}
-@media(prefers-reduced-motion:no-preference){#baseAiHost .base-rz-r{animation:baseLetterR 3.6s ease-in-out infinite}#baseAiHost .base-rz-z{animation:baseLetterZ 3.6s ease-in-out infinite}}
-@media(prefers-reduced-motion:reduce){#baseAiHost .base-rz-letters>span{animation:none!important}}
 @media(max-width:760px){#baseAiHost #baseInvestigationWindow{width:calc(100vw - 16px)}#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-history-comparison{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-review-sidebar{max-height:none}#baseAiHost #baseInvestigationWindow .base-review-sidebar .base-review-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}#baseAiHost #baseInvestigationWindow .base-review-sidebar .base-review-filters button{white-space:normal}#baseAiHost #baseInvestigationWindow .base-review-sidebar .base-review-queue{max-height:105px}}
 
 /* Original mark, quietly floating without a button frame. */
@@ -621,17 +615,17 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
 #baseAiHost button.base-ai-launcher{width:44px!important;height:44px!important;min-height:44px!important;padding:0!important;right:20px;bottom:84px;display:grid;place-items:center;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:12px!important;gap:0;translate:none;outline-offset:4px}
 #baseAiHost button.base-ai-launcher[hidden]{display:none!important}
 #baseAiHost button.base-ai-launcher::before,#baseAiHost button.base-ai-launcher::after{display:none!important}
-#baseAiHost button.base-ai-launcher .base-launcher-ai{display:grid;place-items:center;width:36px;height:36px;line-height:0;color:#3466cd;border-radius:10px;background:transparent}
+#baseAiHost button.base-ai-launcher .base-launcher-ai{display:grid;place-items:center;width:50px;height:50px;line-height:0;color:#fff;border-radius:16px;background:linear-gradient(145deg,#514bd3,#2548a6);border:1px solid #7378e5;box-shadow:0 5px 15px #18266c44}
 #baseAiHost .base-launcher-ai svg{width:31px;height:31px;overflow:visible;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 #baseAiHost .base-ai-spark-main{fill:currentColor;fill-opacity:.08}
-#baseAiHost .base-ai-spark-small{stroke:#259bb8;fill:#259bb8;fill-opacity:.16;transform-origin:25px 7px}
+#baseAiHost .base-ai-spark-small{stroke:#a4eaff;fill:#a4eaff;fill-opacity:.16;transform-origin:25px 7px}
 #baseAiHost button.base-ai-launcher .base-ai-launcher-count{position:absolute;top:-1px!important;right:-3px!important;min-width:17px!important;height:17px!important;padding:0 4px;display:grid;place-items:center;box-sizing:border-box;line-height:1;font-size:9px!important;font-weight:650;font-variant-numeric:tabular-nums;border:0!important;border-radius:6px!important;background:#3466cd!important;color:#fff!important;box-shadow:none!important;pointer-events:none}
 #baseAiHost button.base-ai-launcher:hover,#baseAiHost button.base-ai-launcher:active{border:0!important;background:transparent!important;box-shadow:none!important;translate:none}
-#baseAiHost button.base-ai-launcher:hover .base-launcher-ai{background:#3466cd0e}
+#baseAiHost button.base-ai-launcher:hover .base-launcher-ai{background:linear-gradient(145deg,#6059e0,#3054bd)}
 #baseAiHost button.base-ai-launcher:focus-visible{outline:2px solid #537ddd}
-html[data-theme=dark] #baseAiHost .base-launcher-ai{color:#8eb3ff}
+html[data-theme=dark] #baseAiHost .base-launcher-ai{color:#fff}
 html[data-theme=dark] #baseAiHost .base-ai-spark-small{stroke:#69c6dd;fill:#69c6dd}
-html[data-theme=dark] #baseAiHost button.base-ai-launcher:hover .base-launcher-ai{background:#8eb3ff12}
+html[data-theme=dark] #baseAiHost button.base-ai-launcher:hover .base-launcher-ai{background:linear-gradient(145deg,#6059e0,#3054bd)}
 @keyframes baseAiSparkle{0%,70%,100%{opacity:.8;transform:scale(1)}85%{opacity:1;transform:scale(1.13)}}
 @media(prefers-reduced-motion:no-preference){#baseAiHost .base-launcher-ai{transition:background .18s,color .18s}#baseAiHost .base-ai-spark-small{animation:baseAiSparkle 3.8s ease-in-out infinite}}
 @media(prefers-reduced-motion:reduce){#baseAiHost .base-ai-spark-small{animation:none!important}}
@@ -734,20 +728,11 @@ html[data-theme=dark] #baseAiHost #baseInvestigationWindow .base-check-focus{bac
 @media(max-width:760px){#baseAiHost #baseInvestigationWindow .base-ai-window-body:has(.base-review-layout){display:block;overflow:auto}#baseAiHost #baseInvestigationWindow .base-review-layout{overflow:visible}#baseAiHost #baseInvestigationWindow .base-review-sidebar{height:auto;max-height:none;overflow:visible}#baseAiHost #baseInvestigationWindow .base-review-queue{max-height:115px}#baseAiHost #baseInvestigationWindow .base-review-detail{overflow:visible;padding:0;scrollbar-gutter:auto}#baseAiHost #baseInvestigationWindow .base-history-comparison>.base-review-decision{bottom:-12px}}
 
 
-/* Traced original letters: arrows and background remain still. */
 #baseAiHost .base-ai-launcher{height:62px;min-height:62px;width:62px;padding:7px;gap:0;border-radius:18px}
 #baseAiHost .base-ai-launcher .base-brand-mark{width:46px;height:46px;border-radius:13px}
-#baseAiHost .base-rz-vector{display:block;width:100%;height:100%;border-radius:inherit;overflow:visible}
-#baseAiHost .base-rz-letter{transform-box:fill-box;transform-origin:center}
-#baseAiHost .base-brand-letter-motion::after{display:none}
 #baseAiHost .base-ai-launcher:hover .base-launcher-copy,#baseAiHost .base-ai-launcher:focus-visible .base-launcher-copy{display:grid;position:absolute;right:calc(100% + 14px);top:50%;transform:translateY(-50%);width:max-content;max-width:190px;padding:10px 12px;border:1px solid var(--review-border);border-radius:10px;background:var(--review-paper);box-shadow:0 6px 22px #101b3220;pointer-events:none}
-@keyframes baseLetterR{0%,12%,70%,100%{transform:translateY(0) rotate(0)}32%{transform:translateY(-30px) rotate(-2deg)}48%{transform:translateY(8px) rotate(1deg)}}
-@keyframes baseLetterZ{0%,24%,82%,100%{transform:translateY(0) rotate(0)}44%{transform:translateY(-30px) rotate(2deg)}60%{transform:translateY(8px) rotate(-1deg)}}
-@media(prefers-reduced-motion:no-preference){#baseAiHost .base-rz-r{animation:baseLetterR 5s ease-in-out infinite}#baseAiHost .base-rz-z{animation:baseLetterZ 5s ease-in-out infinite}}
-@media(prefers-reduced-motion:reduce){#baseAiHost .base-rz-letter{animation:none!important;transform:none!important}}
 
 #baseAiHost button.base-ai-launcher{width:54px!important;height:54px!important;min-height:54px!important}
-#baseAiHost button.base-ai-launcher .base-brand-mark{width:40px;height:40px}
 
 /* The assistant uses the same quiet loading language as the tools. */
 #baseAiHost .base-ai-loading{display:grid;grid-template-columns:20px minmax(0,1fr);align-content:center;align-items:center;column-gap:12px;row-gap:5px;min-height:180px;padding:22px 16px;text-align:left}
