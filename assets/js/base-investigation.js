@@ -47,7 +47,12 @@
     launcherCopy.append(node('small', 'ASSISTENTE DA BASE'), node('strong', 'Revisar pendências'));
     const icon = node('span', null, 'base-launcher-ai');
     icon.setAttribute('aria-hidden', 'true');
-    icon.innerHTML = '<svg viewBox="0 0 32 32" fill="none" focusable="false"><path class="base-ai-spark-main" d="M13 4c1.6 6.2 3.8 8.4 10 10-6.2 1.6-8.4 3.8-10 10C11.4 17.8 9.2 15.6 3 14c6.2-1.6 8.4-3.8 10-10Z"/><path class="base-ai-spark-small" d="M25 3v8m-4-4h8"/><path d="M24 21v6m-3-3h6"/></svg>';
+    icon.innerHTML = `
+      <svg viewBox="0 0 40 40" fill="none" focusable="false">
+        <circle class="base-ai-orbit" cx="20" cy="20" r="14" />
+        <g class="base-ai-orbit-point"><circle cx="20" cy="6" r="2" /></g>
+        <path class="base-ai-spark-main" d="M20 10c1.7 6.3 3.7 8.3 10 10-6.3 1.7-8.3 3.7-10 10-1.7-6.3-3.7-8.3-10-10 6.3-1.7 8.3-3.7 10-10Z" />
+      </svg>`;
     launcher.replaceChildren(icon, launcherCopy, node('b', String(summary.cobertura.pendentes), 'base-ai-launcher-count'));
     launcher.title = `Revisar ${summary.cobertura.pendentes} pendências da empresa ${company}`;
     launcher.hidden=false;

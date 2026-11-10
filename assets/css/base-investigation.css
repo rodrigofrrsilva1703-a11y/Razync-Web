@@ -615,20 +615,66 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
 #baseAiHost button.base-ai-launcher{width:44px!important;height:44px!important;min-height:44px!important;padding:0!important;right:20px;bottom:84px;display:grid;place-items:center;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:12px!important;gap:0;translate:none;outline-offset:4px}
 #baseAiHost button.base-ai-launcher[hidden]{display:none!important}
 #baseAiHost button.base-ai-launcher::before,#baseAiHost button.base-ai-launcher::after{display:none!important}
-#baseAiHost button.base-ai-launcher .base-launcher-ai{display:grid;place-items:center;width:50px;height:50px;line-height:0;color:#fff;border-radius:16px;background:linear-gradient(145deg,#514bd3,#2548a6);border:1px solid #7378e5;box-shadow:0 5px 15px #18266c44}
-#baseAiHost .base-launcher-ai svg{width:31px;height:31px;overflow:visible;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-#baseAiHost .base-ai-spark-main{fill:currentColor;fill-opacity:.08}
-#baseAiHost .base-ai-spark-small{stroke:#a4eaff;fill:#a4eaff;fill-opacity:.16;transform-origin:25px 7px}
-#baseAiHost button.base-ai-launcher .base-ai-launcher-count{position:absolute;top:-1px!important;right:-3px!important;min-width:17px!important;height:17px!important;padding:0 4px;display:grid;place-items:center;box-sizing:border-box;line-height:1;font-size:9px!important;font-weight:650;font-variant-numeric:tabular-nums;border:0!important;border-radius:6px!important;background:#3466cd!important;color:#fff!important;box-shadow:none!important;pointer-events:none}
-#baseAiHost button.base-ai-launcher:hover,#baseAiHost button.base-ai-launcher:active{border:0!important;background:transparent!important;box-shadow:none!important;translate:none}
-#baseAiHost button.base-ai-launcher:hover .base-launcher-ai{background:linear-gradient(145deg,#6059e0,#3054bd)}
-#baseAiHost button.base-ai-launcher:focus-visible{outline:2px solid #537ddd}
-html[data-theme=dark] #baseAiHost .base-launcher-ai{color:#fff}
-html[data-theme=dark] #baseAiHost .base-ai-spark-small{stroke:#69c6dd;fill:#69c6dd}
-html[data-theme=dark] #baseAiHost button.base-ai-launcher:hover .base-launcher-ai{background:linear-gradient(145deg,#6059e0,#3054bd)}
-@keyframes baseAiSparkle{0%,70%,100%{opacity:.8;transform:scale(1)}85%{opacity:1;transform:scale(1.13)}}
-@media(prefers-reduced-motion:no-preference){#baseAiHost .base-launcher-ai{transition:background .18s,color .18s}#baseAiHost .base-ai-spark-small{animation:baseAiSparkle 3.8s ease-in-out infinite}}
-@media(prefers-reduced-motion:reduce){#baseAiHost .base-ai-spark-small{animation:none!important}}
+#baseAiHost button.base-ai-launcher .base-launcher-ai {
+  display:grid;
+  place-items:center;
+  width:52px;
+  height:52px;
+  border:1px solid #587aaa;
+  border-radius:50%;
+  background:radial-gradient(circle at 34% 20%,#234476,#101d35 72%);
+  color:#effbff;
+  box-shadow:inset 0 1px 2px #ffffff26,0 5px 15px #0d1c3a45;
+}
+#baseAiHost .base-launcher-ai svg {width:38px;height:38px}
+#baseAiHost .base-ai-orbit {stroke:#9fcdff;stroke-width:1;opacity:.35}
+#baseAiHost .base-ai-orbit-point {fill:#99efff;transform-origin:20px 20px}
+#baseAiHost .base-ai-spark-main {fill:currentColor;transform-origin:20px 20px}
+#baseAiHost button.base-ai-launcher .base-ai-launcher-count {
+  position:absolute;
+  top:-2px!important;
+  right:-4px!important;
+  min-width:20px!important;
+  height:20px!important;
+  padding:0 4px;
+  display:grid;
+  place-items:center;
+  box-sizing:border-box;
+  line-height:1;
+  font-size:10px!important;
+  font-weight:750;
+  font-variant-numeric:tabular-nums;
+  border:2px solid var(--review-paper)!important;
+  border-radius:999px!important;
+  background:#d9f6ff!important;
+  color:#112f4e!important;
+  box-shadow:none!important;
+  pointer-events:none;
+}
+#baseAiHost button.base-ai-launcher:hover,#baseAiHost button.base-ai-launcher:active {
+  border:0!important;background:transparent!important;box-shadow:none!important;translate:none;
+}
+#baseAiHost button.base-ai-launcher:hover .base-launcher-ai,
+#baseAiHost button.base-ai-launcher:focus-visible .base-launcher-ai {
+  border-color:#99d8ff;
+  box-shadow:inset 0 1px 2px #ffffff32,0 0 16px #538ed777;
+}
+#baseAiHost button.base-ai-launcher:focus-visible {outline:2px solid var(--review-action)}
+@keyframes baseAiOrbit {to{transform:rotate(360deg)}}
+@keyframes baseAiFloat {
+  0%,100% {transform:translateY(0) rotate(-5deg)}
+  50% {transform:translateY(-2px) rotate(5deg)}
+}
+@keyframes baseAiBreathe {
+  0%,100% {transform:scale(.87);opacity:.86}
+  50% {transform:scale(1.06);opacity:1}
+}
+@media(prefers-reduced-motion:no-preference) {
+  #baseAiHost .base-launcher-ai {transition:border-color .2s,box-shadow .2s}
+  #baseAiHost .base-launcher-ai svg {animation:baseAiFloat 4s ease-in-out infinite}
+  #baseAiHost .base-ai-orbit-point {animation:baseAiOrbit 5s linear infinite}
+  #baseAiHost .base-ai-spark-main {animation:baseAiBreathe 4s ease-in-out infinite}
+}
 @media(max-width:760px){#baseAiHost button.base-ai-launcher{right:16px;bottom:82px}}
 
 html[data-theme=dark] #baseAiHost button.base-ai-launcher,html[data-theme=dark] #baseAiHost button.base-ai-launcher:hover,html[data-theme=dark] #baseAiHost button.base-ai-launcher:focus,html[data-theme=dark] #baseAiHost button.base-ai-launcher:active{background:transparent!important;background-image:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important}
