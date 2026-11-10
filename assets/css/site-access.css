@@ -76,47 +76,165 @@ html[data-theme="dark"] #siteAccess{
 #siteAccessExit:focus-visible{outline:2px solid #8cbaff;outline-offset:2px}
 #siteAccessExit:disabled{opacity:.55;cursor:wait}
 
-/* Private entry: a quiet welcome panel and a high-contrast form. */
-#siteAccess{
-  --login-ink:#142033;--login-field:#f8fafc;--login-value:#111827;
-  --login-welcome:#edf3fc;--login-glow:#3772e829;
-  background:radial-gradient(ellipse at 15% 12%,var(--login-glow),transparent 48%),var(--login-bg);
+/* The welcome and sign-in panels share the full viewport. */
+#siteAccess {
+  --login-value:var(--login-ink);
+  --login-welcome:#e9f0ff;
+  --login-glow:#4f7ee548;
+  --login-art-line:#365cc233;
+  --login-art-paper:#ffffffd9;
+  --login-art-ink:#436cd6;
+  padding:0;
+  background:var(--login-card);
 }
-html[data-theme="dark"] #siteAccess{
-  --login-ink:#f4f7fc;--login-field:#181818;--login-value:#f8faff;
-  --login-welcome:#101010;--login-glow:#3772e82b;
-  background:radial-gradient(ellipse at 15% 12%,var(--login-glow),transparent 48%),var(--login-bg);
+html[data-theme="dark"] #siteAccess {
+  --login-welcome:#0b0b0b;
+  --login-glow:#416de54d;
+  --login-art-line:#8baaff40;
+  --login-art-paper:#171717;
+  --login-art-ink:#a5bdff;
+  background:var(--login-card);
 }
-#siteAccess .site-access-card{
-  width:min(100%,840px);display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1fr);
-  padding:0;overflow:hidden;border-radius:22px;box-shadow:0 24px 75px #08111e18;
-  animation:login-enter 460ms cubic-bezier(.2,.7,.2,1) both;
+#siteAccess .site-access-card {
+  width:100%;
+  min-height:100dvh;
+  display:grid;
+  grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);
+  padding:0;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
 }
-.site-access-welcome{
-  position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;
-  gap:clamp(30px,6vw,75px);padding:clamp(24px,5vw,40px);
-  background:var(--login-welcome);border-right:1px solid var(--login-line);
+.site-access-welcome {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:22px;
+  padding:clamp(32px,6vw,100px);
+  padding-block-start:clamp(92px,8vw,116px);
+  background:radial-gradient(ellipse at 74% 83%,var(--login-glow),transparent 59%),var(--login-welcome);
+  border-right:1px solid var(--login-line);
 }
-#siteAccess .site-access-brand{padding:0;border:0}
-#siteAccess .site-access-welcome-copy{position:relative;z-index:1;padding-bottom:40px}
-#siteAccess .site-access-eyebrow{font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--login-muted)}
-#siteAccess .site-access-welcome-title{
-  font-size:clamp(26px,4vw,36px);font-weight:750;line-height:1.14;letter-spacing:-.04em;
-  margin:8px 0 12px;color:var(--login-ink)
+#siteAccess .site-access-brand {
+  position:absolute;
+  top:clamp(24px,5vh,52px);
+  left:clamp(32px,6vw,100px);
+  z-index:1;
+  padding:0;
+  border:0;
 }
-.site-access-art{
-  position:absolute;z-index:0;pointer-events:none;right:-76px;bottom:-125px;width:290px;height:290px;
-  border-radius:50%;background:radial-gradient(circle,var(--login-glow),transparent 69%);
-  animation:login-drift 11s ease-in-out infinite alternate
+#siteAccess .site-access-welcome-copy {
+  position:relative;
+  z-index:1;
+  max-width:540px;
+  margin-top:30px;
 }
-.site-access-art i{position:absolute;inset:17px;border:1px solid var(--login-glow);border-radius:50%}
-.site-access-art i:nth-child(2){inset:40px}
-.site-access-art i:nth-child(3){inset:65px}
-.site-access-content{display:flex;flex-direction:column;justify-content:center;padding:clamp(24px,5vw,40px);min-width:0}
+#siteAccess .site-access-eyebrow {
+  font-weight:750;
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+#siteAccess .site-access-welcome-title {
+  margin:12px 0 16px;
+  color:var(--login-ink);
+  font-size:clamp(34px,4.8vw,76px);
+  font-weight:780;
+  line-height:1.03;
+  letter-spacing:-.055em;
+  text-wrap:balance;
+}
+#siteAccess .site-access-welcome-copy>p:last-child {
+  max-width:34ch;
+  font-size:clamp(14px,1.3vw,18px);
+}
+.site-access-art {
+  position:relative;
+  width:min(100%,370px);
+  height:clamp(114px,22vh,220px);
+  margin-left:auto;
+  pointer-events:none;
+}
+.site-access-orbit {
+  position:absolute;
+  inset:5% 3% 2% 4%;
+  border:1px solid var(--login-art-line);
+  border-radius:50%;
+  transform:rotate(-12deg);
+}
+.site-access-orbit i {
+  position:absolute;
+  inset:12px 7%;
+  border:1px solid var(--login-art-line);
+  border-radius:50%;
+}
+.site-access-orbit i:nth-child(2) {inset:24px 14%}
+.site-access-orbit i:nth-child(3) {
+  inset:11% 18% auto auto;
+  width:8px;
+  height:8px;
+  border:0;
+  background:var(--login-art-ink);
+  animation:login-spark 4s ease-in-out infinite alternate;
+}
+.site-access-document,.site-access-chart,.site-access-check {
+  position:absolute;
+  display:grid;
+  gap:8px;
+  padding:14px;
+  border:1px solid var(--login-art-line);
+  border-radius:14px;
+  background:var(--login-art-paper);
+  color:var(--login-art-ink);
+  box-shadow:0 12px 28px #0b193024;
+  animation:login-float 5s ease-in-out infinite alternate;
+}
+.site-access-document {inset:1% auto auto 19%;width:86px;rotate:-12deg}
+.site-access-document i {height:4px;border-radius:4px;background:currentColor;opacity:.55}
+.site-access-document i:first-child {width:45%;height:8px;opacity:1}
+.site-access-document i:last-child {width:68%}
+.site-access-chart {
+  inset:auto 17% 9% auto;
+  width:110px;
+  height:72px;
+  grid-template-columns:repeat(4,1fr);
+  align-items:end;
+  rotate:9deg;
+  animation-delay:-2s;
+}
+.site-access-chart i {height:42%;border-radius:4px 4px 1px 1px;background:currentColor;opacity:.64}
+.site-access-chart i:nth-child(2) {height:70%}
+.site-access-chart i:nth-child(3) {height:56%}
+.site-access-chart i:nth-child(4) {height:100%;opacity:1}
+.site-access-check {
+  inset:auto auto 1% 40%;
+  width:36px;
+  height:36px;
+  padding:0;
+  place-items:center;
+  border-radius:50%;
+  font-weight:750;
+  animation-delay:-3.2s;
+}
+.site-access-content {
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  width:min(100%,510px);
+  margin-inline:auto;
+  padding:clamp(24px,5vw,56px);
+  min-width:0;
+}
 #siteAccess .site-access-heading{margin:0 0 24px}
 #siteAccess .site-access-tag{padding:5px 8px;border:1px solid var(--login-line);border-radius:999px}
 #siteAccess .site-access-tag svg{width:13px;height:13px}
-#siteAccess .site-access-heading h1{margin-top:12px}
+#siteAccess .site-access-heading h1{margin-top:12px;font-size:clamp(29px,3vw,42px)}
+@keyframes login-float {from{transform:translateY(0)}to{transform:translateY(-12px)}}
+@keyframes login-spark {from{transform:translate(0,0);opacity:.55}to{transform:translate(-35px,-9px);opacity:1}}
 #siteAccess :is(#siteAccessEmail,#siteAccessPassword){
   color:var(--login-value)!important;-webkit-text-fill-color:var(--login-value)!important;
   background:var(--login-field)!important;caret-color:var(--login-value);
@@ -134,29 +252,42 @@ html[data-theme="dark"] #siteAccess{
 #siteAccess .site-access-submit{transition:filter 150ms ease,transform 150ms ease}
 #siteAccess .site-access-submit:hover:not(:disabled){transform:translateY(-1px)}
 #siteAccess .site-access-submit:active:not(:disabled){transform:translateY(1px)}
-@keyframes login-enter{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
-@keyframes login-drift{from{transform:translate(0,0)}to{transform:translate(-24px,-16px)}}
-@media(max-width:630px){
-  #siteAccess .site-access-card{max-width:440px;grid-template-columns:1fr}
-  .site-access-welcome{gap:14px;border-right:0;border-bottom:1px solid var(--login-line)}
-  #siteAccess .site-access-welcome-copy{padding-bottom:0}
-  #siteAccess .site-access-welcome-copy p:last-child,#siteAccess .site-access-eyebrow{display:none}
-  #siteAccess .site-access-welcome-title{font-size:20px;margin:0}
-}
-@media(prefers-reduced-motion:reduce){
-  #siteAccess .site-access-card,.site-access-art{animation:none}
-  #siteAccess .site-access-submit{transition:none;transform:none!important}
-}
-
-/* Quiet hierarchy, legible fields and clear submission feedback. */
-#siteAccess .site-access-welcome-copy { padding-bottom:0; }
 .site-access-steps {
-  display:flex; flex-wrap:wrap; gap:8px; margin:0; padding:0; list-style:none;
-  position:relative; z-index:1;
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0;
+  padding:0;
+  list-style:none;
 }
 .site-access-steps li {
-  font-size:11px; padding:5px 9px; border:1px solid var(--login-line);
-  border-radius:99px; color:var(--login-muted); background:var(--login-card);
+  padding:5px 9px;
+  border:1px solid var(--login-art-line);
+  border-radius:99px;
+  background:var(--login-art-paper);
+  color:var(--login-ink);
+  font-size:11px;
+}
+@media(max-width:760px) {
+  #siteAccess .site-access-card{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .site-access-welcome{gap:12px;padding:24px;border-right:0;border-bottom:1px solid var(--login-line)}
+  #siteAccess .site-access-brand{position:relative;inset:auto}
+  #siteAccess .site-access-welcome-copy{margin-top:0;max-width:74%}
+  #siteAccess .site-access-welcome-title{margin:7px 0 0;font-size:clamp(21px,5vw,32px)}
+  #siteAccess .site-access-welcome-copy>p:last-child,.site-access-steps{display:none}
+  .site-access-art{position:absolute;right:10px;bottom:8px;width:100px;height:84px;opacity:.7}
+  .site-access-document{width:43px;gap:4px;padding:7px;border-radius:8px}
+  .site-access-document i{height:2px}
+  .site-access-document i:first-child{height:4px}
+  .site-access-chart{width:44px;height:31px;gap:2px;padding:4px;border-radius:7px}
+  .site-access-check{width:22px;height:22px;font-size:12px}
+  .site-access-content{padding:26px 24px}
+}
+@media(prefers-reduced-motion:reduce) {
+  .site-access-art :is(.site-access-document,.site-access-chart,.site-access-check,.site-access-orbit i){animation:none}
+  #siteAccess .site-access-submit{transition:none;transform:none!important}
 }
 #siteAccess .site-access-session-note { font-size:11px; text-align:center; }
 #siteAccess .site-access-submit[aria-busy="true"] .site-access-submit-indicator {
@@ -164,7 +295,6 @@ html[data-theme="dark"] #siteAccess{
   border-radius:50%; color:#fff; font-size:0; animation:site-access-progress .7s linear infinite;
 }
 @keyframes site-access-progress { to {transform:rotate(360deg)} }
-@media(max-width:630px) { .site-access-steps {display:none} }
 @media(prefers-reduced-motion:reduce) {
   #siteAccess .site-access-submit[aria-busy="true"] .site-access-submit-indicator {animation:none}
 }
