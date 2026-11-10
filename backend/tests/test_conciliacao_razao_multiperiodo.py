@@ -151,3 +151,33 @@ def test_filtros_incompletos_sao_rejeitados():
     full = processar_razao(_razao_multiplas_abas(), "Razao_2026.xlsx")
     with pytest.raises(ValueError, match="datas"):
         recortar_razao(_extratos_jan_mar(), full, "2026-01-01", "")
+
+
+def test_datas_iso_e_brasileiras_sao_preservadas_no_recorte_e_no_cruzamento():
+    extrato = pd.DataFrame({
+        "DATA": ["2026-02-08", "09/02/2026"],
+        "VALOR": [150, -35],
+    })
+    razao = pd.DataFrame({
+        "DATA": ["08/02/2026", "2026-02-09"],
+        "ENTRADAS_RAZAO": [150, 0],
+        "SAIDAS_RAZAO": [0, 35],
+    })
+    for inicio, fim in [("", ""), ("2026-02-01", "2026-02-28")]:
+        ext, raz, info = recortar_razao(extrato, razao, inicio, fim)
+        diario, resumo = conciliar_razao(ext, raz)
+        assert info["meses_extratos"] == "2026-02"
+        assert diario["DATA"].dt.day.tolist() == [8, 9]
+        assert resumo["dias_conferidos"] == 2
+
+
+def test_modelo_dominio_usa_valor_do_movimento_e_nao_codigo_contabil():
+    data = io.BytesIO()
+    pd.DataFrame([
+        ["SICREDI", "08/02/2026", 150, 505, 412, "Recebimento"],
+        ["SICREDI", "09/02/2026", -35, "", "", "Tarifa"],
+    ], columns=["DESCRIÇÃO", "DATA", "VALOR", "DÉBITO", "CRÉDITO", "HISTÓRICO"]).to_excel(data, index=False)
+    result = processar_arquivo(data.getvalue(), "Modelo.xlsx")
+    assert result["VALOR"].tolist() == [150, -35]
+    with pytest.raises(ValueError, match="Modelo Domínio.*campo Razão"):
+        processar_razao(data.getvalue(), "Modelo.xlsx")

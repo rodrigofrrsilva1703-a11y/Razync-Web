@@ -1584,6 +1584,10 @@ def processar_razao_dominio(file_bytes, filename):
             header_row_idx = idx
             break
 
+    campos = [normalizar_texto(v).strip() for v in df.iloc[header_row_idx].values]
+    if campos[:6] == ["descricao", "data", "valor", "debito", "credito", "historico"]:
+        raise ValueError("Este arquivo é um Modelo Domínio. Anexe o relatório Razão da conta bancária no campo Razão.")
+
     if header_row_idx > 0:
         df.columns = [
             str(v).strip().upper() for v in df.iloc[header_row_idx].values

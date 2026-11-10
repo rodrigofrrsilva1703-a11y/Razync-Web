@@ -136,6 +136,7 @@ def processar_planilha_universal(file_bytes: bytes, filename: str) -> pd.DataFra
     if header_idx is None:
         header_idx = 0
     headers = [normalizar_texto(v) or f"col_{i}" for i, v in enumerate(df.iloc[header_idx].tolist())]
+    modelo_dominio = headers[:6] == [normalizar_texto(coluna) for coluna in COLUNAS]
     frame = df.iloc[header_idx + 1:].copy()
     frame.columns = headers
 
@@ -152,14 +153,16 @@ def processar_planilha_universal(file_bytes: bytes, filename: str) -> pd.DataFra
     banco = identificar_banco(" ".join(frame.columns), filename)
     rows = []
     for _, row in frame.iterrows():
-        dt = pd.to_datetime(row[cdata], dayfirst=True, errors="coerce")
+        dt = pd.to_datetime(row[cdata], format="mixed", dayfirst=True, errors="coerce")
         if pd.isna(dt):
             continue
         hist = str(row[chist] if chist and pd.notna(row[chist]) else "MOVIMENTO BANCARIO").strip()
         if any(x in normalizar_texto(hist) for x in ["saldo anterior", "subtotal", "total geral"]):
             continue
         valor = 0.0
-        if ccred or cdeb:
+        if modelo_dominio:
+            valor = limpar_valor_monetario(row[cval])
+        elif ccred or cdeb:
             cred = limpar_valor_monetario(row[ccred]) if ccred and pd.notna(row[ccred]) else 0
             deb = limpar_valor_monetario(row[cdeb]) if cdeb and pd.notna(row[cdeb]) else 0
             valor = abs(cred) if cred else (-abs(deb) if deb else 0)
@@ -289,7 +292,9 @@ def processar_razao(file_bytes: bytes, filename: str) -> pd.DataFrame:
 
 
 def conciliar_razao(extrato: pd.DataFrame, razao: pd.DataFrame):
-    e = preparar(extrato)
+    e = extrato.copy()
+    e["DATA"] = pd.to_datetime(e["DATA"], format="mixed", dayfirst=True, errors="coerce")
+    e = preparar(e)
     diario_e = e.assign(
         ENTRADAS_EXTRATO=e["VALOR"].where(e["VALOR"]>0,0),
         SAIDAS_EXTRATO=-e["VALOR"].where(e["VALOR"]<0,0),
@@ -298,7 +303,7 @@ def conciliar_razao(extrato: pd.DataFrame, razao: pd.DataFrame):
     r=razao.copy()
     # Razão Domínio utiliza DD/MM/AAAA; o padrão americano inverteria
     # 08/04/2026 para agosto e criaria divergências artificiais.
-    r["DATA"]=pd.to_datetime(r["DATA"],dayfirst=True,errors="coerce").dt.normalize()
+    r["DATA"]=pd.to_datetime(r["DATA"],format="mixed",dayfirst=True,errors="coerce").dt.normalize()
     diario_r=r.groupby("DATA",as_index=False)[["ENTRADAS_RAZAO","SAIDAS_RAZAO"]].sum()
     out=pd.merge(diario_e,diario_r,on="DATA",how="outer").fillna(0)
     out["DIFERENÇA ENTRADAS"]=(out["ENTRADAS_RAZAO"]-out["ENTRADAS_EXTRATO"]).round(2)
@@ -318,8 +323,8 @@ def conciliar_razao(extrato: pd.DataFrame, razao: pd.DataFrame):
 
 # Adapters preserve the original universal readers instead of reduced copies.
 
-def _excel_tem_data_tipificada(file_bytes: bytes) -> bool:
-    """Detecta colunas DATA com datetime/ISO, que o parser legado trunca.
+def _excel_requer_leitor_universal(file_bytes: bytes) -> bool:
+    """Detecta Modelo Domínio e datas datetime/ISO, que exigem leitura tipada.
 
     Exemplo: 2026-01-15 era lido como 26/01/15 (ano 2015).
     Inspeciona só o cabeçalho e as primeiras linhas, sem expor dados.
@@ -332,6 +337,8 @@ def _excel_tem_data_tipificada(file_bytes: bytes) -> bool:
                     continue
                 for row_index in range(min(30, len(sample))):
                     headers = [normalizar_texto(str(value)).strip() for value in sample.iloc[row_index]]
+                    if headers[:6] == [normalizar_texto(coluna) for coluna in COLUNAS]:
+                        return True
                     date_cols = [i for i, value in enumerate(headers)
                                  if value == "data" or value.startswith("data lancamento")]
                     if not date_cols:
@@ -360,9 +367,9 @@ def processar_arquivo(file_bytes: bytes, filename: str) -> pd.DataFrame:
     extension = os.path.splitext(str(filename))[1].lower()
     # Uma data real do Excel ou ISO é tratada pelo leitor pandas, evitando
     # a data incorreta 26/01/2015 gerada pelo regex antigo em 2026-01-15.
-    preferir_data_excel = extension in {".xls", ".xlsx"} and _excel_tem_data_tipificada(file_bytes)
+    preferir_leitor_universal = extension in {".xls", ".xlsx"} and _excel_requer_leitor_universal(file_bytes)
     rows = []
-    if not preferir_data_excel:
+    if not preferir_leitor_universal:
         with engine.processing_context():
             try:
                 rows = engine.processar_extrato_conferencia_empresa(file_bytes, filename)

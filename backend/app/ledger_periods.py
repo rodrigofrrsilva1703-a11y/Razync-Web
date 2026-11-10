@@ -15,7 +15,7 @@ from app.report_helpers import _filter_period_frame, _period_bounds
 def _datas(frame):
     if "DATA" not in frame.columns:
         raise ValueError("Um dos arquivos processados não possui DATA.")
-    return pd.to_datetime(frame["DATA"], dayfirst=True, errors="coerce")
+    return pd.to_datetime(frame["DATA"], format="mixed", dayfirst=True, errors="coerce")
 
 
 def _periodos(frame):
@@ -33,6 +33,8 @@ def recortar_razao(extrato, razao, inicio="", fim=""):
     # Sempre validar os dois limites juntos, mesmo que o extrato esteja vazio
     # no período; não esconder filtros inválidos.
     _period_bounds(inicio, fim)
+    extrato = extrato.assign(DATA=_datas(extrato))
+    razao = razao.assign(DATA=_datas(razao))
     meses_raz_original = _periodos(razao)
     meses_ext_original = _periodos(extrato)
 
