@@ -722,6 +722,7 @@ document.addEventListener("keydown", event => {
 
 function activateTool(name) {
   if (!name) return;
+  window.RazyncWorkspaceResume?.leave("companies", String(selected?.codigo || ""), name);
   panel.dataset.activeTool = name;
   renderCompanyToolGuide(name);
   $$("[data-tool].tool-tab").forEach(btn => {
@@ -905,6 +906,7 @@ async function refreshBaseStats(learnedStatus=null) {
   }
 }
 function openCompany(company) {
+  window.RazyncWorkspaceResume?.leave("companies", String(company.codigo), "organizar");
   globalThis.RazyncBaseInvestigation?.reset();
   window.RazyncBaseWorkflow?.reset();
   cancelReconcilePreview();
@@ -986,6 +988,7 @@ function openCompany(company) {
 }
 
 function closeCompany() {
+  window.RazyncWorkspaceResume?.leave("companies");
   closeCompanyToolHelp();
   $("#companyToolHelp").hidden = true;
   cancelReconcilePreview();
@@ -1791,6 +1794,7 @@ async function showGlobalView(name) {
     finally { trigger?.removeAttribute("aria-busy"); }
     if (version !== navigationVersion) return;
   }
+  globalThis.RazyncWorkspaceResume?.leave(name);
   closeCompanyToolHelp();
   $("#companyToolHelp").hidden = true;
   cancelReconcilePreview();

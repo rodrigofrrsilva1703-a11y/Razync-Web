@@ -129,7 +129,7 @@
   exit.addEventListener('click', async () => {
     exit.disabled = true;
     try { await call('/sair', { method:'POST', signal:AbortSignal.timeout(5000) }); }
-    finally { identity = ''; window.RazyncWorkspaceResume?.clear(); persist(''); location.reload(); }
+    finally { identity = ''; persist(''); await window.RazyncWorkspaceResume?.clear(); location.reload(); }
   });
   retry.addEventListener('click', check);
   check();
