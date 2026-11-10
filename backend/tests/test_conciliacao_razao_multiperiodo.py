@@ -46,8 +46,8 @@ def test_uploads_de_dois_extratos_e_um_razao_multicompetencia():
     from app.main import _parse_upload_frames
     from app.global_tools import processar_arquivo
 
-    jan = b"DATA;HISTORICO;ENTRADA;SAIDA\\n15/01/2026;Recebimento;1500,00;\\n15/01/2026;Fornecedor;;350,00\\n"
-    mar = b"DATA;HISTORICO;ENTRADA;SAIDA\\n10/03/2026;Pagamento;;210,00\\n"
+    jan = b"DATA;HISTORICO;ENTRADA;SAIDA\n15/01/2026;Recebimento;1500,00;\n15/01/2026;Fornecedor;;350,00\n"
+    mar = b"DATA;HISTORICO;ENTRADA;SAIDA\n10/03/2026;Pagamento;;210,00\n"
     files = [
         UploadFile(io.BytesIO(jan), filename="Itau_Janeiro.csv"),
         UploadFile(io.BytesIO(mar), filename="Itau_Marco.csv"),
