@@ -2070,9 +2070,10 @@ $("#ledgerForm")?.addEventListener("submit", async event => {
   const msg = $("#ledgerMessage");
   if (!statement || !ledger) return msg.textContent = "Envie o extrato e o Razão.";
 
-  const snapshot = buildLedgerData();
-  msg.textContent = "Conferindo movimentos por dia…";
   try {
+    const snapshot = buildLedgerData();
+    msg.textContent = "Lendo " + $("#ledgerStatement").files.length + " extrato(s) e " +
+      $("#ledgerFile").files.length + " arquivo(s) do Razão…";
     const response = await fetch(`${API()}/api/v1/conciliacao-razao/preview`, {
       method:"POST", body:snapshot, signal:controller.signal,headers:{"X-Razync-Reuse":"1"}
     });
@@ -2095,9 +2096,14 @@ $("#ledgerForm")?.addEventListener("submit", async event => {
     });
 
     const divergent = (result.rows || []).filter(row => !reconciliationBalances(row,"razao").ok).length;
-    msg.textContent = divergent
+    const info=result.summary || {};
+    const selectedMonths=info.meses_extratos ? ` Meses dos extratos: ${info.meses_extratos}.` : "";
+    const excluded=info.meses_razao_desconsiderados
+      ? ` Razão de outras competências excluído do confronto: ${info.meses_razao_desconsiderados}.` : "";
+    msg.textContent = (divergent
       ? `${divergent} dia(s) com divergência entre Extrato e Razão.`
-      : "Todos os dias analisados estão conciliados.";
+      : "Todos os dias analisados estão conciliados.") + selectedMonths +
+      (info.periodo_automatico ? excluded : " Intervalo informado aplicado aos dois lados.");
   } catch (error) {
     if (error.name === "AbortError" || controller.signal.aborted) return;
     $("#ledgerResult").hidden = true;
