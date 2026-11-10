@@ -108,8 +108,8 @@ html[data-theme="dark"] #siteAccess {
 .site-access-demo {
   box-sizing:border-box; width:min(100%,500px); min-width:0; margin:0;
   display:grid; gap:12px; padding:16px;
-  border:1px solid #8aa9e24d; border-radius:16px;
-  background:#131e31; color:#e3ebfb; box-shadow:0 14px 36px #03091455;
+  border:1px solid #8aa9e238; border-radius:16px;
+  background:linear-gradient(150deg,#182233,#111927); color:#e3ebfb; box-shadow:0 14px 36px #03091455;
   font-size:13px;
 }
 .site-access-demo figcaption {
@@ -122,15 +122,16 @@ html[data-theme="dark"] #siteAccess {
 }
 .site-access-demo-steps li {
   --step-color:#a8ceff;
+  position:relative; isolation:isolate; overflow:hidden;
   display:grid; grid-template-columns:auto minmax(0,1fr) minmax(0,35%); align-items:center;
   gap:8px; min-width:0; padding:7px 8px;
-  border:1px solid #6686b655; border-radius:9px; background:#17253b; line-height:1.22;
+  border:1px solid #6686b638; border-radius:9px; background:#152032; line-height:1.22;
 }
 .site-access-demo-steps li:nth-child(2) {--step-color:#ffdbab}
 .site-access-demo-steps li:nth-child(3) {--step-color:#b7ebda}
 .site-access-demo-icon {
   display:grid; place-items:center; width:29px; height:29px;
-  border-radius:8px; background:#213451; color:var(--step-color);
+  border-radius:8px; background:#202e43; color:#a8ceff;
 }
 .site-access-demo-icon svg {
   width:15px; height:15px; fill:none; stroke:currentColor;
@@ -144,18 +145,36 @@ html[data-theme="dark"] #siteAccess {
 }
 .site-access-demo-result b {margin-top:3px; color:var(--step-color); font-size:10px; overflow-wrap:anywhere}
 @media(prefers-reduced-motion:no-preference) {
-  .site-access-demo-steps li {--stage-delay:0s; animation:login-demo-stage 1.45s var(--stage-delay) ease-out both}
-  .site-access-demo-steps li:nth-child(2) {--stage-delay:1.45s}
-  .site-access-demo-steps li:nth-child(3) {--stage-delay:2.9s}
-  .site-access-demo-result {animation:login-demo-result .46s calc(var(--stage-delay) + .63s) ease-out both}
-  .site-access-demo-icon svg {animation:login-demo-icon .7s var(--stage-delay) ease-out both}
+  .site-access-demo-steps li {
+    --stage-delay:0s;
+    animation:login-demo-focus 1.42s var(--stage-delay) ease-in-out both;
+  }
+  .site-access-demo-steps li:nth-child(2) {--stage-delay:1.43s}
+  .site-access-demo-steps li:nth-child(3) {--stage-delay:2.86s}
+  .site-access-demo-steps li::before {
+    content:""; position:absolute; z-index:-1; inset:0; pointer-events:none;
+    background:linear-gradient(90deg,transparent,#86b5ff26 48%,transparent);
+    animation:login-demo-sweep 1.12s var(--stage-delay) ease-out both;
+  }
+  .site-access-demo-icon path {
+    stroke-dasharray:1;
+    animation:login-demo-trace .6s calc(var(--stage-delay) + .12s) ease-out both;
+  }
+  .site-access-demo-result {
+    animation:login-demo-settle .48s calc(var(--stage-delay) + .66s) cubic-bezier(.2,.7,.25,1) both;
+  }
 }
-@keyframes login-demo-stage {
-  0%,100% {border-color:#6686b655;background:#17253b}
-  30%,65% {border-color:var(--step-color);background:#233953}
+@keyframes login-demo-focus {
+  0%,100% {border-color:#6686b638}
+  33%,67% {border-color:#8ab6fa98}
 }
-@keyframes login-demo-result {from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:none}}
-@keyframes login-demo-icon {0%,100%{transform:none}45%{transform:translateY(-3px) scale(1.14)}}
+@keyframes login-demo-sweep {
+  0% {opacity:0;transform:translateX(-85%)}
+  35% {opacity:1}
+  100% {opacity:0;transform:translateX(85%)}
+}
+@keyframes login-demo-trace {from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes login-demo-settle {from{opacity:.48;transform:translateX(-4px)}to{opacity:1;transform:none}}
 .site-access-content {
   min-width:0; display:grid; grid-template-rows:auto 1fr; gap:22px;
   padding:clamp(22px,4vw,64px);
