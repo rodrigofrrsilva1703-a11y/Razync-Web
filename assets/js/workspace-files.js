@@ -72,6 +72,20 @@
           replaceInputFiles(input, files);
         }
       }
+      return draft.classification;
+    },
+    async saveClassification(position, classification, isCurrent) {
+      const id = tabId();
+      if (!id) return;
+      await run("readwrite", store => {
+        const request = store.get(id);
+        request.onsuccess = () => {
+          const draft = request.result;
+          if (draft?.position === position && isCurrent()) {
+            store.put({...draft, classification, time:Date.now()}, id);
+          }
+        };
+      });
     },
     async clear() {
       const id = tabId();

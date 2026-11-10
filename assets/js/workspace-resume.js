@@ -109,7 +109,10 @@
               input.dispatchEvent(new Event("change", {bubbles:true}));
             }
           }
-          await fileDrafts().restore(filePosition(saved), draftScope);
+          const classification = await fileDrafts().restore(filePosition(saved), draftScope);
+          if (classification && saved.tool === "base" && panel.dataset.activeTool === "base") {
+            restoreClassification(classification);
+          }
         }
       }
     } catch { /* An unavailable catalog or storage must not block navigation. */ }
@@ -118,6 +121,12 @@
 
   window.RazyncWorkspaceResume = {
     save,
+    saveClassification(classification, isCurrent) {
+      const saved = savedPosition();
+      if (saved?.owner === owner() && saved?.tool === "base") {
+        fileDrafts()?.saveClassification(filePosition(saved), classification, isCurrent).catch(() => {});
+      }
+    },
     leave,
     beginTransition,
     endTransition,

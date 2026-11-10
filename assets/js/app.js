@@ -1126,6 +1126,17 @@ function prepareOrganizerPreview() {
 }
 form.addEventListener("change", prepareOrganizerPreview);
 
+function organizerFiles(input) {
+  if (input.disabled) return [];
+  const files = [...input.files];
+  const formats = input.accept.split(",").map(format => format.trim().toLowerCase()).filter(Boolean);
+  if (formats.length && formats.every(format => format.startsWith("."))) {
+    const invalid = files.find(file => !formats.some(format => file.name.toLowerCase().endsWith(format)));
+    if (invalid) throw new Error(`O arquivo “${invalid.name}” está em um formato incompatível. Envie ${formats.join(", ")}.`);
+  }
+  return files;
+}
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!selected || organizerRunning) return;
@@ -1145,7 +1156,7 @@ form.addEventListener("submit", async (event) => {
     if (workflow === "advanced") {
       const roles = [];
       for (const input of $$("[data-role]")) {
-        for (const file of [...input.files]) {
+        for (const file of organizerFiles(input)) {
           data.append("files", file);
           roles.push(input.dataset.role);
         }
@@ -1167,7 +1178,7 @@ form.addEventListener("submit", async (event) => {
     } else if (workflow === "standard_multi_bank") {
       const banks = [];
       for (const input of $$("[data-bank]")) {
-        for (const file of [...input.files]) {
+        for (const file of organizerFiles(input)) {
           data.append("files", file);
           banks.push(input.dataset.bank);
         }
@@ -1177,7 +1188,7 @@ form.addEventListener("submit", async (event) => {
       data.append("options_json",JSON.stringify({data_inicial:dateApiValue($("#processStart")),data_final:dateApiValue($("#processEnd"))}));
       endpoint = `${API()}/api/v1/modelo-dominio/${selected.codigo}/multi`;
     } else {
-      const files = [...fileInput.files];
+      const files = organizerFiles(fileInput);
       if (!files.length) throw new Error("Selecione pelo menos um arquivo.");
       data.append("bank", bankSelect.value);
       data.append("options_json",JSON.stringify({data_inicial:dateApiValue($("#processStart")),data_final:dateApiValue($("#processEnd"))}));
@@ -1388,8 +1399,8 @@ classifyForm.addEventListener("submit", async (event) => {
   cancelClassificationPreview();
   const controller = new AbortController();
   classificationController = controller;
+  globalThis.RazyncWorkspaceResume?.saveClassification?.(undefined, () => classificationController === controller);
   const companyCode = selected.codigo;
-  const target = $("#classificationPreview");
   const button = event.submitter;
   button.disabled = true;
   window.RazyncBaseWorkflow?.setClassification("processing");
@@ -1411,35 +1422,19 @@ classifyForm.addEventListener("submit", async (event) => {
     const prepared = await RazyncResults.workbookPreview(response, {
       endpoint:`${API()}/api/v1/base-inteligente/${companyCode}/classificar`, snapshot:data,
       signal:controller.signal, filename:`RAZYNC_${companyCode}_CLASSIFICADO.xlsx`});
-    const result = prepared.preview;
     if (controller.signal.aborted || selected?.codigo !== companyCode) return;
-    showWorkflowPreview(result,target);
-    renderClassificationCoverage(summary.cobertura);
-    const pending = Math.max(0, Number(summary.cobertura?.pendentes) || 0);
-    window.RazyncBaseWorkflow?.setClassification("complete");
-    window.RazyncBaseWorkflow?.setReview("preparing", pending
-      ? `${pending.toLocaleString("pt-BR")} pendência(s) em preparação`
-      : "Nenhuma pendência encontrada");
-    const download = document.createElement("button");download.type="button";download.className="preview-download";
-    download.textContent="Baixar Excel classificado";
-    globalThis.RazyncBaseInvestigation?.mount({
-      prepared,company:companyCode,options:classifyOptions,summary,
-      onState:(state,message)=>window.RazyncBaseWorkflow?.setReview(state,message),
-      onReviewChange:approved=>{
-        if(controller.signal.aborted || selected?.codigo!==companyCode)return;
-        download.textContent=approved?`Baixar Excel com ${approved} revisão(ões)`:'Baixar Excel classificado';
-        download.title=approved?'Inclui as contas aprovadas no assistente.':'Baixar o resultado da classificação.';
-        const actions=target.querySelector('.preview-primary-actions');if(actions && !actions.contains(download))actions.append(download);
-      }
-    });
-    download.addEventListener("click", async () => {
-      download.disabled=true;
-      try { const reviewed=await globalThis.RazyncBaseInvestigation?.download(companyCode);if(!reviewed)await prepared.download(); }
-      catch (error) { if (error.name !== "AbortError" && selected?.codigo === companyCode) $("#classifyMessage").textContent=error.message; }
-      finally { download.disabled=false; }
-    });
-    target.querySelector(".preview-primary-actions").append(download);
-    $("#classifyMessage").textContent = "Classificação concluída. Confira as linhas classificadas, as pendências e a prévia antes de baixar.";
+    const isCurrent = () => !controller.signal.aborted && selected?.codigo === companyCode &&
+      panel.dataset.activeTool === "base";
+    let workbook;
+    const cached = {...prepared, blob: () => workbook ||= prepared.blob()};
+    renderClassifiedWorkbook(cached, summary, classifyOptions, companyCode, controller);
+    if (globalThis.RazyncWorkspaceResume?.saveClassification) {
+      cached.blob().then(blob => {
+        if (isCurrent()) {
+          RazyncWorkspaceResume.saveClassification({blob, preview:prepared.preview, summary, options:classifyOptions}, isCurrent);
+        }
+      }).catch(() => {});
+    }
   } catch (error) {
     if (controller.signal.aborted || selected?.codigo !== companyCode) return;
     $("#classifyMessage").textContent = error.message;
@@ -1448,6 +1443,51 @@ classifyForm.addEventListener("submit", async (event) => {
     if (classificationController === controller) button.disabled = false;
   }
 });
+
+function restoreClassification({blob, preview, summary, options}) {
+  if (!selected || !(blob instanceof Blob)) return;
+  const company = selected.codigo;
+  const controller = new AbortController();
+  classificationController = controller;
+  const prepared = {
+    preview,
+    blob: async () => blob,
+    download: () => downloadBlob(new Response(blob), `RAZYNC_${company}_CLASSIFICADO.xlsx`)
+  };
+  renderClassifiedWorkbook(prepared, summary, options, company, controller);
+}
+
+function renderClassifiedWorkbook(prepared, summary, classifyOptions, companyCode, controller) {
+  const target = $("#classificationPreview");
+  if (controller.signal.aborted || selected?.codigo !== companyCode) return;
+  showWorkflowPreview(prepared.preview,target);
+  renderClassificationCoverage(summary.cobertura);
+  const pending = Math.max(0, Number(summary.cobertura?.pendentes) || 0);
+  window.RazyncBaseWorkflow?.setClassification("complete");
+  window.RazyncBaseWorkflow?.setReview("preparing", pending
+    ? `${pending.toLocaleString("pt-BR")} pendência(s) em preparação`
+    : "Nenhuma pendência encontrada");
+  const download = document.createElement("button");download.type="button";download.className="preview-download";
+  download.textContent="Baixar Excel classificado";
+  globalThis.RazyncBaseInvestigation?.mount({
+    prepared,company:companyCode,options:classifyOptions,summary,
+    onState:(state,message)=>window.RazyncBaseWorkflow?.setReview(state,message),
+    onReviewChange:approved=>{
+      if(controller.signal.aborted || selected?.codigo!==companyCode)return;
+      download.textContent=approved?`Baixar Excel com ${approved} revisão(ões)`:'Baixar Excel classificado';
+      download.title=approved?'Inclui as contas aprovadas no assistente.':'Baixar o resultado da classificação.';
+      const actions=target.querySelector('.preview-primary-actions');if(actions && !actions.contains(download))actions.append(download);
+    }
+  });
+  download.addEventListener("click", async () => {
+    download.disabled=true;
+    try { const reviewed=await globalThis.RazyncBaseInvestigation?.download(companyCode);if(!reviewed)await prepared.download(); }
+    catch (error) { if (error.name !== "AbortError" && selected?.codigo === companyCode) $("#classifyMessage").textContent=error.message; }
+    finally { download.disabled=false; }
+  });
+  target.querySelector(".preview-primary-actions").append(download);
+  $("#classifyMessage").textContent = "Classificação concluída. Confira as linhas classificadas, as pendências e a prévia antes de baixar.";
+}
 
 function reconcileSelectionState() {
   const banks = selectedReconcileBanks();
@@ -1598,18 +1638,23 @@ reconcileForm.addEventListener("submit",async event => {
       }
     });
 
-    if (globalThis.RazyncAssets) {
-      try { await RazyncAssets.load("investments"); }
-      catch (error) { $("#reconcileMessage").textContent=error.message; return; }
+    try {
+      await globalThis.RazyncAssets?.load("investments");
+      if (!isCurrent()) return;
+      globalThis.RazyncInvestments?.mount({
+        target:$("#reconcileResult"),company:companyCode,
+        banks:state.banks.map(bank=>({code:bank,label:bankName(bank),account:selected?.capabilities?.banks?.[bank] || ""})),
+        snapshot:buildReconcileData(),summary:result.summary,rows:result.rows || [],
+        balances:row=>reconciliationBalances(row,"modelo"),isCurrent,signal:controller.signal,
+        api:API(),download:downloadBlob,responseError
+      });
+    } catch {
+      if (!isCurrent()) return;
+      const notice = document.createElement("p");
+      notice.className = "helper";
+      notice.textContent = "O complemento de investimentos está indisponível. A conferência do extrato está pronta.";
+      $("#reconcileResult").append(notice);
     }
-    if (!isCurrent()) return;
-    globalThis.RazyncInvestments?.mount({
-      target:$("#reconcileResult"),company:companyCode,
-      banks:state.banks.map(bank=>({code:bank,label:bankName(bank),account:selected?.capabilities?.banks?.[bank] || ""})),
-      snapshot:buildReconcileData(),summary:result.summary,rows:result.rows || [],
-      balances:row=>reconciliationBalances(row,"modelo"),isCurrent,signal:controller.signal,
-      api:API(),download:downloadBlob,responseError
-    });
 
     const errors = result.summary?.errors || [];
     const divergent = (result.rows || []).filter(row => !reconciliationBalances(row,"modelo").ok).length;
