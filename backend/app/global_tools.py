@@ -4,6 +4,7 @@ import io
 import os
 import re
 import unicodedata
+from datetime import date, datetime
 
 import pandas as pd
 from pypdf import PdfReader
@@ -316,6 +317,37 @@ def conciliar_razao(extrato: pd.DataFrame, razao: pd.DataFrame):
 
 
 # Adapters preserve the original universal readers instead of reduced copies.
+
+def _excel_tem_data_tipificada(file_bytes: bytes) -> bool:
+    """Detecta colunas DATA com datetime/ISO, que o parser legado trunca.
+
+    Exemplo: 2026-01-15 era lido como 26/01/15 (ano 2015).
+    Inspeciona só o cabeçalho e as primeiras linhas, sem expor dados.
+    """
+    try:
+        with pd.ExcelFile(io.BytesIO(file_bytes)) as book:
+            for sheet in book.sheet_names:
+                sample = pd.read_excel(book, sheet_name=sheet, header=None, dtype=object, nrows=55)
+                if sample.empty:
+                    continue
+                for row_index in range(min(30, len(sample))):
+                    headers = [normalizar_texto(str(value)).strip() for value in sample.iloc[row_index]]
+                    date_cols = [i for i, value in enumerate(headers)
+                                 if value == "data" or value.startswith("data lancamento")]
+                    if not date_cols:
+                        continue
+                    for col in date_cols:
+                        for value in sample.iloc[row_index + 1:row_index + 45, col]:
+                            if isinstance(value, (pd.Timestamp, datetime, date)):
+                                return True
+                            if isinstance(value, str) and re.match(r"^\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}(?:\\s|$)", value.strip()):
+                                return True
+                    break
+    except Exception:
+        return False
+    return False
+
+
 def processar_arquivo(file_bytes: bytes, filename: str) -> pd.DataFrame:
     from app import engine
     if str(filename).lower().endswith('.pdf') and engine.identificar_chave_banco_empresa(filename) == 'caixa':
@@ -326,13 +358,18 @@ def processar_arquivo(file_bytes: bytes, filename: str) -> pd.DataFrame:
         frame['CRÉDITO'] = ''
         return frame
     extension = os.path.splitext(str(filename))[1].lower()
-    with engine.processing_context():
-        try:
-            rows = engine.processar_extrato_conferencia_empresa(file_bytes, filename)
-        except ValueError:
-            if extension not in {".xls", ".xlsx", ".csv"}:
-                raise
-            rows = []
+    # Uma data real do Excel ou ISO é tratada pelo leitor pandas, evitando
+    # a data incorreta 26/01/2015 gerada pelo regex antigo em 2026-01-15.
+    preferir_data_excel = extension in {".xls", ".xlsx"} and _excel_tem_data_tipificada(file_bytes)
+    rows = []
+    if not preferir_data_excel:
+        with engine.processing_context():
+            try:
+                rows = engine.processar_extrato_conferencia_empresa(file_bytes, filename)
+            except ValueError:
+                if extension not in {".xls", ".xlsx", ".csv"}:
+                    raise
+                rows = []
     frame = pd.DataFrame(rows or [], columns=COLUNAS)
     if frame.empty and extension in {".xls", ".xlsx", ".csv"}:
         # Planilhas com DATA como célula datetime do Excel podem ser ignoradas
