@@ -8,12 +8,17 @@
   const base = (window.RAZYNC_CONFIG?.apiBase || '').replace(/\/$/, '');
   const original = window.fetch.bind(window), prefix = '/api/v1/acesso';
   const key = 'razync:private-session:v1', expiredKey = 'razync:session-ended';
+  const activityKey = 'razync:last-activity', idleLimit = 60 * 60 * 1000;
+  let lastActivity = 0, lastSavedActivity = 0, idleTimer, endingSession = false;
   let token = '', identity = '', required = Boolean(base), release;
   const ready = new Promise(resolve => { release = resolve; });
   const stored = () => { try { return sessionStorage.getItem(key) || ''; } catch { return ''; } };
   function persist(value) {
     token = value;
-    try { if (value) sessionStorage.setItem(key, value); else sessionStorage.removeItem(key); } catch {}
+    try {
+      if (value) sessionStorage.setItem(key, value);
+      else { sessionStorage.removeItem(key); sessionStorage.removeItem(activityKey); }
+    } catch {}
   }
   function call(path, options = {}) {
     const headers = new Headers(options.headers);
@@ -34,8 +39,43 @@
     if (identity) window.RazyncWorkspaceResume?.beginTransition();
     delete root.dataset.siteLocked;
     screen.hidden = true;
+    if (token) checkIdle();
     release();
   }
+  function saveActivity() {
+    if (!token || !lastActivity) return;
+    try { sessionStorage.setItem(activityKey, String(lastActivity)); lastSavedActivity = lastActivity; } catch {}
+  }
+  async function endIdleSession() {
+    if (endingSession || !token) return;
+    endingSession = true;
+    window.RazyncWorkspaceResume?.save();
+    locked('Sua sessão encerrou por inatividade. Entre novamente para continuar.', false);
+    try { sessionStorage.setItem(expiredKey, 'idle'); } catch {}
+    const signOut = call('/sair', {method:'POST', signal:AbortSignal.timeout(5000)});
+    identity = '';
+    persist('');
+    try { await signOut; } catch {} finally { location.reload(); }
+  }
+  function checkIdle() {
+    clearTimeout(idleTimer);
+    if (!token || endingSession) return;
+    const remaining = idleLimit - (Date.now() - lastActivity);
+    if (remaining <= 0) { void endIdleSession(); return; }
+    idleTimer = setTimeout(checkIdle, remaining);
+  }
+  function recordActivity(event) {
+    if (!event.isTrusted || !identity || !token || endingSession) return;
+    const now = Date.now();
+    if (now - lastActivity >= idleLimit) { void endIdleSession(); return; }
+    lastActivity = now;
+    if (now - lastSavedActivity >= 5000) saveActivity();
+  }
+  for (const type of ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart']) {
+    document.addEventListener(type, recordActivity, {capture:true, passive:true});
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && identity) checkIdle(); });
+  window.addEventListener('pagehide', saveActivity);
   function locked(message, canLogin) {
     account.hidden = true;
     root.dataset.siteLocked = '';
@@ -60,9 +100,15 @@
       if (!config.required && !testing) { required = false; unlocked(); return; }
       required = true;
       persist(stored());
-      let expired = Boolean(token);
-      try { expired ||= sessionStorage.getItem(expiredKey) === '1'; } catch {}
+      let ended = '';
+      try {
+        ended = sessionStorage.getItem(expiredKey) || '';
+        lastActivity = Number(sessionStorage.getItem(activityKey)) || Date.now();
+      } catch { lastActivity = Date.now(); }
+      const expired = Boolean(token) || Boolean(ended);
       if (token) {
+        if (Date.now() - lastActivity >= idleLimit) { await endIdleSession(); return; }
+        saveActivity();
         const response = await call('/sessao', { signal:AbortSignal.timeout(10000) });
         if (response.ok) {
           const data = await response.json();
@@ -72,7 +118,8 @@
         if (response.status !== 401) throw Error();
         persist('');
       }
-      locked(expired ? 'Sua sessão encerrou. Entre novamente para continuar.' : '', true);
+      locked(ended === 'idle' ? 'Sua sessão encerrou por inatividade. Entre novamente para continuar.'
+        : expired ? 'Sua sessão encerrou. Entre novamente para continuar.' : '', true);
     } catch {
       locked('Não foi possível verificar o acesso. Tente novamente.', false);
     } finally { retry.disabled = false; }
@@ -122,6 +169,8 @@
         return;
       }
       persist(data.session);
+      lastActivity = Date.now();
+      saveActivity();
       unlocked(data.email);
     } catch { status.textContent = 'Não foi possível conectar. Tente novamente.'; }
     finally { password.value = ''; setPasswordVisible(false); button.disabled = false; button.removeAttribute('aria-busy'); }

@@ -131,7 +131,7 @@ function initializeSidebarControls() {
   document.querySelector("#sidebarClose").addEventListener("click", () => setOpen(false));
   document.querySelector("#sidebarBackdrop").addEventListener("click", () => setOpen(false));
   sidebar.addEventListener("click", event => {
-    if (event.target.closest(".main-nav-btn")) setOpen(false);
+    if (event.target.closest(".main-nav-btn, [data-home-link]")) setOpen(false);
   });
   document.addEventListener("keydown", event => {
     if (!open) return;

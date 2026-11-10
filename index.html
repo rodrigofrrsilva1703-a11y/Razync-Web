@@ -31,7 +31,7 @@
   <link rel="stylesheet" href="./assets/css/tool-preparation.css?v=company-upload-three-parts-20261031-3">
   <link rel="stylesheet" href="./assets/css/company-directory.css?v=directory-studio-20261030-1">
   <link rel="stylesheet" href="./assets/css/base-investigation.css?v=black-attachments-20261109-1">
-  <link rel="stylesheet" href="./assets/css/themes.css?v=black-attachments-20261109-1">
+  <link rel="stylesheet" href="./assets/css/themes.css?v=idle-home-1">
   <link rel="stylesheet" href="./assets/css/sidebar-motion.css?v=20261029-1">
   <link rel="stylesheet" href="./assets/css/home-welcome.css?v=black-attachments-20261109-1">
   <link rel="stylesheet" href="./assets/css/global-tool-preparation.css?v=20261029-1">
@@ -91,7 +91,7 @@
     <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
     <aside id="mainSidebar" class="sidebar" role="dialog" aria-modal="true" aria-label="Navegação principal" aria-hidden="true" tabindex="-1" inert>
       <button id="sidebarClose" class="sidebar-close" type="button" aria-label="Fechar menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
-      <a class="brand" href="./" aria-label="Razync">
+      <a class="brand" href="./" data-home-link aria-label="Razync, tela inicial">
         <img class="brand-logo" src="./assets/razync-logo-original.png" alt="" width="48" height="48">
         <span><strong>Razync</strong><small>Automação contábil</small></span>
       </a>
@@ -116,7 +116,7 @@
       </div>
       <div class="sidebar-note"><span class="sidebar-dot"></span><div>Rotina organizada<small>Do documento à conferência.</small></div></div>
     </aside>
-    <header class="topbar"><button id="sidebarToggle" type="button" class="sidebar-toggle" aria-controls="mainSidebar" aria-expanded="false" aria-label="Abrir menu lateral"><span class="toggle-lines" aria-hidden="true"><span class="toggle-stroke"></span><span class="toggle-stroke"></span><span class="toggle-stroke"></span></span><span class="sidebar-toggle-label">Menu</span><svg class="sidebar-toggle-hint" viewBox="0 0 14 14" aria-hidden="true"><path d="m5 3 4 4-4 4"/></svg></button><div class="home-header-brand"><img src="./assets/razync-logo-original.png" alt="" width="32" height="32"><span><strong>Razync</strong><small>Automação contábil</small></span></div><div class="topbar-title"><span>Área de trabalho</span><strong id="currentSection">Empresas</strong></div><div class="topbar-actions"><span id="portfolioDate" class="home-header-date">Seu espaço de trabalho</span><button id="themeToggle" class="theme-toggle" type="button" aria-label="Ativar modo escuro" aria-pressed="false"><svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 13.1A8.7 8.7 0 0 1 10.9 3.2 8.8 8.8 0 1 0 20.8 13.1Z"/></svg><svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></svg><span id="themeToggleLabel">Claro</span></button><button id="apiStatus" class="status-pill connection-pill" type="button" data-connection="checking" aria-label="Verificando conexão com o servidor. Clique para tentar novamente." title="Clique para verificar a conexão novamente."><span class="connection-indicator" aria-hidden="true"></span><span class="connection-label" aria-live="polite">Conectando ao servidor…</span></button></div></header>
+    <header class="topbar"><button id="sidebarToggle" type="button" class="sidebar-toggle" aria-controls="mainSidebar" aria-expanded="false" aria-label="Abrir menu lateral"><span class="toggle-lines" aria-hidden="true"><span class="toggle-stroke"></span><span class="toggle-stroke"></span><span class="toggle-stroke"></span></span><span class="sidebar-toggle-label">Menu</span><svg class="sidebar-toggle-hint" viewBox="0 0 14 14" aria-hidden="true"><path d="m5 3 4 4-4 4"/></svg></button><div class="home-header-brand"><img src="./assets/razync-logo-original.png" alt="" width="32" height="32"><span><strong>Razync</strong><small>Automação contábil</small></span></div><div class="topbar-title"><span>Área de trabalho</span><strong id="currentSection">Empresas</strong></div><div class="topbar-actions"><span id="portfolioDate" class="home-header-date">Seu espaço de trabalho</span><a class="theme-toggle topbar-home-link" href="./" data-home-link aria-label="Tela inicial" title="Tela inicial"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg><span>Início</span></a><button id="themeToggle" class="theme-toggle" type="button" aria-label="Ativar modo escuro" aria-pressed="false"><svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 13.1A8.7 8.7 0 0 1 10.9 3.2 8.8 8.8 0 1 0 20.8 13.1Z"/></svg><svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></svg><span id="themeToggleLabel">Claro</span></button><button id="apiStatus" class="status-pill connection-pill" type="button" data-connection="checking" aria-label="Verificando conexão com o servidor. Clique para tentar novamente." title="Clique para verificar a conexão novamente."><span class="connection-indicator" aria-hidden="true"></span><span class="connection-label" aria-live="polite">Conectando ao servidor…</span></button></div></header>
 
     <main>
       <section id="companiesView" class="global-view active">
@@ -795,10 +795,10 @@
     </div>
   </dialog>
   <script src="./assets/js/config.js"></script>
-  <script src="./assets/js/site-access.js?v=workspace-files-1"></script>
+  <script src="./assets/js/site-access.js?v=idle-home-1"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
-  <script src="./assets/js/workspace-ui.js?v=standard-preview-20261109-1"></script>
+  <script src="./assets/js/workspace-ui.js?v=idle-home-1"></script>
   <script src="./assets/js/company-guides.js?v=context-help-20261106-1"></script>
   <script type="text/plain" data-lazy-tool="investments" src="./assets/js/bank-investments.js?v=20261020-8"></script>
   <script src="./assets/js/dom-utils.js?v=20261020-1"></script>
@@ -817,7 +817,7 @@
   <script src="./assets/js/base-investigation.js?v=direct-review-20261106-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
-  <script src="./assets/js/app.js?v=base-result-resume-1"></script>
+  <script src="./assets/js/app.js?v=idle-home-1"></script>
   <script src="./assets/js/migration.js?v=standard-preview-20261109-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>

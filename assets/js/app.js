@@ -1869,6 +1869,15 @@ document.querySelectorAll(".main-nav-btn").forEach(btn => {
   btn.addEventListener("click", () => showGlobalView(btn.dataset.view));
 });
 
+document.querySelectorAll("[data-home-link]").forEach(link => {
+  link.addEventListener("click", async event => {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    await showGlobalView("companies");
+    showPortfolioPicker();
+  });
+});
+
 function humanFileSize(bytes) {
   const size = Number(bytes || 0);
   if (size < 1024) return `${size} B`;
