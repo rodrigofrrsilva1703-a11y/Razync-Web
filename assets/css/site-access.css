@@ -3,13 +3,37 @@ body[data-site-locked] .app-shell {display:none!important}
 html[data-workspace-restoring] #siteAccess {display:none}
 html[data-workspace-restoring] .app-shell {visibility:hidden;opacity:0;pointer-events:none}
 html[data-workspace-restoring] #workspaceRestoring {
-  display:block;
+  display:flex;
+  align-items:center;
+  gap:9px;
   position:fixed;
-  inset:18px 0 auto;
-  text-align:center;
-  color:var(--muted);
+  inset:16px 12px auto;
+  width:max-content;
+  max-width:calc(100% - 24px);
+  margin-inline:auto;
+  padding:8px 12px;
+  border:1px solid var(--border,#dce3ee);
+  border-radius:999px;
+  background:var(--surface,#fff);
+  color:var(--muted,#536279);
   font-size:13px;
+  visibility:hidden;
+  animation:workspace-status-appear 0s 350ms forwards;
 }
+#workspaceRestoring::before {
+  content:"";
+  flex:none;
+  width:12px;
+  height:12px;
+  border:2px solid var(--border,#dce3ee);
+  border-top-color:var(--accent,#2857c8);
+  border-radius:50%;
+}
+@keyframes workspace-status-appear {to{visibility:visible}}
+@media(prefers-reduced-motion:no-preference) {
+  #workspaceRestoring::before {animation:workspace-status-spin .8s linear 350ms infinite}
+}
+@keyframes workspace-status-spin {to{transform:rotate(360deg)}}
 #siteAccess[hidden],#siteAccess [hidden],#siteAccessAccount[hidden]{display:none!important}
 #siteAccess{
   --login-bg:#f4f6fa;--login-card:#fff;--login-ink:#192338;--login-muted:#536279;
