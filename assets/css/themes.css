@@ -39,7 +39,7 @@ html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(h1,
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(p,small,.helper,.eyebrow,.company-row-meta,.company-row-action,.portfolio-date,.portfolio-eyebrow,.portfolio-access-kicker,.portfolio-entry-label,.portfolio-entry-quantity,.file-drop-hint,.preview-note,.preview-subtitle,.form-card-header small,.topbar-title,.directory-heading p,.tool-feature-list,.period-help,.base-cleanup,.fiscal-ai-card-description,.fiscal-ai-inline-status,.fiscal-ai-executive-kicker,.fiscal-ai-executive-coverage,.fiscal-ai-source,.fiscal-summary-top,.fiscal-workflow-button,.fiscal-account-resolution-heading,.bank-investments-note) {color:var(--dark-muted)!important}
 html[data-theme="dark"] :is(main,dialog) :where(*) {border-color:var(--border)!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.search-card,.directory-controls,.overview-card,.panel-head,.tool-card,.modern-form,.preview-sheet,.preview-results,.preview-table-scroll,.daily-table-scroll,.daily-review,.daily-table,.report-result,.result-card,.summary-card,.company-card,.portfolio-entry,.company-dialog,.preview-dialog,.admin-auth-dialog,.bank-investments,.fiscal-setup,.fiscal-results-card,.fiscal-summary,.fiscal-detail,.fiscal-investigation,.fiscal-ai,.fiscal-ai-account,.fiscal-account-dialog,.fiscal-account-dialog-body,.fiscal-ai-source,.fiscal-ai-evidence,.fiscal-account-resolution,.fiscal-document-panel,.fiscal-evidence-card) {background:var(--surface)!important;color:var(--text)!important;box-shadow:0 4px 20px #00000012}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.tool-intro,.period-card,.bank-selector,.bank-choice,.file-drop-shell,.preview-sheet-head,.preview-commandbar,.preview-table-tools,.daily-toolbar,.daily-summary,.preview-summary-item,.mini-metrics > span,.summary-metric,.form-card-icon,.tool-visual-icon,.overview-icon,.company-row-code,.company-row-action b,.portfolio-avatar,.portfolio-feature-icon,.portfolio-entry-action,.portfolio-entry-arrow,.file-selection,.file-selection-item,.tool-flow,.upload-progress,.upload-visual-status,.base-cleanup-confirmation,.base-periods,.base-period-bank,.base-period-item,.fiscal-next-step,.fiscal-summary-pending,.fiscal-review-toolbar,.fiscal-detail-metric-difference,.fiscal-ai-icon,.fiscal-ai-source-panel,.fiscal-ai-account-nav,.fiscal-ai-executive,.fiscal-ai-evidence,.fiscal-ai-account-resolution,.fiscal-ai-source.is-ready,.fiscal-ai-heading-tools .fiscal-ai-provider,.fiscal-ai-local-note,.fiscal-ai-method,.fiscal-ai-context,.fiscal-ai-document-summary) {background:var(--surface-2)!important;color:var(--dark-accent)!important;box-shadow:none!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.tool-intro,.period-card,.bank-selector,.bank-choice,.file-drop-shell,.preview-summary-item,.mini-metrics > span,.summary-metric,.form-card-icon,.tool-visual-icon,.overview-icon,.company-row-code,.company-row-action b,.portfolio-avatar,.portfolio-feature-icon,.portfolio-entry-action,.portfolio-entry-arrow,.file-selection,.file-selection-item,.tool-flow,.upload-progress,.upload-visual-status,.base-cleanup-confirmation,.base-periods,.base-period-bank,.base-period-item,.fiscal-next-step,.fiscal-summary-pending,.fiscal-review-toolbar,.fiscal-detail-metric-difference,.fiscal-ai-icon,.fiscal-ai-source-panel,.fiscal-ai-account-nav,.fiscal-ai-executive,.fiscal-ai-evidence,.fiscal-ai-account-resolution,.fiscal-ai-source.is-ready,.fiscal-ai-heading-tools .fiscal-ai-provider,.fiscal-ai-local-note,.fiscal-ai-method,.fiscal-ai-context,.fiscal-ai-document-summary) {background:var(--surface-2)!important;color:var(--dark-accent)!important;box-shadow:none!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {background:var(--surface-soft)!important;color:var(--text)!important;border-color:#595959!important;caret-color:#8ab8ff;box-shadow:none}
 html[data-theme="dark"] :is(input,textarea)::placeholder {color:var(--muted)!important;opacity:1}
 html[data-theme="dark"] input::file-selector-button {background:#252525;color:#e2e2e2;border:1px solid #505050;border-radius:7px;padding:7px 11px;margin-right:10px}
@@ -158,7 +158,6 @@ html[data-theme="dark"] #companyPanel .modern-form :is(input:not([type=file]):no
 html[data-theme="dark"] #companyPanel .modern-form input[type=file]:focus-visible {outline:none!important;border-color:transparent!important;box-shadow:none!important}
 
 /* Result cards are created after the upload; cover their inner surfaces too. */
-html[data-theme="dark"] .daily-reconciliation .daily-summary {background:transparent!important}
 html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) :is(.daily-summary > div,.daily-rule),
 html[data-theme="dark"] .preview-dialog-header,
 html[data-theme="dark"] #companyPanel :is(.tool-result-metrics > span,#baseStats > span) {background:var(--surface-2)!important;color:var(--text)!important;border-color:var(--border)!important;box-shadow:none!important}
@@ -323,12 +322,25 @@ html[data-theme="dark"] .app-shell #companyPanel#companyPanel .preparation-form 
  background:transparent!important;background-image:none!important;box-shadow:none!important;
 }
 
-/* Previews share the page canvas; only cards and tables own a surface. */
-html[data-theme="dark"] :is(#companyPanel#companyPanel,.preview-dialog.preview-dialog,#converterView#converterView,#ledgerView#ledgerView) :is(
- .preview-results,.streamlit-preview,.organizer-preview,.preview-summary-grid,
- .preview-sheet-switcher,.preview-intro,.preview-note
-) {
- background:transparent!important;background-image:none!important;box-shadow:none!important;
+/* Result layout wrappers share the page canvas. Tables and status badges keep their surfaces. */
+html[data-theme="dark"] :is(#companyPanel,#converterView,#ledgerView,#fiscalView,.preview-dialog) :is(
+ .standard-preview,.preview-results,.streamlit-preview,.organizer-preview,
+ .preview-summary-grid,.preview-sheet-switcher,.preview-intro,.preview-note,
+ .preview-sheet,.preview-table-scroll,.daily-summary,.daily-table-scroll,.statement-reading,
+ .fiscal-summary,.fiscal-results-card,.fiscal-table-scroll
+),
+html[data-theme="dark"] #fiscalView .fiscal-results-card :is(.fiscal-table,tbody) {
+ background:transparent!important;
+ box-shadow:none!important;
+}
+html[data-theme="dark"] .statement-reading > summary {
+ color:var(--text);
+}
+html[data-theme="dark"] #companyPanel .classification-coverage-track {
+ background:var(--surface-2);
+}
+html[data-theme="dark"] #companyPanel :is(.classification-coverage-heading,.classification-coverage-details) strong {
+ color:var(--text);
 }
 html[data-theme="dark"] :is(#companyPanel#companyPanel,.preview-dialog.preview-dialog,#converterView#converterView,#ledgerView#ledgerView) .summary-icon {
  background:transparent!important;background-image:none!important;box-shadow:none!important;
