@@ -43,15 +43,13 @@
     }
     context={prepared,company,options,onState,onReviewChange};subtitle.textContent=`Empresa ${company}`;
     onState?.('preparing',`${Number(summary.cobertura.pendentes).toLocaleString('pt-BR')} pendência(s) em preparação`);
-    const launcherCopy = node('span', null, 'base-launcher-copy');
-    launcherCopy.append(node('small', 'ASSISTENTE DA BASE'), node('strong', 'Revisar pendências'));
+    const launcherCopy = node('span', 'Revisar', 'base-launcher-copy');
     const icon = node('span', null, 'base-launcher-ai');
     icon.setAttribute('aria-hidden', 'true');
     icon.innerHTML = `
-      <svg viewBox="0 0 40 40" fill="none" focusable="false">
-        <circle class="base-ai-orbit" cx="20" cy="20" r="14" />
-        <g class="base-ai-orbit-point"><circle cx="20" cy="6" r="2" /></g>
-        <path class="base-ai-spark-main" d="M20 10c1.7 6.3 3.7 8.3 10 10-6.3 1.7-8.3 3.7-10 10-1.7-6.3-3.7-8.3-10-10 6.3-1.7 8.3-3.7 10-10Z" />
+      <svg viewBox="0 0 32 32" fill="none" focusable="false">
+        <path class="base-ai-spark-main" d="M15 5c1.9 7 5 10.1 12 12-7 1.9-10.1 5-12 12-1.9-7-5-10.1-12-12 7-1.9 10.1-5 12-12Z" />
+        <path class="base-ai-spark-accent" d="M26 2c.8 3 2 4.2 5 5-3 .8-4.2 2-5 5-.8-3-2-4.2-5-5 3-.8 4.2-2 5-5Z" />
       </svg>`;
     launcher.replaceChildren(icon, launcherCopy, node('b', String(summary.cobertura.pendentes), 'base-ai-launcher-count'));
     launcher.title = `Revisar ${summary.cobertura.pendentes} pendências da empresa ${company}`;
