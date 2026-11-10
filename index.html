@@ -268,7 +268,7 @@
             <div class="global-upload-grid"><div class="global-upload-field"><label for="ledgerStatement">Extratos bancários (vários meses)</label>
             <input id="ledgerStatement" type="file" accept=".pdf,.ofx,.csv,.xls,.xlsx" multiple></div><div class="global-upload-field"><label for="ledgerFile">Razão Domínio (uma ou várias competências)</label>
             <input id="ledgerFile" type="file" accept=".csv,.xls,.xlsx" multiple></div></div>
-            <div class="global-tool-controls"><fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="ledgerStart">De</label><input id="ledgerStart" type="date"></div><div><label for="ledgerEnd">Até</label><input id="ledgerEnd" type="date"></div></div><p>Sem datas: compara os meses existentes nos extratos e ignora os demais meses do Razão. Para incluir outros períodos, informe as duas datas.</p></fieldset><div class="global-tool-action"><button type="submit">Atualizar conferência</button></div></div>
+            <div class="global-tool-controls"><fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="ledgerStart">De</label><input id="ledgerStart" type="date"></div><div><label for="ledgerEnd">Até</label><input id="ledgerEnd" type="date"></div></div><p>Sem datas: compara os meses existentes nos extratos e ignora os demais meses do Razão. Para incluir outros períodos, informe as duas datas.</p></fieldset><div class="global-tool-action"><button id="ledgerSubmit" type="submit">Gerar prévia</button></div></div>
             <p id="ledgerMessage" class="helper"></p>
           </form>
         </div>
@@ -844,7 +844,7 @@
   <script src="./assets/js/base-investigation.js?v=saved-approvals-scope-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
-  <script src="./assets/js/app.js?v=ledger-multi-20261110-1"></script>
+  <script src="./assets/js/app.js?v=ledger-manual-20261110-1"></script>
   <script src="./assets/js/migration.js?v=standard-preview-20261109-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>

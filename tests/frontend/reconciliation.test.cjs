@@ -50,7 +50,7 @@ function harness(kind, banks = ['itau']) {
   vm.createContext(context);
   const start = kind === 'ledger' ? source.indexOf('function buildLedgerData()') : source.indexOf('let reconcilePreviewTimer;');
   const end = kind === 'ledger' ? source.indexOf('\nfunction brl(', start) : source.indexOf('\nfunction filterCompanies()', start);
-  vm.runInContext((kind === 'ledger' ? 'let ledgerPreviewTimer, ledgerPreviewController;\n' : '') + source.slice(start,end),context);
+  vm.runInContext((kind === 'ledger' ? 'let ledgerPreviewController;\n' : '') + source.slice(start,end),context);
   return {context,node,calls,renders,downloads,timers,submit:()=>node(kind === 'ledger' ? '#ledgerForm' : '#reconcileForm').submit({preventDefault(){}})};
 }
 
@@ -88,6 +88,21 @@ for (const kind of ['ledger','extrato']) {
     assert.equal(h.calls.length,1);
   });
 }
+
+test('Razão: alterar arquivos não envia a prévia e o botão bloqueia envios duplicados', async()=> {
+  const h=harness('ledger');
+  h.node('#ledgerForm').change();
+  assert.equal(h.timers.size,0);
+  assert.equal(h.calls.length,0);
+  assert.match(h.node('#ledgerMessage').textContent,/Gerar prévia/);
+
+  const pending=h.submit();
+  assert.equal(h.node('#ledgerSubmit').disabled,true);
+  await h.submit();
+  await pending;
+  assert.equal(h.calls.length,1);
+  assert.equal(h.node('#ledgerSubmit').disabled,false);
+});
 
 test('extrato: resposta atrasada não preenche outra empresa',async()=> {
   const h=harness('extrato'); let resolve;

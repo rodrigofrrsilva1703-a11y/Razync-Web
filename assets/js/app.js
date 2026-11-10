@@ -2013,7 +2013,6 @@ document.addEventListener("change", event => {
   updateFileSelection(input);
 });
 
-let ledgerPreviewTimer;
 let ledgerPreviewController;
 
 function buildLedgerData() {
@@ -2034,32 +2033,20 @@ function ledgerPeriod() {
   return {data_inicial:start,data_final:end};
 }
 
-function scheduleLedgerPreview() {
-  clearTimeout(ledgerPreviewTimer);
+$("#ledgerForm")?.addEventListener("change", () => {
   ledgerPreviewController?.abort();
-  const statement = $("#ledgerStatement").files[0];
-  const ledger = $("#ledgerFile").files[0];
-  const target = $("#ledgerResult");
   clearToolResult("#ledgerResult");
-  if (!statement || !ledger) {
-    if (target) {
-      target.hidden = true;
-      target.replaceChildren();
-    }
-    $("#ledgerMessage").textContent = "";
-    return;
-  }
-  try { ledgerPeriod(); }
-  catch (error) { $("#ledgerMessage").textContent = error.message; return; }
-  $("#ledgerMessage").textContent = "Arquivos prontos. Montando conciliação diária…";
-  ledgerPreviewTimer = setTimeout(() => $("#ledgerForm").requestSubmit(), 550);
-}
-
-$("#ledgerForm")?.addEventListener("change", scheduleLedgerPreview);
+  $("#ledgerSubmit").disabled = false;
+  $("#ledgerMessage").textContent = $("#ledgerStatement").files.length && $("#ledgerFile").files.length
+    ? "Arquivos prontos. Clique em Gerar prévia para iniciar."
+    : "";
+});
 
 $("#ledgerForm")?.addEventListener("submit", async event => {
   event.preventDefault();
-  clearTimeout(ledgerPreviewTimer);
+  const button = $("#ledgerSubmit");
+  if (button.disabled) return;
+
   ledgerPreviewController?.abort();
   clearToolResult("#ledgerResult");
   const controller = new AbortController();
@@ -2072,6 +2059,7 @@ $("#ledgerForm")?.addEventListener("submit", async event => {
 
   try {
     const snapshot = buildLedgerData();
+    button.disabled = true;
     msg.textContent = "Lendo " + $("#ledgerStatement").files.length + " extrato(s) e " +
       $("#ledgerFile").files.length + " arquivo(s) do Razão…";
     const response = await fetch(`${API()}/api/v1/conciliacao-razao/preview`, {
@@ -2106,9 +2094,10 @@ $("#ledgerForm")?.addEventListener("submit", async event => {
       (info.periodo_automatico ? excluded : " Intervalo informado aplicado aos dois lados.");
   } catch (error) {
     if (error.name === "AbortError" || controller.signal.aborted) return;
-    $("#ledgerResult").hidden = true;
-    $("#ledgerResult").replaceChildren();
+    clearToolResult("#ledgerResult");
     msg.textContent = error.message;
+  } finally {
+    if (ledgerPreviewController === controller) button.disabled = false;
   }
 });
 
