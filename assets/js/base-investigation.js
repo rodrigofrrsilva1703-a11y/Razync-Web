@@ -200,8 +200,9 @@
     const candidateAccounts=s=>[...new Set([s.conta_sugerida,...(s.evidencias || []).map(e=>e.conta)].filter(Boolean))];
     const category=s=>s.conta_sugerida?'single':candidateAccounts(s).length>1?'conflict':candidateAccounts(s).length===1?'single':'none';
     const rank=s=>({single:0,conflict:1,none:2})[category(s)];
+    const resultEvidence=JSON.stringify([result.sugestoes,result.catalogo_contas]);
     const suggestions=[...result.sugestoes].sort((a,b)=>rank(a)-rank(b) || Number(priority.has(b.grupo))-Number(priority.has(a.grupo)));
-    let active=null,filter='all',query='',grouped=true,completed=false,applying=false;const undoStack=[];let confirmedExport=null;
+    let active=null,filter='all',query='',grouped=true,completed=false,applying=false;const undoStack=[];let savedReview={revisions:[],learn:false};
     function rememberDecision(items){undoStack.push(items.map(c=>({c,account:c.account.value,approved:c.select.checked,deferred:c.deferred,reviewed:c.reviewed})));}
     const search=document.createElement('input');search.type='search';search.placeholder='Pesquisar histórico, banco, conta ou valor';search.setAttribute('aria-label','Pesquisar pendências');
     search.addEventListener('input',()=>{query=normalized(search.value);updateQueue();showDetail();});
@@ -215,7 +216,13 @@
     const layout=node('div',null,'base-review-layout'),queue=node('nav',null,'base-review-queue'),detail=node('section',null,'base-review-detail');
     queue.setAttribute('aria-label','Pendências para revisar');detail.setAttribute('aria-label','Comparação do lançamento com a base');const sidebar=node('aside',null,'base-review-sidebar');sidebar.setAttribute('aria-label','Pesquisar e filtrar pendências');sidebar.append(node('h3','Fila de trabalho'),groupToggle,queue);const toolbar=node('div',null,'base-review-toolbar');toolbar.setAttribute('aria-label','Pesquisar e filtrar revisão');toolbar.append(tools,filters);layout.append(sidebar,detail);body.append(toolbar,layout);
     let draftEnabled=false;
-    function saveDraft(){if(!draftEnabled || !current.draftKey || completed || applying)return;try{sessionStorage.setItem(current.draftKey,JSON.stringify({time:Date.now(),rows:controls.map(c=>({key:rowKey(c),account:c.account.value,approved:c.select.checked,deferred:c.deferred}))}));}catch{}}
+    const approvalSnapshot=()=>({
+      revisions:controls.filter(c=>c.select.checked).map(c=>({_aba:c.s._aba,_linha:c.s._linha,'Conta da contrapartida':c.account.value.trim()})),
+      learn:learn.checked
+    });
+    const hasUnsavedApprovals=()=>JSON.stringify(approvalSnapshot())!==JSON.stringify(savedReview)
+      && (controls.some(c=>c.select.checked) || savedReview.revisions.length>0);
+    function saveDraft(){if(!draftEnabled || !current.draftKey || completed || applying)return;try{sessionStorage.setItem(current.draftKey,JSON.stringify({time:Date.now(),savedReview,learn:learn.checked,rows:controls.map(c=>({key:rowKey(c),account:c.account.value,approved:c.select.checked,deferred:c.deferred}))}));}catch{}}
     const message=node('p',null,'helper');message.setAttribute('role','status');
     const matchesFilter=(c,value)=>value==='all' || value==='approved' && c.select.checked || value==='deferred' && c.deferred && !c.select.checked || category(c.s)===value;
     const matchesSearch=c=>!query || normalized([c.s['Histórico'],c.s._aba,c.account.value,c.s.Valor,String(c.s.Valor).replace('.',','),Number(c.s.Valor).toLocaleString('pt-BR',{minimumFractionDigits:2}),displayDate(c.s.Data)].join(' ')).includes(query);
@@ -280,17 +287,19 @@
       if(!active || active.select.checked || completed || applying)return;
       if(!validAccount(active)){message.textContent='Escolha uma conta histórica compatível antes de aprovar.';active.account.focus();return;}
       rememberDecision([active]);active.select.checked=true;active.reviewed=true;active.deferred=false;
-      message.textContent='Aprovado. Baixe o Excel ao terminar a revisão.';go(1,false,true);
+      message.textContent='Aprovado. Salve as aprovações antes de sair.';go(1,false,true);
     }
     const quickActions=node('div',null,'base-workbar-actions');
     const skipTop=button('Adiar',()=>go(1,true,true)),approveTop=button('Aprovar e próximo',approveActive);
     approveTop.className='base-review-confirm';
     const undoLast=button('Desfazer última aprovação',()=>{if(completed || applying)return;const last=undoStack.pop();if(!last)return;for(const row of last){Object.assign(row.c,{reviewed:row.reviewed,deferred:row.deferred});row.c.account.value=row.account;row.c.select.checked=row.approved;}active=last[0].c;filter='all';query='';search.value='';updateQueue();showDetail();message.textContent='Última aprovação desfeita.';});undoLast.disabled=true;quickActions.append(undoLast);workbar.append(quickActions);
     function updateQueue(){
-      confirmedExport=null;if(typeof exportReview!=='undefined')exportReview.hidden=true;undoLast.disabled=!undoStack.length || completed || applying;undoLast.hidden=!undoStack.length;queue.replaceChildren();const items=visible();if(!items.includes(active))active=items[0] || null;
-      const approved=controls.filter(c=>c.select.checked).length;current.onReviewChange?.(approved);
+      undoLast.disabled=!undoStack.length || completed || applying;undoLast.hidden=!undoStack.length;queue.replaceChildren();const items=visible();if(!items.includes(active))active=items[0] || null;
+      const approved=controls.filter(c=>c.select.checked).length;current.onReviewChange?.(savedReview.revisions.length,hasUnsavedApprovals());
       progress.textContent=`${quantity(approved,'aprovado')} · ${quantity(controls.filter(c=>c.deferred && !c.select.checked).length,'adiado')} · ${quantity(controls.filter(c=>!c.select.checked && !c.deferred).length,'pendente')}`;approveTop.disabled=!active || active.select.checked || !validAccount(active) || completed || applying;skipTop.disabled=!active || active.select.checked || completed || applying;
-      if(typeof apply!=='undefined'){apply.textContent=completed?'Revisões aplicadas':`Gerar Excel com ${quantity(approved,'revisão','revisões')}`;apply.disabled=completed || applying || !approved;}
+      save.hidden=!hasUnsavedApprovals() && !savedReview.revisions.length;
+      save.disabled=completed || applying || !hasUnsavedApprovals();
+      save.textContent=save.disabled && savedReview.revisions.length?'Aprovações salvas':'Salvar aprovações';
       filterButtons.forEach(f=>{f.control.setAttribute('aria-pressed',String(filter===f.value));const count=controls.filter(c=>matchesFilter(c,f.value) && matchesSearch(c)).length;f.control.replaceChildren(node('span',f.label),node('b',String(count),'base-filter-count'));});
       saveDraft();
       if(!items.length){queue.append(node('p','Nenhuma pendência neste filtro.'));return;}
@@ -385,7 +394,7 @@
             const eligible=new Set(equivalents(c));
             if(chosen.some(item=>!eligible.has(item.other) || item.other.select.checked)){message.textContent='O grupo mudou. Confira a seleção novamente.';return;}
             rememberDecision(chosen.map(item=>item.other));for(const {other} of chosen){other.account.value=account;other.select.checked=true;other.reviewed=true;other.deferred=false;}
-            message.textContent=`${chosen.length} aprovações registradas. Baixe o Excel ao terminar.`;
+            message.textContent=`${chosen.length} aprovações registradas. Salve as aprovações antes de sair.`;
             active=visible().find(other=>!other.select.checked && !other.deferred) || controls.find(other=>!other.select.checked && !other.deferred) || active;updateQueue();showDetail();
           });confirm.disabled=completed || applying;groupBox.append(confirm,button('Fechar grupo',()=>{groupBox.hidden=true;}));
         });groupOpen.disabled=completed || applying;actions.append(groupOpen);reading.append(groupBox,comparison);
@@ -407,34 +416,64 @@
     active=controls[0];
     const notice=node('p',result.limitacoes.join(' '),'base-review-limitations');const assistance=node('details',null,'base-review-options');assistance.append(node('summary','Sobre a comparação e a IA opcional'),notice,aiBar);body.append(assistance);
     const learn=document.createElement('input');learn.type='checkbox';learn.checked=false;const label=node('label',null,'base-investigation-learn');label.title='Aprender na Base Inteligente somente as revisões aprovadas, ao gerar o Excel.';label.append(learn,document.createTextNode(' Ensinar as aprovações à base'));assistance.append(node('p','O aprendizado é opcional: somente as linhas aprovadas são ensinadas à base, ao gerar o Excel.'));body.append(label);
-    const footer=node('div',null,'base-review-footer');const exportReview=node('section',null,'base-export-review');exportReview.hidden=true;exportReview.setAttribute('aria-label','Conferir alterações antes de gerar Excel');body.append(exportReview);
+    const footer=node('div',null,'base-review-footer');
+    const save=button('Salvar aprovações',()=>{
+      if(save.disabled)return;
+      const snapshot=approvalSnapshot();
+      if(controls.some(c=>c.select.checked && !validAccount(c))){
+        message.textContent='Confira a conta contábil de todas as linhas aprovadas.';
+        return;
+      }
+      savedReview=snapshot;
+      draftEnabled=true;
+      updateQueue();
+      message.textContent=snapshot.revisions.length
+        ? 'Aprovações salvas. Feche o Assistente e baixe o Excel na tela da Base Inteligente.'
+        : 'Alterações salvas. Nenhuma aprovação será incluída no Excel.';
+    });
+    save.className='base-review-confirm';
+    learn.addEventListener('change',updateQueue);
     let reviewedBlob=null;
-    const generateReview=async(direct=false)=>{
+    const generateReview=async()=>{
       if(applying && !completed)throw Error('Aguarde a geração do Excel em andamento.');
       if(completed)return;
-      const revisions=controls.filter(c=>c.select.checked).map(c=>({_aba:c.s._aba,_linha:c.s._linha,'Conta da contrapartida':c.account.value.trim()}));
-      if(!revisions.length){message.textContent='Selecione as linhas que você revisou e deseja aprovar.';return;}
-      if(revisions.some(r=>!/^\d+$/.test(r['Conta da contrapartida']))){message.textContent='Informe a conta contábil de todas as linhas aprovadas.';return;}
-      const signature=JSON.stringify({revisions,learn:learn.checked});
-      if(!direct && confirmedExport!==signature){exportReview.replaceChildren(node('strong','Confira antes de gerar o Excel'),node('p',`${revisions.length} linha(s) aprovada(s) serão alteradas. ${controls.filter(c=>!c.select.checked).length} permanecerão pendentes. Aprendizado: ${learn.checked?'ativado somente para as linhas aprovadas':'desativado'}.`));for(const r of revisions)exportReview.append(node('small',`${r._aba} · linha ${r._linha} → conta ${r['Conta da contrapartida']}`));exportReview.append(button('Confirmar e gerar Excel',()=>{confirmedExport=signature;apply.click?apply.click():apply.events.click();}),button('Voltar à revisão',()=>{exportReview.hidden=true;confirmedExport=null;}));exportReview.hidden=false;exportReview.scrollIntoView?.({block:'nearest',behavior:'smooth'});return;}
-      confirmedExport=null;exportReview.hidden=true;const remember=learn.checked;applying=true;controls.forEach(c=>{c.select.disabled=true;c.account.disabled=true;});learn.disabled=true;priorityController?.abort();aiButton.disabled=true;apply.disabled=true;updateQueue();controller=new AbortController();const signal=controller.signal;message.textContent='Validando revisões e gerando Excel…';
+      const {revisions,learn:remember}=savedReview;
+      applying=true;
+      controls.forEach(c=>{c.select.disabled=true;c.account.disabled=true;});
+      learn.disabled=true;priorityController?.abort();aiButton.disabled=true;updateQueue();showDetail();
+      controller=new AbortController();const signal=controller.signal;
+      message.textContent='Validando aprovações salvas e gerando Excel…';
       const data=new FormData();data.append('file',current.blob,'classificado.xlsx');data.append('revisoes_json',JSON.stringify(revisions));data.append('investigacao_token',result.token);data.append('aprender',String(remember));
       try{
-        const response=await fetch(`${API()}/api/v1/base-inteligente/${current.company}/revisar`,{method:'POST',body:data,signal});
-        if(!response.ok)throw Error(await responseError(response));
+        const submit=()=>fetch(`${API()}/api/v1/base-inteligente/${current.company}/revisar`,{method:'POST',body:data,signal});
+        let response=await submit();
+        if(!response.ok){
+          const error=await responseError(response);
+          if(!error.startsWith('Investigação expirada'))throw Error(error);
+          const refresh=new FormData();refresh.append('file',current.blob,'classificado.xlsx');
+          refresh.append('options_json',JSON.stringify(current.options));refresh.append('usar_ia','false');
+          const investigation=await fetch(`${API()}/api/v1/base-inteligente/${current.company}/sugerir-pendentes`,{method:'POST',body:refresh,signal});
+          if(!investigation.ok)throw Error(await responseError(investigation));
+          const fresh=await investigation.json();
+          if(!fresh.token || fresh.token===result.token || JSON.stringify([fresh.sugestoes,fresh.catalogo_contas])!==resultEvidence)
+            throw Error('As referências da base mudaram. Confira as aprovações em uma nova classificação.');
+          result.token=fresh.token;
+          data.set('investigacao_token',result.token);
+          response=await submit();
+          if(!response.ok)throw Error(await responseError(response));
+        }
         const summary=JSON.parse(response.headers.get('x-razync-summary') || '{}');const blob=await response.blob();
         if(signal.aborted || version!==generation)return;
         reviewedBlob=blob;
         // Freeze the completed approval, preventing accidental repeated learning.
-        controls.forEach(c=>{c.select.disabled=true;c.account.disabled=true;});learn.disabled=true;apply.disabled=true;aiButton.disabled=true;priorityController?.abort();
+        controls.forEach(c=>{c.select.disabled=true;c.account.disabled=true;});learn.disabled=true;aiButton.disabled=true;priorityController?.abort();
         completed=true;try{if(current.draftKey)sessionStorage.removeItem(current.draftKey);}catch{}updateQueue();showDetail();
-        renderClassificationCoverage(summary.cobertura);
         message.textContent=`Revisões aplicadas: ${summary.aplicadas}. Padrões aprendidos: ${summary.aprendizados || 0}.`;
         current.onState?.('complete',`${Number(summary.aplicadas)||0} revisão(ões) aplicada(s)`);
-        const download=button('Baixar Excel revisado',()=>downloadBlob(new Response(blob),`RAZYNC_${current.company}_REVISADO.xlsx`));download.className='preview-download';quickActions.append(download);
         // Preview refresh is optional: a ready workbook must be downloadable immediately.
         void (async()=>{
           try {
+            renderClassificationCoverage(summary.cobertura);
             const previewBody=new FormData();previewBody.append('file',blob,'revisado.xlsx');
             const previewResponse=await fetch(`${API()}/api/v1/modelo-preview`,{method:'POST',body:previewBody,signal});
             if(signal.aborted || version!==generation)return;
@@ -442,28 +481,38 @@
             const preview=await previewResponse.json();
             if(signal.aborted || version!==generation)return;
             showWorkflowPreview(preview,document.querySelector('#classificationPreview'));
-            current.onReviewChange?.(controls.filter(c=>c.select.checked).length);
+            current.onReviewChange?.(savedReview.revisions.length,false);
           } catch(error) {
             if(!signal.aborted && version===generation)message.textContent='Excel revisado pronto para baixar. A prévia não pôde ser atualizada.';
           }
         })();
-      }catch(error){if(signal.aborted || version!==generation)return;message.textContent=completed?'Excel revisado gerado. A prévia não pôde ser atualizada; use Baixar Excel revisado.':error.message;if(!completed){applying=false;controls.forEach(c=>{c.select.disabled=false;c.account.disabled=false;});learn.disabled=false;updateQueue();showDetail();}if(direct && !completed)throw error;}
-    };
-    const apply=button('Aplicar revisões e atualizar Excel',async()=>{
-      try {
-        await generateReview();
-        if(reviewedBlob && version===generation)await downloadBlob(new Response(reviewedBlob),`RAZYNC_${current.company}_REVISADO.xlsx`);
-      } catch(error) {
-        if(version===generation)message.textContent=error.message || 'Não foi possível baixar o Excel revisado.';
+      }catch(error){
+        if(signal.aborted || version!==generation)return;
+        message.textContent=error.message;
+        throw error;
+      }finally{
+        if(version===generation && !completed){
+          applying=false;controls.forEach(c=>{c.select.disabled=false;c.account.disabled=false;});
+          learn.disabled=false;aiButton.disabled=Boolean(priority.size);updateQueue();showDetail();
+        }
       }
-    });
-    current.download=async()=>{if(!controls.some(c=>c.select.checked))return false;await generateReview(true);if(version!==generation || !reviewedBlob)throw Error('A revisão mudou. Classifique novamente antes de baixar.');await downloadBlob(new Response(reviewedBlob),`RAZYNC_${current.company}_REVISADO.xlsx`);return true;};
-    quickActions.append(apply);footer.append(message);body.append(footer);
+    };
+    current.download=async()=>{
+      if(hasUnsavedApprovals())throw Error('Salve as aprovações no Assistente antes de baixar o Excel.');
+      if(!savedReview.revisions.length)return false;
+      await generateReview();
+      if(version!==generation || !reviewedBlob)throw Error('A revisão mudou. Classifique novamente antes de baixar.');
+      await downloadBlob(new Response(reviewedBlob),`RAZYNC_${current.company}_REVISADO.xlsx`);
+      return true;
+    };
+    quickActions.append(save);footer.append(message);body.append(footer);
     let priorDraft;try{priorDraft=JSON.parse(sessionStorage.getItem(current.draftKey));}catch{}
     if(current.draftKey && priorDraft?.rows?.length && Date.now()-priorDraft.time<86400000){
       const resume=node('div',null,'base-draft-notice');resume.append(node('p','Há uma revisão salva nesta aba para este arquivo e estas evidências. Nenhum Excel será alterado ao retomá-la.'),button('Retomar revisão salva',()=>{
         const rows=new Map(priorDraft.rows.map(row=>[row.key,row]));
         for(const c of controls){const row=rows.get(rowKey(c));if(!row)continue;c.account.value=String(row.account || '');c.select.checked=Boolean(row.approved && validAccount(c));c.deferred=Boolean(row.deferred && !c.select.checked);}
+        if(priorDraft.savedReview?.revisions?.length)savedReview=priorDraft.savedReview;
+        learn.checked=Boolean(priorDraft.learn ?? savedReview.learn);
         draftEnabled=true;resume.hidden=true;updateQueue();showDetail();
       }),button('Começar nova revisão',()=>{draftEnabled=true;resume.hidden=true;saveDraft();}));body.prepend(resume);
     }else draftEnabled=true;

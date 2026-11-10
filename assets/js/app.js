@@ -1472,18 +1472,31 @@ function renderClassifiedWorkbook(prepared, summary, classifyOptions, companyCod
   globalThis.RazyncBaseInvestigation?.mount({
     prepared,company:companyCode,options:classifyOptions,summary,
     onState:(state,message)=>window.RazyncBaseWorkflow?.setReview(state,message),
-    onReviewChange:approved=>{
+    onReviewChange:(saved,unsaved)=>{
       if(controller.signal.aborted || selected?.codigo!==companyCode)return;
-      download.textContent=approved?`Baixar Excel com ${approved} revisão(ões)`:'Baixar Excel classificado';
-      download.title=approved?'Inclui as contas aprovadas no assistente.':'Baixar o resultado da classificação.';
+      download.textContent=saved?'Baixar Excel revisado':'Baixar Excel classificado';
+      download.title=unsaved?'Salve as aprovações no Assistente antes de baixar.':saved
+        ? `Inclui ${saved} aprovação(ões) salva(s) no Assistente.`
+        : 'Baixar o resultado da classificação.';
       const actions=target.querySelector('.preview-primary-actions');if(actions && !actions.contains(download))actions.append(download);
     }
   });
   download.addEventListener("click", async () => {
+    const message=$("#classifyMessage");
     download.disabled=true;
-    try { const reviewed=await globalThis.RazyncBaseInvestigation?.download(companyCode);if(!reviewed)await prepared.download(); }
-    catch (error) { if (error.name !== "AbortError" && selected?.codigo === companyCode) $("#classifyMessage").textContent=error.message; }
-    finally { download.disabled=false; }
+    message.textContent="Preparando o Excel…";
+    try {
+      const reviewed=await globalThis.RazyncBaseInvestigation?.download(companyCode);
+      if(controller.signal.aborted || selected?.codigo!==companyCode)return;
+      if(!reviewed)await prepared.download();
+      if(!controller.signal.aborted && selected?.codigo===companyCode)
+        message.textContent=reviewed?"Excel revisado enviado para download.":"Excel classificado enviado para download.";
+    } catch(error) {
+      if(error.name!=="AbortError" && !controller.signal.aborted && selected?.codigo===companyCode)
+        message.textContent=error.message || "Não foi possível baixar o Excel. Tente novamente.";
+    } finally {
+      download.disabled=false;
+    }
   });
   target.querySelector(".preview-primary-actions").append(download);
   $("#classifyMessage").textContent = "Classificação concluída. Confira as linhas classificadas, as pendências e a prévia antes de baixar.";
