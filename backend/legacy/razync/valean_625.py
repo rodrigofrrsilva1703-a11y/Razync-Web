@@ -187,7 +187,7 @@ def processar_bb_625(conteudo: bytes) -> pd.DataFrame:
     return _finalizar(registros, "Banco do Brasil")
 
 
-def _texto_ocr_sicredi(conteudo: bytes) -> str:
+def _texto_ocr_sicredi(conteudo: bytes, *, dpi: int = 400) -> str:
     import csv
     import os
     import subprocess
@@ -220,7 +220,7 @@ def _texto_ocr_sicredi(conteudo: bytes) -> str:
         for pagina in documento:
             if pagina.rect.width * pagina.rect.height > 1_000_000:
                 raise ValueError("Página grande demais para leitura OCR do Sicredi.")
-            pix = pagina.get_pixmap(dpi=400, colorspace=fitz.csRGB, alpha=False, annots=False)
+            pix = pagina.get_pixmap(dpi=dpi, colorspace=fitz.csRGB, alpha=False, annots=False)
             rgb = np.frombuffer(pix.samples_mv, dtype=np.uint8).reshape(pix.height, pix.width, 3)
             imagem = Image.new("L", (pix.width, pix.height))
             # Limpa as marcas azuis em faixas para evitar cópias da página inteira.
@@ -329,14 +329,33 @@ def _sicredi_ocr_registros(texto: str) -> pd.DataFrame:
 
 
 def ler_sicredi_sem_texto(conteudo: bytes, *, titular: str | None = None, opcional=False):
-    texto = _texto_ocr_sicredi(conteudo)
-    cabecalho = _normalizar(texto.split("SALDO", 1)[0])
-    if not all(termo in cabecalho for termo in ("sicredi", "associado:", "cooperativa:")):
+    def ler(dpi: int):
+        texto = _texto_ocr_sicredi(conteudo, dpi=dpi)
+        cabecalho = _normalizar(texto.split("SALDO", 1)[0])
+        if not all(termo in cabecalho for termo in ("sicredi", "associado:", "cooperativa:")):
+            return None
+        return texto
+
+    texto = ler(400)
+    if texto is None:
         if opcional:
             return None
         raise ValueError("O PDF sem texto não foi identificado como extrato Sicredi.")
     _validar_titular_sicredi(texto, titular)
-    return _sicredi_ocr_registros(texto)
+    try:
+        return _sicredi_ocr_registros(texto)
+    except ValueError as primeira_falha:
+        # Alguns escaneamentos confundem dígitos e separadores a 400 DPI.
+        try:
+            nova_leitura = ler(350)
+            if nova_leitura is None:
+                raise primeira_falha
+            _validar_titular_sicredi(nova_leitura, titular)
+            return _sicredi_ocr_registros(nova_leitura)
+        except ValueError as segunda_falha:
+            if segunda_falha is primeira_falha:
+                raise
+            raise primeira_falha from segunda_falha
 
 
 def _validar_titular_sicredi(texto, titular):
