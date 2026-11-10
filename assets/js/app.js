@@ -1668,7 +1668,7 @@ $$('.company-filter').forEach(button=>button.addEventListener('click',()=>{
 backButton.addEventListener("click", closeCompany);
 
 async function fetchAfterWake(url, {onRetry} = {}) {
-  await window.RazyncSiteAccess?.ready;
+  await globalThis.RazyncSiteAccess?.ready;
   // Railway em repouso pode demorar a responder. Limite cada tentativa
   // para nunca deixar a interface indefinidamente em "carregando".
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -1771,7 +1771,7 @@ async function checkApi() {
 apiStatus.addEventListener("click", async () => {
   checkApi();
   if (!companies.length) await loadCompanies();
-  window.RazyncWorkspaceResume?.retry();
+  globalThis.RazyncWorkspaceResume?.retry();
 });
 
 initializeTaskUI();
