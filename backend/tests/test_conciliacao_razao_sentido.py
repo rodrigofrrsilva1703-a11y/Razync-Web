@@ -24,7 +24,7 @@ def test_conciliacao_razao_bancario_debito_entrada_credito_saida():
         {"DATA": "08/04/2026", "VALOR": -350, "HISTÓRICO": "Débito fornecedor"},
     ])
     diario, resumo = conciliar_razao(extrato, razao)
-    assert diario.iloc[0]["SITUAÇÃO"] == "CONFERE", f"Extrato={extrato.to_dict(orient=\'records\')} Razao={razao.to_dict(orient=\'records\')} Diario={diario.to_dict(orient=\'records\')}"
+    assert diario.iloc[0]["SITUAÇÃO"] == "CONFERE", "Extrato={} Razao={} Diario={}".format(extrato.to_dict(orient="records"), razao.to_dict(orient="records"), diario.to_dict(orient="records"))
     assert resumo["dias_conferidos"] == 1
     assert resumo["entradas_razao"] == 1500
     assert resumo["saidas_razao"] == 350
