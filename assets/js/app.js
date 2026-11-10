@@ -1355,16 +1355,21 @@ function renderClassificationCoverage(coverage) {
   };
   const done = count("classificadas");
   const pending = total - done;
-  const percent = total ? Math.round(done / total * 1000) / 10 : 0;
+  const precision = Math.max(1, Math.ceil(Math.log10(total || 1)) - 2);
+  const percent = total ? Number((done / total * 100).toFixed(precision)) : 0;
   const formatNumber = value => value.toLocaleString("pt-BR");
   const formatPercent = value => value.toLocaleString("pt-BR", {
-    minimumFractionDigits: 1, maximumFractionDigits: 1
+    minimumFractionDigits: 1, maximumFractionDigits: precision
   });
   $("#classificationCoveragePercent").textContent = total ? `${formatPercent(percent)}%` : "—";
   $("#classificationCoverageFraction").textContent = `${formatNumber(done)} de ${formatNumber(total)} linhas`;
   $("#classificationCoverageNew").textContent = formatNumber(count("novas_classificadas"));
   $("#classificationCoveragePrevious").textContent = formatNumber(count("ja_classificadas"));
   $("#classificationCoveragePending").textContent = formatNumber(pending);
+  const saved = count("aprovacoes_salvas");
+  $("#classificationCoverageSaved").textContent = saved
+    ? `${formatNumber(saved)} ${saved === 1 ? "aprovação salva" : "aprovações salvas"} · baixe o Excel revisado.`
+    : "";
   $("#classificationCoverageFill").style.width = `${percent}%`;
   const bar = $("#classificationCoverageProgress");
   if (total) {
@@ -1469,11 +1474,22 @@ function renderClassifiedWorkbook(prepared, summary, classifyOptions, companyCod
     : "Nenhuma pendência encontrada");
   const download = document.createElement("button");download.type="button";download.className="preview-download";
   download.textContent="Baixar Excel classificado";
+  let displayedApprovals=0;
   globalThis.RazyncBaseInvestigation?.mount({
     prepared,company:companyCode,options:classifyOptions,summary,
     onState:(state,message)=>window.RazyncBaseWorkflow?.setReview(state,message),
     onReviewChange:(saved,unsaved)=>{
       if(controller.signal.aborted || selected?.codigo!==companyCode)return;
+      if(saved!==displayedApprovals){
+        displayedApprovals=saved;
+        const coverage=summary.cobertura;
+        renderClassificationCoverage({
+          ...coverage,
+          classificadas:Number(coverage.classificadas || 0)+saved,
+          novas_classificadas:Number(coverage.novas_classificadas || 0)+saved,
+          aprovacoes_salvas:saved
+        });
+      }
       download.textContent=saved?'Baixar Excel revisado':'Baixar Excel classificado';
       download.title=unsaved?'Salve as aprovações no Assistente antes de baixar.':saved
         ? `Inclui ${saved} aprovação(ões) salva(s) no Assistente.`

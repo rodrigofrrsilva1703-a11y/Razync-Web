@@ -68,3 +68,36 @@ test('review step opens the prepared assistant and company reset clears progress
   assert.equal(state.nodes.baseReviewStepStatus.textContent,'Pendências serão preparadas automaticamente');
   assert.equal(state.steps[0].attrs['aria-current'],'step');
 });
+
+test('indicador da planilha acompanha as aprovações salvas sem aguardar o Excel',()=>{
+  const source=fs.readFileSync('assets/js/app.js','utf8');
+  const extract=(start,end)=>source.slice(source.indexOf('function '+start+'('),source.indexOf('function '+end+'('));
+  const nodes=new Map();
+  const element=selector=>{
+    if(!nodes.has(selector))nodes.set(selector,Object.assign(new Element(),{style:{},append(){},contains(){return false;},querySelector:element}));
+    return nodes.get(selector);
+  };
+  let onReviewChange;
+  const context={
+    $:element,selected:{codigo:1001},showWorkflowPreview(){},
+    document:{createElement:()=>new Element()},window:{},
+    RazyncBaseInvestigation:{mount:options=>{onReviewChange=options.onReviewChange;}}
+  };
+  vm.createContext(context);
+  vm.runInContext(extract('renderClassificationCoverage','cancelClassificationPreview')+extract('renderClassifiedWorkbook','reconcileSelectionState'),context);
+  const controller=new AbortController();
+  context.renderClassifiedWorkbook({}, {cobertura:{total:245,classificadas:0,pendentes:245}}, {}, 1001,controller);
+  const percent=element('#classificationCoveragePercent');
+  assert.equal(percent.textContent,'0,0%');
+  onReviewChange(0,true);
+  assert.equal(percent.textContent,'0,0%');
+  onReviewChange(2,false);
+  assert.equal(percent.textContent,'0,8%');
+  assert.equal(element('#classificationCoveragePending').textContent,'243');
+  assert.match(element('#classificationCoverageSaved').textContent,/2 aprovações salvas/);
+  onReviewChange(2,true);
+  assert.equal(percent.textContent,'0,8%');
+  onReviewChange(0,false);
+  assert.equal(percent.textContent,'0,0%');
+  assert.equal(element('#classificationCoverageSaved').textContent,'');
+});
