@@ -23,11 +23,11 @@ html[data-theme="dark"] .theme-sun {display:block}
 #portfolioPicker .portfolio-entry-arrow {background:#dfeaf4}
 #portfolioPicker .portfolio-entry:hover .portfolio-entry-action {background:transparent}
 html[data-theme="dark"] {
- color-scheme:dark;--bg:#0d1015;--surface:#151a22;--surface-2:#1b222d;--surface-soft:#11161e;
- --border:#354151;--line:var(--border);--text:#edf2fa;--ink:var(--text);--muted:#b6c2d2;--ink-muted:var(--muted);
+ color-scheme:dark;--bg:#080808;--surface:#141414;--surface-2:#1c1c1c;--surface-soft:#101010;
+ --border:#383838;--line:var(--border);--text:#edf2fa;--ink:var(--text);--muted:#b6c2d2;--ink-muted:var(--muted);
  --accent:#8cbcf3;--accent-soft:#17243a;--action:#2864d7;--tool-accent:#8cbcf3;--panel-shadow:0 6px 24px #00000018;
  --dark-text:var(--text);--dark-muted:var(--muted);--dark-accent:#8ab8ff;--dark-success:#87d8b9;--dark-error:#f3a6ad;--dark-warning:#e5c391;
- background:var(--bg);scrollbar-color:#64748b var(--bg);
+ background:var(--bg);scrollbar-color:#666666 var(--bg);
 }
 html[data-theme="dark"] body {background:var(--bg);color:var(--text)}
 html[data-theme="dark"] ::selection {background:#386292;color:#fff}
@@ -38,7 +38,7 @@ html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(p,s
 html[data-theme="dark"] :is(main,dialog) :where(*) {border-color:var(--border)!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.search-card,.directory-controls,.overview-card,.panel-head,.tool-card,.modern-form,.preview-sheet,.preview-results,.preview-table-scroll,.daily-table-scroll,.daily-review,.daily-table,.report-result,.result-card,.summary-card,.company-card,.portfolio-entry,.company-dialog,.preview-dialog,.admin-auth-dialog,.bank-investments,.fiscal-setup,.fiscal-results-card,.fiscal-summary,.fiscal-detail,.fiscal-investigation,.fiscal-ai,.fiscal-ai-account,.fiscal-account-dialog,.fiscal-account-dialog-body,.fiscal-ai-source,.fiscal-ai-evidence,.fiscal-account-resolution,.fiscal-document-panel,.fiscal-evidence-card) {background:var(--surface)!important;color:var(--text)!important;box-shadow:0 4px 20px #00000012}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.tool-intro,.period-card,.bank-selector,.bank-choice,.file-drop-shell,.preview-sheet-head,.preview-commandbar,.preview-table-tools,.daily-toolbar,.daily-summary,.preview-summary-item,.mini-metrics > span,.summary-metric,.form-card-icon,.tool-visual-icon,.overview-icon,.company-row-code,.company-row-action b,.portfolio-avatar,.portfolio-feature-icon,.portfolio-entry-action,.portfolio-entry-arrow,.file-selection,.file-selection-item,.tool-flow,.upload-progress,.upload-visual-status,.base-cleanup-confirmation,.base-periods,.base-period-bank,.base-period-item,.fiscal-next-step,.fiscal-summary-pending,.fiscal-review-toolbar,.fiscal-detail-metric-difference,.fiscal-ai-icon,.fiscal-ai-source-panel,.fiscal-ai-account-nav,.fiscal-ai-executive,.fiscal-ai-evidence,.fiscal-ai-account-resolution,.fiscal-ai-source.is-ready,.fiscal-ai-heading-tools .fiscal-ai-provider,.fiscal-ai-local-note,.fiscal-ai-method,.fiscal-ai-context,.fiscal-ai-document-summary) {background:var(--surface-2)!important;color:var(--dark-accent)!important;box-shadow:none!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {background:var(--surface-soft)!important;color:var(--text)!important;border-color:#53647a!important;caret-color:#8ab8ff;box-shadow:none}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {background:var(--surface-soft)!important;color:var(--text)!important;border-color:#595959!important;caret-color:#8ab8ff;box-shadow:none}
 html[data-theme="dark"] :is(input,textarea)::placeholder {color:var(--muted)!important;opacity:1}
 html[data-theme="dark"] input::file-selector-button {background:#252525;color:#e2e2e2;border:1px solid #505050;border-radius:7px;padding:7px 11px;margin-right:10px}
 html[data-theme="dark"] :is(input[type=checkbox],input[type=radio]) {accent-color:#8cbcf3}
@@ -52,8 +52,8 @@ html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) button:
 /* Tables: headers, zebra rows, hover, editors and semantic balance colors. */
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(table,tbody,td) {background:var(--surface)!important;color:#dedede!important;box-shadow:none}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) th {background:var(--surface-2)!important;color:var(--text)!important;border-color:var(--border)!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) tr:nth-child(even) td {background:#19202a!important}
-html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) tbody tr:hover td {background:#222e3e!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) tr:nth-child(even) td {background:#191919!important}
+html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) tbody tr:hover td {background:#262626!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.is-success,.is-success p,.is-success strong,.status-success,.fiscal-status-ok,.daily-balance.is-balanced,.match-ok,.positive,.online) {color:var(--dark-success)!important;background:#16382f!important;border-color:#396858!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.is-warning,.is-warning p,.is-warning strong,.preview-row-warning,.preview-pending-summary,.fiscal-warnings,.accounts-pending,.status-warning) {color:var(--dark-warning)!important;background:#3a3023!important;border-color:#6e5940!important}
 html[data-theme="dark"] :is(#companyPanel,#fiscalView,.app-shell,dialog) :is(.is-error,.is-error p,.is-error strong,.base-stat-error,.is-different,.daily-balance.is-different,.negative,.status-error,.fiscal-account-resolution-error,[role=alert]) {color:var(--dark-error)!important;background:#3b252e!important;border-color:#76434f!important}
@@ -167,7 +167,7 @@ html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) .daily-table 
 html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) .daily-status.is-review {background:#3a3023!important;color:var(--dark-warning)!important}
 html[data-theme="dark"] :is(.daily-reconciliation,.preview-dialog) .daily-filter.active {background:#17243a!important;color:#c2d8ff!important;border-color:#507db6!important}
 html[data-theme="dark"] :is(#reconcileResult,#ledgerResult,.preview-dialog) .bank-investments :is(.bank-investments-note,.bank-investments-rule,.bank-investments-preview-totals) {background:var(--surface-2)!important;color:var(--muted)!important;border-color:var(--border)!important}
-html[data-theme="dark"] :is(#reconcileResult,#ledgerResult,.preview-dialog) .bank-investments :is(input,select,input:read-only) {background:var(--surface-soft)!important;color:var(--text)!important;border-color:#53647a!important}
+html[data-theme="dark"] :is(#reconcileResult,#ledgerResult,.preview-dialog) .bank-investments :is(input,select,input:read-only) {background:var(--surface-soft)!important;color:var(--text)!important;border-color:#595959!important}
 html[data-theme="dark"] :is(#reconcileResult,#ledgerResult,.preview-dialog) .bank-investments label {color:var(--text)!important}
 
 /* Fiscal styles use theme-aware colors even when loaded after document reading. */

@@ -8,9 +8,9 @@ body[data-site-locked] .app-shell {display:none!important}
   color:var(--login-ink);
 }
 html[data-theme="dark"] #siteAccess{
-  --login-bg:#090a0d;--login-card:#121419;--login-ink:#eef1f7;--login-muted:#a7b1c3;
-  --login-line:#52617a;--login-field:#181b23;--login-accent:#3562d5;
-  background:radial-gradient(ellipse at 50% 0,#141b2c 0,transparent 56%),var(--login-bg);
+  --login-bg:#080808;--login-card:#141414;--login-ink:#eef1f7;--login-muted:#a7b1c3;
+  --login-line:#595959;--login-field:#181818;--login-accent:#3562d5;
+  background:radial-gradient(ellipse at 50% 0,#191919 0,transparent 56%),var(--login-bg);
 }
 #siteAccess .site-access-card{
   width:min(100%,430px);padding:clamp(22px,5vw,36px);border:1px solid var(--login-line);
@@ -72,8 +72,8 @@ html[data-theme="dark"] #siteAccess{
   background:radial-gradient(ellipse at 15% 12%,var(--login-glow),transparent 48%),var(--login-bg);
 }
 html[data-theme="dark"] #siteAccess{
-  --login-ink:#f4f7fc;--login-field:#151821;--login-value:#f8faff;
-  --login-welcome:#121722;--login-glow:#3772e82b;
+  --login-ink:#f4f7fc;--login-field:#181818;--login-value:#f8faff;
+  --login-welcome:#101010;--login-glow:#3772e82b;
   background:radial-gradient(ellipse at 15% 12%,var(--login-glow),transparent 48%),var(--login-bg);
 }
 #siteAccess .site-access-card{

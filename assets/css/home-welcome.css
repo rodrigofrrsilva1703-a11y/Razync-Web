@@ -155,7 +155,7 @@
 #companiesView #portfolioPicker .home-showcase[data-art-motion=paused] .showcase-panels *,#companiesView #portfolioPicker .home-showcase[data-playing=false] .showcase-panels *::after {animation-play-state:paused}
 #companiesView #portfolioPicker[data-motion=paused] *,#companiesView #portfolioPicker[data-motion=paused] *::before,#companiesView #portfolioPicker[data-motion=paused] *::after {animation-play-state:paused!important}
 /* Dark mode stays neutral, with blue reserved for the illustration and actions. */
-html[data-theme=dark] #companiesView #portfolioPicker {--home-ink:#edf0f5;--home-muted:#9da9b9;--home-blue:#a0c4ff;--home-line:#303741;--home-paper:#171b21;--home-soft:#1c2532}
+html[data-theme=dark] #companiesView #portfolioPicker {--home-ink:#edf0f5;--home-muted:#9da9b9;--home-blue:#a0c4ff;--home-line:var(--border);--home-paper:var(--surface);--home-soft:var(--surface-2)}
 html[data-theme=dark] #companiesView #portfolioPicker .portfolio-heading {background:none!important;border:0!important;box-shadow:none}
 html[data-theme=dark] #companiesView #portfolioPicker .portfolio-heading h1 {color:#edf0f5!important}
 html[data-theme=dark] #companiesView #portfolioPicker .portfolio-heading p {color:var(--home-muted)!important}
@@ -381,7 +381,7 @@ html[data-theme=dark] #companiesView #portfolioPicker .portfolio-heading {backgr
 #companiesView #portfolioPicker .showcase-art::before {display:none!important}
 #companiesView #portfolioPicker .showcase-panel .showcase-copy {animation:none!important;opacity:1!important;transform:none!important}
 #companiesView #portfolioPicker .portfolio-avatar::after {display:none}
-html[data-theme=dark] #companiesView #portfolioPicker {--home-ink:#e9edf4;--home-muted:#a1abb9;--home-blue:#91b5ee;--home-line:#282d35;--home-paper:#111316;--home-soft:#171b22}
+html[data-theme=dark] #companiesView #portfolioPicker {--home-ink:#e9edf4;--home-muted:#a1abb9;--home-blue:#91b5ee;--home-line:var(--border);--home-paper:var(--surface);--home-soft:var(--surface-2)}
 html[data-theme=dark] #companiesView #portfolioPicker .home-showcase {background:#111316;border-color:#2b313b;box-shadow:0 8px 24px #00000018}
 html[data-theme=dark] #companiesView #portfolioPicker .showcase-top {background:#111316}
 html[data-theme=dark] #companiesView #portfolioPicker .showcase-copy h2 {color:#e9edf4}

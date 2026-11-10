@@ -60,7 +60,7 @@ test('alternância salva a escolha e atualiza acessibilidade e metadados',()=>{
   const h=setup();h.ready();h.click();assert.equal(h.root.dataset.theme,'dark');
   assert.equal(h.stored.get('razync:theme'),'dark');assert.equal(h.attrs['aria-pressed'],'true');
   assert.equal(h.attrs['aria-label'],'Ativar modo claro');assert.equal(h.label.textContent,'Escuro');
-  assert.equal(h.meta.content,'#0d1015');h.click();assert.equal(h.root.dataset.theme,'light');
+  assert.equal(h.meta.content,'#080808');h.click();assert.equal(h.root.dataset.theme,'light');
 });
 test('armazenamento bloqueado não impede alternância nesta visita',()=>{
   const h=setup(null,false,true);h.ready();h.click();assert.equal(h.root.dataset.theme,'dark');

@@ -903,11 +903,11 @@ html[data-theme=dark] #baseAiHost{--review-paper:#111214;--review-soft:#18191c;-
 
 /* Keep transaction histories and secondary text readable in both themes. */
 html[data-theme=dark] #baseAiHost{
-  --review-paper:#141922;
-  --review-soft:#1c2532;
+  --review-paper:var(--surface);
+  --review-soft:var(--surface-2);
   --review-ink:#edf2fa;
   --review-muted:#b8c5d7;
-  --review-border:#35445a;
+  --review-border:var(--border);
   --review-selected:#213655;
 }
 #baseAiHost #baseInvestigationWindow .base-history-text,
