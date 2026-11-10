@@ -87,7 +87,10 @@ html[data-theme="dark"] #siteAccess {
 .site-access-welcome::after {
   content:""; position:absolute; z-index:-1; pointer-events:none; inset:auto -18vw -24vw auto;
   width:58vw; aspect-ratio:1; border:1px solid #a0baff30; border-radius:50%;
+  background:radial-gradient(ellipse at 22% 24%,#5b94ff3b,transparent 52%);
+  border-top-color:#8dc4ffad; border-right-color:#8dc4ff60;
   box-shadow:0 0 0 55px #7c9ff50b,0 0 0 111px #7c9ff507;
+  animation:login-orbit 24s linear infinite;
 }
 .site-access-brand {display:flex; align-items:center; gap:12px}
 .site-access-brand img {border-radius:11px}
@@ -103,14 +106,27 @@ html[data-theme="dark"] #siteAccess {
 .site-access-welcome-title em {font-style:normal; color:#9ebdff}
 #siteAccess .site-access-welcome-copy>p:last-child {max-width:39ch; color:#c7d4e9; font-size:clamp(14px,1.3vw,19px)}
 .site-access-route {display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); max-width:650px; position:relative}
-.site-access-route::before,.site-access-route::after {content:""; position:absolute; inset:0 0 auto; height:1px}
-.site-access-route::before {background:#9db8f969}
-.site-access-route::after {background:linear-gradient(90deg,transparent,#afd9ff,transparent); animation:login-route 6s ease-in-out infinite; transform-origin:left}
-.site-access-route div {display:grid; gap:4px; padding:16px 8px 0 0}
+.site-access-route::before {content:""; position:absolute; inset:0 0 auto; height:1px; background:#9db8f969}
+.site-access-route::after {
+  content:""; position:absolute; inset:-2px auto auto 0; width:5px; height:5px; border-radius:50%;
+  background:#c6e6ff; box-shadow:0 0 10px 2px #79baff;
+  animation:login-route 6s ease-in-out infinite;
+}
+.site-access-route div {display:grid; gap:4px; padding:16px 8px 0 0; position:relative}
+.site-access-route div::before {
+  content:""; position:absolute; inset:-2px auto auto 0; width:5px; height:5px; border-radius:50%; background:#8ca9db;
+}
 .site-access-route span {font-size:11px; letter-spacing:.12em; color:#a7c4ff}
 .site-access-route strong {font-size:clamp(13px,1.4vw,18px); color:#f6f8ff}
 .site-access-route small {font-size:11px; color:#c7d4e9}
-@keyframes login-route {0%,100%{opacity:.25}50%{opacity:1}}
+@keyframes login-orbit {to{transform:rotate(1turn)}}
+@keyframes login-route {
+  0%,10% {left:0; opacity:1}
+  33%,43% {left:33.333%; opacity:1}
+  66%,82% {left:66.666%; opacity:1}
+  92% {left:66.666%; opacity:0}
+  100% {left:0; opacity:0}
+}
 .site-access-content {
   min-width:0; display:grid; grid-template-rows:auto 1fr auto; gap:22px;
   padding:clamp(22px,4vw,64px);
@@ -138,6 +154,7 @@ html[data-theme="dark"] #siteAccess {
   stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;
 }
 #siteAccess .site-access-tag svg {width:13px; height:13px}
+#siteAccess .site-access-tag {background:var(--login-field)}
 #siteAccess form {display:grid; gap:16px; margin:0; padding:0; background:transparent; border:0; box-shadow:none}
 .site-access-field {display:grid; gap:7px}
 #siteAccess .site-access-field label {margin:0; font-size:13px!important; font-weight:650; color:var(--login-ink)!important}
@@ -171,6 +188,7 @@ html[data-theme="dark"] #siteAccess {
   cursor:pointer; transition:filter .18s,transform .18s;
 }
 #siteAccess .site-access-submit::before {content:none}
+#siteAccess .site-access-submit {background:linear-gradient(110deg,var(--login-accent),#2f58bc)}
 #siteAccess :is(.site-access-submit,#siteAccessRetry):hover:not(:disabled) {filter:brightness(1.1)}
 #siteAccess .site-access-submit:active:not(:disabled) {transform:translateY(1px)}
 #siteAccess button:disabled {opacity:.65; cursor:wait}
@@ -200,7 +218,7 @@ html[data-theme="dark"] #siteAccess {
 @media(max-width:760px) {
   #siteAccess .site-access-card {grid-template-columns:minmax(0,1fr); grid-template-rows:auto 1fr}
   .site-access-welcome {padding:22px 24px; gap:0}
-  .site-access-welcome::after {inset:auto -8vw -40vw auto; width:82vw}
+  .site-access-welcome::after {inset:50% -12vw auto auto; width:66vw; translate:0 -50%}
   .site-access-brand img {width:38px; height:38px}
   .site-access-welcome-copy,.site-access-route {display:none}
   .site-access-content {padding:16px 24px max(24px,env(safe-area-inset-bottom)); gap:8px}
