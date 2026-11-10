@@ -90,6 +90,18 @@ function enhanceFileInput(input) {
 
   }
 
+  if (input.form?.id === "ledgerForm") {
+    input.hidden = true;
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "ledger-file-add";
+    add.textContent = "Adicionar arquivos";
+    const label = input.labels[0]?.querySelector("strong")?.textContent;
+    if (label) add.setAttribute("aria-label", "Adicionar arquivos de " + label.toLowerCase());
+    add.addEventListener("click", () => input.click());
+    shell.appendChild(add);
+  }
+
   const hint = document.createElement("span");
   hint.className = "file-drop-hint";
   hint.innerHTML = '<i aria-hidden="true"></i><span>Arraste o arquivo aqui ou clique para selecionar</span>';

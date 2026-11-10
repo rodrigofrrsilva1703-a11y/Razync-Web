@@ -57,7 +57,7 @@ html[data-theme=dark] :is(#globalConverterForm,#ledgerForm) input[type=file]::fi
 #ledgerView .ledger-documents-header p {margin:0;color:var(--muted);font-size:12px;line-height:1.5}
 #ledgerView .global-upload-grid {gap:14px;align-items:stretch}
 #ledgerView .global-upload-field {grid-template-rows:auto 1fr}
-#ledgerView .ledger-file-label {display:flex;align-items:center;gap:9px}
+#ledgerView .global-upload-field > .ledger-file-label {display:flex;align-items:center;gap:9px}
 #ledgerView .ledger-file-label strong {font-size:12px;color:var(--text)}
 #ledgerView .ledger-file-label small {display:block;margin-top:2px;color:var(--muted);font-size:11px;font-weight:400}
 #ledgerView .ledger-file-icon {
@@ -66,7 +66,7 @@ html[data-theme=dark] :is(#globalConverterForm,#ledgerForm) input[type=file]::fi
 }
 #ledgerView .ledger-file-icon svg {width:17px;height:17px}
 #ledgerView .global-upload-field .file-drop-shell {
-  min-height:104px;padding:10px 12px;gap:6px;background:transparent;border-color:var(--border);
+  min-height:104px;padding:12px;gap:8px;align-content:start;justify-items:start;background:transparent;border-color:var(--border);
 }
 #ledgerView .file-drop-shell:focus-within {outline:2px solid var(--accent);outline-offset:2px}
 #ledgerView .ledger-settings {
@@ -76,13 +76,27 @@ html[data-theme=dark] :is(#globalConverterForm,#ledgerForm) input[type=file]::fi
 #ledgerView .ledger-settings :is(.standard-period-card,.global-tool-action) {
   grid-column:auto;grid-row:auto;min-width:0;max-width:none;
 }
-#ledgerView .ledger-settings .standard-period-card {padding:0;border:0;background:transparent}
+#ledgerView .ledger-settings .standard-period-card {padding:0;border:0;background:transparent!important}
 #ledgerView .ledger-settings .period-fields {gap:8px;margin-top:6px}
 #ledgerView .ledger-settings .period-fields label {font-size:11px;color:var(--muted)}
 #ledgerView .ledger-settings .standard-period-card p,
 #ledgerView #ledgerMessage {margin:0;color:var(--muted);font-size:11px;line-height:1.5}
 #ledgerView .ledger-settings .standard-period-card p {margin-top:7px}
-#ledgerView #ledgerMessage:empty {display:none}
+#ledgerView #ledgerMessage:not(:empty) {
+  grid-column:1/-1;margin:0!important;padding:10px 0 0;border:0;
+  border-top:1px solid var(--border);border-radius:0;background:transparent;font-size:12px!important;
+}
+#ledgerView #ledgerMessage::before {content:none}
+#ledgerView #ledgerForm input[type=file][hidden] {display:none}
+#ledgerView .ledger-file-add {
+  min-height:36px;padding:7px 11px;border:1px solid var(--border);border-radius:8px;
+  background:var(--surface);color:var(--text);font:inherit;font-size:12px;font-weight:600;cursor:pointer;
+}
+#ledgerView .ledger-file-add:hover {border-color:var(--accent)}
+#ledgerView .file-drop-hint {justify-content:start;text-align:start}
+#ledgerView .file-selection-summary {background:transparent;color:var(--muted)}
+#ledgerView .file-selection-item {background:transparent}
+
 @media(max-width:1000px) {
   #ledgerView #ledgerForm {grid-template-columns:minmax(0,1fr);gap:16px}
   #ledgerView .ledger-settings {
