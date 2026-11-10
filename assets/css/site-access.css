@@ -304,9 +304,10 @@ html[data-theme="dark"] #siteAccess {
   .site-access-welcome-copy {display:none}
   .site-access-demo {padding:10px;gap:7px;font-size:11px}
   #siteAccess .site-access-demo :is(th,td) {padding-block:5px}
-  .site-access-content {padding-inline:18px}
+  .site-access-content {padding:8px 18px;gap:2px}
   #siteAccessTheme {min-height:34px}
-  .site-access-heading .site-access-tag {display:none!important}
+  .site-access-heading .site-access-tag,
+  .site-access-heading > p {display:none!important}
 }
 @media(prefers-reduced-motion:reduce) {
   #siteAccess *,#siteAccess *::before,#siteAccess *::after {animation:none!important;transition:none!important}
