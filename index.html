@@ -35,7 +35,7 @@
   <link rel="stylesheet" href="./assets/css/sidebar-motion.css?v=20261029-1">
   <link rel="stylesheet" href="./assets/css/home-welcome.css?v=black-attachments-20261109-1">
   <link rel="stylesheet" href="./assets/css/global-tool-preparation.css?v=20261029-1">
-  <link rel="stylesheet" href="./assets/css/site-access.css?v=site-loading-1">
+  <link rel="stylesheet" href="./assets/css/site-access.css?v=login-demo-1">
   <link rel="stylesheet" href="./assets/css/preview-layout.css?v=20261109-1">
 </head>
 <body class="sidebar-collapsed" data-site-locked data-site-loading>
@@ -54,15 +54,29 @@
           <div><strong>Razync</strong><span>Automação contábil</span></div>
         </div>
         <div class="site-access-welcome-copy">
-          <p class="site-access-eyebrow">Seu espaço contábil</p>
+          <p class="site-access-eyebrow">Área de trabalho contábil</p>
           <p class="site-access-welcome-title">Do extrato<br>à <em>conferência.</em></p>
           <p>Organize documentos, compare saldos e classifique lançamentos no mesmo lugar.</p>
         </div>
-        <div class="site-access-route" aria-hidden="true">
-          <div><span>01</span><strong>Organizar</strong><small>Documentos</small></div>
-          <div><span>02</span><strong>Conferir</strong><small>Saldos</small></div>
-          <div><span>03</span><strong>Classificar</strong><small>Lançamentos</small></div>
-        </div>
+        <figure class="site-access-demo">
+          <figcaption><strong>Conferência bancária</strong><span>Dados fictícios</span></figcaption>
+          <div class="site-access-demo-file">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v5h4M9 12h6m-6 4h6"/></svg>
+            <span>Extrato bancário</span>
+            <small>2 lançamentos</small>
+          </div>
+          <table>
+            <thead><tr><th scope="col">Lançamento</th><th scope="col">Extrato</th><th scope="col">Razão</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Recebimento via Pix</th><td>R$ 1.240,00</td><td>R$ 1.240,00</td></tr>
+              <tr><th scope="row">Tarifa bancária</th><td>−R$ 18,00</td><td><span aria-label="Sem lançamento no razão">—</span></td></tr>
+            </tbody>
+          </table>
+          <div class="site-access-demo-result">
+            <span class="site-access-demo-match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>1 conciliado</span>
+            <span>1 a conferir</span>
+          </div>
+        </figure>
       </div>
       <div class="site-access-content">
       <div class="site-access-controls">
