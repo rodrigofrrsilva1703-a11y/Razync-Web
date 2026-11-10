@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../../assets/js/workspace-resume.js'), 'utf8');
 
-async function fixture(identity, mobile = false) {
+async function fixture(identity, mobile = false, catalogAvailable = true) {
   const date = {id:'processStart', value:'', dataset: mobile ? {manualDate:'true'} : {}, validity:{valid:true}, closest:()=>null};
   const file = {id:'fileInput', value:'secret.pdf'};
   const panel = {hidden:true, dataset:{}, contains:el=>[date,file].includes(el),
@@ -15,13 +15,14 @@ async function fixture(identity, mobile = false) {
     values:{processStart:'2026-11-01',fileInput:'saved-private.pdf'}
   })]]);
   const company = {codigo:42};
+  const events = {};
   const context = {
-    panel, selected:null, activePortfolio:null, companies:[company], portfolios:[{id:'wallet'}],
+    panel, selected:null, activePortfolio:null, companies:catalogAvailable ? [company] : [], portfolios:[{id:'wallet'}],
     dateApiValue:input=>input.value.split("/").reverse().join("-"),
     initialCatalog:Promise.resolve(), companyBelongsToPortfolio:()=>true, hasCompanyTools:()=>true,
     document:{getElementById:id=>({companiesView:view,processStart:date,fileInput:file}[id] || null),
       querySelector:()=>panel.hidden ? view : null, addEventListener(){}},
-    window:{addEventListener(){},RazyncSiteAccess:{ready:Promise.resolve(),identity:()=>identity}},
+    window:{addEventListener(name, handler){events[name] = handler;},RazyncSiteAccess:{ready:Promise.resolve(),identity:()=>identity}},
     sessionStorage:{getItem:key=>values.get(key),setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)},
   };
   context.selectPortfolio = id => {context.activePortfolio = {id};};
@@ -30,7 +31,7 @@ async function fixture(identity, mobile = false) {
   vm.createContext(context);
   vm.runInContext(source, context);
   await new Promise(resolve=>setImmediate(resolve));
-  return {context, panel, date, file, values};
+  return {context, panel, date, file, values, events, company};
 }
 
 test('recarregar restaura empresa, ferramenta e datas, sem recuperar nem gravar arquivo', async () => {
@@ -58,4 +59,17 @@ test('recarregar no celular mantém o formato DD/MM/AAAA', async () => {
   assert.equal(date.value,'01/11/2026');
   context.window.RazyncWorkspaceResume.save();
   assert.equal(JSON.parse([...values.values()][0]).values.processStart,'2026-11-01');
+});
+
+test('catálogo indisponível mantém a posição salva e permite retomá-la ao reconectar', async () => {
+  const {context,panel,date,values,events,company} = await fixture('same@example.test', false, false);
+  assert.equal(context.selected,null);
+  const stored = [...values.values()][0];
+  events.pagehide();
+  assert.equal([...values.values()][0],stored);
+  context.companies.push(company);
+  await context.window.RazyncWorkspaceResume.retry();
+  assert.equal(context.selected,company);
+  assert.equal(panel.dataset.activeTool,'extrato');
+  assert.equal(date.value,'2026-11-01');
 });

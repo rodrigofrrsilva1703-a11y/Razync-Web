@@ -4,7 +4,8 @@
   const dateIds = ["globalConverterStart", "globalConverterEnd", "ledgerStart", "ledgerEnd",
     "processStart", "processEnd", "reconcileStart", "reconcileEnd", "francesinhasStart", "francesinhasEnd"];
   const fields = new Set([...dateIds, "fiscalFilialCodigo"]);
-  let restoring = true;
+  let restoring = false;
+  let pending = false;
 
   const element = id => document.getElementById(id);
   const owner = () => window.RazyncSiteAccess?.identity();
@@ -22,21 +23,27 @@
     try {
       sessionStorage.setItem(key, JSON.stringify({owner:owner(), view,
         wallet:activePortfolio?.id || "", company, tool:company ? panel.dataset.activeTool : "", values}));
+      pending = false;
     } catch {}
   }
 
   async function restore() {
+    if (restoring) return;
+    restoring = true;
     try {
       await window.RazyncSiteAccess?.ready;
       const saved = JSON.parse(sessionStorage.getItem(key) || "null");
       if (!owner() || saved?.owner !== owner() || !views.has(saved.view)) return;
+      pending = true;
       if (saved.view !== "companies") {
         await showGlobalView(saved.view);
         if (!element(saved.view + "View")?.classList.contains("active")) return;
       } else if (saved.wallet) {
         await initialCatalog;
-        if (!companies.length || !portfolios.some(item => item.id === saved.wallet)) return;
+        if (!companies.length) return;
         if (!element("companiesView").classList.contains("active") || activePortfolio || selected) return;
+        pending = false;
+        if (!portfolios.some(item => item.id === saved.wallet)) return;
         selectPortfolio(saved.wallet);
         const company = companies.find(item => String(item.codigo) === saved.company && companyBelongsToPortfolio(item));
         if (company) {
@@ -46,6 +53,7 @@
           if (hasCompanyTools(company) && tool) activateTool(saved.tool);
         } else if (saved.company) return;
       }
+      pending = false;
       const scope = saved.company ? panel : element(saved.view + "View");
       for (const [id,value] of Object.entries(saved.values || {})) {
         if (!fields.has(id) || typeof value !== "string") continue;
@@ -60,14 +68,18 @@
     finally { restoring = false; }
   }
 
-  window.RazyncWorkspaceResume = {save, clear() { try { sessionStorage.removeItem(key); } catch {} }};
+  window.RazyncWorkspaceResume = {
+    save,
+    retry() { if (pending) return restore(); },
+    clear() { pending = false; try { sessionStorage.removeItem(key); } catch {} }
+  };
   document.addEventListener("change", event => {
     if (fields.has(event.target.id)) save();
   });
   document.addEventListener("input", event => {
     if (fields.has(event.target.id)) save();
   });
-  window.addEventListener("pagehide", save);
+  window.addEventListener("pagehide", () => { if (!pending) save(); });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", restore, {once:true});
   else restore();
 })();

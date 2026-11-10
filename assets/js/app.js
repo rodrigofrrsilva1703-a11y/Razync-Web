@@ -1668,6 +1668,7 @@ $$('.company-filter').forEach(button=>button.addEventListener('click',()=>{
 backButton.addEventListener("click", closeCompany);
 
 async function fetchAfterWake(url, {onRetry} = {}) {
+  await window.RazyncSiteAccess?.ready;
   // Railway em repouso pode demorar a responder. Limite cada tentativa
   // para nunca deixar a interface indefinidamente em "carregando".
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -1713,15 +1714,18 @@ async function loadCompanies() {
     applyCatalog(items);
     try { if (!privateCatalog()) localStorage.setItem(cacheKey, JSON.stringify(items)); } catch { /* Cache opcional. */ }
   } catch {
-    if (companies.length || privateCatalog()) return;
-    try {
-      const response = await fetch("./assets/data/companies.json");
-      if (!response.ok) throw new Error();
-      applyCatalog(await response.json());
-    } catch {
-      const message = document.querySelector("#portfolioList [role=status]");
-      if (message) message.textContent = "Não foi possível carregar as carteiras. Recarregue a página para tentar novamente.";
+    if (companies.length) return;
+    if (!privateCatalog()) {
+      try {
+        const response = await fetch("./assets/data/companies.json");
+        if (!response.ok) throw new Error();
+        applyCatalog(await response.json());
+        return;
+      } catch { /* Show the connection retry when both sources are unavailable. */ }
     }
+    const message = document.querySelector("#portfolioList [role=status]");
+    if (message) message.textContent = "Não foi possível carregar as carteiras. Clique no indicador de conexão para tentar novamente.";
+    document.querySelector("#portfolioList").setAttribute("aria-busy", "false");
   }
 }
 
@@ -1764,9 +1768,10 @@ async function checkApi() {
   })().finally(() => { apiCheckPending = null; });
   return apiCheckPending;
 }
-apiStatus.addEventListener("click", () => {
+apiStatus.addEventListener("click", async () => {
   checkApi();
-  if (!companies.length) loadCompanies();
+  if (!companies.length) await loadCompanies();
+  window.RazyncWorkspaceResume?.retry();
 });
 
 initializeTaskUI();
