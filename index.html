@@ -34,9 +34,9 @@
   <link rel="stylesheet" href="./assets/css/themes.css?v=dark-results-20261110-1">
   <link rel="stylesheet" href="./assets/css/sidebar-motion.css?v=20261029-1">
   <link rel="stylesheet" href="./assets/css/home-welcome.css?v=black-attachments-20261109-1">
-  <link rel="stylesheet" href="./assets/css/global-tool-preparation.css?v=20261029-1">
+  <link rel="stylesheet" href="./assets/css/global-tool-preparation.css?v=ledger-prep-1">
   <link rel="stylesheet" href="./assets/css/site-access.css?v=login-tools-icons-1">
-  <link rel="stylesheet" href="./assets/css/preview-layout.css?v=ledger-layout-1">
+  <link rel="stylesheet" href="./assets/css/preview-layout.css?v=20261109-1">
 </head>
 <body class="sidebar-collapsed" data-site-locked data-site-loading>
   <div id="workspaceRestoring" role="status">
@@ -260,33 +260,41 @@
           <p>Compare o movimento bancário com o Razão da Domínio e identifique diferenças por dia.</p>
         </div>
         <div class="tool-card single-card global-tool-preparation">
-          <div class="global-tool-intro">
-            <h2>Arquivos da conciliação</h2>
-            <p>Anexe os extratos e o razão da mesma conta bancária.</p>
-          </div>
           <form id="ledgerForm">
-            <div class="global-upload-grid">
-              <div class="global-upload-field">
-                <label for="ledgerStatement"><span class="ledger-step" aria-hidden="true">1</span> Extratos bancários</label>
-                <input id="ledgerStatement" type="file" accept=".pdf,.ofx,.csv,.xls,.xlsx" multiple>
+            <section class="ledger-documents" aria-labelledby="ledgerDocumentsTitle">
+              <header class="ledger-documents-header">
+                <h2 id="ledgerDocumentsTitle">Documentos da conciliação</h2>
+                <p>Use os extratos e o razão da mesma conta bancária.</p>
+              </header>
+              <div class="global-upload-grid">
+                <div class="global-upload-field">
+                  <label class="ledger-file-label" for="ledgerStatement">
+                    <span class="ledger-file-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18L12 4 3 9ZM5 20h14M7 12v5m5-5v5m5-5v5"/></svg></span>
+                    <span><strong>Extratos bancários</strong><small>Um ou mais meses</small></span>
+                  </label>
+                  <input id="ledgerStatement" type="file" accept=".pdf,.ofx,.csv,.xls,.xlsx" multiple>
+                </div>
+                <div class="global-upload-field">
+                  <label class="ledger-file-label" for="ledgerFile">
+                    <span class="ledger-file-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6V3Zm8 0v5h4M9 12h6m-6 4h6"/></svg></span>
+                    <span><strong>Razão do Domínio</strong><small>Pode abranger várias competências</small></span>
+                  </label>
+                  <input id="ledgerFile" type="file" accept=".csv,.xls,.xlsx" multiple>
+                </div>
               </div>
-              <div class="global-upload-field">
-                <label for="ledgerFile"><span class="ledger-step" aria-hidden="true">2</span> Razão do Domínio</label>
-                <input id="ledgerFile" type="file" accept=".csv,.xls,.xlsx" multiple>
-              </div>
-            </div>
-            <div class="global-tool-controls">
+            </section>
+            <div class="global-tool-controls ledger-settings">
               <fieldset class="period-card standard-period-card">
                 <legend>Período <span>(opcional)</span></legend>
                 <div class="period-fields">
                   <div><label for="ledgerStart">De</label><input id="ledgerStart" type="date"></div>
                   <div><label for="ledgerEnd">Até</label><input id="ledgerEnd" type="date"></div>
                 </div>
-                <p>Em branco, usa os meses dos extratos. Para definir outro intervalo, preencha as duas datas.</p>
+                <p>Em branco, considera os meses dos extratos. Para escolher um intervalo, informe as duas datas.</p>
               </fieldset>
               <div class="global-tool-action"><button id="ledgerSubmit" type="submit">Gerar prévia</button></div>
+              <p id="ledgerMessage" class="helper"></p>
             </div>
-            <p id="ledgerMessage" class="helper"></p>
           </form>
         </div>
         <div id="ledgerResult" class="daily-reconciliation standard-preview" hidden></div>
@@ -850,7 +858,7 @@
   <script src="./assets/js/home-showcase.js?v=continuous-20261029-3"></script>
   <script src="./assets/js/home-interactions.js?v=screen-motion-20261029-5"></script>
   <script src="./assets/js/portfolios.js?v=session-resume-1"></script>
-  <script src="./assets/js/reconciliation-preview.js?v=ledger-layout-1"></script>
+  <script src="./assets/js/reconciliation-preview.js?v=ledger-standard-1"></script>
   <script src="./assets/js/tasks-ui.js?v=catalog-cache-20261025-1"></script>
   <script src="./assets/js/admin-auth.js?v=password-eye-20261106-1"></script>
   <script src="./assets/js/lazy-assets.js?v=20261024-2"></script>
@@ -861,7 +869,7 @@
   <script src="./assets/js/base-investigation.js?v=saved-approvals-scope-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
-  <script src="./assets/js/app.js?v=ledger-layout-1"></script>
+  <script src="./assets/js/app.js?v=ledger-standard-1"></script>
   <script src="./assets/js/migration.js?v=standard-preview-20261109-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>

@@ -41,3 +41,58 @@ html[data-theme=dark] .app-shell :is(#globalConverterForm,#ledgerForm) input[typ
 }
 
 html[data-theme=dark] :is(#globalConverterForm,#ledgerForm) input[type=file]::file-selector-button {background:#252525;color:#e2e2e2;border-color:#505050}
+
+/* Ledger setup keeps the files together and separates the run controls. */
+#ledgerView > .page-head,
+#ledgerView > .global-tool-preparation {max-width:none}
+#ledgerView > .global-tool-preparation {
+  padding:22px 24px;margin-bottom:0;border-color:var(--border);background:var(--surface);box-shadow:none;
+}
+#ledgerView #ledgerForm {
+  grid-template-columns:minmax(0,1fr) minmax(260px,290px);
+  gap:22px;align-items:start;
+}
+#ledgerView .ledger-documents {display:grid;gap:16px;min-width:0}
+#ledgerView .ledger-documents-header h2 {margin:0 0 4px;color:var(--text);font-size:17px;letter-spacing:-.02em}
+#ledgerView .ledger-documents-header p {margin:0;color:var(--muted);font-size:12px;line-height:1.5}
+#ledgerView .global-upload-grid {gap:14px;align-items:stretch}
+#ledgerView .global-upload-field {grid-template-rows:auto 1fr}
+#ledgerView .ledger-file-label {display:flex;align-items:center;gap:9px}
+#ledgerView .ledger-file-label strong {font-size:12px;color:var(--text)}
+#ledgerView .ledger-file-label small {display:block;margin-top:2px;color:var(--muted);font-size:11px;font-weight:400}
+#ledgerView .ledger-file-icon {
+  display:grid;place-items:center;flex:none;width:32px;height:32px;
+  border:1px solid var(--border);border-radius:8px;color:var(--accent);
+}
+#ledgerView .ledger-file-icon svg {width:17px;height:17px}
+#ledgerView .global-upload-field .file-drop-shell {
+  min-height:104px;padding:10px 12px;gap:6px;background:transparent;border-color:var(--border);
+}
+#ledgerView .file-drop-shell:focus-within {outline:2px solid var(--accent);outline-offset:2px}
+#ledgerView .ledger-settings {
+  grid-template-columns:minmax(0,1fr);gap:12px;align-content:start;
+  min-width:0;padding:0 0 0 20px;border:0;border-inline-start:1px solid var(--border);
+}
+#ledgerView .ledger-settings :is(.standard-period-card,.global-tool-action) {
+  grid-column:auto;grid-row:auto;min-width:0;max-width:none;
+}
+#ledgerView .ledger-settings .standard-period-card {padding:0;border:0;background:transparent}
+#ledgerView .ledger-settings .period-fields {gap:8px;margin-top:6px}
+#ledgerView .ledger-settings .period-fields label {font-size:11px;color:var(--muted)}
+#ledgerView .ledger-settings .standard-period-card p,
+#ledgerView #ledgerMessage {margin:0;color:var(--muted);font-size:11px;line-height:1.5}
+#ledgerView .ledger-settings .standard-period-card p {margin-top:7px}
+#ledgerView #ledgerMessage:empty {display:none}
+@media(max-width:1000px) {
+  #ledgerView #ledgerForm {grid-template-columns:minmax(0,1fr);gap:16px}
+  #ledgerView .ledger-settings {
+    grid-template-columns:minmax(0,360px) minmax(150px,210px);
+    align-items:end;justify-content:space-between;padding:14px 0 0;border:0;border-top:1px solid var(--border);
+  }
+  #ledgerView #ledgerMessage {grid-column:1/-1}
+}
+@media(max-width:600px) {
+  #ledgerView > .global-tool-preparation {padding:16px}
+  #ledgerView .global-upload-grid,
+  #ledgerView .ledger-settings {grid-template-columns:minmax(0,1fr)}
+}
