@@ -189,6 +189,7 @@ def processar_bb_625(conteudo: bytes) -> pd.DataFrame:
 
 def _texto_ocr_sicredi(conteudo: bytes) -> str:
     import csv
+    import os
     import subprocess
     from pathlib import Path
     from tempfile import TemporaryDirectory
@@ -204,6 +205,7 @@ def _texto_ocr_sicredi(conteudo: bytes) -> str:
             return subprocess.run(
                 ["tesseract", "stdin", str(destino), "-l", "eng", "--psm", "6", *opcoes],
                 input=dados.getvalue(), capture_output=True, check=True, timeout=25,
+                env={**os.environ, "OMP_THREAD_LIMIT": "1"},
             ).stdout.decode("utf-8", errors="replace")
         except (OSError, subprocess.SubprocessError) as erro:
             raise ValueError("Não foi possível executar a leitura OCR do Sicredi.") from erro
@@ -219,11 +221,16 @@ def _texto_ocr_sicredi(conteudo: bytes) -> str:
             if pagina.rect.width * pagina.rect.height > 1_000_000:
                 raise ValueError("Página grande demais para leitura OCR do Sicredi.")
             pix = pagina.get_pixmap(dpi=400, colorspace=fitz.csRGB, alpha=False, annots=False)
-            rgb = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, 3).copy()
-            vermelho, verde, azul = rgb.transpose(2, 0, 1).astype(np.int16)
-            # Marcas azuis impressas sobre as colunas confundem o OCR dos valores.
-            rgb[(azul - vermelho > 35) & (azul - verde > 20)] = 255
-            imagem = Image.fromarray(rgb)
+            rgb = np.frombuffer(pix.samples_mv, dtype=np.uint8).reshape(pix.height, pix.width, 3)
+            imagem = Image.new("L", (pix.width, pix.height))
+            # Limpa as marcas azuis em faixas para evitar cópias da página inteira.
+            for topo in range(0, pix.height, 128):
+                faixa = rgb[topo:topo + 128]
+                vermelho, verde, azul = faixa.transpose(2, 0, 1).astype(np.int16)
+                cinza = np.array(Image.fromarray(faixa).convert("L"))
+                cinza[(azul - vermelho > 35) & (azul - verde > 20)] = 255
+                imagem.paste(Image.fromarray(cinza), (0, topo))
+            del faixa, rgb, pix
             ocr(imagem, saida, "-c", "preserve_interword_spaces=1", "txt", "tsv")
             texto = saida.with_suffix(".txt").read_text(encoding="utf-8")
             total_datas = len(inicio_linha.findall(texto))
