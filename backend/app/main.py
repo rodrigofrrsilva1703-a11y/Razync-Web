@@ -31,6 +31,7 @@ from app.classification_service import learn as base_learn, status as base_statu
 from app.migration_services import workflow as migrated_workflow, statement as migrated_statement
 from app.attachments import upload_group
 from app.global_tools import processar_arquivo, processar_razao, conciliar_razao
+from app.ledger_periods import recortar_razao
 from app.tasks import dashboard as task_dashboard, set_company_status, create_task, update_task, delete_task
 
 from app.result_artifacts import router as result_router, workbook_response, reconciliation_response
@@ -817,9 +818,19 @@ async def conversor_extratos(
 
 async def _parse_upload_frames(uploads, parser):
     group = await upload_group(uploads)
+    if group is None:
+        raise ValueError("Anexe pelo menos um arquivo.")
     content = await group.read()
     documents = content if isinstance(content, list) else [(content, group.filename)]
-    frames = [await run_in_threadpool(parser, data, name) for data, name in documents]
+    frames = []
+    for data, name in documents:
+        try:
+            frame = await run_in_threadpool(parser, data, name)
+            if frame is None or frame.empty:
+                raise ValueError("Nenhum lançamento reconhecido.")
+            frames.append(frame)
+        except Exception as exc:
+            raise ValueError(f"Não foi possível processar {Path(name).name}: {exc}") from exc
     return pd.concat(frames, ignore_index=True)
 
 
@@ -834,9 +845,10 @@ async def conciliacao_razao_preview(
     try:
         df_ext = await _parse_upload_frames(extrato, processar_arquivo)
         df_raz = await _parse_upload_frames(razao, processar_razao)
-        df_ext = _filter_period_frame(df_ext, data_inicial, data_final)
-        df_raz = _filter_period_frame(df_raz, data_inicial, data_final)
+        df_ext, df_raz, recorte = await run_in_threadpool(
+            recortar_razao, df_ext, df_raz, data_inicial, data_final)
         diario, resumo = await run_in_threadpool(conciliar_razao, df_ext, df_raz)
+        resumo.update(recorte)
         return await run_in_threadpool(reconciliation_response, resumo, _preview_records(diario), {
             "Resumo":pd.DataFrame([resumo]), "Conciliação diária":diario, "Extrato":df_ext, "Razão":df_raz,
         }, "RAZYNC_CONCILIACAO_RAZAO.xlsx", request.headers.get("x-razync-reuse") == "1")
@@ -854,9 +866,10 @@ async def conciliacao_razao(
     try:
         df_ext = await _parse_upload_frames(extrato, processar_arquivo)
         df_raz = await _parse_upload_frames(razao, processar_razao)
-        df_ext = _filter_period_frame(df_ext, data_inicial, data_final)
-        df_raz = _filter_period_frame(df_raz, data_inicial, data_final)
+        df_ext, df_raz, recorte = await run_in_threadpool(
+            recortar_razao, df_ext, df_raz, data_inicial, data_final)
         diario, resumo = await run_in_threadpool(conciliar_razao, df_ext, df_raz)
+        resumo.update(recorte)
         report = await run_in_threadpool(_excel_report, {
             "Resumo": pd.DataFrame([resumo]),
             "Conciliação diária": diario,
