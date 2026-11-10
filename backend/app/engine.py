@@ -1185,6 +1185,20 @@ def processar_arquivo_pdf(caminho_pdf, filename_original=None):
         nome_para_identificacao = filename_original or os.path.basename(caminho_pdf)
         banco_identificado = identificar_banco_inteligente(texto_completo, nome_para_identificacao)
 
+        if not texto_completo.strip() and banco_identificado in {'SICREDI', 'BANCO CONTA CORRENTE'}:
+            from razync.valean_625 import ler_sicredi_sem_texto
+
+            try:
+                frame = ler_sicredi_sem_texto(
+                    Path(caminho_pdf).read_bytes(), opcional=banco_identificado != 'SICREDI'
+                )
+            except ValueError as erro:
+                request_state.get()['ultimo_erro_extrato'] = str(erro)
+                return []
+            if frame is not None:
+                frame['DÉBITO'] = frame['CRÉDITO'] = ''
+                return frame.to_dict('records')
+
         if banco_identificado == 'BANCO BTG':
             with open(caminho_pdf, 'rb') as arquivo_btg:
                 return processar_extrato_btg_vgv(

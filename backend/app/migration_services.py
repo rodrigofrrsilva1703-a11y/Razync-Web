@@ -86,20 +86,36 @@ def normalize_selected_banks(values):
     return normalized
 
 
-def _sicredi_pdf_1001(content):
+SICREDI_PDF_TITULARES = {
+    1000: "ACCEDE AUTOMACAO",
+    1001: "ACCEDE EQUIPAMENTOS",
+    1064: "TECH CONTROL",
+    1096: "UP PACK",
+}
+
+
+def _sicredi_pdf_empresa(code, content):
     from app.advanced import _aplicar_conta
     from razync.valean_625 import processar_sicredi_625
 
-    frame = processar_sicredi_625(content, titular="ACCEDE EQUIPAMENTOS")
-    return _aplicar_conta(frame, accounts(1001)["sicredi"])
+    frame = processar_sicredi_625(content, titular=SICREDI_PDF_TITULARES.get(code))
+    return _aplicar_conta(frame, accounts(code).get("sicredi", ""))
 
 
 def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
     with engine.processing_context(slug(code)):
-        if code == 1001 and bank == 'sicredi' and content.startswith(b'%PDF'):
-            return _sicredi_pdf_1001(content)
+        if bank == 'sicredi' and content.startswith(b'%PDF'):
+            if code == 1001:
+                return _sicredi_pdf_empresa(code, content)
+            if code not in {625, 626, 912}:
+                from app.advanced import _aplicar_conta
+                from razync.valean_625 import _texto_pdf, ler_sicredi_sem_texto
+
+                if not _texto_pdf(content).strip():
+                    frame = ler_sicredi_sem_texto(content, titular=SICREDI_PDF_TITULARES.get(code))
+                    return _aplicar_conta(frame, accounts(code).get(bank, ""))
         # Na 1529, valida o PDF Consultas sem alterar leitores das outras empresas.
         if code == 1529 and bank in {'banco_brasil', 'bb'} and str(filename).lower().endswith('.pdf'):
             from app.bb_consultas import parece_extrato_bb_consultas, ler_extrato_bb_consultas
@@ -398,9 +414,9 @@ def _workflow(code, roles, options):
                                 part['DATA'], format='%d/%m/%Y', errors='raise'
                             )
                             frames.append(part)
-                    elif bank == 'sicredi' and code == 1001:
+                    elif bank == 'sicredi':
                         frames = [
-                            _sicredi_pdf_1001(content)
+                            _sicredi_pdf_empresa(code, content)
                             if content.startswith(b'%PDF')
                             else engine.processar_planilha_accede_sig(content, bank, slug(code))
                             for _, content in roles[bank]
@@ -422,10 +438,10 @@ def _workflow(code, roles, options):
                     data[bank.title()] = {'principal': frame, 'retirados': pd.DataFrame()}
             if not data:
                 if code == 1064:
-                    raise ValueError('Envie a planilha SIG do Sicredi.')
+                    raise ValueError('Envie o Sicredi em SIG ou PDF.')
                 if code == 1001:
                     raise ValueError('Envie a planilha SIG do Itaú, o Sicredi em SIG ou PDF, ou o extrato PDF do Santander.')
-                raise ValueError('Envie a planilha SIG do Itaú e/ou Sicredi.')
+                raise ValueError('Envie o SIG Itaú e/ou o Sicredi em SIG ou PDF.')
             filename = 'TECH_CONTROL_1064_SICREDI_505_MODELO_DOMINIO.xlsx' if code == 1064 else f'ACCEDE_{code}_MODELO_DOMINIO.xlsx'
             return engine.gerar_excel_nova_geracao(data, _template_bytes()), filename
         # Existing modular processors remain intact. Replace only universal readers
@@ -461,10 +477,15 @@ def _workflow(code, roles, options):
             groups = {}
             for bank in ('santander', 'sicredi'):
                 if roles.get(bank):
-                    frames = [processar_planilha_up_pack(content, bank) for _, content in roles[bank]]
+                    frames = [
+                        _sicredi_pdf_empresa(code, content)
+                        if bank == 'sicredi' and content.startswith(b'%PDF')
+                        else processar_planilha_up_pack(content, bank)
+                        for _, content in roles[bank]
+                    ]
                     groups[bank.title()] = {'principal': filter_frame(pd.concat(frames, ignore_index=True), options), 'retirados': pd.DataFrame()}
             if not groups:
-                raise ValueError('Envie SIG Santander e/ou Sicredi.')
+                raise ValueError('Envie o SIG Santander e/ou o Sicredi em SIG ou PDF.')
             return engine.gerar_excel_nova_geracao(groups, _template_bytes()), 'UP_PACK_1096_MODELO_DOMINIO.xlsx'
         if code == 1529:
             from razync.nibo import processar_extrato_nibo_pdf

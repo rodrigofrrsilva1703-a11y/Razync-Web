@@ -79,7 +79,7 @@ CAPABILITIES = {
         "workflow": "advanced",
         "roles": [
             {"name": "itau", "label": "SIG Itaú", "accept": ".xls,.xlsx", "multiple": True, "optional": True},
-            {"name": "sicredi", "label": "SIG Sicredi", "accept": ".xls,.xlsx", "multiple": True, "optional": True},
+            {"name": "sicredi", "label": "Sicredi 505 (SIG ou PDF)", "accept": ".xls,.xlsx,.pdf", "multiple": True, "optional": True},
         ],
         "banks": {"itau": "508", "sicredi": "505"},
     },
@@ -97,7 +97,7 @@ CAPABILITIES = {
         "status": "api_ready",
         "workflow": "advanced",
         "roles": [
-            {"name": "sicredi", "label": "Planilha SIG Sicredi", "accept": ".xls,.xlsx", "multiple": True},
+            {"name": "sicredi", "label": "Sicredi 505 (SIG ou PDF)", "accept": ".xls,.xlsx,.pdf", "multiple": True},
         ],
         "banks": {"sicredi": "505"},
     },
@@ -106,7 +106,7 @@ CAPABILITIES = {
         "workflow": "advanced",
         "roles": [
             {"name": "santander", "label": "SIG Santander", "accept": ".xls,.xlsx", "multiple": True, "optional": True},
-            {"name": "sicredi", "label": "SIG Sicredi", "accept": ".xls,.xlsx", "multiple": True, "optional": True},
+            {"name": "sicredi", "label": "Sicredi 510 (SIG ou PDF)", "accept": ".xls,.xlsx,.pdf", "multiple": True, "optional": True},
         ],
         "banks": {"santander": "513", "sicredi": "510"},
     },

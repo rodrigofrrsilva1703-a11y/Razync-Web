@@ -74,19 +74,19 @@
       note:"Conta Itaú configurada: 508. Confira históricos e datas convertidos."
     },
     1000: {
-      intro:"A Accede Automação utiliza planilhas SIG do Itaú e/ou do Sicredi, separadas por banco.",
-      note:"Envie as planilhas SIG originais. Contas: Itaú 508 e Sicredi 505."
+      intro:"A Accede Automação aceita SIG do Itaú e SIG ou PDF do Sicredi.",
+      note:"Contas: Itaú 508 e Sicredi 505."
     },
     1001: {
       intro:"A Accede Equipamentos utiliza planilha SIG do Itaú, Sicredi em SIG ou PDF e extratos PDF do Aplicativo Santander Empresas para montar o Modelo Domínio.",
       note:"Envie o Santander em PDF (conta 513). Itaú 508 em SIG. Sicredi 505 em SIG ou PDF. O PDF pode abranger mais de um mês; selecione o período desejado."
     },
     1064: {
-      intro:"A Tech Control utiliza a planilha SIG do Sicredi para produzir os lançamentos contábeis.",
-      note:"Envie a planilha SIG Sicredi da conta 505; esse é o arquivo necessário para o processamento."
+      intro:"A Tech Control aceita SIG ou extrato PDF do Sicredi para produzir os lançamentos contábeis.",
+      note:"Envie o Sicredi da conta 505 em SIG ou PDF."
     },
     1096: {
-      intro:"A Up Pack utiliza planilhas SIG do Santander e/ou Sicredi, em campos separados.",
+      intro:"A Up Pack aceita SIG do Santander e SIG ou PDF do Sicredi.",
       note:"Contas configuradas: Santander 513 e Sicredi 510. Envie arquivos do banco correspondente."
     },
     1208: {

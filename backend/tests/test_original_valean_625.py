@@ -49,7 +49,7 @@ def test_sicredi_ocr_confere_sinal_pelo_saldo_e_rejeita_leitura_inconsistente(mo
     from razync import valean_625 as sicredi
 
     texto = (
-        "Sicredi\nAssociado: Empresa Teste\n"
+        "Sicredi\nAssociado: Empresa Teste\nCooperativa: 0000\n"
         "Dados referentes ao periodo 01/02/2026 a 28/02/2026.\n"
         "SALDO 5.000,00\n"
         "02/02/2026 PAGAMENTO PIX    PIX_DEB    1,200,00  3.800,00\n"
@@ -64,3 +64,31 @@ def test_sicredi_ocr_confere_sinal_pelo_saldo_e_rejeita_leitura_inconsistente(mo
     monkeypatch.setattr(sicredi, "_texto_ocr_sicredi", lambda _: texto.replace("3.800,00", "3.700,00"))
     with pytest.raises(ValueError, match="não fecha"):
         sicredi.processar_sicredi_625(b"pdf")
+
+
+def test_sicredi_sem_texto_compartilhado_entre_fluxos(monkeypatch):
+    from io import BytesIO
+    from pypdf import PdfWriter
+    from app.global_tools import processar_arquivo
+    from app.migration_services import statement
+    from razync import valean_625 as sicredi
+
+    output = BytesIO()
+    writer = PdfWriter()
+    writer.add_blank_page(width=595, height=842)
+    writer.write(output)
+    pdf = output.getvalue()
+    texto = (
+        "Sicredi\nAssociado: Empresa Teste\nCooperativa: 0000\n"
+        "Dados referentes ao periodo 01/02/2026 a 28/02/2026.\n"
+        "SALDO 5.000,00\n"
+        "02/02/2026 PAGAMENTO PIX    PIX_DEB    1.200,00  3.800,00\n"
+    )
+    monkeypatch.setattr(sicredi, "_texto_ocr_sicredi", lambda _: texto)
+    global_frame = processar_arquivo(pdf, "extrato.pdf")
+    assert global_frame["VALOR"].tolist() == [-1200]
+    assert global_frame["CRÉDITO"].tolist() == [""]
+    for empresa, conta in [(625, "3999"), (626, "1155"), (912, "515")]:
+        frame = statement(empresa, "sicredi", pdf, "extrato.pdf")
+        assert frame["CRÉDITO"].astype(str).tolist() == [conta]
+    assert statement(626, "sicredi", pdf, "extrato.pdf").attrs["saldo_extrato"] == 3800

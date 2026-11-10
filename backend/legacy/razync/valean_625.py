@@ -255,7 +255,7 @@ def _texto_ocr_sicredi(conteudo: bytes) -> str:
     return "\n".join(paginas)
 
 
-def _sicredi_ocr_registros(texto: str) -> list[dict]:
+def _sicredi_ocr_registros(texto: str) -> pd.DataFrame:
     moeda = re.compile(r"(?<![\d.,])-?\d+(?:[.,]\d{3})*,\d{2}(?![\d.,])")
     data_linha = re.compile(r"^(\d{2}/\d{2}/\d{4})\b")
     movimento_inicio = re.compile(
@@ -266,7 +266,7 @@ def _sicredi_ocr_registros(texto: str) -> list[dict]:
         return int(valor.replace(".", "").replace(",", ""))
 
     registros = []
-    saldo = None
+    saldo = saldo_inicial = None
     prefixo = ""
     ultima_data = None
     periodo = re.search(r"periodo\s+(\d{2}/\d{2}/\d{4})\s+a\s+(\d{2}/\d{2}/\d{4})",
@@ -283,6 +283,8 @@ def _sicredi_ocr_registros(texto: str) -> list[dict]:
             saldo_lido = centavos(valores[0].group())
             if saldo is not None and saldo != saldo_lido:
                 raise ValueError("A sequência dos saldos do Sicredi não fecha entre páginas.")
+            if saldo_inicial is None:
+                saldo_inicial = saldo_lido
             saldo = saldo_lido
             prefixo = ""
             continue
@@ -308,20 +310,38 @@ def _sicredi_ocr_registros(texto: str) -> list[dict]:
         prefixo = ""
         registros.append(_registro("sicredi", data, diferenca / 100, historico))
         saldo, ultima_data = novo_saldo, data
-    return registros
+    frame = _finalizar(registros, "Sicredi")
+    frame.attrs.update(
+        saldo_inicial_extrato=saldo_inicial / 100,
+        data_saldo_inicial_extrato=frame["DATA"].min() - pd.Timedelta(days=1),
+        saldo_extrato=saldo / 100,
+        data_saldo_extrato=ultima_data,
+        diferenca_validacao_saldo=0.0,
+    )
+    return frame
+
+
+def ler_sicredi_sem_texto(conteudo: bytes, *, titular: str | None = None, opcional=False):
+    texto = _texto_ocr_sicredi(conteudo)
+    cabecalho = _normalizar(texto.split("SALDO", 1)[0])
+    if not all(termo in cabecalho for termo in ("sicredi", "associado:", "cooperativa:")):
+        if opcional:
+            return None
+        raise ValueError("O PDF sem texto não foi identificado como extrato Sicredi.")
+    _validar_titular_sicredi(texto, titular)
+    return _sicredi_ocr_registros(texto)
+
+
+def _validar_titular_sicredi(texto, titular):
+    if titular and _normalizar(titular) not in _normalizar(texto):
+        raise ValueError("Sicredi: o titular do extrato não corresponde à empresa selecionada.")
 
 
 def processar_sicredi_625(conteudo: bytes, *, titular: str | None = None) -> pd.DataFrame:
     texto = _texto_pdf(conteudo)
-    usa_ocr = not texto.strip()
-    if usa_ocr:
-        texto = _texto_ocr_sicredi(conteudo)
-        if "sicredi" not in _normalizar(texto):
-            raise ValueError("O PDF sem texto não foi identificado como extrato Sicredi.")
-    if titular and _normalizar(titular) not in _normalizar(texto):
-        raise ValueError("Sicredi: o titular do extrato não corresponde à empresa selecionada.")
-    if usa_ocr:
-        return _finalizar(_sicredi_ocr_registros(texto), "Sicredi")
+    if not texto.strip():
+        return ler_sicredi_sem_texto(conteudo, titular=titular)
+    _validar_titular_sicredi(texto, titular)
     moeda = re.compile(r"-?\d{1,3}(?:\.\d{3})*,\d{2}")
     registros = []
     for linha in texto.splitlines():

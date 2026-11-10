@@ -273,6 +273,15 @@ def processar_bb_626(conteudo: bytes) -> pd.DataFrame:
 
 def processar_sicredi_626(conteudo: bytes) -> pd.DataFrame:
     texto = _texto_pdf(conteudo)
+    if not texto.strip():
+        from razync.valean_625 import ler_sicredi_sem_texto
+
+        frame = ler_sicredi_sem_texto(conteudo, opcional=True)
+        if frame is not None:
+            conta = CONTAS_VALEAN_626["sicredi"]
+            frame["DÉBITO"] = frame["VALOR"].map(lambda valor: conta if valor > 0 else "")
+            frame["CRÉDITO"] = frame["VALOR"].map(lambda valor: conta if valor < 0 else "")
+            return frame
     if len(re.sub(r"\s+", "", texto)) < 80:
         texto = _texto_ocr(conteudo)
 
