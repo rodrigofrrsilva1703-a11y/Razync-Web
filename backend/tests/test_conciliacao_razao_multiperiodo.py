@@ -7,7 +7,7 @@ import io
 import pandas as pd
 import pytest
 
-from app.global_tools import processar_razao, conciliar_razao
+from app.global_tools import processar_razao, conciliar_razao, processar_arquivo
 from app.ledger_periods import recortar_razao
 
 
@@ -38,6 +38,39 @@ def _extratos_jan_mar():
         {"DATA": "10/03/2026", "VALOR": -210, "HISTÓRICO": "Pagamento C"},
     ])
 
+
+
+def test_extrato_excel_com_data_tipificada_como_datetime():
+    stream = io.BytesIO()
+    pd.DataFrame([
+        {"DATA": pd.Timestamp("2026-01-15"), "HISTÓRICO": "Pagamento fornecedor",
+         "DÉBITO": 350, "CRÉDITO": None},
+        {"DATA": pd.Timestamp("2026-01-15"), "HISTÓRICO": "Recebimento cliente",
+         "DÉBITO": None, "CRÉDITO": 1500},
+    ]).to_excel(stream, index=False)
+    result = processar_arquivo(stream.getvalue(), "Itau_Janeiro.xlsx")
+    assert len(result) == 2
+    assert sorted(result["VALOR"].tolist()) == [-350, 1500]
+    assert set(pd.to_datetime(result["DATA"], dayfirst=True).dt.strftime("%Y-%m")) == {"2026-01"}
+
+
+def test_extrato_excel_multiplas_abas_e_datas_reais():
+    stream = io.BytesIO()
+    with pd.ExcelWriter(stream, engine="openpyxl") as writer:
+        pd.DataFrame({"INFO": ["Resumo"], "VALOR": [0]}).to_excel(
+            writer, sheet_name="Capa", index=False)
+        pd.DataFrame([
+            {"DATA": pd.Timestamp("2026-01-15"), "HISTÓRICO": "Recebimento",
+             "CRÉDITO": 1500, "DÉBITO": None},
+        ]).to_excel(writer, sheet_name="Janeiro", index=False)
+        pd.DataFrame([
+            {"DATA": pd.Timestamp("2026-03-10"), "HISTÓRICO": "Pagamento",
+             "CRÉDITO": None, "DÉBITO": 210},
+        ]).to_excel(writer, sheet_name="Marco", index=False)
+    result = processar_arquivo(stream.getvalue(), "Itau_Extratos.xlsx")
+    assert len(result) == 2
+    assert sorted(result["VALOR"].tolist()) == [-210, 1500]
+    assert set(pd.to_datetime(result["DATA"], dayfirst=True).dt.strftime("%Y-%m")) == {"2026-01", "2026-03"}
 
 
 def test_uploads_de_dois_extratos_e_um_razao_multicompetencia():
