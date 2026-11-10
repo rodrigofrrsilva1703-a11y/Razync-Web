@@ -2069,7 +2069,13 @@ $("#ledgerForm")?.addEventListener("submit", async event => {
     const result = await response.json();
     if (controller.signal.aborted) return;
 
+    const info = result.summary || {};
+    const months = (info.meses_extratos || "").replace(/(\d{4})-(\d{2})/g,"$2/$1");
+    const periodLabel = info.periodo_automatico ? months && `Competências dos extratos · ${months}`
+      : info.periodo_automatico === false
+        ? `Período informado · ${formatDailyDate($("#ledgerStart").value)} a ${formatDailyDate($("#ledgerEnd").value)}` : "";
     renderDailyReconciliation($("#ledgerResult"), {
+      periodLabel,
       rows:result.rows || [],
       kind:"razao",
       download:async () => {
@@ -2084,14 +2090,9 @@ $("#ledgerForm")?.addEventListener("submit", async event => {
     });
 
     const divergent = (result.rows || []).filter(row => !reconciliationBalances(row,"razao").ok).length;
-    const info=result.summary || {};
-    const selectedMonths=info.meses_extratos ? ` Meses dos extratos: ${info.meses_extratos}.` : "";
-    const excluded=info.meses_razao_desconsiderados
-      ? ` Razão de outras competências excluído do confronto: ${info.meses_razao_desconsiderados}.` : "";
-    msg.textContent = (divergent
-      ? `${divergent} dia(s) com divergência entre Extrato e Razão.`
-      : "Todos os dias analisados estão conciliados.") + selectedMonths +
-      (info.periodo_automatico ? excluded : " Intervalo informado aplicado aos dois lados.");
+    msg.textContent = divergent
+      ? `${divergent} dia(s) com divergência. Use o filtro Divergentes para revisar.`
+      : "Todos os dias analisados estão conciliados.";
   } catch (error) {
     if (error.name === "AbortError" || controller.signal.aborted) return;
     clearToolResult("#ledgerResult");

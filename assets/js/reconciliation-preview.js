@@ -31,7 +31,7 @@ function reconciliationBalances(row, kind="modelo") {
   };
 }
 
-function renderDailyReconciliation(target, {rows=[], kind="modelo", download=null, movements=[]}) {
+function renderDailyReconciliation(target, {rows=[], kind="modelo", download=null, movements=[], periodLabel=""}) {
   if (!target) return;
   target.replaceChildren();
   target.hidden = false;
@@ -48,23 +48,28 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
 
   const banks = [...new Set(normalized.map(row => row.bank).filter(Boolean))];
   const multiBank = banks.length > 1;
+  const ledger = kind === "razao";
+  target.classList.toggle("ledger-preview", ledger);
   const okCount = normalized.filter(row => row.ok).length;
   const reviewCount = normalized.length - okCount;
 
-  const {command, actions} = createPreviewCommand(kind === "razao" ? "Prévia da conciliação com razão" : "Prévia da conferência com extrato",
-    `${normalized.length.toLocaleString("pt-BR")} ${multiBank ? "registro(s) de banco e dia" : "dia(s) analisado(s)"}`);
+  const {command, actions} = createPreviewCommand(ledger ? "Resultado da conciliação" : "Prévia da conferência com extrato",
+    periodLabel || `${normalized.length.toLocaleString("pt-BR")} ${multiBank ? "registro(s) de banco e dia" : "dia(s) analisado(s)"}`);
   const summary = document.createElement("div");
   summary.className = "daily-summary";
   summary.innerHTML = `
     <div><small>${multiBank ? "Banco/dia analisados" : "Dias analisados"}</small><strong>${normalized.length}</strong></div>
-    <div><small>Batendo</small><strong>${okCount}</strong></div>
+    <div><small>${ledger ? "Conciliados" : "Batendo"}</small><strong>${okCount}</strong></div>
     <div><small>Divergentes</small><strong>${reviewCount}</strong></div>
   `;
 
-  const rule = document.createElement("div");
+  const rule = document.createElement(ledger ? "details" : "div");
   rule.className = "daily-rule";
   const sourceLabel = kind === "razao" ? "Razão" : "Modelo";
-  rule.innerHTML = `
+  rule.innerHTML = ledger ? `
+    <summary>Como a conciliação é calculada</summary>
+    <span>As entradas do extrato são comparadas aos créditos do razão, e as saídas, aos débitos. A diferença é o valor do razão menos o valor do extrato. O dia está conciliado quando ambas as diferenças são zero.</span>
+  ` : `
     <strong>Regra da conferência</strong>
     <span>Saldo entrada = Entrada ${sourceLabel} − Entrada Extrato · Saldo saída = Saída ${sourceLabel} − Saída Extrato · O status só fica <b>Batendo</b> quando os dois saldos forem R$ 0,00.</span>
   `;
@@ -89,15 +94,15 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
 
   const filters = document.createElement("div");
   filters.className = "daily-filters";
-  [
-    ["all","Todos"],
-    ["ok","Batendo"],
-    ["review","Divergentes"]
-  ].forEach(([value,label],index) => {
+  const statuses = ledger
+    ? [["all","Todos"],["review","Divergentes"],["ok","Conciliados"]]
+    : [["all","Todos"],["ok","Batendo"],["review","Divergentes"]];
+  statuses.forEach(([value,label],index) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "daily-filter" + (index === 0 ? " active" : "");
     button.dataset.filter = value;
+    button.setAttribute("aria-pressed", String(index === 0));
     button.textContent = label;
     filters.appendChild(button);
   });
@@ -152,7 +157,18 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
   table.className = "daily-table daily-table-reconciliation razync-table";
   const leftLabel = kind === "razao" ? "Razão" : "Modelo";
   const bankHeader = banks.length ? "<th>Banco</th>" : "";
-  table.innerHTML = `
+  table.innerHTML = ledger ? `
+    <colgroup span="${banks.length ? 3 : 2}"></colgroup><colgroup span="3"></colgroup><colgroup span="3"></colgroup>
+    <thead><tr>
+      ${banks.length ? '<th rowspan="2" scope="col">Banco</th>' : ""}
+      <th rowspan="2" scope="col">Data</th><th rowspan="2" scope="col">Status</th>
+      <th class="ledger-group" colspan="3" scope="colgroup">Entradas</th>
+      <th class="ledger-group" colspan="3" scope="colgroup">Saídas</th>
+    </tr><tr>
+      <th scope="col">Extrato</th><th scope="col">Razão</th><th scope="col">Diferença</th>
+      <th scope="col">Extrato</th><th scope="col">Razão</th><th scope="col">Diferença</th>
+    </tr></thead><tbody></tbody>
+  ` : `
     <thead><tr>
       ${bankHeader}
       <th>Data</th>
@@ -178,7 +194,7 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
         ? String(row.date).slice(6, 10) + "-" + String(row.date).slice(3, 5) + "-" + String(row.date).slice(0, 2)
         : "");
     tr.className = row.ok ? "daily-ok" : "daily-review";
-    const status = row.ok ? "Batendo" : "Divergente";
+    const status = row.ok ? (ledger ? "Conciliado" : "Batendo") : "Divergente";
 
     const values = [];
     if (banks.length) values.push({value:row.bank,type:"bank"});
@@ -192,6 +208,13 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
       {value:brl(row.exitBalance),type:"balance",ok:row.exitOk},
       {value:status,type:"status"}
     );
+
+    if (ledger) {
+      const last = values.pop();
+      const offset = banks.length ? 2 : 1;
+      const [entryLedger, entryBank, entryDifference, exitLedger, exitBank, exitDifference] = values.splice(offset);
+      values.push(last, entryBank, entryLedger, entryDifference, exitBank, exitLedger, exitDifference);
+    }
 
     values.forEach(cell => {
       const td = document.createElement("td");
@@ -211,6 +234,15 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
     body.appendChild(tr);
   });
 
+  const empty = document.createElement("p");
+  empty.className = "ledger-empty";
+  empty.textContent = "Nenhum dia corresponde aos filtros selecionados.";
+  if (ledger) {
+    scroll.tabIndex = 0;
+    scroll.setAttribute("role", "region");
+    scroll.setAttribute("aria-label", "Conciliação por dia");
+  }
+
   const applyFilters = () => {
     const activeStatus = filters.querySelector(".daily-filter.active")?.dataset.filter || "all";
     const selectedBank = toolbarLeft.querySelector(".daily-bank-filter")?.value || "";
@@ -225,13 +257,18 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
     });
     clearPeriod.hidden = !startDate.value && !endDate.value;
     const invalidRange = startDate.value && endDate.value && startDate.value > endDate.value;
-    visibleCount.textContent = invalidRange ? "Período inválido: data inicial posterior à final" : shown + " de " + normalized.length + " dias/bancos exibidos";
+    const countLabel = ledger && !multiBank ? " dias exibidos" : " dias/bancos exibidos";
+    visibleCount.textContent = invalidRange ? "Período inválido: data inicial posterior à final" : shown + " de " + normalized.length + countLabel;
+    if (ledger) empty.hidden = Boolean(shown) || Boolean(invalidRange);
   };
 
   filters.addEventListener("click", event => {
     const button = event.target.closest(".daily-filter");
     if (!button) return;
-    filters.querySelectorAll(".daily-filter").forEach(item => item.classList.toggle("active",item === button));
+    filters.querySelectorAll(".daily-filter").forEach(item => {
+      item.classList.toggle("active",item === button);
+      item.setAttribute("aria-pressed", String(item === button));
+    });
     applyFilters();
   });
   toolbarLeft.querySelector(".daily-bank-filter")?.addEventListener("change",applyFilters);
@@ -241,7 +278,12 @@ function renderDailyReconciliation(target, {rows=[], kind="modelo", download=nul
   applyFilters();
 
   scroll.appendChild(table);
-  target.append(command,summary,rule,toolbar,scroll);
+  if (ledger) {
+    scroll.appendChild(empty);
+    target.append(command,summary,toolbar,scroll,rule);
+  } else {
+    target.append(command,summary,rule,toolbar,scroll);
+  }
   if (movements.length) target.appendChild(renderStatementMovements(movements));
 }
 
