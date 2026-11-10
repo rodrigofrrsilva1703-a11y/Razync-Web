@@ -332,11 +332,55 @@ def processar_arquivo(file_bytes: bytes, filename: str) -> pd.DataFrame:
 
 
 def processar_razao(file_bytes: bytes, filename: str) -> pd.DataFrame:
+    """Lê todo o Razão, inclusive competências distribuídas por abas.
+
+    A leitura de cada aba reutiliza o parser Domínio já validado, preservando
+    a recuperação dos XLS antigos quando um arquivo não puder ser aberto pelo
+    leitor normal. Não importa as abas vazias/de totais sem movimentos.
+    """
     from app import engine
-    with engine.processing_context():
-        frame = engine.processar_razao_dominio(file_bytes, filename)
+    frames = []
+    extension = os.path.splitext(filename)[1].lower()
+    if extension in {".xlsx", ".xls"}:
+        try:
+            with pd.ExcelFile(io.BytesIO(file_bytes)) as book:
+                if len(book.sheet_names) > 1:
+                    for sheet in book.sheet_names:
+                        raw = pd.read_excel(book, sheet_name=sheet, dtype=object, header=None)
+                        if raw is None or raw.empty or raw.shape[1] < 2:
+                            continue
+                        # O parser Domínio existente trabalha com um arquivo;
+                        # fornecemos uma aba isolada para impedir que a primeira
+                        # aba esconda os lançamentos das competências seguintes.
+                        stream = io.BytesIO()
+                        with pd.ExcelWriter(stream, engine="openpyxl") as writer:
+                            raw.to_excel(writer, index=False, header=False, sheet_name="Razão")
+                        with engine.processing_context():
+                            part = engine.processar_razao_dominio(stream.getvalue(), "Razao.xlsx")
+                        if part is None or part.empty:
+                            continue
+                        part = part.copy()
+                        part["ABA_RAZAO"] = sheet
+                        frames.append(part)
+                    if not frames:
+                        raise ValueError("Nenhum lançamento do Razão encontrado nas abas da planilha.")
+        except ValueError:
+            raise
+        except Exception:
+            if extension == ".xlsx":
+                raise ValueError("Não foi possível abrir as abas do Razão em XLSX.") from None
+            # XLS Domínio com BIFF irregular: mantém a recuperação original.
+            frames = []
+
+    if not frames:
+        with engine.processing_context():
+            frame = engine.processar_razao_dominio(file_bytes, filename)
         if frame is None or frame.empty:
-            raise ValueError('Nenhum lançamento válido encontrado no Razão.')
-        frame = frame.copy()
-        frame['DATA'] = frame['DATA_DT'].dt.normalize()
-        return frame
+            raise ValueError("Nenhum lançamento válido encontrado no Razão. Confira as colunas DATA, DÉBITO e CRÉDITO.")
+        frames = [frame]
+    result = pd.concat(frames, ignore_index=True).copy()
+    result["DATA"] = pd.to_datetime(result["DATA_DT"], dayfirst=True, errors="coerce").dt.normalize()
+    result = result.dropna(subset=["DATA"])
+    if result.empty:
+        raise ValueError("O Razão não possui datas de lançamentos reconhecíveis.")
+    return result
