@@ -116,12 +116,13 @@ html[data-theme="dark"] #siteAccess {
   letter-spacing:.16em; text-transform:uppercase;
 }
 .site-access-demo-steps {
+  --tools-cycle:4.6s;
   --node-size:46px;
   position:relative; isolation:isolate;
   display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
   gap:4px; margin:0; padding:0; list-style:none;
 }
-.site-access-demo-steps::before {
+.site-access-demo-steps::before,.site-access-demo-steps::after {
   content:""; position:absolute; z-index:-1; inset:calc(var(--node-size) / 2) 16.67% auto;
   height:1px; background:var(--demo-line);
 }
@@ -145,16 +146,21 @@ html[data-theme="dark"] #siteAccess {
 @media(prefers-reduced-motion:no-preference) {
   .site-access-demo-steps li:nth-child(2) {--step-delay:.65s}
   .site-access-demo-steps li:nth-child(3) {--step-delay:1.3s}
-  .site-access-demo-steps::before {animation:login-tools-link 1.65s ease-out both}
-  .site-access-demo-icon {animation:login-tools-node .85s var(--step-delay) ease-out both}
+  .site-access-demo-steps::after {
+    background:var(--demo-accent);
+    animation:login-tools-link var(--tools-cycle) ease-out infinite;
+  }
+  .site-access-demo-icon {animation:login-tools-node var(--tools-cycle) var(--step-delay) ease-in-out infinite}
 }
 @keyframes login-tools-link {
-  from {clip-path:inset(0 100% 0 0)}
-  to {clip-path:inset(0)}
+  0% {clip-path:inset(0 100% 0 0);opacity:0}
+  8% {opacity:.65}
+  36% {clip-path:inset(0);opacity:.65}
+  49%,100% {clip-path:inset(0);opacity:0}
 }
 @keyframes login-tools-node {
-  0%,100% {box-shadow:0 0 0 0 transparent}
-  42% {border-color:var(--demo-accent);box-shadow:0 0 0 4px var(--demo-line)}
+  0%,19%,100% {border-color:var(--demo-line);box-shadow:0 0 0 0 transparent}
+  8% {border-color:var(--demo-accent);box-shadow:0 0 0 4px var(--demo-line)}
 }
 .site-access-content {
   min-width:0; display:grid; grid-template-rows:auto 1fr; gap:22px;
