@@ -265,10 +265,10 @@
             <p>Entradas do banco são comparadas aos créditos do Razão; saídas, aos débitos.</p>
           </div>
           <form id="ledgerForm">
-            <div class="global-upload-grid"><div class="global-upload-field"><label for="ledgerStatement">Extrato bancário</label>
-            <input id="ledgerStatement" type="file" accept=".pdf,.ofx,.csv,.xls,.xlsx" multiple></div><div class="global-upload-field"><label for="ledgerFile">Razão da Domínio</label>
+            <div class="global-upload-grid"><div class="global-upload-field"><label for="ledgerStatement">Extratos bancários (vários meses)</label>
+            <input id="ledgerStatement" type="file" accept=".pdf,.ofx,.csv,.xls,.xlsx" multiple></div><div class="global-upload-field"><label for="ledgerFile">Razão Domínio (uma ou várias competências)</label>
             <input id="ledgerFile" type="file" accept=".csv,.xls,.xlsx" multiple></div></div>
-            <div class="global-tool-controls"><fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="ledgerStart">De</label><input id="ledgerStart" type="date"></div><div><label for="ledgerEnd">Até</label><input id="ledgerEnd" type="date"></div></div><p>Deixe em branco para considerar todo o período dos arquivos.</p></fieldset><div class="global-tool-action"><button type="submit">Atualizar conferência</button></div></div>
+            <div class="global-tool-controls"><fieldset class="period-card standard-period-card"><legend>Período <span>(opcional)</span></legend><div class="period-fields"><div><label for="ledgerStart">De</label><input id="ledgerStart" type="date"></div><div><label for="ledgerEnd">Até</label><input id="ledgerEnd" type="date"></div></div><p>Sem datas: compara os meses existentes nos extratos e ignora os demais meses do Razão. Para incluir outros períodos, informe as duas datas.</p></fieldset><div class="global-tool-action"><button type="submit">Atualizar conferência</button></div></div>
             <p id="ledgerMessage" class="helper"></p>
           </form>
         </div>
