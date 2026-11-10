@@ -39,6 +39,7 @@
     if (identity) window.RazyncWorkspaceResume?.beginTransition();
     delete root.dataset.siteLocked;
     screen.hidden = true;
+    delete root.dataset.siteLoading;
     if (token) checkIdle();
     release();
   }
@@ -84,14 +85,15 @@
     form.hidden = !canLogin;
     retry.hidden = canLogin;
     status.textContent = message;
+    delete root.dataset.siteLoading;
     window.RazyncWorkspaceResume?.endTransition();
   }
   async function check() {
     if (!base) { required = false; unlocked(); return; }
+    root.dataset.siteLoading = '';
     retry.disabled = true;
     retry.hidden = true;
     screen.dataset.accessState = 'checking';
-    status.textContent = 'Verificando acesso…';
     try {
       const response = await call('/config', { signal:AbortSignal.timeout(20000) });
       // A publicação da interface pode terminar antes da nova versão da API.

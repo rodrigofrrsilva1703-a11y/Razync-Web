@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('assets/js/site-access.js','utf8');
 
-function fixture() {
+function fixture({activeSession=false}={}) {
   const make = () => ({hidden:false, disabled:false, dataset:{}, events:{}, attrs:{}, value:'',
     addEventListener(k,f){this.events[k]=f;}, setAttribute(k,v){this.attrs[k]=v;},
     removeAttribute(k){delete this.attrs[k];}, focus(){this.focused=true;}});
@@ -16,24 +16,29 @@ function fixture() {
   ids.siteAccessPassword.type='password';
   ids.siteAccessShow.attrs['aria-pressed']='false';
   const body=make(), storage=new Map();
-  let configFails=true, loginStatus=401;
+  let configFails=!activeSession, loginStatus=401, confirmSession;
+  const sessionResponse=new Promise(resolve=>{confirmSession=resolve;});
+  if(activeSession)storage.set('razync:private-session:v1','synthetic');
   const window={RAZYNC_CONFIG:{apiBase:'https://api.example.test'},addEventListener(){},
     fetch:async url=>url.endsWith('/config')
       ? Response.json(configFails?{}:{required:true,available:true},{status:configFails?503:200})
-      : Response.json(loginStatus===200?{session:'synthetic',email:'user@example.test'}:{},{status:loginStatus})};
+      : url.endsWith('/sessao') ? sessionResponse
+        : Response.json(loginStatus===200?{session:'synthetic',email:'user@example.test'}:{},{status:loginStatus})};
   vm.runInNewContext(source,{window,document:{body,querySelector:q=>ids[q.slice(1)],addEventListener(){}},
     sessionStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
     URL, URLSearchParams, Headers, AbortSignal, Request, location:{search:'',href:'https://razync.example.test/'},
     clearTimeout(){},setTimeout(){return 1;}});
-  return {ids,submit,body,storage,window,allowConfig(){configFails=false;},allowLogin(){loginStatus=200;}};
+  return {ids,submit,body,storage,window,confirmSession,allowConfig(){configFails=false;},allowLogin(){loginStatus=200;}};
 }
 
 test('login passa por espera, nova tentativa, erro de senha e acesso confirmado', async()=>{
   const h=fixture(), {siteAccess:screen,siteAccessForm:form,siteAccessRetry:retry,
     siteAccessPassword:password,siteAccessShow:show,siteAccessCaps:caps} = h.ids;
   assert.equal(screen.dataset.accessState,'checking');
+  assert.equal(h.body.dataset.siteLoading,'');
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(screen.dataset.accessState,'unavailable');
+  assert.equal('siteLoading' in h.body.dataset,false);
   assert.equal(form.hidden,true);
   h.allowConfig();
   await retry.events.click();
@@ -58,4 +63,17 @@ test('login passa por espera, nova tentativa, erro de senha e acesso confirmado'
   assert.equal(screen.hidden,true);
   assert.equal(h.window.RazyncSiteAccess.identity(),'user@example.test');
   assert.equal(h.storage.get('razync:private-session:v1'),'synthetic');
+});
+
+test('recarregar com sessão ativa mantém a tela de carregamento até iniciar a retomada', async()=>{
+  const h=fixture({activeSession:true});
+  let loadingDuringHandoff;
+  h.window.RazyncWorkspaceResume={beginTransition(){loadingDuringHandoff=h.body.dataset.siteLoading;}};
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(h.body.dataset.siteLoading,'');
+  h.confirmSession(Response.json({email:'user@example.test'}));
+  await h.window.RazyncSiteAccess.ready;
+  assert.equal(loadingDuringHandoff,'');
+  assert.equal(h.ids.siteAccess.hidden,true);
+  assert.equal('siteLoading' in h.body.dataset,false);
 });

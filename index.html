@@ -35,11 +35,17 @@
   <link rel="stylesheet" href="./assets/css/sidebar-motion.css?v=20261029-1">
   <link rel="stylesheet" href="./assets/css/home-welcome.css?v=black-attachments-20261109-1">
   <link rel="stylesheet" href="./assets/css/global-tool-preparation.css?v=20261029-1">
-  <link rel="stylesheet" href="./assets/css/site-access.css?v=login-fields-20261110">
+  <link rel="stylesheet" href="./assets/css/site-access.css?v=site-loading-1">
   <link rel="stylesheet" href="./assets/css/preview-layout.css?v=20261109-1">
 </head>
-<body class="sidebar-collapsed" data-site-locked>
-  <div id="workspaceRestoring" role="status">Retomando sua tela…</div>
+<body class="sidebar-collapsed" data-site-locked data-site-loading>
+  <div id="workspaceRestoring" role="status">
+    <div class="workspace-loading-content">
+      <img src="./assets/razync-logo-original.png" width="52" height="52" alt="">
+      <strong>Razync</strong>
+      <span>Carregando sua área de trabalho…</span>
+    </div>
+  </div>
   <section id="siteAccess" data-access-state="checking" aria-labelledby="siteAccessTitle">
     <div class="site-access-card">
       <div class="site-access-welcome">
@@ -68,7 +74,7 @@
         <h1 id="siteAccessTitle">Entre no Razync</h1>
         <p>Use sua conta para continuar de onde parou.</p>
       </div>
-      <p id="siteAccessStatus" role="status">Verificando acesso…</p>
+      <p id="siteAccessStatus" role="status"></p>
       <form id="siteAccessForm" method="post" hidden>
         <div class="site-access-field">
           <label for="siteAccessEmail">E-mail</label>
@@ -804,7 +810,7 @@
     </div>
   </dialog>
   <script src="./assets/js/config.js"></script>
-  <script src="./assets/js/site-access.js?v=login-full-20261110"></script>
+  <script src="./assets/js/site-access.js?v=site-loading-1"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
   <script src="./assets/js/workspace-ui.js?v=idle-home-1"></script>
