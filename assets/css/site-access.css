@@ -144,12 +144,12 @@ html[data-theme="dark"] #siteAccess {
 .site-access-input {position:relative; min-width:0}
 .site-access-input>svg {position:absolute; left:14px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--login-muted)}
 #siteAccess :is(#siteAccessEmail,#siteAccessPassword) {
-  box-sizing:border-box; width:100%; min-height:50px; margin:0; padding:11px 13px 11px 42px;
-  border:1px solid var(--login-line); border-radius:11px; font-size:16px; font-weight:500;
+  box-sizing:border-box; width:100%; min-height:50px; margin:0; padding:11px 13px 11px 42px!important;
+  border:1px solid var(--login-line)!important; border-radius:11px!important; font-size:16px!important; font-weight:500;
   background:var(--login-field)!important; color:var(--login-ink)!important;
   -webkit-text-fill-color:var(--login-ink)!important; caret-color:var(--login-ink);
 }
-#siteAccessPassword {padding-right:50px!important}
+#siteAccess #siteAccessPassword {padding-right:50px!important}
 #siteAccess :is(#siteAccessEmail,#siteAccessPassword)::placeholder {
   color:var(--login-muted)!important; -webkit-text-fill-color:var(--login-muted)!important; opacity:1; font-weight:400;
 }
