@@ -9,7 +9,7 @@ body[data-site-locked] .app-shell {display:none!important}
 }
 html[data-theme="dark"] #siteAccess{
   --login-bg:#090a0d;--login-card:#121419;--login-ink:#eef1f7;--login-muted:#a7b1c3;
-  --login-line:#303642;--login-field:#181b23;--login-accent:#4473ea;
+  --login-line:#52617a;--login-field:#181b23;--login-accent:#3562d5;
   background:radial-gradient(ellipse at 50% 0,#141b2c 0,transparent 56%),var(--login-bg);
 }
 #siteAccess .site-access-card{

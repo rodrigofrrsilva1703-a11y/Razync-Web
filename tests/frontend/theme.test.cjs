@@ -60,7 +60,7 @@ test('alternância salva a escolha e atualiza acessibilidade e metadados',()=>{
   const h=setup();h.ready();h.click();assert.equal(h.root.dataset.theme,'dark');
   assert.equal(h.stored.get('razync:theme'),'dark');assert.equal(h.attrs['aria-pressed'],'true');
   assert.equal(h.attrs['aria-label'],'Ativar modo claro');assert.equal(h.label.textContent,'Escuro');
-  assert.equal(h.meta.content,'#080808');h.click();assert.equal(h.root.dataset.theme,'light');
+  assert.equal(h.meta.content,'#0d1015');h.click();assert.equal(h.root.dataset.theme,'light');
 });
 test('armazenamento bloqueado não impede alternância nesta visita',()=>{
   const h=setup(null,false,true);h.ready();h.click();assert.equal(h.root.dataset.theme,'dark');
@@ -79,8 +79,8 @@ test('paleta escura mantém contraste de texto normal nas superfícies e avisos'
       .map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4);
     return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;
   };
-  for (const [fg,bg] of [[token('dark-text'),token('surface')],[token('dark-muted'),token('surface-2')],
-    [token('dark-accent'),'#202020'],[token('dark-success'),'#16382f'],
+  for (const [fg,bg] of [[token('text'),token('surface')],[token('muted'),token('surface-2')],
+    [token('dark-accent'),token('surface-2')],[token('dark-success'),'#16382f'],
     [token('dark-error'),'#3b252e'],[token('dark-warning'),'#3a3023'],['#ffffff',token('action')]]) {
     const values=[luminance(fg),luminance(bg)].sort((a,b)=>b-a);
     assert.ok((values[0]+.05)/(values[1]+.05)>=4.5,`${fg} sobre ${bg}`);
