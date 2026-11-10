@@ -7,17 +7,18 @@ function setup(saved=null,osDark=false,blocked=false) {
   const listeners={},events={},attrs={},buttonEvents={};
   const root={dataset:{},style:{}};
   const button={setAttribute:(key,value)=>attrs[key]=value,addEventListener:(key,fn)=>buttonEvents[key]=fn};
-  const label={},meta={};
+  const label={},meta={},loginLabel={},loginAttrs={},loginEvents={};
+  const login={querySelector:()=>loginLabel,setAttribute:(key,value)=>loginAttrs[key]=value,addEventListener:(key,fn)=>loginEvents[key]=fn};
   const system={matches:osDark,addEventListener:(key,fn)=>events.media=fn};
   const stored=new Map([['razync:theme',saved]]);
   const context={setTimeout,clearTimeout,document:{documentElement:root,
-    querySelector:q=>q==='#themeToggle'?button:q==='#themeToggleLabel'?label:meta,
+    querySelector:q=>q==='#themeToggle'?button:q==='#themeToggleLabel'?label:q==='#siteAccessTheme'?login:q.startsWith('meta')?meta:null,
     addEventListener:(key,fn)=>listeners[key]=fn},
     localStorage:{getItem:key=>{if(blocked)throw Error('blocked');return stored.get(key);},
       setItem:(key,value)=>{if(blocked)throw Error('blocked');stored.set(key,value);}},
     window:{matchMedia:query=>query.includes('reduced-motion')?{matches:false}:system,innerWidth:1280,innerHeight:720,addEventListener:(key,fn)=>events[key]=fn}};
   vm.runInNewContext(source,context);
-  return {root,attrs,label,meta,stored,events,system,document:context.document,window:context.window,button,ready:()=>listeners.DOMContentLoaded(),click:()=>buttonEvents.click()};
+  return {root,attrs,label,meta,stored,events,system,document:context.document,window:context.window,button,loginAttrs,loginLabel,ready:()=>listeners.DOMContentLoaded(),click:()=>buttonEvents.click({currentTarget:button}),clickLogin:()=>loginEvents.click({currentTarget:login})};
 }
 
 test('revelação parte do botão, preserva cliques rápidos e limpa o estado temporário',async()=>{
@@ -85,4 +86,14 @@ test('paleta escura mantém contraste de texto normal nas superfícies e avisos'
     const values=[luminance(fg),luminance(bg)].sort((a,b)=>b-a);
     assert.ok((values[0]+.05)/(values[1]+.05)>=4.5,`${fg} sobre ${bg}`);
   }
+});
+
+
+test('seletor de tema do login mantém a mesma preferência da área de trabalho',()=>{
+  const h=setup();h.ready();h.clickLogin();
+  assert.equal(h.root.dataset.theme,'dark');
+  assert.equal(h.loginAttrs['aria-pressed'],'true');
+  assert.equal(h.loginLabel.textContent,'Modo claro');
+  assert.equal(h.stored.get('razync:theme'),'dark');
+  assert.equal(h.label.textContent,'Escuro');
 });

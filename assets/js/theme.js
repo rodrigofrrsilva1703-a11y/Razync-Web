@@ -17,6 +17,13 @@
       button.title = dark ? "Ativar modo claro" : "Ativar modo escuro";
       document.querySelector("#themeToggleLabel").textContent = dark ? "Escuro" : "Claro";
     }
+    const loginButton = document.querySelector("#siteAccessTheme");
+    if (loginButton) {
+      const dark = theme === "dark";
+      loginButton.setAttribute("aria-pressed", String(dark));
+      loginButton.setAttribute("aria-label", dark ? "Ativar modo claro" : "Ativar modo escuro");
+      loginButton.querySelector("span").textContent = dark ? "Modo claro" : "Modo escuro";
+    }
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.content = theme === "dark" ? "#080808" : "#f4f7fb";
   }
@@ -74,11 +81,13 @@
   apply(current());
   document.addEventListener("DOMContentLoaded", () => {
     apply(current());
-    document.querySelector("#themeToggle")?.addEventListener("click", () => {
+    const toggle = event => {
       preference = root.dataset.theme === "dark" ? "light" : "dark";
       try { localStorage.setItem(key, preference); } catch { /* Still works for this visit. */ }
-      changeTheme(preference, document.querySelector("#themeToggle"));
-    });
+      changeTheme(preference, event.currentTarget || document.querySelector("#themeToggle"));
+    };
+    document.querySelector("#themeToggle")?.addEventListener("click", toggle);
+    document.querySelector("#siteAccessTheme")?.addEventListener("click", toggle);
   });
   system.addEventListener("change", () => { if (!valid(preference)) apply(current()); });
   window.addEventListener("storage", event => {

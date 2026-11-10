@@ -59,65 +59,70 @@ html[data-workspace-restoring] #workspaceRestoring {
 
 
 #siteAccess {
-  --login-bg:#eef2f8; --login-card:#fff; --login-ink:#172238; --login-muted:#4f5e73;
-  --login-line:#d6deea; --login-field:#f7f9fc; --login-accent:#254fc5; --login-focus:#3666e2;
-  min-height:100dvh; display:grid; place-items:center;
-  padding:clamp(18px,4vw,60px);
-  color:var(--login-ink);
-  background:radial-gradient(ellipse at 78% 15%,#e1e9fb,transparent 55%),var(--login-bg);
+  --login-card:#fbfcff; --login-ink:#142038; --login-muted:#4d5d74;
+  --login-line:#d4deeb; --login-field:#f2f5fa; --login-accent:#254fc5; --login-focus:#3666e2;
+  --login-error:#98372c; --login-error-bg:#fff3ee;
+  min-height:100dvh; color:var(--login-ink); background:var(--login-card);
 }
 html[data-theme="dark"] #siteAccess {
-  --login-bg:#09090b; --login-card:#141417; --login-ink:#f4f6fb; --login-muted:#b4bfce;
-  --login-line:#424750; --login-field:#1b1c21; --login-accent:#315cd5; --login-focus:#86adff;
-  background:radial-gradient(ellipse at 20% 5%,#142039,transparent 50%),var(--login-bg);
+  --login-card:#101113; --login-ink:#f4f6fb; --login-muted:#b4bfce;
+  --login-line:#414953; --login-field:#1b1d23; --login-accent:#315cd5; --login-focus:#86adff;
+  --login-error:#ffb9ac; --login-error-bg:#30201e;
 }
 #siteAccess .site-access-card {
-  width:min(100%,1080px); display:grid; grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);
-  border:1px solid var(--login-line); border-radius:26px; overflow:hidden;
-  background:var(--login-card); box-shadow:0 24px 80px #0a18361a;
-  animation:login-studio-enter .42s ease-out both;
+  width:100%; min-height:100dvh; display:grid; grid-template-columns:minmax(0,1.13fr) minmax(0,1fr);
 }
 .site-access-welcome {
-  position:relative; isolation:isolate; overflow:hidden;
-  min-width:0; display:grid; gap:clamp(28px,5vh,50px);
-  padding:clamp(32px,4.8vw,64px);
-  background:radial-gradient(ellipse at 88% 89%,#1d3980,transparent 63%),#0c162b;
+  position:relative; isolation:isolate; overflow:hidden; min-width:0;
+  display:grid; align-content:space-between; gap:clamp(40px,9vh,110px);
+  padding:clamp(35px,5.8vw,110px);
+  background:radial-gradient(ellipse at 98% 92%,#234688,transparent 62%),
+    radial-gradient(ellipse at 12% 12%,#172951,transparent 57%),#0a1325;
 }
 .site-access-welcome::before {
   content:""; position:absolute; z-index:-1; inset:0; pointer-events:none;
   background-image:linear-gradient(#8daaff13 1px,transparent 1px),linear-gradient(90deg,#8daaff13 1px,transparent 1px);
-  background-size:30px 30px; mask-image:linear-gradient(150deg,transparent 15%,#000 82%);
+  background-size:38px 38px; mask-image:linear-gradient(145deg,transparent 20%,#000 90%);
 }
-.site-access-brand {display:flex; align-items:center; gap:11px}
+.site-access-welcome::after {
+  content:""; position:absolute; z-index:-1; pointer-events:none; inset:auto -18vw -24vw auto;
+  width:58vw; aspect-ratio:1; border:1px solid #a0baff30; border-radius:50%;
+  box-shadow:0 0 0 55px #7c9ff50b,0 0 0 111px #7c9ff507;
+}
+.site-access-brand {display:flex; align-items:center; gap:12px}
 .site-access-brand img {border-radius:11px}
 .site-access-brand strong,.site-access-brand span {display:block}
-.site-access-brand strong {color:#f6f8ff; font-size:18px; letter-spacing:-.03em}
-.site-access-brand span {color:#aebbd1; font-size:11px; margin-top:2px}
+.site-access-brand strong {color:#f6f8ff; font-size:19px; letter-spacing:-.03em}
+.site-access-brand span {color:#b5c3d9; font-size:11px; margin-top:3px}
 #siteAccess p {font-size:14px; line-height:1.55; color:var(--login-muted); margin:0}
-#siteAccess .site-access-eyebrow {font-size:11px; font-weight:750; text-transform:uppercase; letter-spacing:.13em; color:#a6bfff}
+#siteAccess .site-access-eyebrow {font-size:11px; font-weight:750; text-transform:uppercase; letter-spacing:.17em; color:#b1c7ff}
 #siteAccess .site-access-welcome-title {
-  margin:10px 0 15px; color:#f6f8ff; font-size:clamp(38px,5.15vw,70px);
-  line-height:1.02; font-weight:760; letter-spacing:-.055em;
+  margin:12px 0 20px; color:#f6f8ff; font-size:clamp(40px,6.2vw,106px);
+  line-height:.99; font-weight:760; letter-spacing:-.064em;
 }
-.site-access-welcome-title em {font-style:normal; color:#a3bcff}
-#siteAccess .site-access-welcome-copy>p:last-child {max-width:35ch; color:#c3cfe3}
-.site-access-visual {
-  min-width:0; display:grid; gap:9px; padding:13px 14px 11px;
-  border:1px solid #6688ca62; border-radius:15px; background:#0d1a33ba;
-}
-.site-access-visual-head,.site-access-visual-labels {display:flex; justify-content:space-between; gap:6px; color:#c5d5f6; font-size:10px}
-.site-access-visual-head>span {display:flex; align-items:center; gap:6px}
-.site-access-visual-head>span:last-child {color:#a6bfff; letter-spacing:.12em}
-.site-access-visual-head i {width:6px; height:6px; border-radius:50%; background:#91b8ff}
-#siteAccess .site-access-flow {display:block; width:100%; height:auto; max-height:88px; fill:none}
-.site-access-flow-grid {stroke:#9cb9ff29; stroke-width:1}
-.site-access-flow-base {stroke:#5775ba; stroke-width:1.5}
-.site-access-flow-trace {stroke:url(#siteAccessFlowPaint); stroke-width:2.5; stroke-dasharray:52 400; animation:login-studio-flow 6s linear infinite}
-.site-access-flow circle {fill:#abc9ff; stroke:#172e5b; stroke-width:2}
+.site-access-welcome-title em {font-style:normal; color:#9ebdff}
+#siteAccess .site-access-welcome-copy>p:last-child {max-width:39ch; color:#c7d4e9; font-size:clamp(14px,1.3vw,19px)}
+.site-access-route {display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); max-width:650px; position:relative}
+.site-access-route::before,.site-access-route::after {content:""; position:absolute; inset:0 0 auto; height:1px}
+.site-access-route::before {background:#9db8f969}
+.site-access-route::after {background:linear-gradient(90deg,transparent,#afd9ff,transparent); animation:login-route 6s ease-in-out infinite; transform-origin:left}
+.site-access-route div {display:grid; gap:4px; padding:16px 8px 0 0}
+.site-access-route span {font-size:11px; letter-spacing:.12em; color:#a7c4ff}
+.site-access-route strong {font-size:clamp(13px,1.4vw,18px); color:#f6f8ff}
+.site-access-route small {font-size:11px; color:#c7d4e9}
+@keyframes login-route {0%,100%{opacity:.25}50%{opacity:1}}
 .site-access-content {
-  width:min(100%,480px); min-width:0; margin-inline:auto; display:flex; flex-direction:column;
-  justify-content:center; padding:clamp(28px,5vw,64px);
+  min-width:0; display:grid; grid-template-rows:auto 1fr auto; gap:22px;
+  padding:clamp(22px,4vw,64px);
 }
+.site-access-controls {display:flex; justify-content:flex-end}
+#siteAccessTheme {
+  display:flex; align-items:center; gap:7px; min-height:42px; padding:7px 12px;
+  color:var(--login-muted); background:var(--login-field); border:1px solid var(--login-line);
+  border-radius:999px; font-size:12px; font-weight:650; cursor:pointer;
+}
+#siteAccessTheme svg {width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.7}
+.site-access-form-panel {width:min(100%,400px); margin:auto; min-width:0; padding:16px 0 28px; animation:login-studio-enter .36s ease-out both}
 .site-access-heading {margin:0 0 26px}
 #siteAccess .site-access-tag {
   display:inline-flex; align-items:center; gap:6px; padding:5px 9px;
@@ -171,24 +176,35 @@ html[data-theme="dark"] #siteAccess {
 #siteAccess button:disabled {opacity:.65; cursor:wait}
 #siteAccess .site-access-session-note {font-size:11px; text-align:center}
 #siteAccessStatus:not(:empty) {
-  margin:13px 0 0; padding:9px 12px; border:1px solid var(--login-line);
-  border-radius:9px; background:var(--login-field); font-size:12px;
+  display:flex; gap:9px; align-items:center; margin:0 0 15px; padding:10px 12px;
+  border:1px solid var(--login-line); border-radius:10px; background:var(--login-field); font-size:12px;
 }
 #siteAccessStatus:empty {display:none}
+#siteAccess[data-access-state="submitting"] #siteAccessStatus {
+  position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%);
+  margin:0; padding:0; border:0; white-space:nowrap;
+}
+#siteAccess[data-access-state="checking"] #siteAccessStatus::before {
+  content:""; width:13px; height:13px; flex:none; border:2px solid var(--login-line);
+  border-top-color:var(--login-focus); border-radius:50%; animation:site-access-progress .7s linear infinite;
+}
+#siteAccess[data-access-state="error"] #siteAccessStatus {color:var(--login-error); background:var(--login-error-bg)}
+#siteAccess #siteAccessCaps {margin-top:-7px; font-size:12px; color:var(--login-muted)}
 #siteAccessRetry {margin-top:12px}
 #siteAccess .site-access-submit[aria-busy="true"] .site-access-submit-indicator {
   width:13px; height:13px; border:2px solid currentColor; border-right-color:transparent;
   border-radius:50%; font-size:0; animation:site-access-progress .7s linear infinite;
 }
 @keyframes site-access-progress {to{transform:rotate(360deg)}}
-@keyframes login-studio-flow {from{stroke-dashoffset:452}to{stroke-dashoffset:0}}
-@keyframes login-studio-enter {from{opacity:.5;transform:translateY(7px)}to{opacity:1;transform:none}}
-@media(max-width:720px) {
-  #siteAccess .site-access-card {width:min(100%,440px); grid-template-columns:minmax(0,1fr); border-radius:20px}
-  .site-access-welcome {padding:18px 23px; gap:14px}
-  .site-access-brand img {width:36px; height:36px}
-  #siteAccess .site-access-welcome-title,#siteAccess .site-access-welcome-copy>p:last-child,.site-access-visual {display:none}
-  .site-access-content {padding:25px 23px}
+@keyframes login-studio-enter {from{opacity:.6;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(max-width:760px) {
+  #siteAccess .site-access-card {grid-template-columns:minmax(0,1fr); grid-template-rows:auto 1fr}
+  .site-access-welcome {padding:22px 24px; gap:0}
+  .site-access-welcome::after {inset:auto -8vw -40vw auto; width:82vw}
+  .site-access-brand img {width:38px; height:38px}
+  .site-access-welcome-copy,.site-access-route {display:none}
+  .site-access-content {padding:16px 24px max(24px,env(safe-area-inset-bottom)); gap:8px}
+  .site-access-form-panel {padding:8px 0 24px}
 }
 @media(prefers-reduced-motion:reduce) {
   #siteAccess *,#siteAccess *::before,#siteAccess *::after {animation:none!important;transition:none!important}

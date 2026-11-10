@@ -80,6 +80,7 @@
     account.hidden = true;
     root.dataset.siteLocked = '';
     screen.hidden = false;
+    screen.dataset.accessState = canLogin ? (message ? 'notice' : 'ready') : 'unavailable';
     form.hidden = !canLogin;
     retry.hidden = canLogin;
     status.textContent = message;
@@ -88,6 +89,9 @@
   async function check() {
     if (!base) { required = false; unlocked(); return; }
     retry.disabled = true;
+    retry.hidden = true;
+    screen.dataset.accessState = 'checking';
+    status.textContent = 'Verificando acesso…';
     try {
       const response = await call('/config', { signal:AbortSignal.timeout(20000) });
       // A publicação da interface pode terminar antes da nova versão da API.
@@ -145,6 +149,11 @@
     return response;
   };
   const password = document.querySelector('#siteAccessPassword');
+  const caps = document.querySelector('#siteAccessCaps');
+  const updateCaps = event => { caps.hidden = !event.getModifierState?.('CapsLock'); };
+  password.addEventListener('keydown', updateCaps);
+  password.addEventListener('keyup', updateCaps);
+  password.addEventListener('blur', () => { caps.hidden = true; });
   const showPassword = document.querySelector('#siteAccessShow');
   function setPasswordVisible(visible) {
     password.type = visible ? 'text' : 'password';
@@ -159,12 +168,16 @@
     if (button.disabled) return;
     button.disabled = true;
     button.setAttribute('aria-busy', 'true');
+    screen.dataset.accessState = 'submitting';
     status.textContent = 'Validando acesso…';
+    let invalidCredentials = false;
     try {
       const response = await call('/entrar', { method:'POST', headers:{'Content-Type':'application/json'},
         body:JSON.stringify({ email:email.value, password:password.value }), signal:AbortSignal.timeout(20000) });
       const data = await response.json();
       if (!response.ok || typeof data.session !== 'string') {
+        invalidCredentials = response.status === 401;
+        screen.dataset.accessState = 'error';
         status.textContent = response.status === 401 ? 'E-mail ou senha inválidos.' : response.status === 429 ? 'Muitas tentativas. Aguarde um minuto e tente novamente.' : 'Não foi possível entrar agora. Tente novamente.';
         return;
       }
@@ -172,8 +185,12 @@
       lastActivity = Date.now();
       saveActivity();
       unlocked(data.email);
-    } catch { status.textContent = 'Não foi possível conectar. Tente novamente.'; }
-    finally { password.value = ''; setPasswordVisible(false); button.disabled = false; button.removeAttribute('aria-busy'); }
+    } catch { screen.dataset.accessState = 'error'; status.textContent = 'Não foi possível conectar. Tente novamente.'; }
+    finally {
+      password.value = ''; caps.hidden = true; setPasswordVisible(false);
+      button.disabled = false; button.removeAttribute('aria-busy');
+      if (invalidCredentials) password.focus();
+    }
   });
   exit.addEventListener('click', async () => {
     exit.disabled = true;
