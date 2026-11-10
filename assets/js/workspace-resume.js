@@ -7,6 +7,20 @@
   let restoring = false;
   let pending = false;
 
+  const root = document.documentElement;
+  function savedPosition() {
+    try { return JSON.parse(sessionStorage.getItem(key) || "null"); }
+    catch { return null; }
+  }
+  const hasDestination = saved => views.has(saved?.view) && (saved.view !== "companies" || Boolean(saved.wallet));
+  function beginTransition() {
+    if (hasDestination(savedPosition())) root.dataset.workspaceRestoring = "";
+  }
+  function endTransition() {
+    delete root.dataset.workspaceRestoring;
+  }
+  beginTransition();
+
   const element = id => document.getElementById(id);
   const owner = () => window.RazyncSiteAccess?.identity();
   function save() {
@@ -32,7 +46,7 @@
     restoring = true;
     try {
       await window.RazyncSiteAccess?.ready;
-      const saved = JSON.parse(sessionStorage.getItem(key) || "null");
+      const saved = savedPosition();
       if (!owner() || saved?.owner !== owner() || !views.has(saved.view)) return;
       pending = true;
       if (saved.view !== "companies") {
@@ -65,11 +79,13 @@
         if (options) options.open = true;
       }
     } catch { /* An unavailable catalog or storage must not block navigation. */ }
-    finally { restoring = false; }
+    finally { restoring = false; endTransition(); }
   }
 
   window.RazyncWorkspaceResume = {
     save,
+    beginTransition,
+    endTransition,
     retry() { if (pending) return restore(); },
     clear() { pending = false; try { sessionStorage.removeItem(key); } catch {} }
   };

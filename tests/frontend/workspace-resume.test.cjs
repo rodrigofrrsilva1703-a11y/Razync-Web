@@ -20,7 +20,7 @@ async function fixture(identity, mobile = false, catalogAvailable = true) {
     panel, selected:null, activePortfolio:null, companies:catalogAvailable ? [company] : [], portfolios:[{id:'wallet'}],
     dateApiValue:input=>input.value.split("/").reverse().join("-"),
     initialCatalog:Promise.resolve(), companyBelongsToPortfolio:()=>true, hasCompanyTools:()=>true,
-    document:{getElementById:id=>({companiesView:view,processStart:date,fileInput:file}[id] || null),
+    document:{documentElement:{dataset:{}},getElementById:id=>({companiesView:view,processStart:date,fileInput:file}[id] || null),
       querySelector:()=>panel.hidden ? view : null, addEventListener(){}},
     window:{addEventListener(name, handler){events[name] = handler;},RazyncSiteAccess:{ready:Promise.resolve(),identity:()=>identity}},
     sessionStorage:{getItem:key=>values.get(key),setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)},
@@ -30,12 +30,15 @@ async function fixture(identity, mobile = false, catalogAvailable = true) {
   context.activateTool = name => {panel.dataset.activeTool = name;};
   vm.createContext(context);
   vm.runInContext(source, context);
+  const loading = 'workspaceRestoring' in context.document.documentElement.dataset;
   await new Promise(resolve=>setImmediate(resolve));
-  return {context, panel, date, file, values, events, company};
+  return {context, panel, date, file, values, events, company, loading};
 }
 
 test('recarregar restaura empresa, ferramenta e datas, sem recuperar nem gravar arquivo', async () => {
-  const {context,panel,date,file,values} = await fixture('same@example.test');
+  const {context,panel,date,file,values,loading} = await fixture('same@example.test');
+  assert.equal(loading,true);
+  assert.equal('workspaceRestoring' in context.document.documentElement.dataset,false);
   assert.equal(context.selected?.codigo,42);
   assert.equal(panel.dataset.activeTool,'extrato');
   assert.equal(date.value,'2026-11-01');
@@ -64,6 +67,7 @@ test('recarregar no celular mantém o formato DD/MM/AAAA', async () => {
 test('catálogo indisponível mantém a posição salva e permite retomá-la ao reconectar', async () => {
   const {context,panel,date,values,events,company} = await fixture('same@example.test', false, false);
   assert.equal(context.selected,null);
+  assert.equal('workspaceRestoring' in context.document.documentElement.dataset,false);
   const stored = [...values.values()][0];
   events.pagehide();
   assert.equal([...values.values()][0],stored);

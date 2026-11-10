@@ -1,4 +1,15 @@
 body[data-site-locked] .app-shell {display:none!important}
+#workspaceRestoring {display:none}
+html[data-workspace-restoring] #siteAccess {display:none}
+html[data-workspace-restoring] .app-shell {visibility:hidden;opacity:0;pointer-events:none}
+html[data-workspace-restoring] #workspaceRestoring {
+  display:block;
+  position:fixed;
+  inset:18px 0 auto;
+  text-align:center;
+  color:var(--muted);
+  font-size:13px;
+}
 #siteAccess[hidden],#siteAccess [hidden],#siteAccessAccount[hidden]{display:none!important}
 #siteAccess{
   --login-bg:#f4f6fa;--login-card:#fff;--login-ink:#192338;--login-muted:#536279;

@@ -31,6 +31,7 @@
     accountName.title = name;
     accountInitials.textContent = words.slice(0, 2).map(word => word[0].toLocaleUpperCase('pt-BR')).join('') || 'RZ';
     account.hidden = !required;
+    if (identity) window.RazyncWorkspaceResume?.beginTransition();
     delete root.dataset.siteLocked;
     screen.hidden = true;
     release();
@@ -42,6 +43,7 @@
     form.hidden = !canLogin;
     retry.hidden = canLogin;
     status.textContent = message;
+    window.RazyncWorkspaceResume?.endTransition();
   }
   async function check() {
     if (!base) { required = false; unlocked(); return; }
