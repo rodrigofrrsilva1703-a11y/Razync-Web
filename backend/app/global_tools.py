@@ -325,12 +325,46 @@ def processar_arquivo(file_bytes: bytes, filename: str) -> pd.DataFrame:
         frame['DÉBITO'] = ''
         frame['CRÉDITO'] = ''
         return frame
+    extension = os.path.splitext(str(filename))[1].lower()
     with engine.processing_context():
-        rows = engine.processar_extrato_conferencia_empresa(file_bytes, filename)
-        frame = pd.DataFrame(rows, columns=COLUNAS)
+        try:
+            rows = engine.processar_extrato_conferencia_empresa(file_bytes, filename)
+        except ValueError:
+            if extension not in {".xls", ".xlsx", ".csv"}:
+                raise
+            rows = []
+    frame = pd.DataFrame(rows or [], columns=COLUNAS)
+    if frame.empty and extension in {".xls", ".xlsx", ".csv"}:
+        # Planilhas com DATA como célula datetime do Excel podem ser ignoradas
+        # pelo leitor antigo (que procura apenas DD/MM/AAAA em texto).
+        # O leitor universal usa pandas para interpretar datas tipadas.
+        if extension in {".xls", ".xlsx"}:
+            sheets = []
+            try:
+                with pd.ExcelFile(io.BytesIO(file_bytes)) as book:
+                    if len(book.sheet_names) > 1:
+                        for sheet in book.sheet_names:
+                            raw = pd.read_excel(book, sheet_name=sheet, dtype=object, header=None)
+                            if raw.empty or raw.shape[1] < 2:
+                                continue
+                            content = io.BytesIO()
+                            with pd.ExcelWriter(content, engine="openpyxl") as writer:
+                                raw.to_excel(writer, index=False, header=False, sheet_name="Extrato")
+                            try:
+                                part = processar_planilha_universal(content.getvalue(), filename)
+                            except ValueError:
+                                continue
+                            if part is not None and not part.empty:
+                                sheets.append(part)
+            except Exception:
+                sheets = []
+            if sheets:
+                frame = pd.concat(sheets, ignore_index=True)
         if frame.empty:
-            raise ValueError('Nenhum lançamento válido encontrado no arquivo.')
-        return frame
+            frame = processar_planilha_universal(file_bytes, filename)
+    if frame.empty:
+        raise ValueError("Nenhum movimento reconhecido no extrato. Confira se contém datas e valores de lançamentos.")
+    return frame
 
 
 def processar_razao(file_bytes: bytes, filename: str) -> pd.DataFrame:
