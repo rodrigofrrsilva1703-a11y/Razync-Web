@@ -1356,7 +1356,8 @@ function renderClassificationCoverage(coverage) {
   const done = count("classificadas");
   const pending = total - done;
   const precision = Math.max(1, Math.ceil(Math.log10(total || 1)) - 2);
-  const percent = total ? Number((done / total * 100).toFixed(precision)) : 0;
+  const percentage = rows => total ? Number((rows / total * 100).toFixed(precision)) : 0;
+  const percent = percentage(done);
   const formatNumber = value => value.toLocaleString("pt-BR");
   const formatPercent = value => value.toLocaleString("pt-BR", {
     minimumFractionDigits: 1, maximumFractionDigits: precision
@@ -1367,8 +1368,11 @@ function renderClassificationCoverage(coverage) {
   $("#classificationCoveragePrevious").textContent = formatNumber(count("ja_classificadas"));
   $("#classificationCoveragePending").textContent = formatNumber(pending);
   const saved = count("aprovacoes_salvas");
+  const label = $("#classificationCoverageLabel");
+  label.textContent = saved ? "com as aprovações salvas" : "da planilha classificada";
+  const inWorkbook = count("classificadas_no_excel");
   $("#classificationCoverageSaved").textContent = saved
-    ? `${formatNumber(saved)} ${saved === 1 ? "aprovação salva" : "aprovações salvas"} · baixe o Excel revisado.`
+    ? `${formatPercent(percentage(inWorkbook))}% no Excel atual · ${formatNumber(saved)} ${saved === 1 ? "aprovação salva a incluir" : "aprovações salvas a incluir"} no próximo Excel.`
     : "";
   $("#classificationCoverageFill").style.width = `${percent}%`;
   const bar = $("#classificationCoverageProgress");
@@ -1485,6 +1489,7 @@ function renderClassifiedWorkbook(prepared, summary, classifyOptions, companyCod
         const coverage=summary.cobertura;
         renderClassificationCoverage({
           ...coverage,
+          classificadas_no_excel:coverage.classificadas,
           classificadas:Number(coverage.classificadas || 0)+saved,
           novas_classificadas:Number(coverage.novas_classificadas || 0)+saved,
           aprovacoes_salvas:saved

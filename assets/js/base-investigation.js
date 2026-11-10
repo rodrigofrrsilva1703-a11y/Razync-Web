@@ -215,14 +215,20 @@
 
     const layout=node('div',null,'base-review-layout'),queue=node('nav',null,'base-review-queue'),detail=node('section',null,'base-review-detail');
     queue.setAttribute('aria-label','Pendências para revisar');detail.setAttribute('aria-label','Comparação do lançamento com a base');const sidebar=node('aside',null,'base-review-sidebar');sidebar.setAttribute('aria-label','Pesquisar e filtrar pendências');sidebar.append(node('h3','Fila de trabalho'),groupToggle,queue);const toolbar=node('div',null,'base-review-toolbar');toolbar.setAttribute('aria-label','Pesquisar e filtrar revisão');toolbar.append(tools,filters);layout.append(sidebar,detail);body.append(toolbar,layout);
-    let draftEnabled=false;
+    let draftEnabled=false,draftPersisted=false;
     const approvalSnapshot=()=>({
       revisions:controls.filter(c=>c.select.checked).map(c=>({_aba:c.s._aba,_linha:c.s._linha,'Conta da contrapartida':c.account.value.trim()})),
       learn:learn.checked
     });
     const hasUnsavedApprovals=()=>JSON.stringify(approvalSnapshot())!==JSON.stringify(savedReview)
       && (controls.some(c=>c.select.checked) || savedReview.revisions.length>0);
-    function saveDraft(){if(!draftEnabled || !current.draftKey || completed || applying)return;try{sessionStorage.setItem(current.draftKey,JSON.stringify({time:Date.now(),savedReview,learn:learn.checked,rows:controls.map(c=>({key:rowKey(c),account:c.account.value,approved:c.select.checked,deferred:c.deferred}))}));}catch{}}
+    function saveDraft(){
+      if(!draftEnabled || !current.draftKey || completed || applying)return false;
+      try{
+        sessionStorage.setItem(current.draftKey,JSON.stringify({time:Date.now(),savedReview,learn:learn.checked,rows:controls.map(c=>({key:rowKey(c),account:c.account.value,approved:c.select.checked,deferred:c.deferred}))}));
+        return true;
+      }catch{return false;}
+    }
     const message=node('p',null,'helper');message.setAttribute('role','status');
     const matchesFilter=(c,value)=>value==='all' || value==='approved' && c.select.checked || value==='deferred' && c.deferred && !c.select.checked || category(c.s)===value;
     const matchesSearch=c=>!query || normalized([c.s['Histórico'],c.s._aba,c.account.value,c.s.Valor,String(c.s.Valor).replace('.',','),Number(c.s.Valor).toLocaleString('pt-BR',{minimumFractionDigits:2}),displayDate(c.s.Data)].join(' ')).includes(query);
@@ -301,7 +307,7 @@
       save.disabled=completed || applying || !hasUnsavedApprovals();
       save.textContent=save.disabled && savedReview.revisions.length?'Aprovações salvas':'Salvar aprovações';
       filterButtons.forEach(f=>{f.control.setAttribute('aria-pressed',String(filter===f.value));const count=controls.filter(c=>matchesFilter(c,f.value) && matchesSearch(c)).length;f.control.replaceChildren(node('span',f.label),node('b',String(count),'base-filter-count'));});
-      saveDraft();
+      draftPersisted=saveDraft();
       if(!items.length){queue.append(node('p','Nenhuma pendência neste filtro.'));return;}
       for(const group of queueGroups(items)){
         const groupValue=group.reduce((sum,item)=>sum+Math.round(Number(item.s.Valor)*100),0)/100;
@@ -428,7 +434,10 @@
       draftEnabled=true;
       updateQueue();
       message.textContent=snapshot.revisions.length
-        ? 'Aprovações salvas. Feche o Assistente e baixe o Excel na tela da Base Inteligente.'
+        ? (draftPersisted
+          ? 'Aprovações salvas. Você pode retomar a revisão por até 24 horas nesta aba, com o mesmo arquivo e as mesmas referências.'
+          : 'Aprovações mantidas nesta revisão. Baixe o Excel antes de recarregar ou fechar a aba.')
+          + ' Feche o Assistente e baixe o Excel na tela da Base Inteligente.'
         : 'Alterações salvas. Nenhuma aprovação será incluída no Excel.';
     });
     save.className='base-review-confirm';
