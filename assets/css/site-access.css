@@ -268,7 +268,7 @@ html[data-theme="dark"] #siteAccess {
   #siteAccess :is(#siteAccessEmail,#siteAccessPassword) {min-height:44px;padding-block:8px!important}
   #siteAccess .site-access-submit {min-height:44px}
 }
-@media(max-width:760px) and (orientation:portrait), (max-width:580px) {
+@media(max-width:760px) and (orientation:portrait), (max-width:499px) {
   #siteAccess .site-access-card {
     position:relative; grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto auto;
     align-content:start;
@@ -292,13 +292,21 @@ html[data-theme="dark"] #siteAccess {
   #siteAccess .site-access-demo :is(th,td) {padding-block:4px}
   .site-access-demo-steps li {font-size:10px}
 }
-@media(max-height:520px) and (min-width:581px) and (orientation:landscape) {
+@media(max-height:620px) and (max-width:760px) and (orientation:portrait), (max-height:620px) and (max-width:499px) {
+  .site-access-heading .site-access-tag,
+  .site-access-heading > p {display:none!important}
+  .site-access-heading {margin-bottom:8px}
+  .site-access-content {padding-block:6px 8px}
+  #siteAccess .site-access-demo :is(th,td) {padding-block:3px}
+}
+@media(max-height:520px) and (min-width:500px) and (orientation:landscape) {
   .site-access-welcome {padding:12px 18px;gap:9px}
   .site-access-welcome-copy {display:none}
   .site-access-demo {padding:10px;gap:7px;font-size:11px}
   #siteAccess .site-access-demo :is(th,td) {padding-block:5px}
   .site-access-content {padding-inline:18px}
   #siteAccessTheme {min-height:34px}
+  .site-access-heading .site-access-tag {display:none!important}
 }
 @media(prefers-reduced-motion:reduce) {
   #siteAccess *,#siteAccess *::before,#siteAccess *::after {animation:none!important;transition:none!important}
