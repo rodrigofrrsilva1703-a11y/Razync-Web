@@ -105,6 +105,12 @@ def download(content, filename, summary=None, mime='application/vnd.openxmlforma
     return StreamingResponse(io.BytesIO(content), media_type=mime, headers=headers)
 
 def require_admin(authorization: str = Header('')):
+    from app.company_access import administrators, is_admin
+
+    if administrators():
+        if not is_admin():
+            raise HTTPException(403, 'Apenas administradores podem executar esta ação.')
+        return
     credentials = [value for value in (os.getenv('CLASSIFICATION_ADMIN_PASSWORD'), os.getenv('RAZYNC_ACCESS_TOKEN')) if value]
     if not credentials:
         raise HTTPException(503, 'A senha administrativa não está configurada no servidor.')

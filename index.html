@@ -226,6 +226,7 @@
             </div>
             <label for="regimeFilter" class="visually-hidden">Filtrar por regime</label><select id="regimeFilter"><option value="">Todos os regimes</option><option>LUCRO REAL</option><option>LUCRO PRESUMIDO</option><option>SIMPLES NACIONAL</option></select>
             <label for="companySort" class="visually-hidden">Ordenar empresas</label><select id="companySort"><option value="code">Código crescente</option><option value="name">Nome de A a Z</option><option value="tools">Com ferramentas primeiro</option></select>
+            <button id="manageCompanyOwners" type="button" class="secondary-action" hidden>Gerenciar responsáveis</button>
             <button id="addCompany" type="button" class="secondary-action"><span aria-hidden="true">+</span> Adicionar empresa</button>
             </div>
             <div class="directory-toolbar">
@@ -822,6 +823,19 @@
             aria-expanded="false" title="Como usar esta ferramenta">?</button>
         </div>
 
+  <dialog id="companyOwnerDialog" class="company-dialog" aria-labelledby="companyOwnerTitle">
+    <form id="companyOwnerForm">
+      <div class="company-dialog-heading"><h2 id="companyOwnerTitle">Responsáveis pelas empresas</h2><button id="closeCompanyOwnerDialog" type="button" aria-label="Fechar gestão de responsáveis">×</button></div>
+      <label for="ownerCompanySearch">Buscar empresa pelo código ou nome</label>
+      <input id="ownerCompanySearch" type="search" autocomplete="off">
+      <label for="ownerCompany">Empresa</label>
+      <select id="ownerCompany" required></select>
+      <label for="ownerEmail">Responsável</label>
+      <select id="ownerEmail" required></select>
+      <p id="companyOwnerMessage" role="status"></p>
+      <button type="submit" disabled>Salvar responsável</button>
+    </form>
+  </dialog>
   <dialog id="companyDialog" class="company-dialog" aria-labelledby="companyDialogTitle">
     <form id="companyCreateForm">
       <div class="company-dialog-heading"><h2 id="companyDialogTitle">Adicionar empresa</h2><button id="closeCompanyDialog" type="button" aria-label="Fechar cadastro">×</button></div>
@@ -850,17 +864,17 @@
   <script src="./assets/js/site-access.js?v=site-loading-1"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
-  <script src="./assets/js/workspace-ui.js?v=idle-home-1"></script>
+  <script src="./assets/js/workspace-ui.js?v=carteiras-admin-1"></script>
   <script src="./assets/js/company-guides.js?v=sicredi-pdf-2"></script>
   <script type="text/plain" data-lazy-tool="investments" src="./assets/js/bank-investments.js?v=20261020-8"></script>
   <script src="./assets/js/dom-utils.js?v=20261020-1"></script>
   <script src="./assets/js/home-motion.js?v=20261027-2"></script>
   <script src="./assets/js/home-showcase.js?v=continuous-20261029-3"></script>
   <script src="./assets/js/home-interactions.js?v=screen-motion-20261029-5"></script>
-  <script src="./assets/js/portfolios.js?v=session-resume-1"></script>
+  <script src="./assets/js/portfolios.js?v=carteiras-admin-1"></script>
   <script src="./assets/js/reconciliation-preview.js?v=ledger-standard-1"></script>
   <script src="./assets/js/tasks-ui.js?v=catalog-cache-20261025-1"></script>
-  <script src="./assets/js/admin-auth.js?v=password-eye-20261106-1"></script>
+  <script src="./assets/js/admin-auth.js?v=carteiras-admin-1"></script>
   <script src="./assets/js/lazy-assets.js?v=20261024-2"></script>
   <script src="./assets/js/workbook-result.js?v=base-investigation-20261030-1"></script>
   <script src="./assets/js/organizer-jobs.js?v=20261026-1"></script>
@@ -869,7 +883,7 @@
   <script src="./assets/js/base-investigation.js?v=jaguar-oficial-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
-  <script src="./assets/js/app.js?v=jaguar-conecta-1"></script>
+  <script src="./assets/js/app.js?v=carteiras-admin-1"></script>
   <script src="./assets/js/migration.js?v=standard-preview-20261109-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>

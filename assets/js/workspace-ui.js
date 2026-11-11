@@ -151,6 +151,7 @@ function initializeSidebarControls() {
 
 function initializeCompanyControls() {
   initializeSidebarControls();
+  initializeCompanyOwners();
   const dialog = document.querySelector("#companyDialog");
   const form = document.querySelector("#companyCreateForm");
   const message = document.querySelector("#companyCreateMessage");
@@ -170,7 +171,7 @@ function initializeCompanyControls() {
       if (!response.ok) throw new Error(await responseError(response));
       const company = await response.json();
       companies = [...companies.filter(item => Number(item.codigo) !== Number(company.codigo)), company];
-      try { localStorage.setItem(`razync:companies:v1:${API()}`, JSON.stringify(companies)); } catch { /* Cache opcional. */ }
+      try { if (!window.RazyncSiteAccess?.isPrivate()) localStorage.setItem(`razync:companies:v1:${API()}`, JSON.stringify(companies)); } catch { /* Cache opcional. */ }
       if (dialog.open) {
         search.value = ""; document.querySelector("#regimeFilter").value = ""; companyFilter = "all";
         document.querySelectorAll(".company-filter").forEach(item => { item.classList.toggle("active", item.dataset.filter === "all"); item.setAttribute("aria-pressed", String(item.dataset.filter === "all")); });
@@ -178,5 +179,75 @@ function initializeCompanyControls() {
       } else filterCompanies();
     } catch (error) { message.textContent = error.name === "AbortError" ? "Cadastro cancelado. Você pode tentar novamente." : error.message; }
     finally { button.disabled = false; }
+  });
+}
+
+function initializeCompanyOwners() {
+  const open = document.querySelector("#manageCompanyOwners");
+  if (!open) return;
+  const dialog = document.querySelector("#companyOwnerDialog");
+  const form = document.querySelector("#companyOwnerForm");
+  const query = document.querySelector("#ownerCompanySearch");
+  const company = document.querySelector("#ownerCompany");
+  const owner = document.querySelector("#ownerEmail");
+  const message = document.querySelector("#companyOwnerMessage");
+  const save = form.querySelector('[type="submit"]');
+  const endpoint = () => `${API()}/api/v1/company-access/assignments`;
+  let assignments = [];
+
+  function showOwner() {
+    owner.value = assignments.find(row => String(row.codigo) === company.value)?.email || "";
+    save.disabled = !company.value || !owner.value;
+  }
+
+  function showCompanies() {
+    const term = query.value.trim().toLocaleLowerCase("pt-BR");
+    const selected = company.value;
+    const matching = assignments.filter(row => `${row.codigo} ${row.nome}`.toLocaleLowerCase("pt-BR").includes(term));
+    company.replaceChildren(...matching.map(row => new Option(`${row.codigo} · ${row.nome}`, row.codigo)));
+    if (matching.some(row => String(row.codigo) === selected)) company.value = selected;
+    showOwner();
+  }
+
+  open.addEventListener("click", async () => {
+    open.disabled = true;
+    save.disabled = true;
+    assignments = [];
+    company.replaceChildren();
+    owner.replaceChildren();
+    query.value = "";
+    message.textContent = "Carregando empresas…";
+    dialog.showModal();
+    try {
+      const response = await fetch(endpoint());
+      if (!response.ok) throw new Error(await responseError(response));
+      const data = await response.json();
+      assignments = data.companies;
+      owner.replaceChildren(new Option("Selecione um responsável", ""), ...data.users.map(email => new Option(email, email)));
+      showCompanies();
+      message.textContent = "";
+    } catch (error) { message.textContent = error.message; }
+    finally { open.disabled = false; }
+  });
+  document.querySelector("#closeCompanyOwnerDialog").addEventListener("click", () => dialog.close());
+  query.addEventListener("input", showCompanies);
+  company.addEventListener("change", showOwner);
+  owner.addEventListener("change", () => { save.disabled = !company.value || !owner.value; });
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const row = assignments.find(item => String(item.codigo) === company.value);
+    if (!row || !owner.value || save.disabled) return;
+    const email = owner.value;
+    for (const field of [query, company, owner, save]) field.disabled = true;
+    message.textContent = "Salvando responsável…";
+    try {
+      const response = await fetch(`${endpoint()}/${row.codigo}`, {
+        method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify({email})
+      });
+      if (!response.ok) throw new Error(await responseError(response));
+      row.email = email;
+      message.textContent = `Responsável da empresa ${row.codigo} atualizado.`;
+    } catch (error) { message.textContent = error.message; }
+    finally { for (const field of [query, company, owner, save]) field.disabled = false; }
   });
 }

@@ -1786,11 +1786,11 @@ async function loadCompanies() {
   // A resposta do servidor continua sendo a fonte das atualizações.
   const cacheKey = `razync:companies:v1:${API()}`;
   const privateCatalog = () => globalThis.RazyncSiteAccess?.isPrivate() === true;
-  const validCatalog = items => Array.isArray(items) && items.length > 0 &&
+  const validCatalog = items => Array.isArray(items) && (items.length > 0 || globalThis.jaguarCompanyAccess?.enabled) &&
     items.every(item => item && Number.isFinite(Number(item.codigo)) && typeof item.nome === "string");
   function applyCatalog(items) {
     if (!validCatalog(items)) throw new Error("Catálogo inválido");
-    if (JSON.stringify(companies) === JSON.stringify(items)) return;
+    if (!globalThis.jaguarCompanyAccess?.enabled && JSON.stringify(companies) === JSON.stringify(items)) return;
     companies = items;
     renderPortfolios();
     populateTaskCompanies(companies);
@@ -1805,6 +1805,16 @@ async function loadCompanies() {
     const response = await fetchAfterWake(`${API()}/api/v1/companies`);
     if (!response.ok) throw new Error();
     const items = await response.json();
+    if (privateCatalog()) {
+      const access = await fetchAfterWake(`${API()}/api/v1/company-access/me`);
+      if (access.ok) {
+        globalThis.jaguarCompanyAccess = await access.json();
+        if (globalThis.jaguarCompanyAccess.enabled) {
+          $("#manageCompanyOwners").hidden = !globalThis.jaguarCompanyAccess.admin;
+          $("#addCompany").hidden = !globalThis.jaguarCompanyAccess.admin;
+        }
+      }
+    }
     applyCatalog(items);
     try { if (!privateCatalog()) localStorage.setItem(cacheKey, JSON.stringify(items)); } catch { /* Cache opcional. */ }
   } catch {

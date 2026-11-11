@@ -62,16 +62,18 @@ def _statuses(competencia: str):
         con.close()
 
 
-def dashboard():
+def dashboard(allowed_codes=None):
     hoje, competencia = obter_competencia_operacional()
     comp = competencia.isoformat()
     status = _statuses(comp)
-    manual = _manual_rows()
+    manual = _manual_rows() if allowed_codes is None else []
     manual_ordered = ordenar_tarefas(manual, hoje)
     manual_summary = resumir_tarefas(manual, hoje)
 
     auto = []
     for empresa in EMPRESAS:
+        if allowed_codes is not None and int(empresa["codigo"]) not in allowed_codes:
+            continue
         p = calcular_prioridade_empresa(empresa, status, hoje, competencia)
         auto.append({
             "codigo": empresa["codigo"],

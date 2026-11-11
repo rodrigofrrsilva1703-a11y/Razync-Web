@@ -15,6 +15,8 @@ function companyBelongsToPortfolio(company) {
 }
 
 function renderPortfolios() {
+  const access = globalThis.jaguarCompanyAccess;
+  if (access?.enabled) portfolios[0].name = access.admin ? "Todas as empresas" : "Minha carteira";
   const today = new Date();
   const hour = Number(new Intl.DateTimeFormat("pt-BR", {hour:"numeric", hourCycle:"h23", timeZone:"America/Sao_Paulo"}).format(today));
   $("#portfolioGreeting").textContent = hour < 12 ? "Bom dia. Vamos começar?" : hour < 18 ? "Boa tarde. Vamos começar?" : "Boa noite. Vamos começar?";
@@ -47,7 +49,7 @@ function renderPortfolios() {
     arrow.className = "portfolio-entry-arrow";
     arrow.setAttribute("aria-hidden", "true");
     arrow.textContent = "→";
-    btn.setAttribute("aria-label", "Abrir carteira de " + portfolio.name);
+    btn.setAttribute("aria-label", access?.enabled ? "Abrir " + portfolio.name.toLowerCase() : "Abrir carteira de " + portfolio.name);
     const action = document.createElement("span");
     action.className = "portfolio-entry-action";
     const actionLabel = document.createElement("span");
@@ -111,8 +113,8 @@ function selectPortfolio(id) {
   portfolioPicker.hidden = true;
   workspace.hidden = false;
   $(".hero").hidden = false;
-  $("#portfolioActiveName").textContent = "Carteira de " + portfolio.name;
-  $(".hero h1").textContent = "Empresas de " + portfolio.name;
+  $("#portfolioActiveName").textContent = globalThis.jaguarCompanyAccess?.enabled ? portfolio.name : "Carteira de " + portfolio.name;
+  $(".hero h1").textContent = globalThis.jaguarCompanyAccess?.enabled ? portfolio.name : "Empresas de " + portfolio.name;
   $(".hero p").textContent = "Pesquise uma empresa e acesse suas ferramentas.";
   resetCompanyFilters();
   window.RazyncWorkspaceResume?.save();

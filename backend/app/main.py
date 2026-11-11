@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.concurrency import run_in_threadpool
@@ -36,7 +36,10 @@ from app.tasks import dashboard as task_dashboard, set_company_status, create_ta
 
 from app.result_artifacts import router as result_router, workbook_response, reconciliation_response
 
-app = FastAPI(title="Razync Web API", version="0.4.0")
+from app.company_access import allowed_codes, require_company_access, router as company_access_router
+
+app = FastAPI(title="Razync Web API", version="0.4.0", dependencies=[Depends(require_company_access)])
+app.include_router(company_access_router)
 
 app.include_router(result_router)
 from app.organizer_jobs import router as organizer_router
@@ -95,7 +98,10 @@ def health():
 @app.get("/api/v1/companies")
 def companies():
     result = []
+    visible = allowed_codes()
     for item in company_catalog():
+        if visible is not None and int(item["codigo"]) not in visible:
+            continue
         row = dict(item)
         cap = dict(CAPABILITIES.get(int(item["codigo"]), {"status": "catalog_only", "tools": []}))
         if cap.get("status") == "api_ready":
@@ -935,7 +941,7 @@ async def identificar_cnpj(company_code: int, balancete: UploadFile = File(...))
 
 @app.get("/api/v1/tasks")
 def tasks_get():
-    return task_dashboard()
+    return task_dashboard(allowed_codes())
 
 
 @app.post("/api/v1/tasks/company/{company_code}")
@@ -943,7 +949,7 @@ async def tasks_company(company_code: int, payload: dict):
     try:
         competencia = str(payload.get("competencia") or task_dashboard()["competencia"])
         set_company_status(str(company_code), competencia, bool(payload.get("concluida", True)))
-        return task_dashboard()
+        return task_dashboard(allowed_codes())
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

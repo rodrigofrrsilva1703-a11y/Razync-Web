@@ -41,6 +41,12 @@
   dialog.addEventListener('cancel',event=>{event.preventDefault();finish(null);});
   dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)finish(null);}});
   window.adminFetch=async(url,options={},isCurrent=()=>true)=> {
+    if (window.jaguarCompanyAccess?.enabled) {
+      if (!isCurrent() || options.signal?.aborted) throw aborted();
+      const response = await fetch(url, options);
+      if (!isCurrent() || options.signal?.aborted) throw aborted();
+      return response;
+    }
     let retry=false;
     for(;;) {
       if(!isCurrent()||options.signal?.aborted)throw aborted();
