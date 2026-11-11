@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="./assets/css/app.css?v=base242-streamlit-1">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="investments" href="./assets/css/bank-investments.css?v=20261020-6">
   <link rel="stylesheet" href="./assets/css/monthly-tasks.css?v=9">
-  <link rel="stylesheet" href="./assets/css/workspace.css?v=notificacoes-2">
+  <link rel="stylesheet" href="./assets/css/workspace.css?v=empresas-admin-1">
   <link rel="stylesheet" href="./assets/css/tools.css?v=company-tools-20261031-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=fixed-header-home-20261028-3">
   <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=black-attachments-20261109-1">
@@ -231,7 +231,7 @@
             </div>
             <label for="regimeFilter" class="visually-hidden">Filtrar por regime</label><select id="regimeFilter"><option value="">Todos os regimes</option><option>LUCRO REAL</option><option>LUCRO PRESUMIDO</option><option>SIMPLES NACIONAL</option></select>
             <label for="companySort" class="visually-hidden">Ordenar empresas</label><select id="companySort"><option value="code">Código crescente</option><option value="name">Nome de A a Z</option><option value="tools">Com ferramentas primeiro</option></select>
-            <button id="addCompany" type="button" class="secondary-action"><span aria-hidden="true">+</span> Adicionar empresa</button>
+            <button id="addCompany" type="button" hidden class="secondary-action"><span aria-hidden="true">+</span> Adicionar empresa</button>
             </div>
             <div class="directory-toolbar">
               <div class="company-filters" role="group" aria-label="Filtrar ferramentas"><button type="button" class="company-filter active" data-filter="all" aria-pressed="true">Todas <span class="filter-count" aria-hidden="true"></span></button><button type="button" class="company-filter" data-filter="organizer" aria-pressed="false">Com ferramentas <span class="filter-count" aria-hidden="true"></span></button><button type="button" class="company-filter" data-filter="multibank" aria-pressed="false">Múltiplos bancos <span class="filter-count" aria-hidden="true"></span></button><button type="button" class="company-filter" data-filter="catalog" aria-pressed="false">Sem ferramenta <span class="filter-count" aria-hidden="true"></span></button></div>
@@ -933,6 +933,18 @@
       <button type="submit">Salvar nova senha</button>
     </form>
   </dialog>
+  <dialog id="removeCompanyDialog" class="company-dialog" aria-labelledby="removeCompanyTitle">
+    <form id="removeCompanyForm">
+      <h2 id="removeCompanyTitle">Remover empresa</h2>
+      <p id="removeCompanyName"></p>
+      <p>A empresa sairá da carteira e da fila de tarefas. Os registros já salvos serão preservados.</p>
+      <p id="removeCompanyStatus" role="status"></p>
+      <div class="monthly-history">
+        <button id="cancelRemoveCompany" class="secondary-action" type="button" autofocus>Cancelar</button>
+        <button type="submit">Remover empresa</button>
+      </div>
+    </form>
+  </dialog>
   <dialog id="companyDialog" class="company-dialog" aria-labelledby="companyDialogTitle">
     <form id="companyCreateForm">
       <div class="company-dialog-heading"><h2 id="companyDialogTitle">Adicionar empresa</h2><button id="closeCompanyDialog" type="button" aria-label="Fechar cadastro">×</button></div>
@@ -961,7 +973,7 @@
   <script src="./assets/js/site-access.js?v=alterar-senha-1"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
-  <script src="./assets/js/workspace-ui.js?v=notificacoes-3"></script>
+  <script src="./assets/js/workspace-ui.js?v=empresas-admin-1"></script>
   <script src="./assets/js/company-guides.js?v=sicredi-pdf-2"></script>
   <script type="text/plain" data-lazy-tool="investments" src="./assets/js/bank-investments.js?v=20261020-8"></script>
   <script src="./assets/js/dom-utils.js?v=20261020-1"></script>
@@ -981,7 +993,7 @@
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
   <script src="./assets/js/monthly-tasks.js?v=9"></script>
-  <script src="./assets/js/app.js?v=tarefas-contabeis-1"></script>
+  <script src="./assets/js/app.js?v=empresas-admin-1"></script>
   <script src="./assets/js/migration.js?v=standard-preview-20261109-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>

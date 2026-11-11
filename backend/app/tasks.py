@@ -71,7 +71,11 @@ def dashboard(allowed_codes=None):
     manual_summary = resumir_tarefas(manual, hoje)
 
     auto = []
+    from app.company_access import archived_codes
+    removed = archived_codes()
     for empresa in EMPRESAS:
+        if int(empresa["codigo"]) in removed:
+            continue
         if allowed_codes is not None and int(empresa["codigo"]) not in allowed_codes:
             continue
         p = calcular_prioridade_empresa(empresa, status, hoje, competencia)

@@ -1793,7 +1793,7 @@ async function loadCompanyAccessProfile() {
     $("#manageCompanyOwners").hidden = !admin;
     $("#homeAdminBadge").hidden = !admin;
     $("#siteAccessRole").textContent = admin ? "Conta administradora" : "Sessão ativa";
-    $("#addCompany").hidden = profile.enabled && !admin;
+    $("#addCompany").hidden = !admin;
   } catch { /* The connection control can retry loading the profile. */ }
 }
 

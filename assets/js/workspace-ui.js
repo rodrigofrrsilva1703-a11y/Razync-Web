@@ -156,6 +156,7 @@ function initializeCompanyControls() {
   const form = document.querySelector("#companyCreateForm");
   const message = document.querySelector("#companyCreateMessage");
   document.querySelector("#addCompany").addEventListener("click", () => {
+    if (!globalThis.jaguarCompanyAccess?.admin) return;
     form.reset(); message.textContent = ""; dialog.showModal();
   });
   document.querySelector("#closeCompanyDialog").addEventListener("click", () => dialog.close());
@@ -190,7 +191,35 @@ function initializeCompanyOwners() {
   const count = document.querySelector("#ownerCompanyCount");
   const message = document.querySelector("#companyOwnerMessage");
   const endpoint = () => `${API()}/api/v1/company-access/assignments`;
-  let companies = [], users = [], loading = false;
+  const removalDialog = document.querySelector("#removeCompanyDialog");
+  const removalForm = document.querySelector("#removeCompanyForm");
+  const removalMessage = document.querySelector("#removeCompanyStatus");
+  const removeConfirm = removalForm.querySelector('button[type="submit"]');
+  const cancelRemove = document.querySelector("#cancelRemoveCompany");
+  let companies = [], users = [], loading = false, removing;
+  cancelRemove.onclick = () => removalDialog.close();
+  removalDialog.addEventListener("cancel", event => {
+    if (removeConfirm.disabled) event.preventDefault();
+  });
+  removalForm.onsubmit = async event => {
+    event.preventDefault();
+    if (!removing || removeConfirm.disabled) return;
+    const {codigo} = removing;
+    removeConfirm.disabled = cancelRemove.disabled = true;
+    removalMessage.textContent = "Removendo…";
+    try {
+      const response = await fetch(`${API()}/api/v1/company-access/companies/${codigo}`, {method:"DELETE"});
+      if (!response.ok) throw new Error(await responseError(response));
+      companies = companies.filter(row => row.codigo !== codigo);
+      drafts.delete(codigo);
+      removalDialog.close();
+      render();
+      query.focus();
+      message.textContent = `Empresa ${codigo} removida do catálogo.`;
+      await loadCompanies();
+    } catch (error) { removalMessage.textContent = error.message; }
+    finally { removeConfirm.disabled = cancelRemove.disabled = false; }
+  };
   const pending = new Set();
   const drafts = new Map();
 
@@ -218,7 +247,19 @@ function initializeCompanyOwners() {
       button.textContent = "Salvar";
       button.setAttribute("aria-label", `Salvar responsável da empresa ${company.codigo}`);
       button.disabled = true;
-      row.insertCell().append(button);
+      const actions = row.insertCell();
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "Remover";
+      remove.disabled = pending.has(company.codigo);
+      remove.setAttribute("aria-label", `Remover empresa ${company.codigo}`);
+      remove.onclick = () => {
+        removing = company;
+        document.querySelector("#removeCompanyName").textContent = `${company.codigo} · ${company.nome}`;
+        removalMessage.textContent = "";
+        removalDialog.showModal();
+      };
+      actions.append(button, " ", remove);
       const updateButton = () => { button.disabled = !users.includes(select.value) || select.value === company.email; };
       select.addEventListener("change", () => {
         if (select.value === company.email) drafts.delete(company.codigo);
@@ -229,7 +270,7 @@ function initializeCompanyOwners() {
       button.addEventListener("click", async () => {
         const email = select.value;
         pending.add(company.codigo);
-        select.disabled = button.disabled = true;
+        select.disabled = button.disabled = remove.disabled = true;
         message.textContent = `Salvando empresa ${company.codigo}…`;
         try {
           const response = await fetch(`${endpoint()}/${company.codigo}`, {
@@ -246,7 +287,7 @@ function initializeCompanyOwners() {
         finally {
           pending.delete(company.codigo);
           if (row.isConnected) {
-            select.disabled = false;
+            select.disabled = remove.disabled = false;
             updateButton();
           } else render();
         }

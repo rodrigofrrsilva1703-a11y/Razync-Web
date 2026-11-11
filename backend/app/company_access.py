@@ -42,12 +42,18 @@ def _db():
         "CREATE INDEX IF NOT EXISTS company_notifications_recipient "
         "ON company_notifications(recipient, id DESC)"
     )
+    db.execute("CREATE TABLE IF NOT EXISTS archived_companies (company INTEGER PRIMARY KEY)")
     return db
 
 
 def owners():
     with closing(_db()) as db:
         return dict(db.execute("SELECT company,email FROM company_owners"))
+
+
+def archived_codes():
+    with closing(_db()) as db:
+        return {row[0] for row in db.execute("SELECT company FROM archived_companies")}
 
 
 def owner_for(code, assignments):
@@ -68,12 +74,16 @@ def allowed_codes():
 
 
 def require_company_access(request: Request):
-    if not administrators() or is_admin():
+    if not administrators():
         return
     code = request.path_params.get("company_code")
     path = request.url.path
     if code is None and path.startswith(("/api/v1/conferencia-fiscal/ia", "/api/v1/conferencia-fiscal/242/ia")):
         code = 242
+    if str(code).isascii() and str(code).isdigit() and len(str(code)) <= 9 and int(code) in archived_codes():
+        raise HTTPException(404, "Empresa removida do catálogo.")
+    if is_admin():
+        return
     if path.startswith("/api/v1/tasks/manual"):
         raise HTTPException(403, "Apenas administradores podem gerenciar tarefas manuais.")
     if code is not None and str(code).isdigit() and int(code) not in allowed_codes():
@@ -105,6 +115,18 @@ def list_assignments():
     }
 
 
+@router.delete("/companies/{company_code}")
+def archive_company(company_code: int):
+    _require_admin()
+    from app.company_service import catalog
+
+    if not any(int(row["codigo"]) == company_code for row in catalog()):
+        raise HTTPException(404, "Empresa não cadastrada.")
+    with closing(_db()) as db, db:
+        db.execute("INSERT INTO archived_companies VALUES (?) ON CONFLICT DO NOTHING", (company_code,))
+    return {"codigo": company_code}
+
+
 class Assignment(BaseModel):
     email: str
 
@@ -122,6 +144,8 @@ def set_assignment(company_code: int, payload: Assignment):
         raise HTTPException(404, "Empresa não cadastrada.")
     with closing(_db()) as db, db:
         db.execute("BEGIN IMMEDIATE")
+        if db.execute("SELECT 1 FROM archived_companies WHERE company=?", (company_code,)).fetchone():
+            raise HTTPException(404, "Empresa removida do catálogo.")
         row = db.execute("SELECT email FROM company_owners WHERE company=?", (company_code,)).fetchone()
         previous_email = owner_for(company_code, {company_code: row[0]} if row else {})
         changed = previous_email != email
@@ -150,7 +174,8 @@ def list_notifications():
     email = _notification_recipient()
     visible = (
         " FROM company_notifications n JOIN company_owners o "
-        "ON o.company=n.company AND o.email=n.recipient WHERE n.recipient=?"
+        "ON o.company=n.company AND o.email=n.recipient WHERE n.recipient=? "
+        "AND NOT EXISTS (SELECT 1 FROM archived_companies a WHERE a.company=n.company)"
     )
     with closing(_db()) as db, db:
         db.row_factory = sqlite3.Row
