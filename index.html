@@ -746,6 +746,18 @@
                 <span><b aria-hidden="true">✓</b> Aprende por empresa e banco</span>
                 <span><b aria-hidden="true">✓</b> Mantém revisão antes de aplicar</span>
               </div>
+              <details id="standardBankSetup" hidden>
+                <summary>Contas contábeis dos bancos</summary>
+                <p>Informe o código contábil do banco no Domínio antes de ensinar ou classificar.</p>
+                <ul id="standardBankAccounts" aria-label="Contas cadastradas"></ul>
+                <form id="standardBankForm" class="modern-form">
+                  <label for="standardBank">Banco</label><select id="standardBank" required></select>
+                  <label for="standardBankAccount">Código da conta contábil</label>
+                  <input id="standardBankAccount" inputmode="numeric" pattern="[1-9][0-9]{0,14}" maxlength="15" required>
+                  <button type="submit">Cadastrar conta</button>
+                </form>
+                <p id="standardBankMessage" role="status"></p>
+              </details>
               <div id="baseStats" class="mini-metrics"></div>
               <section id="baseSavedPeriods" class="base-saved-periods" aria-labelledby="savedPeriodsTitle" aria-busy="false">
                 <div class="saved-periods-heading"><strong id="savedPeriodsTitle">Períodos gravados</strong><button id="loadSavedPeriods" type="button" class="secondary-action">Consultar períodos</button></div>
@@ -1009,9 +1021,9 @@
   <script src="./assets/js/converter-global.js?v=standard-preview-20261109-1"></script>
   <script src="./assets/js/base-investigation.js?v=jaguar-oficial-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
-  <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
+  <script src="./assets/js/file-formats.js?v=carteira-brenda-1"></script>
   <script src="./assets/js/monthly-tasks.js?v=9"></script>
-  <script src="./assets/js/app.js?v=usuarios-admin-1"></script>
+  <script src="./assets/js/app.js?v=carteira-brenda-1"></script>
   <script src="./assets/js/migration.js?v=standard-preview-20261109-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>

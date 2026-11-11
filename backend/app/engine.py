@@ -1937,7 +1937,7 @@ def identificar_banco_classificacao_eletro_forte(nome_aba='', descricao='', debi
         return 'bb'
     return ''
 
-def ler_planilha_classificada(file_bytes, filename, empresa='nova_geracao'):
+def ler_planilha_classificada(file_bytes, filename, empresa='nova_geracao', bancos_configurados=None):
     """Lê planilha revisada e cria padrões exclusivos da empresa informada."""
     xls = pd.ExcelFile(io.BytesIO(file_bytes))
     registros = []
@@ -1997,6 +1997,8 @@ def ler_planilha_classificada(file_bytes, filename, empresa='nova_geracao'):
                         'itau', 'bradesco', 'fibra', 'daycoval', 'sicredi',
                         'santander', 'btg'
                     }
+            if bancos_configurados is not None:
+                bancos_validos = bancos_configurados
             assinatura = criar_assinatura_classificacao(historico)
             if banco_linha not in bancos_validos or not assinatura:
                 continue
@@ -2025,7 +2027,7 @@ def ler_planilha_classificada(file_bytes, filename, empresa='nova_geracao'):
     return registros
 
 def importar_arquivos_classificados(
-    arquivos, empresa='nova_geracao', contas_bancarias=None
+    arquivos, empresa='nova_geracao', contas_bancarias=None, bancos_configurados=None
 ):
     """Aceita XLSX/ZIP e mantém o aprendizado isolado por empresa."""
     from razync.dominio_ledger import ler_razao_dominio_base
@@ -2061,7 +2063,7 @@ def importar_arquivos_classificados(
                         'exemplo_historico': item['historico'][:500],
                     })
                 return aprendizados
-        return ler_planilha_classificada(conteudo, nome, empresa)
+        return ler_planilha_classificada(conteudo, nome, empresa, bancos_configurados)
 
     for arquivo in arquivos:
         conteudo = arquivo.getvalue()

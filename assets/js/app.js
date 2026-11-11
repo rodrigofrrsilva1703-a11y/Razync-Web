@@ -799,7 +799,57 @@ function renderReconcileBankFields(banks, company=selected) {
   });
 }
 
+function renderStandardBankSetup(company) {
+  const setup = $("#standardBankSetup");
+  const form = $("#standardBankForm");
+  const picker = $("#standardBank");
+  const list = $("#standardBankAccounts");
+  const account = $("#standardBankAccount");
+  const message = $("#standardBankMessage");
+  setup.hidden = !company.capabilities?.standard_tools;
+  if (setup.hidden) return;
+  const configured = company.capabilities.base_accounts || {};
+  setup.open = !Object.keys(configured).length;
+  list.replaceChildren();
+  for (const [bank, code] of Object.entries(configured)) {
+    const item = document.createElement("li");
+    item.textContent = bankLabel(bank, code);
+    list.append(item);
+  }
+  picker.replaceChildren(new Option("Selecione o banco", ""));
+  const available = Object.keys(company.capabilities.banks).filter(bank => !Object.hasOwn(configured, bank));
+  for (const bank of available) picker.add(new Option(bankLabel(bank), bank));
+  form.hidden = !available.length;
+  account.value = "";
+  message.textContent = "";
+  const submit = form.querySelector('[type="submit"]');
+  submit.disabled = false;
+  form.onsubmit = async event => {
+    event.preventDefault();
+    if (submit.disabled) return;
+    submit.disabled = true;
+    message.textContent = "Cadastrando conta…";
+    try {
+      const response = await fetch(`${API()}/api/v1/companies/${company.codigo}/standard-bank-account`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({bank:picker.value, account:account.value})
+      });
+      if (!response.ok) throw new Error(await responseError(response));
+      company.capabilities.base_accounts = (await response.json()).accounts;
+      if (selected !== company) return;
+      renderStandardBankSetup(company);
+      setup.open = true;
+      message.textContent = "Conta cadastrada.";
+    } catch (error) {
+      if (selected === company) message.textContent = error.message;
+    } finally {
+      if (selected === company) submit.disabled = false;
+    }
+  };
+}
+
 function renderWorkflow(company) {
+  renderStandardBankSetup(company);
   const cap = company.capabilities || {};
   const workflow = cap.workflow || "standard";
   const banks = cap.banks || {};
