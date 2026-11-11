@@ -40,6 +40,8 @@ from app.company_access import allowed_codes, require_company_access, router as 
 
 app = FastAPI(title="Razync Web API", version="0.4.0", dependencies=[Depends(require_company_access)])
 app.include_router(company_access_router)
+from app.monthly_tasks import router as monthly_tasks_router
+app.include_router(monthly_tasks_router)
 
 app.include_router(result_router)
 from app.organizer_jobs import router as organizer_router

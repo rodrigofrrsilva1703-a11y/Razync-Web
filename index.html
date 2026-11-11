@@ -13,6 +13,7 @@
   <meta name="description" content="Jaguar Conecta | Organização, classificação e conciliação contábil">
   <link rel="stylesheet" href="./assets/css/app.css?v=base242-streamlit-1">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="investments" href="./assets/css/bank-investments.css?v=20261020-6">
+  <link rel="stylesheet" href="./assets/css/monthly-tasks.css?v=1">
   <link rel="stylesheet" href="./assets/css/workspace.css?v=notificacoes-2">
   <link rel="stylesheet" href="./assets/css/tools.css?v=company-tools-20261031-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=fixed-header-home-20261028-3">
@@ -128,6 +129,7 @@
       <button class="main-nav-btn" data-view="converter" aria-label="Converter Extratos"><span class="nav-label">Converter Extratos</span></button>
       <button class="main-nav-btn" data-view="ledger" aria-label="Conciliação com Razão"><span class="nav-label">Conciliação com Razão</span></button>
       <button class="main-nav-btn" data-view="fiscal" aria-label="Conferência Fiscal × Contábil"><span class="nav-label">Conferência Fiscal × Contábil</span></button>
+      <button class="main-nav-btn" type="button" data-view="tasks"><span class="nav-label">Tarefas</span></button>
       <button id="manageCompanyOwners" class="main-nav-btn" type="button" data-view="companyOwners" hidden><span class="nav-label">Responsáveis pelas empresas</span></button>
     </nav>
       <div id="siteAccessAccount" class="sidebar-account" hidden>
@@ -239,6 +241,34 @@
           <div class="directory-results-heading"><h2>Empresas da carteira</h2><div class="search-meta"><span id="companyCount" role="status" aria-live="polite" aria-atomic="true">Carregando empresas…</span><button id="companyReset" class="directory-reset" type="button" hidden>Limpar filtros</button></div></div>
           <div class="grid" id="companyGrid" data-view="cards" aria-label="Empresas da carteira"></div>
         </section>
+      </section>
+
+      <section id="tasksView" class="global-view" aria-labelledby="monthlyTasksTitle">
+        <header class="page-head">
+          <h1 id="monthlyTasksTitle" tabindex="-1">Tarefas contábeis</h1>
+          <p>Controle as etapas do fechamento e acompanhe as pendências por competência.</p>
+        </header>
+        <div class="monthly-tasks-controls">
+          <label>Competência<input id="monthlyTasksPeriod" type="month" min="2000-01" max="2099-12"></label>
+          <label>Buscar empresa<input id="monthlyTasksSearch" type="search" placeholder="Nome ou código"></label>
+          <label>Status<select id="monthlyTasksFilter"><option value="">Todos</option><option value="pending">Não iniciado</option><option value="progress">Em andamento</option><option value="done">Concluído</option><option value="issue">Com pendência</option><option value="na">Não se aplica</option></select></label>
+          <form id="monthlyTasksImport" hidden>
+            <label>Importar planilha<input type="file" name="file" accept=".xlsx" required></label>
+            <button class="secondary-action" type="submit">Importar</button>
+          </form>
+        </div>
+        <p id="monthlyTasksImportMessage" role="status" hidden></p>
+        <section id="monthlyTasksTeam" class="monthly-tasks-team" hidden aria-labelledby="monthlyTasksTeamTitle">
+          <h2 id="monthlyTasksTeamTitle">Progresso da equipe</h2>
+          <div id="monthlyTasksPeople"></div>
+        </section>
+        <p id="monthlyTasksStatus" role="status"></p>
+        <div class="monthly-tasks-table" tabindex="0" role="region" aria-label="Tarefas por empresa">
+          <table>
+            <thead><tr><th>Empresa</th><th>Vencimento</th><th>Status</th><th>Etapas</th><th>Pendência</th><th>Ação</th></tr></thead>
+            <tbody id="monthlyTasksRows"></tbody>
+          </table>
+        </div>
       </section>
 
       <section id="companyNotificationsView" class="global-view" aria-labelledby="companyNotificationsTitle">
@@ -839,6 +869,18 @@
     </footer>
   </div>
 
+  <dialog id="monthlyTaskEditor" aria-labelledby="monthlyTaskEditorTitle">
+    <form id="monthlyTaskForm">
+      <header><h2 id="monthlyTaskEditorTitle"></h2><button type="button" id="monthlyTaskClose" class="secondary-action" aria-label="Fechar tarefa">Fechar</button></header>
+      <p id="monthlyTaskEditorPeriod"></p>
+      <fieldset><legend>Etapas da competência</legend><div id="monthlyTaskSteps"></div></fieldset>
+      <label>Status da pendência<select id="monthlyTaskIssueStatus"><option value="none">Sem pendência</option><option value="open">Aberta</option><option value="resolved">Resolvida</option></select></label>
+      <label>Pendência<textarea id="monthlyTaskIssue" maxlength="3000" rows="2"></textarea></label>
+      <label>Tratativa / última ação<textarea id="monthlyTaskAction" maxlength="3000" rows="2"></textarea></label>
+      <p id="monthlyTaskSaveMessage" role="status"></p>
+      <button type="submit">Salvar tarefa</button>
+    </form>
+  </dialog>
   <button id="companyNotificationsNav" type="button" aria-controls="companyNotificationsView" hidden>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0"/></svg>
     <span>Notificações</span><span id="companyNotificationsBadge" aria-hidden="true" hidden></span>
@@ -931,7 +973,8 @@
   <script src="./assets/js/base-investigation.js?v=jaguar-oficial-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
-  <script src="./assets/js/app.js?v=notificacoes-1"></script>
+  <script src="./assets/js/monthly-tasks.js?v=1"></script>
+  <script src="./assets/js/app.js?v=tarefas-contabeis-1"></script>
   <script src="./assets/js/migration.js?v=standard-preview-20261109-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>

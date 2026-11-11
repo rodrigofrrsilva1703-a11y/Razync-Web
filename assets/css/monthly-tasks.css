@@ -1,0 +1,40 @@
+.monthly-tasks-controls, .monthly-tasks-controls form, #monthlyTasksPeople {
+  display:flex;align-items:end;flex-wrap:wrap;gap:12px;
+}
+.monthly-tasks-controls form {margin-inline-start:auto}
+.monthly-tasks-controls form[hidden], .monthly-tasks-team[hidden] {display:none}
+.monthly-tasks-controls label, #monthlyTaskForm label {display:grid;gap:5px;color:var(--muted);font-size:12px}
+.monthly-tasks-controls input, .monthly-tasks-controls select,
+#monthlyTaskEditor select, #monthlyTaskEditor textarea {
+  background:var(--surface);color:var(--text);border:1px solid var(--border);
+  min-height:36px;border-radius:7px;padding:7px 9px;font:inherit;
+}
+.monthly-tasks-team {margin:20px 0}
+.monthly-tasks-team h2 {font-size:15px;margin:0 0 10px}
+#monthlyTasksPeople {align-items:stretch}
+#monthlyTasksPeople button {
+  text-align:left;display:grid;align-content:center;gap:5px;background:var(--surface);
+  border:1px solid var(--border);border-radius:8px;color:var(--text);font:inherit;padding:9px 11px;cursor:pointer;
+}
+#monthlyTasksPeople button[aria-pressed=true] {border-color:#6696e6}
+#monthlyTasksPeople span, #monthlyTasksStatus, #monthlyTasksImportMessage {color:var(--muted);font-size:12px}
+.monthly-tasks-table {overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.monthly-tasks-table table {width:100%;min-width:710px;border-collapse:collapse;text-align:left}
+.monthly-tasks-table th,.monthly-tasks-table td {padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px}
+.monthly-tasks-table th {background:var(--surface-2)}
+.monthly-tasks-table small {display:block;color:var(--muted);margin-top:4px}
+.monthly-task-status {white-space:nowrap}
+.monthly-task-status[data-status=done] {font-weight:700}
+#monthlyTaskEditor {
+  width:min(640px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;
+  border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);padding:20px;
+}
+#monthlyTaskEditor::backdrop {background:#101927a6}
+#monthlyTaskForm {display:grid;gap:10px}
+#monthlyTaskForm header {display:flex;gap:12px;align-items:start;justify-content:space-between}
+#monthlyTaskForm h2 {font-size:17px;margin:0}
+#monthlyTaskForm p {margin:0;color:var(--muted);font-size:12px}
+#monthlyTaskForm fieldset {border:1px solid var(--border);border-radius:8px;padding:10px;margin:0}
+#monthlyTaskForm legend {font-size:12px}
+#monthlyTaskSteps {display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px}
+#monthlyTaskForm button[type=submit] {justify-self:start}
