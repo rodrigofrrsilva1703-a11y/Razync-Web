@@ -97,3 +97,8 @@
 .monthly-issue-dialog textarea {min-height:66px;resize:vertical}
 .monthly-issue-dialog footer {display:flex;justify-content:flex-end;gap:8px;margin:4px 0 0;padding:0}
 .monthly-issue-feedback:empty {display:none}
+
+.monthly-history {margin-top:6px}
+.monthly-history-dialog ul {list-style:none;padding:0;margin:10px 0}
+.monthly-history-dialog li {border-top:1px solid var(--border);padding:10px 0;line-height:1.5}
+.monthly-history-dialog p[role=status]:empty,.monthly-history-dialog ul:empty {display:none}

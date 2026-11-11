@@ -172,7 +172,7 @@
       renderProgress(progress, item);
       const issueCell = row.insertCell();
       issueCell.dataset.issue = item.issue_status;
-      issueCell.append(issueEditor(item, saving.has(key)), historyView(key, item.code));
+      issueCell.append(issueEditor(item, saving.has(key)), historyView(key, item));
     }
   }
 
@@ -283,22 +283,52 @@
     return details;
   }
 
-  function historyView(key, code) {
-    const details = document.createElement("details");
-    const summary = document.createElement("summary");
-    summary.textContent = "Histórico";
-    summary.setAttribute("aria-label", `Histórico da empresa ${code}`);
+  function historyView(key, item) {
+    const code = item.code;
+    const wrapper = document.createElement("div");
+    wrapper.className = "monthly-history";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary-action";
+    button.textContent = "Histórico";
+    button.setAttribute("aria-label", `Histórico da empresa ${code}`);
+    const dialog = document.createElement("dialog");
+    dialog.className = "monthly-issue-dialog monthly-history-dialog";
+    dialog.id = `monthly-history-${code}`;
+    const title = document.createElement("h2");
+    title.id = `${dialog.id}-title`;
+    title.textContent = "Histórico da empresa";
+    const context = document.createElement("p");
+    context.textContent = `${code} · ${item.name} · ${state.period.split("-").reverse().join("/")}`;
+    const header = document.createElement("header");
+    header.append(title, context);
+    dialog.setAttribute("aria-labelledby", title.id);
+    button.setAttribute("aria-controls", dialog.id);
+    button.setAttribute("aria-haspopup", "dialog");
     const list = document.createElement("ul");
-    details.append(summary, list);
+    const message = document.createElement("p");
+    message.setAttribute("role", "status");
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "secondary-action";
+    close.textContent = "Fechar";
+    close.onclick = () => dialog.close();
+    const footer = document.createElement("footer");
+    footer.append(close);
+    dialog.append(header, message, list, footer);
+    wrapper.append(button, dialog);
     const states = {pending:"Pendente", done:"OK", na:"N/A", open:"Aberta", resolved:"Resolvida", none:"Sem pendência"};
-    details.ontoggle = async () => {
-      if (!details.open || list.childElementCount) return;
-      list.textContent = "Carregando…";
+    let loading = false;
+    button.onclick = async () => {
+      dialog.showModal();
+      if (loading || list.childElementCount) return;
+      loading = true;
+      message.textContent = "Carregando histórico…";
       try {
         const response = await fetch(`${endpoint()}/${key}/history`);
         if (!response.ok) throw new Error(await responseError(response));
         const events = await response.json();
-        list.textContent = events.length ? "" : "Sem alterações registradas.";
+        message.textContent = events.length ? "" : "Sem alterações registradas.";
         for (const event of events) {
           const entry = document.createElement("li");
           const when = new Date(event.at).toLocaleString("pt-BR");
@@ -307,9 +337,16 @@
           entry.textContent = `${displayOwner(event.actor)} · ${when} · ${changes.join("; ")}`;
           list.append(entry);
         }
-      } catch (error) { list.textContent = error.message; }
+      } catch (error) { message.textContent = error.message; }
+      finally { loading = false; }
     };
-    return details;
+    dialog.addEventListener("close", () => {
+      if (!refreshAfterIssue || !dialog.isConnected) return;
+      refreshAfterIssue = false;
+      renderRows();
+      rows.querySelector(`[data-task-key="${key}"] .monthly-history > button`)?.focus();
+    });
+    return wrapper;
   }
 
   async function saveTask(item, changes, trigger) {
