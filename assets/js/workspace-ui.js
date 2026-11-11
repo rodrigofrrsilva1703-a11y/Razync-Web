@@ -152,6 +152,7 @@ function initializeSidebarControls() {
 function initializeCompanyControls() {
   initializeSidebarControls();
   initializeCompanyOwners();
+  initializeUserAccess();
   const dialog = document.querySelector("#companyDialog");
   const form = document.querySelector("#companyCreateForm");
   const message = document.querySelector("#companyCreateMessage");
@@ -474,3 +475,89 @@ function initializeCompanyNotifications() {
 }
 
 globalThis.document?.addEventListener?.("DOMContentLoaded", initializeCompanyNotifications, {once:true});
+
+let loadUserAccess;
+function initializeUserAccess() {
+  const search = document.querySelector("#userAccessSearch");
+  if (!search) return;
+  const rows = document.querySelector("#userAccessRows");
+  const count = document.querySelector("#userAccessCount");
+  const message = document.querySelector("#userAccessMessage");
+  const endpoint = () => `${API()}/api/v1/company-access/users`;
+  const pending = new Set();
+  let users = [], loading = false;
+
+  function render() {
+    const term = search.value.trim().toLowerCase();
+    const matches = users.filter(user => user.email.includes(term));
+    count.textContent = `${matches.length} de ${users.length} contas`;
+    rows.replaceChildren();
+    for (const user of matches) {
+      const row = rows.insertRow();
+      row.insertCell().textContent = user.self ? `${user.email} (sua conta)` : user.email;
+      row.insertCell().textContent = user.admin ? "Administrador" : "Colaborador";
+      const cell = row.insertCell();
+      const badge = document.createElement("span");
+      badge.className = "user-access-state";
+      badge.dataset.suspended = String(user.suspended);
+      badge.textContent = user.suspended ? "Suspenso" : "Ativo";
+      cell.append(badge);
+      const actions = row.insertCell();
+      if (user.self) {
+        actions.textContent = "—";
+        continue;
+      }
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.userEmail = user.email;
+      button.textContent = user.suspended ? "Reativar" : "Suspender";
+      button.setAttribute("aria-label", `${button.textContent} acesso de ${user.email}`);
+      button.disabled = pending.has(user.email);
+      button.onclick = async () => {
+        const suspended = !user.suspended;
+        if (suspended && !window.confirm(`Suspender o acesso de ${user.email}? As sessões ativas desta conta serão encerradas.`)) return;
+        pending.add(user.email);
+        button.disabled = true;
+        message.textContent = "Atualizando acesso…";
+        try {
+          const response = await fetch(endpoint(), {
+            method:"PUT", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({email:user.email, suspended})
+          });
+          if (!response.ok) throw new Error(await responseError(response));
+          const result = await response.json();
+          user.suspended = result.suspended;
+          message.textContent = `Acesso ${result.suspended ? "suspenso" : "reativado"} para ${user.email}.`;
+        } catch (error) { message.textContent = error.message; }
+        finally {
+          pending.delete(user.email);
+          render();
+          if (document.querySelector("#userAccessView").classList.contains("active") && document.activeElement === document.body) {
+            rows.querySelector(`[data-user-email="${CSS.escape(user.email)}"]`)?.focus({preventScroll:true});
+          }
+        }
+      };
+      actions.append(button);
+    }
+    if (!matches.length) {
+      const cell = rows.insertRow().insertCell();
+      cell.colSpan = 4;
+      cell.textContent = "Nenhuma conta encontrada.";
+    }
+  }
+
+  search.addEventListener("input", render);
+  loadUserAccess = async () => {
+    if (loading || pending.size) return;
+    loading = true;
+    message.textContent = "Carregando contas…";
+    try {
+      const response = await fetch(endpoint());
+      if (!response.ok) throw new Error(await responseError(response));
+      users = (await response.json()).users;
+      message.textContent = "";
+      render();
+    } catch (error) { message.textContent = error.message; }
+    finally { loading = false; }
+  };
+}

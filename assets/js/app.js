@@ -1791,6 +1791,7 @@ async function loadCompanyAccessProfile() {
     globalThis.jaguarCompanyAccess = profile;
     const admin = profile.enabled && profile.admin;
     $("#manageCompanyOwners").hidden = !admin;
+    $("#manageUserAccess").hidden = !admin;
     $("#homeAdminBadge").hidden = !admin;
     $("#siteAccessRole").textContent = admin ? "Conta administradora" : "Sessão ativa";
     $("#addCompany").hidden = !admin;
@@ -1894,7 +1895,7 @@ enhanceFileInputs(document);
 
 let navigationVersion = 0;
 async function showGlobalView(name) {
-  if (name === "companyOwners" && !globalThis.jaguarCompanyAccess?.admin) return;
+  if ((name === "companyOwners" || name === "userAccess") && !globalThis.jaguarCompanyAccess?.admin) return;
   const version = ++navigationVersion;
   if (name === "fiscal" && globalThis.RazyncAssets && !RazyncAssets.isLoaded("fiscal")) {
     const trigger = document.querySelector('.main-nav-btn[data-view="fiscal"]');
@@ -1908,7 +1909,7 @@ async function showGlobalView(name) {
   closeCompanyToolHelp();
   $("#companyToolHelp").hidden = true;
   cancelReconcilePreview();
-  $('#currentSection').textContent = {companies:'Empresas',converter:'Converter Extratos',ledger:'Conciliação com Razão',fiscal:'Conferência Fiscal × Contábil',companyOwners:'Responsáveis pelas empresas',companyNotifications:'Notificações',tasks:'Tarefas contábeis'}[name];
+  $('#currentSection').textContent = {companies:'Empresas',converter:'Converter Extratos',ledger:'Conciliação com Razão',fiscal:'Conferência Fiscal × Contábil',companyOwners:'Responsáveis pelas empresas',userAccess:'Controle de acesso',companyNotifications:'Notificações',tasks:'Tarefas contábeis'}[name];
   panel.hidden = true;
   selected = null;
   if (name === "companies") {
@@ -1931,6 +1932,10 @@ async function showGlobalView(name) {
   if (name === "companyNotifications") {
     $("#companyNotificationsTitle").focus({preventScroll:true});
     loadCompanyNotifications?.(true);
+  }
+  if (name === "userAccess") {
+    $("#userAccessTitle").focus({preventScroll:true});
+    loadUserAccess?.();
   }
   if (name === "companyOwners") {
     $("#companyOwnerTitle").focus({preventScroll:true});

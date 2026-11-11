@@ -8,7 +8,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from app.site_access import allowlist, current_owner
+from app.site_access import allowlist, current_owner, set_user_suspended, suspended_users
 
 router = APIRouter(prefix="/api/v1/company-access")
 
@@ -98,6 +98,37 @@ def _require_admin():
 @router.get("/me")
 def profile():
     return {"enabled": bool(administrators()), "admin": is_admin()}
+
+
+@router.get("/users")
+def list_users():
+    _require_admin()
+    blocked = suspended_users()
+    admins = administrators()
+    return {"users": [
+        {"email": email, "admin": email in admins, "suspended": email in blocked, "self": email == current_owner.get()}
+        for email in sorted(allowlist())
+    ]}
+
+
+class UserAccess(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+    suspended: bool = Field(strict=True)
+
+
+@router.put("/users")
+def update_user_access(payload: UserAccess):
+    _require_admin()
+    email = payload.email.strip().casefold()
+    if email not in allowlist():
+        raise HTTPException(404, "Conta não encontrada.")
+    try:
+        set_user_suspended(current_owner.get(), email, payload.suspended)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except PermissionError as exc:
+        raise HTTPException(403, str(exc)) from exc
+    return {"email": email, "suspended": payload.suspended}
 
 
 @router.get("/assignments")

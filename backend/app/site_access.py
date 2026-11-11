@@ -26,6 +26,7 @@ TTL = 12 * 60 * 60
 MAX_AGE = 7 * 24 * 60 * 60
 TOUCH_INTERVAL = 5 * 60
 _sessions = OrderedDict()
+_suspended = set()
 _attempts = OrderedDict()
 _lock = Lock()
 current_owner = ContextVar('site_access_owner', default=None)
@@ -64,10 +65,47 @@ def session_database(volume):
     try:
         db.execute("CREATE TABLE IF NOT EXISTS sessions (digest BLOB PRIMARY KEY, "
                    "email TEXT NOT NULL, expires REAL NOT NULL, last_seen REAL NOT NULL)")
+        db.execute("CREATE TABLE IF NOT EXISTS suspended_users (email TEXT PRIMARY KEY)")
         with db:
             yield db
     finally:
         db.close()
+
+
+def suspended_users():
+    volume = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
+    if volume:
+        with session_database(volume) as db:
+            return {row[0] for row in db.execute("SELECT email FROM suspended_users")}
+    with _lock:
+        return set(_suspended)
+
+
+def set_user_suspended(actor, target, suspended):
+    if actor == target:
+        raise ValueError("Você não pode alterar o acesso da própria conta.")
+    volume = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
+    if volume:
+        with session_database(volume) as db:
+            db.execute("BEGIN IMMEDIATE")
+            if db.execute("SELECT 1 FROM suspended_users WHERE email=?", (actor,)).fetchone():
+                raise PermissionError("Sua conta está suspensa.")
+            if suspended:
+                db.execute("INSERT INTO suspended_users VALUES (?) ON CONFLICT DO NOTHING", (target,))
+                db.execute("DELETE FROM sessions WHERE email=?", (target,))
+            else:
+                db.execute("DELETE FROM suspended_users WHERE email=?", (target,))
+        return
+    with _lock:
+        if actor in _suspended:
+            raise PermissionError("Sua conta está suspensa.")
+        if suspended:
+            _suspended.add(target)
+            for digest, entry in list(_sessions.items()):
+                if entry[0] == target:
+                    _sessions.pop(digest)
+        else:
+            _suspended.discard(target)
 
 
 def session(request):
@@ -83,7 +121,10 @@ def session(request):
     )
     if volume:
         with session_database(volume) as db:
-            entry = db.execute("SELECT email, expires, last_seen FROM sessions WHERE digest=?", (digest,)).fetchone()
+            entry = db.execute(
+                "SELECT email, expires, last_seen FROM sessions WHERE digest=? "
+                "AND NOT EXISTS (SELECT 1 FROM suspended_users u WHERE u.email=sessions.email)", (digest,),
+            ).fetchone()
             if not entry:
                 return None
             email, expires, last_seen = entry
@@ -98,7 +139,7 @@ def session(request):
         if not entry:
             return None
         email, expires, last_seen = entry
-        if expires <= now or last_seen + TTL <= now or email not in allowlist():
+        if expires <= now or last_seen + TTL <= now or email not in allowlist() or email in _suspended:
             _sessions.pop(digest, None)
             return None
         if touch:
@@ -113,11 +154,16 @@ def save_session(token, email):
     volume = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
     if volume:
         with session_database(volume) as db:
+            db.execute("BEGIN IMMEDIATE")
+            if db.execute("SELECT 1 FROM suspended_users WHERE email=?", (email,)).fetchone():
+                raise PermissionError("Conta suspensa.")
             db.execute("DELETE FROM sessions WHERE expires <= ? OR last_seen <= ?", (now, now - TTL))
             db.execute("INSERT INTO sessions VALUES (?,?,?,?)", (digest, email, now + MAX_AGE, now))
             db.execute("DELETE FROM sessions WHERE digest IN (SELECT digest FROM sessions ORDER BY last_seen DESC LIMIT -1 OFFSET 256)")
         return
     with _lock:
+        if email in _suspended:
+            raise PermissionError("Conta suspensa.")
         for key, (_, expires, last_seen) in list(_sessions.items()):
             if expires <= now or last_seen + TTL <= now:
                 _sessions.pop(key, None)
@@ -256,6 +302,8 @@ async def login(request: Incoming):
     token = secrets.token_urlsafe(32)
     try:
         await run_in_threadpool(save_session, token, email)
+    except PermissionError:
+        return reply(401, detail="E-mail ou senha inválidos.")
     except (sqlite3.Error, OSError):
         return reply(503, detail="Não foi possível iniciar a sessão agora.")
     return reply(200, session=token, email=email)
