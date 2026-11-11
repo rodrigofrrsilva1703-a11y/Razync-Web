@@ -13,7 +13,7 @@
   <meta name="description" content="Jaguar Conecta | Organização, classificação e conciliação contábil">
   <link rel="stylesheet" href="./assets/css/app.css?v=base242-streamlit-1">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="investments" href="./assets/css/bank-investments.css?v=20261020-6">
-  <link rel="stylesheet" href="./assets/css/monthly-tasks.css?v=2">
+  <link rel="stylesheet" href="./assets/css/monthly-tasks.css?v=3">
   <link rel="stylesheet" href="./assets/css/workspace.css?v=notificacoes-2">
   <link rel="stylesheet" href="./assets/css/tools.css?v=company-tools-20261031-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=fixed-header-home-20261028-3">
@@ -244,29 +244,36 @@
       </section>
 
       <section id="tasksView" class="global-view" aria-labelledby="monthlyTasksTitle">
-        <header class="page-head">
-          <h1 id="monthlyTasksTitle" tabindex="-1">Tarefas contábeis</h1>
-          <p>Controle as etapas do fechamento e acompanhe as pendências por competência.</p>
-        </header>
-        <div class="monthly-tasks-controls">
+        <header class="page-head monthly-tasks-heading">
+          <div><h1 id="monthlyTasksTitle" tabindex="-1">Tarefas contábeis</h1>
+          <p>Acompanhe o fechamento mensal das empresas da carteira.</p></div>
           <label>Competência<input id="monthlyTasksPeriod" type="month" min="2000-01" max="2099-12"></label>
-          <label>Buscar empresa<input id="monthlyTasksSearch" type="search" placeholder="Nome ou código"></label>
-          <label>Status<select id="monthlyTasksFilter"><option value="">Todos</option><option value="pending">Não iniciado</option><option value="progress">Em andamento</option><option value="done">Concluído</option><option value="issue">Com pendência</option><option value="na">Não se aplica</option></select></label>
-          <form id="monthlyTasksImport" hidden>
-            <label>Importar planilha<input type="file" name="file" accept=".xlsx" required></label>
-            <button class="secondary-action" type="submit">Importar</button>
-          </form>
-        </div>
-        <p id="monthlyTasksImportMessage" role="status" hidden></p>
-        <section id="monthlyTasksTeam" class="monthly-tasks-team" hidden aria-labelledby="monthlyTasksTeamTitle">
-          <h2 id="monthlyTasksTeamTitle">Progresso da equipe</h2>
-          <div id="monthlyTasksPeople"></div>
-        </section>
+        </header>
         <div id="monthlyTasksMetrics" class="monthly-tasks-metrics" aria-label="Resumo das tarefas"></div>
-        <p id="monthlyTasksStatus" role="status"></p>
+        <details id="monthlyTasksTeam" class="monthly-tasks-team" hidden>
+          <summary>Progresso da equipe</summary>
+          <div id="monthlyTasksPeople"></div>
+        </details>
+        <div class="monthly-tasks-worklist">
+          <h2>Empresas da competência</h2>
+          <div class="monthly-tasks-controls">
+            <label>Buscar empresa<input id="monthlyTasksSearch" type="search" placeholder="Nome ou código"></label>
+            <label>Status<select id="monthlyTasksFilter"><option value="">Todos</option><option value="pending">Não iniciado</option><option value="progress">Em andamento</option><option value="done">Concluído</option><option value="issue">Com pendência</option><option value="na">Não se aplica</option></select></label>
+            <label>Ordenar por<select id="monthlyTasksSort"><option value="deadline">Prazo mais próximo</option><option value="code">Código da empresa</option><option value="progress">Menor progresso</option></select></label>
+            <details id="monthlyTasksImportPanel" hidden>
+              <summary>Importar histórico</summary>
+              <form id="monthlyTasksImport">
+                <label>Planilha do controle gerencial<input type="file" name="file" accept=".xlsx" required></label>
+                <button class="secondary-action" type="submit">Importar</button>
+              </form>
+            </details>
+          </div>
+          <p id="monthlyTasksImportMessage" role="status" hidden></p>
+          <p id="monthlyTasksStatus" role="status"></p>
+        </div>
         <div class="monthly-tasks-table" tabindex="0" role="region" aria-label="Tarefas por empresa">
           <table>
-            <thead><tr><th>Empresa</th><th>Vencimento</th><th>Status</th><th>Etapas</th><th>Pendência</th><th>Ação</th></tr></thead>
+            <thead><tr><th>Empresa</th><th>Vencimento</th><th>Status</th><th>Progresso</th><th>Pendência</th><th>Ação</th></tr></thead>
             <tbody id="monthlyTasksRows"></tbody>
           </table>
         </div>
@@ -874,7 +881,7 @@
     <form id="monthlyTaskForm">
       <header><h2 id="monthlyTaskEditorTitle"></h2><button type="button" id="monthlyTaskClose" class="secondary-action" aria-label="Fechar tarefa">Fechar</button></header>
       <p id="monthlyTaskEditorPeriod"></p>
-      <fieldset><legend>Etapas da competência</legend><div id="monthlyTaskSteps"></div></fieldset>
+      <fieldset><legend>Etapas da competência</legend><div id="monthlyTaskSteps"></div><p id="monthlyTaskPreview" aria-live="polite"></p></fieldset>
       <label>Status da pendência<select id="monthlyTaskIssueStatus"><option value="none">Sem pendência</option><option value="open">Aberta</option><option value="resolved">Resolvida</option></select></label>
       <label>Pendência<textarea id="monthlyTaskIssue" maxlength="3000" rows="2"></textarea></label>
       <label>Tratativa / última ação<textarea id="monthlyTaskAction" maxlength="3000" rows="2"></textarea></label>
@@ -974,7 +981,7 @@
   <script src="./assets/js/base-investigation.js?v=jaguar-oficial-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
-  <script src="./assets/js/monthly-tasks.js?v=2"></script>
+  <script src="./assets/js/monthly-tasks.js?v=3"></script>
   <script src="./assets/js/app.js?v=tarefas-contabeis-1"></script>
   <script src="./assets/js/migration.js?v=standard-preview-20261109-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>

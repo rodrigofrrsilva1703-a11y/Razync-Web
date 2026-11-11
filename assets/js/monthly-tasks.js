@@ -3,12 +3,14 @@
   const period = get("monthlyTasksPeriod");
   if (!period) return;
   const search = get("monthlyTasksSearch");
+  const sort = get("monthlyTasksSort");
   const filter = get("monthlyTasksFilter");
   const status = get("monthlyTasksStatus");
   const metrics = get("monthlyTasksMetrics");
   const rows = get("monthlyTasksRows");
   const team = get("monthlyTasksTeam");
   const people = get("monthlyTasksPeople");
+  const importPanel = get("monthlyTasksImportPanel");
   const importer = get("monthlyTasksImport");
   const importMessage = get("monthlyTasksImportMessage");
   const dialog = get("monthlyTaskEditor");
@@ -33,7 +35,7 @@
   }
 
   function renderTeam() {
-    team.hidden = importer.hidden = !state.admin;
+    team.hidden = importPanel.hidden = !state.admin;
     people.replaceChildren();
     if (!state.admin) return;
     const all = document.createElement("button");
@@ -90,6 +92,14 @@
       metrics.append(button);
     }
     const visible = matching.filter(row => !filter.value || matches(row, filter.value));
+    visible.sort((a, b) => {
+      if (sort.value === "progress") return a.percent - b.percent || a.code - b.code;
+      if (sort.value === "deadline") {
+        return (a.status === "done" || a.status === "na") - (b.status === "done" || b.status === "na")
+          || (a.due || "9999").localeCompare(b.due || "9999") || a.code - b.code;
+      }
+      return a.code - b.code;
+    });
     status.textContent = visible.length ? `${visible.length} empresas` : "Nenhuma empresa encontrada.";
     for (const item of visible) {
       const row = rows.insertRow();
@@ -112,11 +122,13 @@
       const progress = row.insertCell();
       progress.textContent = item.applicable ? `${item.done}/${item.applicable} · ${item.percent}%` : "—";
       if (item.applicable) progress.append(progressBar(item.percent));
-      row.insertCell().textContent = names[item.issue_status];
+      const issueCell = row.insertCell();
+      issueCell.textContent = names[item.issue_status];
+      issueCell.dataset.issue = item.issue_status;
       const button = document.createElement("button");
       button.type = "button";
       button.className = "secondary-action";
-      button.textContent = "Abrir";
+      button.textContent = "Ver etapas";
       button.setAttribute("aria-label", `Abrir tarefa da empresa ${item.code}`);
       button.onclick = () => edit(item);
       row.insertCell().append(button);
@@ -130,7 +142,7 @@
     state = null;
     metrics.replaceChildren();
     rows.replaceChildren();
-    team.hidden = importer.hidden = true;
+    team.hidden = importPanel.hidden = true;
     status.textContent = "Carregando tarefas…";
     try {
       const query = period.value ? `?period=${encodeURIComponent(period.value)}` : "";
@@ -165,8 +177,20 @@
       label.append(name, select);
       stepFields.append(label);
     });
+    updatePreview();
     dialog.showModal();
   }
+
+  function updatePreview() {
+    const values = [...stepFields.querySelectorAll("select")].map(field => field.value);
+    const applicable = values.filter(value => value !== "na").length;
+    const done = values.filter(value => value === "done").length;
+    get("monthlyTaskPreview").textContent = applicable
+      ? `${done} de ${applicable} etapas concluídas · ${Math.round(100 * done / applicable)}%`
+      : "Nenhuma etapa aplicável";
+  }
+  stepFields.addEventListener("change", updatePreview);
+  sort.addEventListener("change", renderRows);
 
   form.addEventListener("submit", async event => {
     event.preventDefault();
