@@ -13,25 +13,16 @@
   const importPanel = get("monthlyTasksImportPanel");
   const importer = get("monthlyTasksImport");
   const importMessage = get("monthlyTasksImportMessage");
-  const dialog = get("monthlyTaskEditor");
-  const form = get("monthlyTaskForm");
-  const stepFields = get("monthlyTaskSteps");
-  const saveMessage = get("monthlyTaskSaveMessage");
-  const issue = get("monthlyTaskIssue");
-  const action = get("monthlyTaskAction");
-  const issueStatus = get("monthlyTaskIssueStatus");
+  const feedback = get("monthlyTaskFeedback");
   const endpoint = () => `${API()}/api/v1/monthly-tasks`;
   const labels = {pending:"Não iniciado", progress:"Em andamento", done:"Concluído", na:"Não se aplica"};
-  const names = {none:"—", open:"Aberta", resolved:"Resolvida"};
-  let state, ownerFilter, editor, request;
-  let saving = false;
+  const names = {none:"Registrar", open:"Aberta", resolved:"Resolvida"};
+  let state, ownerFilter, request;
+  const saving = new Set();
+  const issueDrafts = new Map();
 
   function displayOwner(email) {
     return email ? email.split("@")[0].split(/[._-]/).map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(" ") : "Sem responsável";
-  }
-
-  function formatDate(value) {
-    return value ? value.split("-").reverse().join("/") : "—";
   }
 
   function renderTeam() {
@@ -94,10 +85,6 @@
     const visible = matching.filter(row => !filter.value || matches(row, filter.value));
     visible.sort((a, b) => {
       if (sort.value === "progress") return a.percent - b.percent || a.code - b.code;
-      if (sort.value === "deadline") {
-        return (a.status === "done" || a.status === "na") - (b.status === "done" || b.status === "na")
-          || (a.due || "9999").localeCompare(b.due || "9999") || a.code - b.code;
-      }
       return a.code - b.code;
     });
     status.textContent = visible.length ? `${visible.length} empresas` : "Nenhuma empresa encontrada.";
@@ -112,26 +99,33 @@
         owner.textContent = displayOwner(item.owner);
         company.append(owner);
       }
-      row.insertCell().textContent = formatDate(item.due);
-      const cell = row.insertCell();
-      const tag = document.createElement("span");
-      tag.className = "monthly-task-status";
-      tag.dataset.status = item.status;
-      tag.textContent = labels[item.status];
-      cell.append(tag);
+      const key = `${state.period}/${item.code}`;
+      row.dataset.taskKey = key;
+      item.steps.forEach((value, index) => {
+        const field = document.createElement("select");
+        field.append(new Option("Pendente", "pending"), new Option("OK", "done"), new Option("N/A", "na"));
+        field.value = value;
+        field.dataset.step = index;
+        field.dataset.value = value;
+        field.disabled = saving.has(key);
+        field.setAttribute("aria-label", `${state.steps[index]} · empresa ${item.code}`);
+        field.onchange = () => {
+          const steps = [...item.steps];
+          steps[index] = field.value;
+          field.dataset.value = field.value;
+          void saveTask(item, {steps}, field);
+        };
+        row.insertCell().append(field);
+      });
       const progress = row.insertCell();
-      progress.textContent = item.applicable ? `${item.done}/${item.applicable} · ${item.percent}%` : "—";
+      progress.textContent = item.applicable ? `${item.percent}% · ${item.done}/${item.applicable}` : "—";
       if (item.applicable) progress.append(progressBar(item.percent));
+      const tag = document.createElement("small");
+      tag.textContent = labels[item.status];
+      progress.append(tag);
       const issueCell = row.insertCell();
-      issueCell.textContent = names[item.issue_status];
       issueCell.dataset.issue = item.issue_status;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "secondary-action";
-      button.textContent = "Ver etapas";
-      button.setAttribute("aria-label", `Abrir tarefa da empresa ${item.code}`);
-      button.onclick = () => edit(item);
-      row.insertCell().append(button);
+      issueCell.append(issueEditor(item, saving.has(key)));
     }
   }
 
@@ -160,60 +154,95 @@
     }
   }
 
-  function edit(row) {
-    editor = {row, period:state.period};
-    get("monthlyTaskEditorTitle").textContent = `${row.code} · ${row.name}`;
-    get("monthlyTaskEditorPeriod").textContent = `Competência ${state.period.split("-").reverse().join("/")}`;
-    issue.value = row.issue;
-    action.value = row.action;
-    issueStatus.value = row.issue_status;
-    saveMessage.textContent = "";
-    stepFields.replaceChildren();
-    state.steps.forEach((name, index) => {
+  function issueEditor(item, busy) {
+    const details = document.createElement("details");
+    const key = `${state.period}/${item.code}`;
+    const draft = issueDrafts.get(key) ?? item;
+    details.open = issueDrafts.has(key);
+    const summary = document.createElement("summary");
+    summary.textContent = names[item.issue_status];
+    summary.setAttribute("aria-label", `Pendência da empresa ${item.code}: ${summary.textContent}`);
+    const form = document.createElement("form");
+    const status = document.createElement("select");
+    for (const [value, label] of [["none", "Sem pendência"], ["open", "Aberta"], ["resolved", "Resolvida"]]) {
+      status.append(new Option(label, value));
+    }
+    status.value = draft.issue_status;
+    const issue = document.createElement("textarea");
+    issue.value = draft.issue;
+    const action = document.createElement("textarea");
+    action.value = draft.action;
+    issue.maxLength = action.maxLength = 3000;
+    for (const [title, field] of [["Situação", status], ["Pendência", issue], ["Última ação", action]]) {
       const label = document.createElement("label");
-      const select = document.createElement("select");
-      select.append(new Option("Pendente", "pending"), new Option("Concluída", "done"), new Option("Não se aplica", "na"));
-      select.value = row.steps[index];
-      label.append(name, select);
-      stepFields.append(label);
-    });
-    updatePreview();
-    dialog.showModal();
+      label.append(title, field);
+      form.append(label);
+    }
+    const button = document.createElement("button");
+    button.className = "secondary-action";
+    button.textContent = "Salvar pendência";
+    button.disabled = busy;
+    form.append(button);
+    form.oninput = () => issueDrafts.set(key, {issue:issue.value, action:action.value, issue_status:status.value});
+    form.onsubmit = event => {
+      event.preventDefault();
+      void saveTask(item, {issue:issue.value, action:action.value, issue_status:status.value}, button);
+    };
+    details.append(summary, form);
+    return details;
   }
 
-  function updatePreview() {
-    const values = [...stepFields.querySelectorAll("select")].map(field => field.value);
-    const applicable = values.filter(value => value !== "na").length;
-    const done = values.filter(value => value === "done").length;
-    get("monthlyTaskPreview").textContent = applicable
-      ? `${done} de ${applicable} etapas concluídas · ${Math.round(100 * done / applicable)}%`
-      : "Nenhuma etapa aplicável";
-  }
-  stepFields.addEventListener("change", updatePreview);
-  sort.addEventListener("change", renderRows);
-
-  form.addEventListener("submit", async event => {
-    event.preventDefault();
-    if (saving || !editor) return;
-    const {row, period: month} = editor;
-    const button = form.querySelector('[type="submit"]');
-    saving = button.disabled = true;
-    saveMessage.textContent = "Salvando…";
+  async function saveTask(item, changes, trigger) {
+    const snapshot = state;
+    const key = `${snapshot.period}/${item.code}`;
+    if (saving.has(key)) return;
+    saving.add(key);
+    const row = trigger.closest("tr");
+    row.querySelectorAll("select, button, textarea").forEach(field => { field.disabled = true; });
+    feedback.textContent = `Salvando empresa ${item.code}…`;
+    let saved = false;
     try {
-      const response = await fetch(`${endpoint()}/${month}/${row.code}`, {
+      const {steps, issue, action, issue_status, revision} = item;
+      const response = await fetch(`${endpoint()}/${key}`, {
         method:"PUT", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({steps:[...stepFields.querySelectorAll("select")].map(field => field.value),
-          issue:issue.value, action:action.value, issue_status:issueStatus.value, revision:row.revision})
+        body:JSON.stringify({steps, issue, action, issue_status, revision, ...changes})
       });
       if (!response.ok) throw new Error(await responseError(response));
-      dialog.close();
-      await load();
-    } catch (error) { saveMessage.textContent = error.message; }
-    finally { saving = button.disabled = false; }
-  });
+      const updated = await response.json();
+      const group = snapshot.progress.find(entry => entry.owner === item.owner);
+      if (group) {
+        group.done += updated.done - item.done;
+        group.applicable += updated.applicable - item.applicable;
+        group.completed += Number(updated.status === "done") - Number(item.status === "done");
+        group.issues += Number(updated.issue_status === "open") - Number(item.issue_status === "open");
+      }
+      Object.assign(item, updated);
+      if ("issue" in changes) issueDrafts.delete(key);
+      saved = true;
+      feedback.textContent = `Empresa ${item.code} atualizada.`;
+    } catch (error) {
+      feedback.textContent = `Empresa ${item.code}: ${error.message}`;
+      if ("step" in trigger.dataset) {
+        trigger.value = item.steps[Number(trigger.dataset.step)];
+        trigger.dataset.value = trigger.value;
+      }
+    } finally {
+      saving.delete(key);
+      if (state === snapshot) {
+        if (saved || !row.isConnected) {
+          renderTeam();
+          renderRows();
+          const replacement = rows.querySelector(`[data-task-key="${key}"]`);
+          replacement?.querySelector("step" in trigger.dataset ? `[data-step="${trigger.dataset.step}"]` : "summary")?.focus();
+        } else {
+          row.querySelectorAll("select, button, textarea").forEach(field => { field.disabled = false; });
+          trigger.focus();
+        }
+      }
+    }
+  }
 
-  get("monthlyTaskClose").onclick = () => { if (!saving) dialog.close(); };
-  dialog.addEventListener("cancel", event => { if (saving) event.preventDefault(); });
+  sort.addEventListener("change", renderRows);
   importer.addEventListener("submit", async event => {
     event.preventDefault();
     const button = importer.querySelector("button");

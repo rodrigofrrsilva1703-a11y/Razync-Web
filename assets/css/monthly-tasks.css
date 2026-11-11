@@ -3,9 +3,8 @@
 }
 .monthly-tasks-controls form {margin-inline-start:auto}
 .monthly-tasks-controls form[hidden], .monthly-tasks-team[hidden] {display:none}
-.monthly-tasks-controls label, #monthlyTaskForm label {display:grid;gap:5px;color:var(--muted);font-size:12px}
-.monthly-tasks-controls input, .monthly-tasks-controls select,
-#monthlyTaskEditor select, #monthlyTaskEditor textarea {
+.monthly-tasks-controls label {display:grid;gap:5px;color:var(--muted);font-size:12px}
+.monthly-tasks-controls input, .monthly-tasks-controls select {
   background:var(--surface);color:var(--text);border:1px solid var(--border);
   min-height:36px;border-radius:7px;padding:7px 9px;font:inherit;
 }
@@ -25,20 +24,6 @@
 .monthly-tasks-table small {display:block;color:var(--muted);margin-top:4px}
 .monthly-task-status {white-space:nowrap}
 .monthly-task-status[data-status=done] {font-weight:700}
-#monthlyTaskEditor {
-  width:min(640px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;
-  border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);padding:20px;
-}
-#monthlyTaskEditor::backdrop {background:#101927a6}
-#monthlyTaskForm {display:grid;gap:10px}
-#monthlyTaskForm header {display:flex;gap:12px;align-items:start;justify-content:space-between}
-#monthlyTaskForm h2 {font-size:17px;margin:0}
-#monthlyTaskForm p {margin:0;color:var(--muted);font-size:12px}
-#monthlyTaskForm fieldset {border:1px solid var(--border);border-radius:8px;padding:10px;margin:0}
-#monthlyTaskForm legend {font-size:12px}
-#monthlyTaskSteps {display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px}
-#monthlyTaskForm button[type=submit] {justify-self:start}
-
 .monthly-tasks-metrics {display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin:16px 0}
 .monthly-tasks-metrics:empty {display:none}
 .monthly-tasks-metrics button {text-align:left;padding:11px 13px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);cursor:pointer;font:inherit;font-size:12px}
@@ -66,9 +51,24 @@
 .monthly-tasks-table td[data-issue=open] {font-weight:700}
 #monthlyTasksImportPanel {margin-inline-start:auto}
 #monthlyTasksImportPanel form {margin-top:8px}
-#monthlyTaskPreview {margin-top:10px!important}
 @media(max-width:600px) {
   .monthly-tasks-controls > label {flex:1 1 135px;min-width:0}
   #monthlyTasksImportPanel {margin-inline-start:0}
   .monthly-tasks-table {max-height:unset}
 }
+
+.monthly-tasks-table table {min-width:1010px}
+.monthly-tasks-table th,.monthly-tasks-table td {padding:9px 8px}
+.monthly-tasks-table th:first-child {width:24%}
+.monthly-tasks-table th:nth-last-child(2) {min-width:105px}
+.monthly-tasks-table select,.monthly-tasks-table textarea {
+  background:var(--surface);color:var(--text);border:1px solid var(--border);
+  border-radius:6px;padding:6px;font:inherit;min-height:32px;
+}
+.monthly-tasks-table select[data-value=done] {border-color:#52947b;font-weight:700}
+.monthly-tasks-table select[data-value=na] {color:var(--muted)}
+.monthly-tasks-table details summary {cursor:pointer;white-space:nowrap}
+.monthly-tasks-table details form {display:grid;gap:7px;min-width:155px;margin-top:8px}
+.monthly-tasks-table details label {display:grid;gap:4px;color:var(--muted)}
+#monthlyTaskFeedback {margin:8px 0;color:var(--muted);font-size:12px}
+#monthlyTaskFeedback:empty {display:none}
