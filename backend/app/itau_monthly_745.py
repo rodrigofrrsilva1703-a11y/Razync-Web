@@ -62,14 +62,17 @@ def read_statement(content):
             if match is None or description_start + match.start(1) >= balance_start or current_day is None:
                 continue
             description = " ".join(segment[:match.start()].split())
-            if not description or description.casefold().startswith(("saldo", "(créditos)")) or INTERNAL.match(description):
+            if not description or description.casefold().startswith(("saldo", "(créditos)")):
                 continue
             value = amount(match[1])
             if value:
                 entries.append((current_day, description, value))
 
-    credits = sum(value for _, _, value in entries if value > 0)
-    debits = -sum(value for _, _, value in entries if value < 0)
+    # O resumo do Itaú exclui aplicações e resgates automáticos. Esses
+    # movimentos aparecem na conta corrente e fazem parte do Modelo Domínio.
+    summary_values = [value for _, description, value in entries if not INTERNAL.match(description)]
+    credits = sum(value for value in summary_values if value > 0)
+    debits = -sum(value for value in summary_values if value < 0)
     if not entries or [credits, debits] != expected:
         raise ValueError(
             "Os lançamentos lidos não fecham com os totais do PDF do Itaú. "
