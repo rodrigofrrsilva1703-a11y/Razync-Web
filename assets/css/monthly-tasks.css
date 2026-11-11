@@ -78,3 +78,9 @@
 #monthlyTasksStages button[aria-pressed=true] {border-color:#6696e6;background:var(--surface-2)}
 .monthly-tasks-table details + details {margin-top:6px;color:var(--muted)}
 .monthly-tasks-table details ul {max-height:180px;overflow:auto;min-width:160px;margin:7px 0;padding-left:16px}
+
+.monthly-issue-editor > button {min-height:32px}
+.monthly-issue-editor form:not([hidden]) {display:grid;gap:7px;min-width:155px;margin-top:8px}
+.monthly-issue-editor label {display:grid;gap:4px;color:var(--muted)}
+.monthly-issue-editor + details {margin-top:6px;color:var(--muted)}
+.monthly-tasks-table tr[aria-busy=true] .monthly-task-progress {opacity:.8}

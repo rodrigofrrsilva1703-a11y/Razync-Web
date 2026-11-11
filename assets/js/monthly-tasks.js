@@ -167,15 +167,20 @@
         }
       });
       const progress = row.insertCell();
-      progress.textContent = item.applicable ? `${item.percent}% · ${item.done}/${item.applicable}` : "—";
-      if (item.applicable) progress.append(progressBar(item.percent));
-      const tag = document.createElement("small");
-      tag.textContent = item.status === "done" && !closed(item) ? "Pendência aberta" : labels[item.status];
-      progress.append(tag);
+      progress.className = "monthly-task-progress";
+      renderProgress(progress, item);
       const issueCell = row.insertCell();
       issueCell.dataset.issue = item.issue_status;
       issueCell.append(issueEditor(item, saving.has(key)), historyView(key, item.code));
     }
+  }
+
+  function renderProgress(cell, item) {
+    cell.textContent = item.applicable ? `${item.percent}% · ${item.done}/${item.applicable}` : "—";
+    if (item.applicable) cell.append(progressBar(item.percent));
+    const tag = document.createElement("small");
+    tag.textContent = item.status === "done" && !closed(item) ? "Pendência aberta" : labels[item.status];
+    cell.append(tag);
   }
 
   async function load() {
@@ -204,14 +209,24 @@
   }
 
   function issueEditor(item, busy) {
-    const details = document.createElement("details");
+    const details = document.createElement("div");
+    details.className = "monthly-issue-editor";
     const key = `${state.period}/${item.code}`;
     const draft = issueDrafts.get(key) ?? item;
-    details.open = issueDrafts.has(key);
-    const summary = document.createElement("summary");
+    const summary = document.createElement("button");
+    summary.type = "button";
+    summary.className = "secondary-action";
     summary.textContent = names[item.issue_status];
     summary.setAttribute("aria-label", `Pendência da empresa ${item.code}: ${summary.textContent}`);
     const form = document.createElement("form");
+    form.id = `monthly-issue-${item.code}`;
+    form.hidden = !issueDrafts.has(key);
+    summary.setAttribute("aria-controls", form.id);
+    summary.setAttribute("aria-expanded", String(!form.hidden));
+    summary.onclick = () => {
+      form.hidden = !form.hidden;
+      summary.setAttribute("aria-expanded", String(!form.hidden));
+    };
     const status = document.createElement("select");
     for (const [value, label] of [["none", "Sem pendência"], ["open", "Aberta"], ["resolved", "Resolvida"]]) {
       status.append(new Option(label, value));
@@ -276,7 +291,15 @@
     if (saving.has(key)) return;
     saving.add(key);
     const row = trigger.closest("tr");
+    const progress = row.querySelector(".monthly-task-progress");
+    if (changes.steps) {
+      const done = changes.steps.filter(value => value === "done").length;
+      const applicable = changes.steps.filter(value => value !== "na").length;
+      const status = !applicable ? "na" : done === applicable ? "done" : done ? "progress" : "pending";
+      renderProgress(progress, {...item, done, applicable, status, percent:applicable ? Math.round(done / applicable * 100) : 0});
+    }
     row.querySelectorAll("select, button, textarea").forEach(field => { field.disabled = true; });
+    row.setAttribute("aria-busy", "true");
     feedback.textContent = `Salvando empresa ${item.code}…`;
     let saved = false;
     try {
@@ -300,18 +323,20 @@
       feedback.textContent = `Empresa ${item.code} atualizada.`;
     } catch (error) {
       feedback.textContent = `Empresa ${item.code}: ${error.message}`;
-      if ("step" in trigger.dataset) {
+      if (changes.steps) {
+        renderProgress(progress, item);
         trigger.value = item.steps[Number(trigger.dataset.step)];
         trigger.dataset.value = trigger.value;
       }
     } finally {
       saving.delete(key);
+      row.removeAttribute("aria-busy");
       if (state === snapshot) {
         if (saved || !row.isConnected) {
           renderTeam();
           renderRows();
           const replacement = rows.querySelector(`[data-task-key="${key}"]`);
-          replacement?.querySelector("step" in trigger.dataset ? `[data-step="${trigger.dataset.step}"]` : "summary")?.focus();
+          replacement?.querySelector("step" in trigger.dataset ? `[data-step="${trigger.dataset.step}"]` : ".monthly-issue-editor > button")?.focus();
         } else {
           row.querySelectorAll("select, button, textarea").forEach(field => { field.disabled = false; });
           trigger.focus();
