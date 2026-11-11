@@ -13,7 +13,7 @@
   <meta name="description" content="Jaguar Conecta | Organização, classificação e conciliação contábil">
   <link rel="stylesheet" href="./assets/css/app.css?v=base242-streamlit-1">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="investments" href="./assets/css/bank-investments.css?v=20261020-6">
-  <link rel="stylesheet" href="./assets/css/workspace.css?v=notificacoes-1">
+  <link rel="stylesheet" href="./assets/css/workspace.css?v=notificacoes-2">
   <link rel="stylesheet" href="./assets/css/tools.css?v=company-tools-20261031-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=fixed-header-home-20261028-3">
   <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=black-attachments-20261109-1">
@@ -128,9 +128,6 @@
       <button class="main-nav-btn" data-view="converter" aria-label="Converter Extratos"><span class="nav-label">Converter Extratos</span></button>
       <button class="main-nav-btn" data-view="ledger" aria-label="Conciliação com Razão"><span class="nav-label">Conciliação com Razão</span></button>
       <button class="main-nav-btn" data-view="fiscal" aria-label="Conferência Fiscal × Contábil"><span class="nav-label">Conferência Fiscal × Contábil</span></button>
-      <button id="companyNotificationsNav" class="main-nav-btn" type="button" data-view="companyNotifications" hidden>
-        <span class="nav-label">Notificações</span><span id="companyNotificationsBadge" hidden></span>
-      </button>
       <button id="manageCompanyOwners" class="main-nav-btn" type="button" data-view="companyOwners" hidden><span class="nav-label">Responsáveis pelas empresas</span></button>
     </nav>
       <div id="siteAccessAccount" class="sidebar-account" hidden>
@@ -842,6 +839,17 @@
     </footer>
   </div>
 
+  <button id="companyNotificationsNav" type="button" aria-controls="companyNotificationsView" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0"/></svg>
+    <span>Notificações</span><span id="companyNotificationsBadge" aria-hidden="true" hidden></span>
+  </button>
+  <div id="companyNotificationToast" popover="manual" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0"/></svg>
+    <div><strong>Nova atribuição de empresa</strong><p id="companyNotificationToastText"></p></div>
+    <button id="companyNotificationToastClose" type="button" aria-label="Fechar aviso">×</button>
+  </div>
+  <span id="companyNotificationAnnouncement" class="visually-hidden" role="status" aria-atomic="true"></span>
+
   <!-- Ajuda da empresa fora dos paineis animados para preservar arraste e posicao na tela. -->
         <div id="companyToolHelp" class="company-tool-help" hidden>
           <section id="companyToolGuide" class="company-tool-guide" role="region" tabindex="0" aria-label="Instruções da ferramenta" hidden>
@@ -904,7 +912,7 @@
   <script src="./assets/js/site-access.js?v=alterar-senha-1"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
-  <script src="./assets/js/workspace-ui.js?v=notificacoes-1"></script>
+  <script src="./assets/js/workspace-ui.js?v=notificacoes-2"></script>
   <script src="./assets/js/company-guides.js?v=sicredi-pdf-2"></script>
   <script type="text/plain" data-lazy-tool="investments" src="./assets/js/bank-investments.js?v=20261020-8"></script>
   <script src="./assets/js/dom-utils.js?v=20261020-1"></script>

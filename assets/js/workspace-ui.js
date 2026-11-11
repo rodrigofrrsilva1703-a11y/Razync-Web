@@ -287,14 +287,47 @@ function initializeCompanyNotifications() {
   const nav = document.querySelector("#companyNotificationsNav");
   if (!nav) return;
   const badge = document.querySelector("#companyNotificationsBadge");
+  const toast = document.querySelector("#companyNotificationToast");
+  if (typeof toast.showPopover !== "function") toast.removeAttribute("popover");
+  const toastText = document.querySelector("#companyNotificationToastText");
+  const announcement = document.querySelector("#companyNotificationAnnouncement");
   const list = document.querySelector("#companyNotificationsList");
   const status = document.querySelector("#companyNotificationsStatus");
   const markRead = document.querySelector("#companyNotificationsRead");
   const endpoint = () => `${API()}/api/v1/company-access/notifications`;
   const date = new Intl.DateTimeFormat("pt-BR", {dateStyle:"short", timeStyle:"short"});
   let latest = null;
+  let seen = 0;
+  let seenKey;
   let pending;
+  let toastTimer;
   let saving = false;
+
+  function dismissToast() {
+    clearTimeout(toastTimer);
+    toast.hidePopover?.();
+    toast.hidden = true;
+    announcement.textContent = "";
+  }
+
+  function showToast(items) {
+    const item = items[0];
+    const message = items.length > 1
+      ? `Você recebeu ${items.length} novas empresas. Veja os detalhes em Notificações.`
+      : `Você agora é responsável pela empresa ${item.company} · ${item.name}.`;
+    toastText.textContent = message;
+    toast.hidden = false;
+    if (typeof toast.showPopover === "function" && !toast.matches(":popover-open")) toast.showPopover();
+    announcement.textContent = message;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(dismissToast, 10000);
+  }
+
+  document.querySelector("#companyNotificationToastClose").addEventListener("click", dismissToast);
+  nav.addEventListener("click", () => {
+    dismissToast();
+    void showGlobalView("companyNotifications");
+  });
 
   function render(data) {
     badge.textContent = data.unread > 99 ? "99+" : data.unread;
@@ -338,6 +371,12 @@ function initializeCompanyNotifications() {
         if (latest !== null && latest !== newest) void loadCompanies();
         latest = newest;
         render(data);
+        if (newest > seen) {
+          const fresh = data.items.filter(item => item.id > seen && !item.read_at);
+          seen = newest;
+          try { sessionStorage.setItem(seenKey, String(seen)); } catch {}
+          if (fresh.length) showToast(fresh);
+        }
       } catch {
         if (interactive || latest === null) status.textContent = "Não foi possível carregar as notificações. Abra esta tela novamente para tentar.";
       }
@@ -365,11 +404,14 @@ function initializeCompanyNotifications() {
   });
 
   globalThis.RazyncSiteAccess?.ready.then(() => {
-    if (!globalThis.RazyncSiteAccess.identity()) return;
+    const identity = globalThis.RazyncSiteAccess.identity();
+    if (!identity) return;
+    seenKey = `jaguar:notification-seen:${identity}`;
+    try { seen = Number(sessionStorage.getItem(seenKey)) || 0; } catch {}
     nav.hidden = false;
     const refresh = () => { if (!document.hidden) void loadCompanyNotifications(); };
     refresh();
-    setInterval(refresh, 60000);
+    setInterval(refresh, 20000);
     document.addEventListener("visibilitychange", refresh);
   });
 }

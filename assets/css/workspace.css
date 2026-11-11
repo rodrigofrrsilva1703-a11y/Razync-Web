@@ -2729,10 +2729,39 @@ html[data-theme="dark"] .company-tool-guide-note {background:var(--surface-2);co
   --nav-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='7' r='3'/%3E%3Cpath d='M3 20v-2a6 6 0 0 1 12 0v2m1-15a3 3 0 0 1 0 6m2 3a4 4 0 0 1 3 4v2'/%3E%3C/svg%3E");
 }
 
-#companyNotificationsNav[hidden], #companyNotificationsBadge[hidden], #companyNotificationsRead[hidden] {display:none}
-.main-nav-btn[data-view="companyNotifications"] {
-  --nav-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0'/%3E%3C/svg%3E");
+#companyNotificationsNav, #companyNotificationsBadge[hidden],
+#companyNotificationsRead[hidden], #companyNotificationToast[hidden] {display:none}
+body:not([data-site-locked]):not(.nav-drawer-open):has(#companiesView.active) #companyNotificationsNav:not([hidden]) {
+  display:inline-flex;align-items:center;gap:8px;
 }
+#companyNotificationsNav {
+  position:fixed;z-index:40;right:max(18px,env(safe-area-inset-right));
+  bottom:max(18px,env(safe-area-inset-bottom));padding:10px 13px;
+  border:1px solid var(--border);border-radius:99px;
+  background:var(--surface);color:var(--text);
+  box-shadow:0 8px 26px #0002;font:inherit;font-size:13px;font-weight:650;cursor:pointer;
+}
+#companyNotificationsNav svg, #companyNotificationToast svg {
+  width:19px;height:19px;flex:none;fill:none;stroke:currentColor;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;
+}
+#companyNotificationToast {
+  position:fixed;z-index:90;inset:max(76px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) auto auto;
+  margin:0;width:min(370px,calc(100vw - 32px));box-sizing:border-box;
+  padding:14px 12px 14px 14px;border:1px solid var(--border);border-radius:13px;
+  background:var(--surface);color:var(--text);box-shadow:0 14px 36px #0003;
+}
+#companyNotificationToast:not([hidden]):not([popover]) {display:flex}
+#companyNotificationToast:popover-open {display:flex}
+#companyNotificationToast {align-items:flex-start;gap:10px}
+#companyNotificationToast strong {font-size:14px}
+#companyNotificationToast p {margin:4px 0 0;color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+#companyNotificationToastClose {
+  margin-inline-start:auto;min-width:28px;min-height:28px;padding:0;
+  border:0;border-radius:6px;background:var(--surface-2);color:var(--text);
+  font:inherit;font-size:18px;cursor:pointer;
+}
+body[data-site-locked] #companyNotificationToast {display:none}
 #companyNotificationsBadge {
   margin-inline-start:auto;padding:2px 7px;border-radius:20px;
   background:#b8d7ff;color:#092541;font-size:11px;font-weight:700;
