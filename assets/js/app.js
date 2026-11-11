@@ -1781,6 +1781,22 @@ async function fetchAfterWake(url, {onRetry} = {}) {
   }
 }
 
+async function loadCompanyAccessProfile() {
+  await globalThis.RazyncSiteAccess?.ready;
+  if (!globalThis.RazyncSiteAccess?.isPrivate()) return;
+  try {
+    const response = await fetchAfterWake(`${API()}/api/v1/company-access/me`);
+    if (!response.ok) return;
+    const profile = await response.json();
+    globalThis.jaguarCompanyAccess = profile;
+    const admin = profile.enabled && profile.admin;
+    $("#manageCompanyOwners").hidden = !admin;
+    $("#homeAdminBadge").hidden = !admin;
+    $("#siteAccessRole").textContent = admin ? "Conta administradora" : "Sessão ativa";
+    $("#addCompany").hidden = profile.enabled && !admin;
+  } catch { /* The connection control can retry loading the profile. */ }
+}
+
 async function loadCompanies() {
   // O catálogo já consultado permite abrir a carteira enquanto a API acorda.
   // A resposta do servidor continua sendo a fonte das atualizações.
@@ -1801,23 +1817,12 @@ async function loadCompanies() {
     const cached = privateCatalog() ? null : JSON.parse(localStorage.getItem(cacheKey) || "null");
     if (validCatalog(cached)) applyCatalog(cached);
   } catch { /* Armazenamento indisponível ou cache antigo: consultar normalmente. */ }
+  const accessProfile = privateCatalog() ? loadCompanyAccessProfile() : null;
   try {
     const response = await fetchAfterWake(`${API()}/api/v1/companies`);
     if (!response.ok) throw new Error();
     const items = await response.json();
-    if (privateCatalog()) {
-      const access = await fetchAfterWake(`${API()}/api/v1/company-access/me`);
-      if (access.ok) {
-        globalThis.jaguarCompanyAccess = await access.json();
-        if (globalThis.jaguarCompanyAccess.enabled) {
-          const admin = globalThis.jaguarCompanyAccess.admin;
-          $("#manageCompanyOwners").hidden = !admin;
-          $("#homeAdminBadge").hidden = !admin;
-          $("#siteAccessRole").textContent = admin ? "Conta administradora" : "Sessão ativa";
-          $("#addCompany").hidden = !globalThis.jaguarCompanyAccess.admin;
-        }
-      }
-    }
+    await accessProfile;
     applyCatalog(items);
     try { if (!privateCatalog()) localStorage.setItem(cacheKey, JSON.stringify(items)); } catch { /* Cache opcional. */ }
   } catch {
@@ -1877,7 +1882,7 @@ async function checkApi() {
 }
 apiStatus.addEventListener("click", async () => {
   checkApi();
-  if (!companies.length) await loadCompanies();
+  if (!companies.length || (globalThis.RazyncSiteAccess?.isPrivate() && !globalThis.jaguarCompanyAccess)) await loadCompanies();
   globalThis.RazyncWorkspaceResume?.retry();
 });
 
