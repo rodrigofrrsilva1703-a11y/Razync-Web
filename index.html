@@ -13,7 +13,7 @@
   <meta name="description" content="Jaguar Conecta | Organização, classificação e conciliação contábil">
   <link rel="stylesheet" href="./assets/css/app.css?v=base242-streamlit-1">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="investments" href="./assets/css/bank-investments.css?v=20261020-6">
-  <link rel="stylesheet" href="./assets/css/workspace.css?v=responsaveis-2">
+  <link rel="stylesheet" href="./assets/css/workspace.css?v=notificacoes-1">
   <link rel="stylesheet" href="./assets/css/tools.css?v=company-tools-20261031-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=fixed-header-home-20261028-3">
   <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=black-attachments-20261109-1">
@@ -128,6 +128,9 @@
       <button class="main-nav-btn" data-view="converter" aria-label="Converter Extratos"><span class="nav-label">Converter Extratos</span></button>
       <button class="main-nav-btn" data-view="ledger" aria-label="Conciliação com Razão"><span class="nav-label">Conciliação com Razão</span></button>
       <button class="main-nav-btn" data-view="fiscal" aria-label="Conferência Fiscal × Contábil"><span class="nav-label">Conferência Fiscal × Contábil</span></button>
+      <button id="companyNotificationsNav" class="main-nav-btn" type="button" data-view="companyNotifications" hidden>
+        <span class="nav-label">Notificações</span><span id="companyNotificationsBadge" hidden></span>
+      </button>
       <button id="manageCompanyOwners" class="main-nav-btn" type="button" data-view="companyOwners" hidden><span class="nav-label">Responsáveis pelas empresas</span></button>
     </nav>
       <div id="siteAccessAccount" class="sidebar-account" hidden>
@@ -239,6 +242,20 @@
           <div class="directory-results-heading"><h2>Empresas da carteira</h2><div class="search-meta"><span id="companyCount" role="status" aria-live="polite" aria-atomic="true">Carregando empresas…</span><button id="companyReset" class="directory-reset" type="button" hidden>Limpar filtros</button></div></div>
           <div class="grid" id="companyGrid" data-view="cards" aria-label="Empresas da carteira"></div>
         </section>
+      </section>
+
+      <section id="companyNotificationsView" class="global-view" aria-labelledby="companyNotificationsTitle">
+        <header class="page-head">
+          <h1 id="companyNotificationsTitle" tabindex="-1">Notificações</h1>
+          <p>Acompanhe as empresas que foram atribuídas à sua carteira.</p>
+        </header>
+        <div class="company-notifications">
+          <div class="company-notifications-toolbar">
+            <p id="companyNotificationsStatus" role="status"></p>
+            <button id="companyNotificationsRead" class="secondary-action" type="button" hidden>Marcar como lidas</button>
+          </div>
+          <ul id="companyNotificationsList"></ul>
+        </div>
       </section>
 
       <section id="companyOwnersView" class="global-view" aria-labelledby="companyOwnerTitle">
@@ -887,7 +904,7 @@
   <script src="./assets/js/site-access.js?v=alterar-senha-1"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
-  <script src="./assets/js/workspace-ui.js?v=responsaveis-1"></script>
+  <script src="./assets/js/workspace-ui.js?v=notificacoes-1"></script>
   <script src="./assets/js/company-guides.js?v=sicredi-pdf-2"></script>
   <script type="text/plain" data-lazy-tool="investments" src="./assets/js/bank-investments.js?v=20261020-8"></script>
   <script src="./assets/js/dom-utils.js?v=20261020-1"></script>
@@ -906,7 +923,7 @@
   <script src="./assets/js/base-investigation.js?v=jaguar-oficial-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
-  <script src="./assets/js/app.js?v=responsaveis-2"></script>
+  <script src="./assets/js/app.js?v=notificacoes-1"></script>
   <script src="./assets/js/migration.js?v=standard-preview-20261109-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>

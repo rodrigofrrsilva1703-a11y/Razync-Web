@@ -77,6 +77,10 @@ def session(request):
     digest = fingerprint(token)
     volume = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
     now = time.time()
+    touch = not (
+        getattr(request, "method", None) == "GET"
+        and request.url.path == "/api/v1/company-access/notifications"
+    )
     if volume:
         with session_database(volume) as db:
             entry = db.execute("SELECT email, expires, last_seen FROM sessions WHERE digest=?", (digest,)).fetchone()
@@ -86,7 +90,7 @@ def session(request):
             if expires <= now or last_seen + TTL <= now or email not in allowlist():
                 db.execute("DELETE FROM sessions WHERE digest=?", (digest,))
                 return None
-            if last_seen + TOUCH_INTERVAL <= now:
+            if touch and last_seen + TOUCH_INTERVAL <= now:
                 db.execute("UPDATE sessions SET last_seen=? WHERE digest=? AND last_seen<?", (now, digest, now))
             return email
     with _lock:
@@ -97,8 +101,9 @@ def session(request):
         if expires <= now or last_seen + TTL <= now or email not in allowlist():
             _sessions.pop(digest, None)
             return None
-        _sessions[digest] = email, expires, now
-        _sessions.move_to_end(digest)
+        if touch:
+            _sessions[digest] = email, expires, now
+            _sessions.move_to_end(digest)
         return email
 
 

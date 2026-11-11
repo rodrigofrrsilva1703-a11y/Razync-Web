@@ -2,10 +2,11 @@
 import os
 import sqlite3
 from contextlib import closing
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.site_access import allowlist, current_owner
 
@@ -31,6 +32,16 @@ def _db():
     os.close(fd)
     db = sqlite3.connect(path, timeout=10)
     db.execute("CREATE TABLE IF NOT EXISTS company_owners (company INTEGER PRIMARY KEY, email TEXT NOT NULL)")
+    db.execute(
+        "CREATE TABLE IF NOT EXISTS company_notifications ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, company INTEGER NOT NULL, "
+        "name TEXT NOT NULL, recipient TEXT NOT NULL, created_at TEXT NOT NULL, "
+        "read_at TEXT)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS company_notifications_recipient "
+        "ON company_notifications(recipient, id DESC)"
+    )
     return db
 
 
@@ -106,12 +117,65 @@ def set_assignment(company_code: int, payload: Assignment):
     email = payload.email.strip().casefold()
     if email not in allowlist():
         raise HTTPException(422, "Selecione um usuário autorizado a acessar o site.")
-    if not any(int(row["codigo"]) == company_code for row in catalog()):
+    company = next((row for row in catalog() if int(row["codigo"]) == company_code), None)
+    if company is None:
         raise HTTPException(404, "Empresa não cadastrada.")
     with closing(_db()) as db, db:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute("SELECT email FROM company_owners WHERE company=?", (company_code,)).fetchone()
+        previous_email = owner_for(company_code, {company_code: row[0]} if row else {})
+        changed = previous_email != email
+        if changed:
+            db.execute(
+                "INSERT INTO company_owners(company,email) VALUES(?,?) "
+                "ON CONFLICT(company) DO UPDATE SET email=excluded.email",
+                (company_code, email),
+            )
+            db.execute(
+                "INSERT INTO company_notifications(company,name,recipient,created_at) VALUES(?,?,?,?)",
+                (company_code, company["nome"], email, datetime.now(timezone.utc).isoformat()),
+            )
+    return {"codigo": company_code, "email": email, "changed": changed}
+
+
+def _notification_recipient():
+    email = current_owner.get()
+    if not email:
+        raise HTTPException(401, "Entre na sua conta para consultar as notificações.")
+    return email
+
+
+@router.get("/notifications")
+def list_notifications():
+    email = _notification_recipient()
+    visible = (
+        " FROM company_notifications n JOIN company_owners o "
+        "ON o.company=n.company AND o.email=n.recipient WHERE n.recipient=?"
+    )
+    with closing(_db()) as db, db:
+        db.row_factory = sqlite3.Row
+        db.execute("BEGIN")
+        items = [dict(row) for row in db.execute(
+            "SELECT n.id, n.company, n.name, n.created_at, n.read_at" + visible +
+            " ORDER BY n.id DESC LIMIT 50", (email,),
+        )]
+        unread = db.execute("SELECT count(*)" + visible + " AND n.read_at IS NULL", (email,)).fetchone()[0]
+    return {"items": items, "unread": unread}
+
+
+class ReadNotifications(BaseModel):
+    through: int = Field(gt=0, le=9223372036854775807)
+
+
+@router.post("/notifications/read")
+def mark_notifications_read(payload: ReadNotifications):
+    email = _notification_recipient()
+    with closing(_db()) as db, db:
         db.execute(
-            "INSERT INTO company_owners(company,email) VALUES(?,?) "
-            "ON CONFLICT(company) DO UPDATE SET email=excluded.email",
-            (company_code, email),
+            "UPDATE company_notifications SET read_at=? "
+            "WHERE recipient=? AND id<=? AND read_at IS NULL "
+            "AND EXISTS (SELECT 1 FROM company_owners o WHERE o.company=company_notifications.company "
+            "AND o.email=company_notifications.recipient)",
+            (datetime.now(timezone.utc).isoformat(), email, payload.through),
         )
-    return {"codigo": company_code, "email": email}
+    return {"ok": True}

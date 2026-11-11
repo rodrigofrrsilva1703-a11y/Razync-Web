@@ -1908,7 +1908,7 @@ async function showGlobalView(name) {
   closeCompanyToolHelp();
   $("#companyToolHelp").hidden = true;
   cancelReconcilePreview();
-  $('#currentSection').textContent = {companies:'Empresas',converter:'Converter Extratos',ledger:'Conciliação com Razão',fiscal:'Conferência Fiscal × Contábil',companyOwners:'Responsáveis pelas empresas'}[name];
+  $('#currentSection').textContent = {companies:'Empresas',converter:'Converter Extratos',ledger:'Conciliação com Razão',fiscal:'Conferência Fiscal × Contábil',companyOwners:'Responsáveis pelas empresas',companyNotifications:'Notificações'}[name];
   panel.hidden = true;
   selected = null;
   if (name === "companies") {
@@ -1924,6 +1924,10 @@ async function showGlobalView(name) {
     btn.classList.toggle("active", btn.dataset.view === name);
   });
   window.RazyncWorkspaceResume?.save();
+  if (name === "companyNotifications") {
+    $("#companyNotificationsTitle").focus({preventScroll:true});
+    loadCompanyNotifications?.(true);
+  }
   if (name === "companyOwners") {
     $("#companyOwnerTitle").focus({preventScroll:true});
     loadCompanyOwners?.();

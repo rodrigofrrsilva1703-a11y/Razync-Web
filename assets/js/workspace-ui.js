@@ -152,6 +152,7 @@ function initializeSidebarControls() {
 function initializeCompanyControls() {
   initializeSidebarControls();
   initializeCompanyOwners();
+  initializeCompanyNotifications();
   const dialog = document.querySelector("#companyDialog");
   const form = document.querySelector("#companyCreateForm");
   const message = document.querySelector("#companyCreateMessage");
@@ -236,9 +237,12 @@ function initializeCompanyOwners() {
             method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email})
           });
           if (!response.ok) throw new Error(await responseError(response));
-          company.email = email;
+          const saved = await response.json();
+          company.email = saved.email;
           drafts.delete(company.codigo);
-          message.textContent = `Responsável da empresa ${company.codigo} atualizado.`;
+          message.textContent = saved.changed === false
+            ? `O responsável pela empresa ${company.codigo} já estava atualizado.`
+            : `Responsável da empresa ${company.codigo} atualizado${saved.changed ? " e notificado" : ""}.`;
         } catch (error) { message.textContent = error.message; }
         finally {
           pending.delete(company.codigo);
@@ -276,4 +280,96 @@ function initializeCompanyOwners() {
     } catch (error) { message.textContent = error.message; }
     finally { loading = false; query.disabled = false; }
   };
+}
+
+let loadCompanyNotifications;
+function initializeCompanyNotifications() {
+  const nav = document.querySelector("#companyNotificationsNav");
+  if (!nav) return;
+  const badge = document.querySelector("#companyNotificationsBadge");
+  const list = document.querySelector("#companyNotificationsList");
+  const status = document.querySelector("#companyNotificationsStatus");
+  const markRead = document.querySelector("#companyNotificationsRead");
+  const endpoint = () => `${API()}/api/v1/company-access/notifications`;
+  const date = new Intl.DateTimeFormat("pt-BR", {dateStyle:"short", timeStyle:"short"});
+  let latest = null;
+  let pending;
+  let saving = false;
+
+  function render(data) {
+    badge.textContent = data.unread > 99 ? "99+" : data.unread;
+    badge.hidden = !data.unread;
+    nav.setAttribute("aria-label", data.unread ? `Notificações, ${data.unread} não lidas` : "Notificações");
+    markRead.hidden = !data.unread;
+    status.textContent = data.items.length ? "" : "Nenhuma notificação por enquanto.";
+    list.replaceChildren();
+    for (const item of data.items) {
+      const row = document.createElement("li");
+      const summary = document.createElement("div");
+      const title = document.createElement("strong");
+      const detail = document.createElement("p");
+      const time = document.createElement("time");
+      title.textContent = `${item.company} · ${item.name}`;
+      detail.textContent = "Você agora é responsável por esta empresa.";
+      time.dateTime = item.created_at;
+      time.textContent = date.format(new Date(item.created_at));
+      summary.append(title, detail);
+      row.append(summary, time);
+      if (!item.read_at) {
+        const label = document.createElement("span");
+        label.className = "company-notification-unread";
+        label.textContent = "Nova";
+        title.after(label);
+      }
+      list.append(row);
+    }
+  }
+
+  loadCompanyNotifications = (interactive = false) => {
+    if (pending) return pending;
+    if (saving || !globalThis.RazyncSiteAccess?.identity()) return;
+    if (interactive && latest === null) status.textContent = "Carregando notificações…";
+    pending = (async () => {
+      try {
+        const response = await fetch(endpoint(), {signal:AbortSignal.timeout(10000)});
+        if (!response.ok) throw new Error();
+        const data = await response.json();
+        const newest = data.items[0]?.id ?? 0;
+        if (latest !== null && latest !== newest) void loadCompanies();
+        latest = newest;
+        render(data);
+      } catch {
+        if (interactive || latest === null) status.textContent = "Não foi possível carregar as notificações. Abra esta tela novamente para tentar.";
+      }
+    })().finally(() => { pending = null; });
+    return pending;
+  };
+
+  markRead.addEventListener("click", async () => {
+    if (pending) await pending;
+    if (saving || !latest || markRead.hidden) return;
+    saving = markRead.disabled = true;
+    try {
+      const response = await fetch(`${endpoint()}/read`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({through:latest}), signal:AbortSignal.timeout(10000)
+      });
+      if (!response.ok) throw new Error();
+    } catch {
+      status.textContent = "Não foi possível marcar as notificações como lidas. Tente novamente.";
+      return;
+    } finally {
+      saving = markRead.disabled = false;
+    }
+    await loadCompanyNotifications(true);
+  });
+
+  globalThis.RazyncSiteAccess?.ready.then(() => {
+    if (!globalThis.RazyncSiteAccess.identity()) return;
+    nav.hidden = false;
+    const refresh = () => { if (!document.hidden) void loadCompanyNotifications(); };
+    refresh();
+    setInterval(refresh, 60000);
+    document.addEventListener("visibilitychange", refresh);
+  });
 }

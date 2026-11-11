@@ -2728,3 +2728,32 @@ html[data-theme="dark"] .company-tool-guide-note {background:var(--surface-2);co
 .main-nav-btn[data-view="companyOwners"] {
   --nav-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='7' r='3'/%3E%3Cpath d='M3 20v-2a6 6 0 0 1 12 0v2m1-15a3 3 0 0 1 0 6m2 3a4 4 0 0 1 3 4v2'/%3E%3C/svg%3E");
 }
+
+#companyNotificationsNav[hidden], #companyNotificationsBadge[hidden], #companyNotificationsRead[hidden] {display:none}
+.main-nav-btn[data-view="companyNotifications"] {
+  --nav-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0'/%3E%3C/svg%3E");
+}
+#companyNotificationsBadge {
+  margin-inline-start:auto;padding:2px 7px;border-radius:20px;
+  background:#b8d7ff;color:#092541;font-size:11px;font-weight:700;
+}
+.company-notifications {
+  max-width:760px;border:1px solid var(--border);
+  border-radius:13px;background:var(--surface);color:var(--text);
+}
+.company-notifications-toolbar {
+  display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 16px;
+}
+.company-notifications-toolbar:has(p:empty):has(button[hidden]) {display:none}
+.company-notifications-toolbar p {margin:0;color:var(--muted);font-size:13px}
+.company-notifications ul {list-style:none;padding:0;margin:0}
+.company-notifications li {
+  display:flex;justify-content:space-between;align-items:start;gap:8px 18px;flex-wrap:wrap;
+  padding:14px 16px;border-top:1px solid var(--border);overflow-wrap:anywhere;
+}
+.company-notifications li strong {font-size:14px}
+.company-notifications li p,.company-notifications time {margin:4px 0 0;color:var(--muted);font-size:12px}
+.company-notification-unread {
+  display:inline-block;margin-inline-start:8px;padding:2px 6px;border-radius:4px;
+  background:var(--surface-2);font-size:11px;font-weight:650;
+}
