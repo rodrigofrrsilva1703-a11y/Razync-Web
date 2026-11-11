@@ -83,7 +83,7 @@ jobs:
             exit 1
           fi
           grep -q 'id="companyGrid"' /tmp/razync-dom.html
-          grep -q 'Razync' /tmp/razync-dom.html
+          grep -q 'Jaguar Conecta' /tmp/razync-dom.html
           grep -q 'razync-api-production.up.railway.app' _site/assets/js/config.js
           echo "=== Ajuda flutuante - teste visual ==="
           if ! grep -q 'data-company-help-smoke="ok"' /tmp/razync-dom.html; then

@@ -618,7 +618,7 @@ html[data-theme=dark] #companiesView #portfolioPicker {--home-muted:#b2bdcc}
 @media(max-width:760px) {
  .app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) .home-header-date {display:none}
  .home-header-brand small {display:none}
- .home-header-brand strong {font-size:18px}
+ .home-header-brand strong {font-size:clamp(13px,3.7vw,18px)}
  .home-header-brand img {width:28px;height:28px}
  #companiesView #portfolioPicker .portfolio-heading {grid-template-columns:minmax(0,1fr);gap:38px;padding:24px 0 32px}
  #companiesView #portfolioPicker .portfolio-access {max-width:none}

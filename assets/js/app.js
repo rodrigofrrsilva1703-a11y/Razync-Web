@@ -495,7 +495,7 @@ const COMPANY_TOOL_GUIDES = {
   266: {
     organizar: {
       caption: "Empresa 266 · Nova Geração",
-      intro: "A 266 usa uma planilha consolidada com os movimentos de Itaú, Bradesco, Fibra e Banco do Brasil. O Razync identifica os lançamentos pela conta bancária na coluna Conta.",
+      intro: "A 266 usa uma planilha consolidada com os movimentos de Itaú, Bradesco, Fibra e Banco do Brasil. O Jaguar Conecta identifica os lançamentos pela conta bancária na coluna Conta.",
       steps: [
         ["1", "Selecione os bancos", "Marque Itaú 508, Bradesco 9, Fibra 506 e/ou Banco do Brasil 8. Para o Banco do Brasil, o relatório precisa trazer a conta bancária 200076-8 na coluna Conta."],
         ["2", "Envie a planilha consolidada", "Anexe a planilha mensal recebida da empresa. Não precisa separar um arquivo para cada banco."],
@@ -532,7 +532,7 @@ const COMPANY_TOOL_GUIDES = {
   242: {
     francesinhas: {
       caption: "Empresa 242 · Francesinhas",
-      intro: "Use esta ferramenta quando receber o ZIP das francesinhas do Itaú. O Razync lê as liquidações L e gera o Modelo Domínio separado pelas contas 508 e 509.",
+      intro: "Use esta ferramenta quando receber o ZIP das francesinhas do Itaú. O Jaguar Conecta lê as liquidações L e gera o Modelo Domínio separado pelas contas 508 e 509.",
       steps: [
         ["1", "Envie o ZIP das francesinhas", "Anexe o arquivo ZIP com os PDFs das francesinhas do período. O sistema ignora arquivos que não sejam PDFs válidos."],
         ["2", "Informe o período se necessário", "Use De e Até apenas se quiser limitar as liquidações; em branco, todas as francesinhas válidas do ZIP são consideradas."],
@@ -878,7 +878,7 @@ function renderWorkflow(company) {
       advancedFields.appendChild(wrap);
     }
     renderBankSelector(organizerPicker,banks,{mode:"multi",controlBankFields:true});
-    $("#toolDescription").textContent = "Selecione os bancos e envie os arquivos correspondentes. O Razync gera uma aba para cada banco processado.";
+    $("#toolDescription").textContent = "Selecione os bancos e envie os arquivos correspondentes. O Jaguar Conecta gera uma aba para cada banco processado.";
   } else {
     const syncStatementFormats = () => { fileInput.accept = RazyncFileFormats.statementAccept(company, bankSelect.value); };
     renderBankSelector(organizerPicker,banks,{mode:"single",selectElement:bankSelect,onSelectionChange:syncStatementFormats});
