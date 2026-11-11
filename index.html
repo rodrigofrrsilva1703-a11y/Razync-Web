@@ -35,7 +35,7 @@
   <link rel="stylesheet" href="./assets/css/sidebar-motion.css?v=20261029-1">
   <link rel="stylesheet" href="./assets/css/home-welcome.css?v=jaguar-conecta-1">
   <link rel="stylesheet" href="./assets/css/global-tool-preparation.css?v=ledger-themes-1">
-  <link rel="stylesheet" href="./assets/css/site-access.css?v=jaguar-conecta-1">
+  <link rel="stylesheet" href="./assets/css/site-access.css?v=alterar-senha-1">
   <link rel="stylesheet" href="./assets/css/preview-layout.css?v=20261109-1">
 </head>
 <body class="sidebar-collapsed" data-site-locked data-site-loading>
@@ -135,6 +135,7 @@
         <div class="sidebar-account-identity">
           <strong id="siteAccessName" dir="auto">Minha conta</strong>
           <span id="siteAccessRole">Sessão ativa</span>
+          <button id="siteAccessChangePassword" type="button">Alterar senha</button>
         </div>
         <button id="siteAccessExit" type="button" title="Sair da conta" aria-label="Sair da conta">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5m4-12 4 4-4 4m-5-4h11"/></svg>
@@ -845,6 +846,19 @@
             aria-expanded="false" title="Como usar esta ferramenta">?</button>
         </div>
 
+  <dialog id="sitePasswordDialog" class="company-dialog" aria-labelledby="sitePasswordTitle">
+    <form id="sitePasswordForm">
+      <div class="company-dialog-heading"><h2 id="sitePasswordTitle">Alterar senha</h2><button id="sitePasswordClose" type="button" aria-label="Fechar alteração de senha">×</button></div>
+      <label for="sitePasswordCurrent">Senha atual</label>
+      <input id="sitePasswordCurrent" type="password" autocomplete="current-password" maxlength="512" required>
+      <label for="sitePasswordNew">Nova senha</label>
+      <input id="sitePasswordNew" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+      <label for="sitePasswordRepeat">Confirme a nova senha</label>
+      <input id="sitePasswordRepeat" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+      <p id="sitePasswordMessage" role="status"></p>
+      <button type="submit">Salvar nova senha</button>
+    </form>
+  </dialog>
   <dialog id="companyDialog" class="company-dialog" aria-labelledby="companyDialogTitle">
     <form id="companyCreateForm">
       <div class="company-dialog-heading"><h2 id="companyDialogTitle">Adicionar empresa</h2><button id="closeCompanyDialog" type="button" aria-label="Fechar cadastro">×</button></div>
@@ -870,7 +884,7 @@
     </div>
   </dialog>
   <script src="./assets/js/config.js"></script>
-  <script src="./assets/js/site-access.js?v=site-loading-1"></script>
+  <script src="./assets/js/site-access.js?v=alterar-senha-1"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
   <script src="./assets/js/workspace-ui.js?v=responsaveis-1"></script>

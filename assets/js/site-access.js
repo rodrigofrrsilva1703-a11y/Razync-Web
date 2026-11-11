@@ -194,6 +194,63 @@
       if (invalidCredentials) password.focus();
     }
   });
+  const changePassword = document.querySelector('#siteAccessChangePassword');
+  if (changePassword) {
+    const dialog = document.querySelector('#sitePasswordDialog');
+    const passwordForm = document.querySelector('#sitePasswordForm');
+    const current = document.querySelector('#sitePasswordCurrent');
+    const next = document.querySelector('#sitePasswordNew');
+    const repeat = document.querySelector('#sitePasswordRepeat');
+    const close = document.querySelector('#sitePasswordClose');
+    const message = document.querySelector('#sitePasswordMessage');
+    const submit = passwordForm.querySelector('[type=submit]');
+    let saving = false;
+
+    changePassword.addEventListener('click', () => {
+      passwordForm.reset();
+      message.textContent = '';
+      submit.disabled = false;
+      dialog.showModal();
+      current.focus();
+    });
+    close.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('cancel', event => { if (saving) event.preventDefault(); });
+    dialog.addEventListener('close', () => passwordForm.reset());
+    passwordForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (saving || submit.disabled) return;
+      if (next.value !== repeat.value) {
+        message.textContent = 'A confirmação precisa ser igual à nova senha.';
+        repeat.focus();
+        return;
+      }
+      saving = submit.disabled = close.disabled = true;
+      message.textContent = 'Salvando nova senha…';
+      let changed = false;
+      try {
+        const response = await call('/alterar-senha', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({current_password:current.value, new_password:next.value}),
+          signal:AbortSignal.timeout(25000)
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) {
+          message.textContent = response.status === 404 ? 'A alteração de senha está indisponível no momento.' : data.detail || 'Não foi possível alterar a senha.';
+          return;
+        }
+        changed = true;
+        message.textContent = data.sessions_revoked
+          ? 'Senha alterada. As outras sessões foram encerradas.'
+          : 'Senha alterada. Não foi possível encerrar as outras sessões.';
+      } catch {
+        message.textContent = 'A conexão foi interrompida antes de confirmar a troca.';
+      } finally {
+        passwordForm.reset();
+        saving = close.disabled = false;
+        submit.disabled = changed;
+      }
+    });
+  }
   exit.addEventListener('click', async () => {
     exit.disabled = true;
     try { await call('/sair', { method:'POST', signal:AbortSignal.timeout(5000) }); }
