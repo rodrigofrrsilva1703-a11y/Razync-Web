@@ -28,7 +28,7 @@
   visibilityObserver.observe(basePane,{attributes:true,attributeFilter:['class']});
   function brandMark(){
     const mark=document.createElement('span');mark.className='base-brand-mark';mark.setAttribute('aria-hidden','true');
-    const logo=document.createElement('img');logo.src='./assets/jaguar-conecta.png';logo.alt='';logo.width=40;logo.height=40;logo.decoding='async';mark.append(logo);return mark;
+    const logo=document.createElement('img');logo.src='./assets/jaguar-conecta.png?v=oficial-1';logo.alt='';logo.width=40;logo.height=40;logo.decoding='async';mark.append(logo);return mark;
   }
   const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text)e.textContent=text;if(cls)e.className=cls;return e;};
   const bankLabelUI=value=>({bb:'Banco do Brasil',itau_508:'Itaú 508',itau_509:'Itaú 509',itau_512:'Itaú 512'}[value] || (typeof bankName==='function'?bankName(value):value));
