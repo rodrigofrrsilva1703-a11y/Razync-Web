@@ -27,7 +27,7 @@ function fixture({activeSession=false}={}) {
   vm.runInNewContext(source,{window,document:{body,querySelector:q=>ids[q.slice(1)],addEventListener(){}},
     sessionStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
     URL, URLSearchParams, Headers, AbortSignal, Request, location:{search:'',href:'https://razync.example.test/'},
-    clearTimeout(){},setTimeout(){return 1;}});
+    clearTimeout(){},setTimeout(){return 1;},setInterval(){return 1;}});
   return {ids,submit,body,storage,window,confirmSession,allowConfig(){configFails=false;},allowLogin(){loginStatus=200;}};
 }
 

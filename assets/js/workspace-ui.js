@@ -486,6 +486,8 @@ function initializeUserAccess() {
   const endpoint = () => `${API()}/api/v1/company-access/users`;
   const pending = new Set();
   let users = [], loading = false;
+  const clock = new Intl.DateTimeFormat("pt-BR", {timeZone:"America/Sao_Paulo", dateStyle:"short", timeStyle:"short"});
+  const formatTime = seconds => seconds == null ? "—" : clock.format(new Date(seconds * 1000));
 
   function render() {
     const term = search.value.trim().toLowerCase();
@@ -502,6 +504,11 @@ function initializeUserAccess() {
       badge.dataset.suspended = String(user.suspended);
       badge.textContent = user.suspended ? "Suspenso" : "Ativo";
       cell.append(badge);
+      const presence = row.insertCell();
+      presence.textContent = user.suspended || !user.connected ? "Desconectado"
+        : user.active ? "Conectado · ativo" : "Conectado · inativo";
+      row.insertCell().textContent = formatTime(user.last_active);
+      row.insertCell().textContent = formatTime(user.inactive_since);
       const actions = row.insertCell();
       if (user.self) {
         actions.textContent = "—";
@@ -527,11 +534,13 @@ function initializeUserAccess() {
           if (!response.ok) throw new Error(await responseError(response));
           const result = await response.json();
           user.suspended = result.suspended;
+          if (result.suspended) user.connected = user.active = false;
           message.textContent = `Acesso ${result.suspended ? "suspenso" : "reativado"} para ${user.email}.`;
         } catch (error) { message.textContent = error.message; }
         finally {
           pending.delete(user.email);
           render();
+          void loadUserAccess(true);
           if (document.querySelector("#userAccessView").classList.contains("active") && document.activeElement === document.body) {
             rows.querySelector(`[data-user-email="${CSS.escape(user.email)}"]`)?.focus({preventScroll:true});
           }
@@ -541,23 +550,32 @@ function initializeUserAccess() {
     }
     if (!matches.length) {
       const cell = rows.insertRow().insertCell();
-      cell.colSpan = 4;
+      cell.colSpan = 7;
       cell.textContent = "Nenhuma conta encontrada.";
     }
   }
 
   search.addEventListener("input", render);
-  loadUserAccess = async () => {
+  loadUserAccess = async (silent = false) => {
     if (loading || pending.size) return;
     loading = true;
-    message.textContent = "Carregando contas…";
+    if (!silent) message.textContent = "Carregando contas…";
     try {
       const response = await fetch(endpoint());
       if (!response.ok) throw new Error(await responseError(response));
-      users = (await response.json()).users;
-      message.textContent = "";
+      const data = (await response.json()).users;
+      if (!silent) message.textContent = "";
+      if (JSON.stringify(users) === JSON.stringify(data) && rows.childElementCount) return;
+      const focused = document.activeElement?.dataset.userEmail;
+      users = data;
       render();
-    } catch (error) { message.textContent = error.message; }
+      if (focused) rows.querySelector(`[data-user-email="${CSS.escape(focused)}"]`)?.focus({preventScroll:true});
+    } catch (error) { if (!silent) message.textContent = error.message; }
     finally { loading = false; }
   };
+  setInterval(() => {
+    if (!document.hidden && document.querySelector("#userAccessView").classList.contains("active")) {
+      void loadUserAccess(true);
+    }
+  }, 30000);
 }

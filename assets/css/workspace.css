@@ -2806,3 +2806,8 @@ body[data-site-locked] #companyNotificationToast {display:none}
 #userAccessMessage:empty {display:none}
 .user-access-state {display:inline-block;border:1px solid #52947b;border-radius:6px;padding:4px 7px}
 .user-access-state[data-suspended=true] {border-color:#b87b48}
+
+#userAccessView .owner-table {min-width:925px}
+#userAccessView .owner-table th:first-child {width:31%}
+#userAccessView .owner-table th:nth-child(3) {width:auto}
+#userAccessView .owner-table td:nth-child(4),#userAccessView .owner-table td:nth-child(5),#userAccessView .owner-table td:nth-child(6) {white-space:nowrap}

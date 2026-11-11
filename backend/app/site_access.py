@@ -25,6 +25,8 @@ PUBLIC = {("GET", "/health"), ("GET", "/api/v1/acesso/config"), ("POST", "/api/v
 TTL = 12 * 60 * 60
 MAX_AGE = 7 * 24 * 60 * 60
 TOUCH_INTERVAL = 5 * 60
+PRESENCE_WINDOW = 120
+_activity = {}
 _sessions = OrderedDict()
 _suspended = set()
 _attempts = OrderedDict()
@@ -66,10 +68,69 @@ def session_database(volume):
         db.execute("CREATE TABLE IF NOT EXISTS sessions (digest BLOB PRIMARY KEY, "
                    "email TEXT NOT NULL, expires REAL NOT NULL, last_seen REAL NOT NULL)")
         db.execute("CREATE TABLE IF NOT EXISTS suspended_users (email TEXT PRIMARY KEY)")
+        db.execute("CREATE TABLE IF NOT EXISTS user_activity (email TEXT PRIMARY KEY, active_at REAL NOT NULL, ended_at REAL)")
         with db:
             yield db
     finally:
         db.close()
+
+
+def _record_activity(db, email, now):
+    db.execute(
+        "INSERT INTO user_activity(email,active_at) VALUES(?,?) "
+        "ON CONFLICT(email) DO UPDATE SET active_at=excluded.active_at, ended_at=NULL",
+        (email, now),
+    )
+
+
+def user_presence():
+    volume = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
+    now = time.time()
+    if volume:
+        with session_database(volume) as db:
+            connected = {row[0] for row in db.execute(
+                "SELECT DISTINCT email FROM sessions WHERE expires>? AND last_seen>?", (now, now - TTL),
+            )}
+            activity = {email: (seen, ended) for email, seen, ended in db.execute(
+                "SELECT email,active_at,ended_at FROM user_activity",
+            )}
+    else:
+        with _lock:
+            connected = {email for email, expires, seen in _sessions.values()
+                         if expires > now and seen + TTL > now}
+            activity = dict(_activity)
+    return {
+        email: {
+            "connected": email in connected,
+            "active": email in connected and seen is not None and seen + PRESENCE_WINDOW > now,
+            "last_active": seen,
+            "inactive_since": (
+                min(seen + PRESENCE_WINDOW, ended if ended is not None else now)
+                if seen is not None and (email not in connected or seen + PRESENCE_WINDOW <= now) else None
+            ),
+        }
+        for email in connected | activity.keys()
+        for seen, ended in [activity.get(email, (None, None))]
+    }
+
+
+@router.post("/presenca", status_code=204)
+def heartbeat(request: Incoming):
+    email = current_owner.get()
+    if not email:
+        return reply(401, detail="Sessão encerrada.")
+    digest = fingerprint(request.headers.get("x-razync-session", ""))
+    volume = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
+    now = time.time()
+    if volume:
+        with session_database(volume) as db:
+            db.execute("BEGIN IMMEDIATE")
+            if db.execute("SELECT 1 FROM sessions WHERE digest=? AND email=?", (digest, email)).fetchone():
+                _record_activity(db, email, now)
+    else:
+        with _lock:
+            if digest in _sessions:
+                _activity[email] = (now, None)
 
 
 def suspended_users():
@@ -93,6 +154,7 @@ def set_user_suspended(actor, target, suspended):
             if suspended:
                 db.execute("INSERT INTO suspended_users VALUES (?) ON CONFLICT DO NOTHING", (target,))
                 db.execute("DELETE FROM sessions WHERE email=?", (target,))
+                db.execute("UPDATE user_activity SET ended_at=? WHERE email=?", (time.time(), target))
             else:
                 db.execute("DELETE FROM suspended_users WHERE email=?", (target,))
         return
@@ -101,6 +163,8 @@ def set_user_suspended(actor, target, suspended):
             raise PermissionError("Sua conta está suspensa.")
         if suspended:
             _suspended.add(target)
+            if target in _activity:
+                _activity[target] = (_activity[target][0], time.time())
             for digest, entry in list(_sessions.items()):
                 if entry[0] == target:
                     _sessions.pop(digest)
@@ -159,6 +223,7 @@ def save_session(token, email):
                 raise PermissionError("Conta suspensa.")
             db.execute("DELETE FROM sessions WHERE expires <= ? OR last_seen <= ?", (now, now - TTL))
             db.execute("INSERT INTO sessions VALUES (?,?,?,?)", (digest, email, now + MAX_AGE, now))
+            _record_activity(db, email, now)
             db.execute("DELETE FROM sessions WHERE digest IN (SELECT digest FROM sessions ORDER BY last_seen DESC LIMIT -1 OFFSET 256)")
         return
     with _lock:
@@ -168,6 +233,7 @@ def save_session(token, email):
             if expires <= now or last_seen + TTL <= now:
                 _sessions.pop(key, None)
         _sessions[digest] = email, now + MAX_AGE, now
+        _activity[email] = (now, None)
         while len(_sessions) > 256:
             _sessions.popitem(last=False)
 
@@ -368,13 +434,24 @@ async def change_password(request: Incoming):
 def logout(request: Incoming):
     digest = fingerprint(request.headers.get("x-razync-session", ""))
     volume = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
+    now = time.time()
+    email = current_owner.get()
     try:
         if volume:
             with session_database(volume) as db:
                 db.execute("DELETE FROM sessions WHERE digest=?", (digest,))
+                db.execute(
+                    "UPDATE user_activity SET ended_at=? WHERE email=? AND NOT EXISTS "
+                    "(SELECT 1 FROM sessions WHERE email=? AND expires>? AND last_seen>?)",
+                    (now, email, email, now, now - TTL),
+                )
         else:
             with _lock:
                 _sessions.pop(digest, None)
+                if email in _activity and not any(
+                    user == email and expires > now and seen + TTL > now for user, expires, seen in _sessions.values()
+                ):
+                    _activity[email] = (_activity[email][0], now)
     except (sqlite3.Error, OSError):
         return reply(503, detail="Não foi possível encerrar a sessão no servidor.")
     return reply(200, ok=True)

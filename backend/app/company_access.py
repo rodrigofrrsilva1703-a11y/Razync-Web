@@ -8,7 +8,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from app.site_access import allowlist, current_owner, set_user_suspended, suspended_users
+from app.site_access import allowlist, current_owner, set_user_suspended, suspended_users, user_presence
 
 router = APIRouter(prefix="/api/v1/company-access")
 
@@ -105,8 +105,10 @@ def list_users():
     _require_admin()
     blocked = suspended_users()
     admins = administrators()
+    presence = user_presence()
     return {"users": [
-        {"email": email, "admin": email in admins, "suspended": email in blocked, "self": email == current_owner.get()}
+        {"email": email, "admin": email in admins, "suspended": email in blocked, "self": email == current_owner.get(),
+         **presence.get(email, {"connected": False, "active": False, "last_active": None, "inactive_since": None})}
         for email in sorted(allowlist())
     ]}
 

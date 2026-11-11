@@ -10,6 +10,7 @@
   const key = 'razync:private-session:v1', expiredKey = 'razync:session-ended';
   const activityKey = 'razync:last-activity', idleLimit = 60 * 60 * 1000;
   let lastActivity = 0, lastSavedActivity = 0, idleTimer, endingSession = false;
+  let lastPresence = 0;
   let token = '', identity = '', required = Boolean(base), release;
   const ready = new Promise(resolve => { release = resolve; });
   const stored = () => { try { return sessionStorage.getItem(key) || ''; } catch { return ''; } };
@@ -40,7 +41,7 @@
     delete root.dataset.siteLocked;
     screen.hidden = true;
     delete root.dataset.siteLoading;
-    if (token) checkIdle();
+    if (token) { checkIdle(); sendPresence(); }
     release();
   }
   function saveActivity() {
@@ -70,12 +71,21 @@
     const now = Date.now();
     if (now - lastActivity >= idleLimit) { void endIdleSession(); return; }
     lastActivity = now;
+    sendPresence();
     if (now - lastSavedActivity >= 5000) saveActivity();
   }
+  function sendPresence() {
+    const now = Date.now();
+    if (!identity || !token || endingSession || document.hidden ||
+        now - lastActivity > 60000 || now - lastPresence < 30000) return;
+    lastPresence = now;
+    call("/presenca", {method:"POST", signal:AbortSignal.timeout(5000)}).catch(() => {});
+  }
+  setInterval(sendPresence, 30000);
   for (const type of ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart']) {
     document.addEventListener(type, recordActivity, {capture:true, passive:true});
   }
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && identity) checkIdle(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && identity) { checkIdle(); sendPresence(); } });
   window.addEventListener('pagehide', saveActivity);
   function locked(message, canLogin) {
     account.hidden = true;
@@ -194,63 +204,6 @@
       if (invalidCredentials) password.focus();
     }
   });
-  const changePassword = document.querySelector('#siteAccessChangePassword');
-  if (changePassword) {
-    const dialog = document.querySelector('#sitePasswordDialog');
-    const passwordForm = document.querySelector('#sitePasswordForm');
-    const current = document.querySelector('#sitePasswordCurrent');
-    const next = document.querySelector('#sitePasswordNew');
-    const repeat = document.querySelector('#sitePasswordRepeat');
-    const close = document.querySelector('#sitePasswordClose');
-    const message = document.querySelector('#sitePasswordMessage');
-    const submit = passwordForm.querySelector('[type=submit]');
-    let saving = false;
-
-    changePassword.addEventListener('click', () => {
-      passwordForm.reset();
-      message.textContent = '';
-      submit.disabled = false;
-      dialog.showModal();
-      current.focus();
-    });
-    close.addEventListener('click', () => dialog.close());
-    dialog.addEventListener('cancel', event => { if (saving) event.preventDefault(); });
-    dialog.addEventListener('close', () => passwordForm.reset());
-    passwordForm.addEventListener('submit', async event => {
-      event.preventDefault();
-      if (saving || submit.disabled) return;
-      if (next.value !== repeat.value) {
-        message.textContent = 'A confirmação precisa ser igual à nova senha.';
-        repeat.focus();
-        return;
-      }
-      saving = submit.disabled = close.disabled = true;
-      message.textContent = 'Salvando nova senha…';
-      let changed = false;
-      try {
-        const response = await call('/alterar-senha', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({current_password:current.value, new_password:next.value}),
-          signal:AbortSignal.timeout(25000)
-        });
-        const data = await response.json();
-        if (!response.ok || !data.ok) {
-          message.textContent = response.status === 404 ? 'A alteração de senha está indisponível no momento.' : data.detail || 'Não foi possível alterar a senha.';
-          return;
-        }
-        changed = true;
-        message.textContent = data.sessions_revoked
-          ? 'Senha alterada. As outras sessões foram encerradas.'
-          : 'Senha alterada. Não foi possível encerrar as outras sessões.';
-      } catch {
-        message.textContent = 'A conexão foi interrompida antes de confirmar a troca.';
-      } finally {
-        passwordForm.reset();
-        saving = close.disabled = false;
-        submit.disabled = changed;
-      }
-    });
-  }
   exit.addEventListener('click', async () => {
     exit.disabled = true;
     try { await call('/sair', { method:'POST', signal:AbortSignal.timeout(5000) }); }
