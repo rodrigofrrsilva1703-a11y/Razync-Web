@@ -1,10 +1,13 @@
 """Monthly accounting checklist, scoped to the current company portfolio."""
 import io
 import json
+import logging
+import sqlite3
 import re
 from collections import defaultdict
 from contextlib import closing
-from datetime import date
+from calendar import monthrange
+from datetime import date, datetime, timezone
 from typing import Literal
 from xml.etree.ElementTree import ParseError
 from zipfile import BadZipFile, ZipFile
@@ -38,6 +41,14 @@ def db_connection():
     db.execute("""CREATE TABLE IF NOT EXISTS monthly_accounting_tasks (
         period TEXT NOT NULL, company INTEGER NOT NULL, payload TEXT NOT NULL,
         revision INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (period, company)
+    )""")
+    db.execute("""CREATE TABLE IF NOT EXISTS monthly_task_events (
+        period TEXT NOT NULL, company INTEGER NOT NULL, revision INTEGER NOT NULL,
+        actor TEXT NOT NULL, occurred TEXT NOT NULL, changes TEXT NOT NULL,
+        PRIMARY KEY (period, company, revision)
+    )""")
+    db.execute("""CREATE TABLE IF NOT EXISTS monthly_task_reconciliation (
+        period TEXT NOT NULL, company INTEGER NOT NULL, PRIMARY KEY (period, company)
     )""")
     return db
 
@@ -76,6 +87,9 @@ def dashboard(period: str | None = None):
         stored = {code: (json.loads(payload), revision) for code, payload, revision in db.execute(
             "SELECT company,payload,revision FROM monthly_accounting_tasks WHERE period=?", (period,),
         )}
+        reconciled = {row[0] for row in db.execute(
+            "SELECT company FROM monthly_task_reconciliation WHERE period=?", (period,),
+        )}
     rows = []
     groups = defaultdict(lambda: dict(companies=0, completed=0, done=0, applicable=0, issues=0))
     for company in companies:
@@ -89,12 +103,12 @@ def dashboard(period: str | None = None):
         if str(company.get("regime", "")).casefold().strip() in PRAZOS_EMPRESAS_DIAS:
             deadline = calcular_prioridade_empresa(company, {}, today, month)["vencimento"].isoformat()
         row = {"code": code, "name": company["nome"], "owner": owner, "due": deadline,
-               "revision": revision, **entry, **metrics}
+               "revision": revision, "reconciliation_ready": code in reconciled and entry["steps"][1] == "pending", **entry, **metrics}
         rows.append(row)
         if admin:
             group = groups[owner]
             group["companies"] += 1
-            group["completed"] += metrics["status"] == "done"
+            group["completed"] += metrics["status"] == "done" and entry["issue_status"] != "open"
             group["done"] += metrics["done"]
             group["applicable"] += metrics["applicable"]
             group["issues"] += entry["issue_status"] == "open"
@@ -119,7 +133,7 @@ def save_task(period: str, company_code: int, update: TaskUpdate):
         if not admin and owner != email:
             raise HTTPException(403, "Esta empresa não está na sua carteira.")
         existing = db.execute(
-            "SELECT revision FROM monthly_accounting_tasks WHERE period=? AND company=?", (period, company_code),
+            "SELECT revision,payload FROM monthly_accounting_tasks WHERE period=? AND company=?", (period, company_code),
         ).fetchone()
         if (existing[0] if existing else 0) != update.revision:
             raise HTTPException(409, "A tarefa foi atualizada em outra sessão. Atualize a lista antes de salvar.")
@@ -128,7 +142,69 @@ def save_task(period: str, company_code: int, update: TaskUpdate):
             "ON CONFLICT(period,company) DO UPDATE SET payload=excluded.payload,revision=excluded.revision",
             (period, company_code, json.dumps(data, ensure_ascii=False), update.revision + 1),
         )
-    return {"revision": update.revision + 1, **data, **task_metrics(data["steps"])}
+        before = json.loads(existing[1]) if existing else EMPTY
+        changes = [
+            {"field": label, "before": old, "after": new}
+            for label, old, new in zip(STEP_LABELS, before["steps"], data["steps"]) if old != new
+        ]
+        for key, label in (("issue_status", "Situação da pendência"), ("issue", "Descrição da pendência"), ("action", "Última ação")):
+            if before[key] != data[key]:
+                changes.append({"field": label, **({"before": before[key], "after": data[key]} if key == "issue_status" else {})})
+        if changes:
+            db.execute("INSERT INTO monthly_task_events VALUES(?,?,?,?,?,?)",
+                       (period, company_code, update.revision + 1, email, datetime.now(timezone.utc).isoformat(), json.dumps(changes)))
+        if data["steps"][1] != "pending":
+            db.execute("DELETE FROM monthly_task_reconciliation WHERE period=? AND company=?", (period, company_code))
+        ready = data["steps"][1] == "pending" and db.execute(
+            "SELECT 1 FROM monthly_task_reconciliation WHERE period=? AND company=?", (period, company_code),
+        ).fetchone() is not None
+    return {"revision": update.revision + 1, "reconciliation_ready": ready, **data, **task_metrics(data["steps"])}
+
+
+@router.get("/{period}/{company_code}/history")
+def history(period: str, company_code: int):
+    period_date(period)
+    email, admin = identity()
+    with closing(db_connection()) as db, db:
+        db.execute("BEGIN")
+        assigned = db.execute("SELECT email FROM company_owners WHERE company=?", (company_code,)).fetchone()
+        owner = company_access.owner_for(company_code, {company_code: assigned[0]} if assigned else {})
+        if not admin and owner != email:
+            raise HTTPException(403, "Esta empresa não está na sua carteira.")
+        return [{"actor": actor, "at": at, "changes": json.loads(changes)} for actor, at, changes in db.execute(
+            "SELECT actor,occurred,changes FROM monthly_task_events WHERE period=? AND company=? ORDER BY revision DESC LIMIT 50",
+            (period, company_code),
+        )]
+
+
+def record_reconciliation(company, options, summary, rows):
+    if not current_owner.get() or not isinstance(options, dict):
+        return
+    try:
+        start = date.fromisoformat(options.get("data_inicial", ""))
+        end = date.fromisoformat(options.get("data_final", ""))
+    except (TypeError, ValueError):
+        return
+    if start.day != 1 or end != start.replace(day=monthrange(start.year, start.month)[1]):
+        return
+    period = start.isoformat()[:7]
+    try:
+        balanced = rows and all(
+            all(abs(float(row[f"{kind} PLANILHA"]) - float(row[f"{kind} EXTRATO"])) < 0.005
+                for kind in ("ENTRADAS", "SAÍDAS"))
+            for row in rows
+        )
+    except (KeyError, TypeError, ValueError):
+        balanced = False
+    try:
+        with closing(db_connection()) as db, db:
+            if balanced and summary.get("ok"):
+                db.execute("INSERT INTO monthly_task_reconciliation VALUES(?,?) ON CONFLICT DO NOTHING", (period, company))
+            else:
+                db.execute("DELETE FROM monthly_task_reconciliation WHERE period=? AND company=?", (period, company))
+    except (OSError, sqlite3.Error):
+        logging.getLogger(__name__).exception("Não foi possível atualizar a sugestão de conciliação.")
+
 
 
 def normalized(value):

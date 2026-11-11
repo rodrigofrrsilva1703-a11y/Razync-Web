@@ -13,7 +13,7 @@
   <meta name="description" content="Jaguar Conecta | Organização, classificação e conciliação contábil">
   <link rel="stylesheet" href="./assets/css/app.css?v=base242-streamlit-1">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="investments" href="./assets/css/bank-investments.css?v=20261020-6">
-  <link rel="stylesheet" href="./assets/css/monthly-tasks.css?v=4">
+  <link rel="stylesheet" href="./assets/css/monthly-tasks.css?v=5">
   <link rel="stylesheet" href="./assets/css/workspace.css?v=notificacoes-2">
   <link rel="stylesheet" href="./assets/css/tools.css?v=company-tools-20261031-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=fixed-header-home-20261028-3">
@@ -253,13 +253,14 @@
         <details id="monthlyTasksTeam" class="monthly-tasks-team" hidden>
           <summary>Progresso da equipe</summary>
           <div id="monthlyTasksPeople"></div>
+          <div id="monthlyTasksStages" aria-label="Empresas por próxima etapa"></div>
         </details>
         <div class="monthly-tasks-worklist">
           <h2>Empresas da competência</h2>
           <div class="monthly-tasks-controls">
             <label>Buscar empresa<input id="monthlyTasksSearch" type="search" placeholder="Nome ou código"></label>
-            <label>Status<select id="monthlyTasksFilter"><option value="">Todos</option><option value="pending">Não iniciado</option><option value="progress">Em andamento</option><option value="done">Concluído</option><option value="issue">Com pendência</option><option value="na">Não se aplica</option></select></label>
-            <label>Ordenar por<select id="monthlyTasksSort"><option value="code">Código da empresa</option><option value="progress">Menor progresso</option></select></label>
+            <label>Status<select id="monthlyTasksFilter"><option value="">Todos</option><option value="pending">Não iniciado</option><option value="progress">Em andamento</option><option value="done">Concluído</option><option value="issue">Com pendência</option><option value="mine">Minhas pendências</option><option value="ready">Conciliação para confirmar</option><option value="na">Não se aplica</option></select></label>
+            <label>Ordenar por<select id="monthlyTasksSort"><option value="queue">Prioridade da fila</option><option value="code">Código da empresa</option><option value="progress">Menor progresso</option></select></label>
             <details id="monthlyTasksImportPanel" hidden>
               <summary>Importar histórico</summary>
               <form id="monthlyTasksImport">
@@ -971,7 +972,7 @@
   <script src="./assets/js/base-investigation.js?v=jaguar-oficial-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
-  <script src="./assets/js/monthly-tasks.js?v=4"></script>
+  <script src="./assets/js/monthly-tasks.js?v=5"></script>
   <script src="./assets/js/app.js?v=tarefas-contabeis-1"></script>
   <script src="./assets/js/migration.js?v=standard-preview-20261109-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>

@@ -40,7 +40,7 @@ from app.company_access import allowed_codes, require_company_access, router as 
 
 app = FastAPI(title="Razync Web API", version="0.4.0", dependencies=[Depends(require_company_access)])
 app.include_router(company_access_router)
-from app.monthly_tasks import router as monthly_tasks_router
+from app.monthly_tasks import record_reconciliation, router as monthly_tasks_router
 app.include_router(monthly_tasks_router)
 
 app.include_router(result_router)
@@ -454,6 +454,7 @@ async def conferencia_extrato_multi_preview(
         )
         if summary.get("errors"):
             sheets["Avisos"] = pd.DataFrame(summary["errors"])
+        await run_in_threadpool(record_reconciliation, company_code, options, summary, rows)
         return await run_in_threadpool(reconciliation_response, summary, rows, sheets,
             f"RAZYNC_{company_code}_CONFERENCIA_EXTRATO.xlsx", request.headers.get("x-razync-reuse") == "1")
     except Exception as exc:
@@ -514,7 +515,9 @@ async def conferencia_extrato_preview(
             reconcile, company_code, bank, await model_file.read(), statements, options
         )
         diario = sheets.get("Conferência diária", pd.DataFrame()).copy()
-        return await run_in_threadpool(reconciliation_response, resumo, _preview_records(diario), sheets,
+        rows = _preview_records(diario)
+        await run_in_threadpool(record_reconciliation, company_code, options, resumo, rows)
+        return await run_in_threadpool(reconciliation_response, resumo, rows, sheets,
             f"RAZYNC_{company_code}_CONFERENCIA_EXTRATO.xlsx", request.headers.get("x-razync-reuse") == "1")
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

@@ -17,7 +17,7 @@
   const endpoint = () => `${API()}/api/v1/monthly-tasks`;
   const labels = {pending:"Não iniciado", progress:"Em andamento", done:"Concluído", na:"Não se aplica"};
   const names = {none:"Registrar", open:"Aberta", resolved:"Resolvida"};
-  let state, ownerFilter, request;
+  let state, ownerFilter, request, stageFilter;
   const saving = new Set();
   const issueDrafts = new Map();
 
@@ -50,6 +50,29 @@
     }
   }
 
+  const closed = row => row.status === "done" && row.issue_status !== "open";
+  const nextStep = row => row.steps.indexOf("pending");
+  const myEmail = () => globalThis.RazyncSiteAccess?.identity();
+
+  function renderStages() {
+    const stages = get("monthlyTasksStages");
+    stages.replaceChildren();
+    if (!state.admin) return;
+    const scoped = state.companies.filter(row => ownerFilter === undefined || row.owner === ownerFilter);
+    state.steps.forEach((label, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `${label} · ${scoped.filter(row => nextStep(row) === index).length}`;
+      button.setAttribute("aria-pressed", String(stageFilter === index));
+      button.onclick = () => {
+        stageFilter = stageFilter === index ? undefined : index;
+        renderRows();
+        stages.children[index]?.focus();
+      };
+      stages.append(button);
+    });
+  }
+
   function progressBar(percent) {
     const bar = document.createElement("progress");
     bar.max = 100;
@@ -61,12 +84,21 @@
   function renderRows() {
     if (!state) return;
     rows.replaceChildren();
+    renderStages();
     const term = search.value.trim().toLocaleLowerCase("pt-BR");
     const matching = state.companies.filter(row =>
       (ownerFilter === undefined || row.owner === ownerFilter) &&
+      (stageFilter === undefined || nextStep(row) === stageFilter) &&
       `${row.code} ${row.name}`.toLocaleLowerCase("pt-BR").includes(term)
     );
-    const matches = (row, key) => key === "issue" ? row.issue_status === "open" : row.status === key;
+    const ready = row => row.reconciliation_ready && row.steps[1] === "pending";
+    const matches = (row, key) => {
+      if (key === "done") return closed(row);
+      if (key === "ready") return ready(row);
+      if (key === "mine") return row.owner === myEmail() && row.issue_status === "open";
+      if (key === "issue") return row.issue_status === "open";
+      return row.status === key;
+    };
     metrics.replaceChildren();
     for (const [key, label] of [["", "Empresas"], ["pending", "Não iniciadas"], ["progress", "Em andamento"], ["done", "Concluídas"], ["issue", "Com pendência"]]) {
       const button = document.createElement("button");
@@ -84,6 +116,10 @@
     }
     const visible = matching.filter(row => !filter.value || matches(row, filter.value));
     visible.sort((a, b) => {
+      if (sort.value === "queue") {
+        const rank = row => row.issue_status === "open" ? 0 : ready(row) ? 1 : closed(row) || row.status === "na" ? 3 : 2;
+        return rank(a) - rank(b) || b.percent - a.percent || a.code - b.code;
+      }
       if (sort.value === "progress") return a.percent - b.percent || a.code - b.code;
       return a.code - b.code;
     });
@@ -101,6 +137,12 @@
       }
       const key = `${state.period}/${item.code}`;
       row.dataset.taskKey = key;
+      const next = nextStep(item);
+      if (next >= 0) {
+        const hint = document.createElement("small");
+        hint.textContent = `Próxima etapa: ${state.steps[next]}`;
+        company.append(hint);
+      }
       item.steps.forEach((value, index) => {
         const field = document.createElement("select");
         field.append(new Option("Pendente", "pending"), new Option("OK", "done"), new Option("N/A", "na"));
@@ -115,17 +157,24 @@
           field.dataset.value = field.value;
           void saveTask(item, {steps}, field);
         };
-        row.insertCell().append(field);
+        const stepCell = row.insertCell();
+        stepCell.append(field);
+        if (index === 1 && ready(item)) {
+          const hint = document.createElement("small");
+          hint.textContent = "Pronta para confirmar";
+          hint.title = "A conferência do mês bateu para os bancos analisados. Confira a cobertura antes de marcar OK.";
+          stepCell.append(hint);
+        }
       });
       const progress = row.insertCell();
       progress.textContent = item.applicable ? `${item.percent}% · ${item.done}/${item.applicable}` : "—";
       if (item.applicable) progress.append(progressBar(item.percent));
       const tag = document.createElement("small");
-      tag.textContent = labels[item.status];
+      tag.textContent = item.status === "done" && !closed(item) ? "Pendência aberta" : labels[item.status];
       progress.append(tag);
       const issueCell = row.insertCell();
       issueCell.dataset.issue = item.issue_status;
-      issueCell.append(issueEditor(item, saving.has(key)));
+      issueCell.append(issueEditor(item, saving.has(key)), historyView(key, item.code));
     }
   }
 
@@ -192,6 +241,35 @@
     return details;
   }
 
+  function historyView(key, code) {
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = "Histórico";
+    summary.setAttribute("aria-label", `Histórico da empresa ${code}`);
+    const list = document.createElement("ul");
+    details.append(summary, list);
+    const states = {pending:"Pendente", done:"OK", na:"N/A", open:"Aberta", resolved:"Resolvida", none:"Sem pendência"};
+    details.ontoggle = async () => {
+      if (!details.open || list.childElementCount) return;
+      list.textContent = "Carregando…";
+      try {
+        const response = await fetch(`${endpoint()}/${key}/history`);
+        if (!response.ok) throw new Error(await responseError(response));
+        const events = await response.json();
+        list.textContent = events.length ? "" : "Sem alterações registradas.";
+        for (const event of events) {
+          const entry = document.createElement("li");
+          const when = new Date(event.at).toLocaleString("pt-BR");
+          const changes = event.changes.map(change => change.before === undefined ? change.field
+            : `${change.field}: ${states[change.before]} → ${states[change.after]}`);
+          entry.textContent = `${displayOwner(event.actor)} · ${when} · ${changes.join("; ")}`;
+          list.append(entry);
+        }
+      } catch (error) { list.textContent = error.message; }
+    };
+    return details;
+  }
+
   async function saveTask(item, changes, trigger) {
     const snapshot = state;
     const key = `${snapshot.period}/${item.code}`;
@@ -213,7 +291,7 @@
       if (group) {
         group.done += updated.done - item.done;
         group.applicable += updated.applicable - item.applicable;
-        group.completed += Number(updated.status === "done") - Number(item.status === "done");
+        group.completed += Number(closed(updated)) - Number(closed(item));
         group.issues += Number(updated.issue_status === "open") - Number(item.issue_status === "open");
       }
       Object.assign(item, updated);

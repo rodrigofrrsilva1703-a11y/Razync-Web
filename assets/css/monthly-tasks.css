@@ -72,3 +72,9 @@
 .monthly-tasks-table details label {display:grid;gap:4px;color:var(--muted)}
 #monthlyTaskFeedback {margin:8px 0;color:var(--muted);font-size:12px}
 #monthlyTaskFeedback:empty {display:none}
+
+#monthlyTasksStages {display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+#monthlyTasksStages button {border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);padding:6px 8px;cursor:pointer}
+#monthlyTasksStages button[aria-pressed=true] {border-color:#6696e6;background:var(--surface-2)}
+.monthly-tasks-table details + details {margin-top:6px;color:var(--muted)}
+.monthly-tasks-table details ul {max-height:180px;overflow:auto;min-width:160px;margin:7px 0;padding-left:16px}
