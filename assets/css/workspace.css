@@ -2787,8 +2787,10 @@ body[data-site-locked] #companyNotificationToast {display:none}
   background:var(--surface-2);font-size:11px;font-weight:650;
 }
 
-#companiesView #addCompany[hidden] {display:none!important}
+#addCompany[hidden] {display:none!important}
 .owner-table th:last-child {width:150px}
 .owner-table td:last-child {white-space:nowrap}
 #removeCompanyForm > div {display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 #removeCompanyForm #removeCompanyStatus:empty {display:none}
+
+.owner-toolbar #addCompany {min-height:36px}
