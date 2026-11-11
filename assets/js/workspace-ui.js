@@ -152,7 +152,6 @@ function initializeSidebarControls() {
 function initializeCompanyControls() {
   initializeSidebarControls();
   initializeCompanyOwners();
-  initializeCompanyNotifications();
   const dialog = document.querySelector("#companyDialog");
   const form = document.querySelector("#companyCreateForm");
   const message = document.querySelector("#companyCreateMessage");
@@ -301,26 +300,37 @@ function initializeCompanyNotifications() {
   let seenKey;
   let pending;
   let toastTimer;
+  let toastOpen = false;
   let saving = false;
 
   function dismissToast() {
     clearTimeout(toastTimer);
-    toast.hidePopover?.();
+    if (toast.hasAttribute("popover") && toast.matches(":popover-open")) toast.hidePopover();
     toast.hidden = true;
+    toastOpen = false;
     announcement.textContent = "";
   }
 
+  function scheduleToastDismissal() {
+    clearTimeout(toastTimer);
+    if (toastOpen && !document.hidden) toastTimer = setTimeout(dismissToast, 5000);
+  }
+
   function showToast(items) {
-    const item = items[0];
+    const [item] = items;
+    const company = `${item.company} · ${item.name}`;
     const message = items.length > 1
-      ? `Você recebeu ${items.length} novas empresas. Veja os detalhes em Notificações.`
-      : `Você agora é responsável pela empresa ${item.company} · ${item.name}.`;
+      ? `${company} e mais ${items.length - 1} ${items.length === 2 ? "empresa atribuída" : "empresas atribuídas"}.`
+      : company;
     toastText.textContent = message;
     toast.hidden = false;
-    if (typeof toast.showPopover === "function" && !toast.matches(":popover-open")) toast.showPopover();
-    announcement.textContent = message;
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(dismissToast, 10000);
+    toastOpen = true;
+    if (toast.hasAttribute("popover") && !toast.matches(":popover-open")) {
+      try { toast.showPopover(); }
+      catch { toast.removeAttribute("popover"); }
+    }
+    announcement.textContent = `Nova atribuição de empresa. ${message}`;
+    scheduleToastDismissal();
   }
 
   document.querySelector("#companyNotificationToastClose").addEventListener("click", dismissToast);
@@ -370,13 +380,13 @@ function initializeCompanyNotifications() {
         const newest = data.items[0]?.id ?? 0;
         if (latest !== null && latest !== newest) void loadCompanies();
         latest = newest;
-        render(data);
-        if (newest > seen) {
+        if (!document.hidden && newest > seen) {
           const fresh = data.items.filter(item => item.id > seen && !item.read_at);
+          if (fresh.length) showToast(fresh);
           seen = newest;
           try { sessionStorage.setItem(seenKey, String(seen)); } catch {}
-          if (fresh.length) showToast(fresh);
         }
+        render(data);
       } catch {
         if (interactive || latest === null) status.textContent = "Não foi possível carregar as notificações. Abra esta tela novamente para tentar.";
       }
@@ -406,12 +416,17 @@ function initializeCompanyNotifications() {
   globalThis.RazyncSiteAccess?.ready.then(() => {
     const identity = globalThis.RazyncSiteAccess.identity();
     if (!identity) return;
-    seenKey = `jaguar:notification-seen:${identity}`;
+    seenKey = `jaguar:notification-displayed:${identity}`;
     try { seen = Number(sessionStorage.getItem(seenKey)) || 0; } catch {}
     nav.hidden = false;
     const refresh = () => { if (!document.hidden) void loadCompanyNotifications(); };
     refresh();
-    setInterval(refresh, 20000);
-    document.addEventListener("visibilitychange", refresh);
+    setInterval(refresh, 5000);
+    document.addEventListener("visibilitychange", () => {
+      scheduleToastDismissal();
+      refresh();
+    });
   });
 }
+
+globalThis.document?.addEventListener?.("DOMContentLoaded", initializeCompanyNotifications, {once:true});
