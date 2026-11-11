@@ -82,6 +82,8 @@ def initialize_persistence():
     if persistence.marker(classification_service.DB_PATH):
         con = persistence.connect(classification_service.DB_PATH)
         con.close()
+    from app.company_import import import_configured_companies
+    import_configured_companies()
 
 
 @app.get("/health")
