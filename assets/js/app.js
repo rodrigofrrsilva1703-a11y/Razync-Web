@@ -1810,7 +1810,10 @@ async function loadCompanies() {
       if (access.ok) {
         globalThis.jaguarCompanyAccess = await access.json();
         if (globalThis.jaguarCompanyAccess.enabled) {
-          $("#manageCompanyOwners").hidden = !globalThis.jaguarCompanyAccess.admin;
+          const admin = globalThis.jaguarCompanyAccess.admin;
+          $("#manageCompanyOwners").hidden = !admin;
+          $("#homeAdminBadge").hidden = !admin;
+          $("#siteAccessRole").textContent = admin ? "Conta administradora" : "Sessão ativa";
           $("#addCompany").hidden = !globalThis.jaguarCompanyAccess.admin;
         }
       }
@@ -1886,6 +1889,7 @@ enhanceFileInputs(document);
 
 let navigationVersion = 0;
 async function showGlobalView(name) {
+  if (name === "companyOwners" && !globalThis.jaguarCompanyAccess?.admin) return;
   const version = ++navigationVersion;
   if (name === "fiscal" && globalThis.RazyncAssets && !RazyncAssets.isLoaded("fiscal")) {
     const trigger = document.querySelector('.main-nav-btn[data-view="fiscal"]');
@@ -1899,7 +1903,7 @@ async function showGlobalView(name) {
   closeCompanyToolHelp();
   $("#companyToolHelp").hidden = true;
   cancelReconcilePreview();
-  $('#currentSection').textContent = {companies:'Empresas',converter:'Converter Extratos',ledger:'Conciliação com Razão',fiscal:'Conferência Fiscal × Contábil'}[name];
+  $('#currentSection').textContent = {companies:'Empresas',converter:'Converter Extratos',ledger:'Conciliação com Razão',fiscal:'Conferência Fiscal × Contábil',companyOwners:'Responsáveis pelas empresas'}[name];
   panel.hidden = true;
   selected = null;
   if (name === "companies") {
@@ -1915,6 +1919,10 @@ async function showGlobalView(name) {
     btn.classList.toggle("active", btn.dataset.view === name);
   });
   window.RazyncWorkspaceResume?.save();
+  if (name === "companyOwners") {
+    $("#companyOwnerTitle").focus({preventScroll:true});
+    loadCompanyOwners?.();
+  }
   if (name === "fiscal") {
     renderCompanyToolGuide("fiscal-global");
   }

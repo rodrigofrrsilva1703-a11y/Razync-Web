@@ -2697,3 +2697,30 @@ html[data-theme="dark"] .company-tool-guide-note {background:var(--surface-2);co
 
 /* Always visible, including when a field already has attachments. */
 .file-accepted-formats {display:block;flex:0 0 auto;max-width:100%;margin:0;padding:0 2px;color:var(--muted,#5b6e85);font-size:11px;line-height:1.5;font-weight:500;overflow-wrap:anywhere;}
+
+#manageCompanyOwners[hidden], .account-admin-badge[hidden] {display:none!important}
+.account-admin-badge {
+  display:block;width:fit-content;margin:0 0 10px;padding:5px 9px;border:1px solid var(--border);
+  border-radius:7px;color:var(--text);background:var(--surface);font-size:11px;font-weight:650;
+}
+#companyOwnersView .owner-directory {
+  border:1px solid var(--border);border-radius:13px;background:var(--surface);min-width:0;
+}
+.owner-toolbar {display:flex;align-items:end;justify-content:space-between;gap:12px;padding:16px;flex-wrap:wrap}
+.owner-toolbar > div {display:grid;gap:5px;flex:1 1 230px;max-width:360px}
+.owner-toolbar label,.owner-toolbar > span,#companyOwnerMessage {font-size:12px;color:var(--muted)}
+.owner-toolbar input,.owner-table select {
+  min-height:36px;width:100%;padding:6px 9px;border:1px solid var(--border);
+  border-radius:7px;background:var(--surface);color:var(--text);font:inherit;font-size:12px;
+}
+#companyOwnerMessage {padding:0 16px 10px;margin:0}
+#companyOwnerMessage:empty {display:none}
+.owner-table-scroll {overflow:auto;border-radius:0 0 13px 13px}
+.owner-table {width:100%;min-width:690px;border-collapse:collapse;text-align:left;color:var(--text)}
+.owner-table th,.owner-table td {padding:10px 16px;border-top:1px solid var(--border);font-size:12px}
+.owner-table th {background:var(--surface-2);font-weight:700}
+.owner-table th:first-child {width:78px}
+.owner-table th:nth-child(3) {width:36%}
+.owner-table th:last-child {width:90px}
+.owner-table button {padding:7px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);cursor:pointer}
+.owner-table button:disabled {opacity:.55;cursor:default}

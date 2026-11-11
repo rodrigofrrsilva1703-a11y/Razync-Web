@@ -182,72 +182,98 @@ function initializeCompanyControls() {
   });
 }
 
+let loadCompanyOwners;
 function initializeCompanyOwners() {
-  const open = document.querySelector("#manageCompanyOwners");
-  if (!open) return;
-  const dialog = document.querySelector("#companyOwnerDialog");
-  const form = document.querySelector("#companyOwnerForm");
   const query = document.querySelector("#ownerCompanySearch");
-  const company = document.querySelector("#ownerCompany");
-  const owner = document.querySelector("#ownerEmail");
+  if (!query) return;
+  const rows = document.querySelector("#ownerCompanyRows");
+  const count = document.querySelector("#ownerCompanyCount");
   const message = document.querySelector("#companyOwnerMessage");
-  const save = form.querySelector('[type="submit"]');
   const endpoint = () => `${API()}/api/v1/company-access/assignments`;
-  let assignments = [];
+  let companies = [], users = [], loading = false;
+  const pending = new Set();
+  const drafts = new Map();
 
-  function showOwner() {
-    owner.value = assignments.find(row => String(row.codigo) === company.value)?.email || "";
-    save.disabled = !company.value || !owner.value;
-  }
-
-  function showCompanies() {
+  function render() {
     const term = query.value.trim().toLocaleLowerCase("pt-BR");
-    const selected = company.value;
-    const matching = assignments.filter(row => `${row.codigo} ${row.nome}`.toLocaleLowerCase("pt-BR").includes(term));
-    company.replaceChildren(...matching.map(row => new Option(`${row.codigo} · ${row.nome}`, row.codigo)));
-    if (matching.some(row => String(row.codigo) === selected)) company.value = selected;
-    showOwner();
+    const matching = companies.filter(row => `${row.codigo} ${row.nome} ${row.email}`.toLocaleLowerCase("pt-BR").includes(term));
+    count.textContent = `${matching.length} de ${companies.length} empresas`;
+    rows.replaceChildren();
+    for (const company of matching) {
+      const row = rows.insertRow();
+      row.insertCell().textContent = company.codigo;
+      row.insertCell().textContent = company.nome;
+      const select = document.createElement("select");
+      select.setAttribute("aria-label", `Responsável pela empresa ${company.codigo}`);
+      select.append(new Option("Selecione um responsável", ""));
+      if (company.email && !users.includes(company.email)) {
+        select.append(new Option(company.email + " (sem acesso)", company.email));
+      }
+      for (const email of users) select.append(new Option(email, email));
+      select.value = drafts.get(company.codigo) ?? company.email ?? "";
+      select.disabled = pending.has(company.codigo);
+      row.insertCell().append(select);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "Salvar";
+      button.setAttribute("aria-label", `Salvar responsável da empresa ${company.codigo}`);
+      button.disabled = true;
+      row.insertCell().append(button);
+      const updateButton = () => { button.disabled = !users.includes(select.value) || select.value === company.email; };
+      select.addEventListener("change", () => {
+        if (select.value === company.email) drafts.delete(company.codigo);
+        else drafts.set(company.codigo, select.value);
+        updateButton();
+      });
+      if (!pending.has(company.codigo)) updateButton();
+      button.addEventListener("click", async () => {
+        const email = select.value;
+        pending.add(company.codigo);
+        select.disabled = button.disabled = true;
+        message.textContent = `Salvando empresa ${company.codigo}…`;
+        try {
+          const response = await fetch(`${endpoint()}/${company.codigo}`, {
+            method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email})
+          });
+          if (!response.ok) throw new Error(await responseError(response));
+          company.email = email;
+          drafts.delete(company.codigo);
+          message.textContent = `Responsável da empresa ${company.codigo} atualizado.`;
+        } catch (error) { message.textContent = error.message; }
+        finally {
+          pending.delete(company.codigo);
+          if (row.isConnected) {
+            select.disabled = false;
+            updateButton();
+          } else render();
+        }
+      });
+    }
+    if (!matching.length) {
+      const cell = rows.insertRow().insertCell();
+      cell.colSpan = 4;
+      cell.textContent = "Nenhuma empresa encontrada.";
+    }
   }
 
-  open.addEventListener("click", async () => {
-    open.disabled = true;
-    save.disabled = true;
-    assignments = [];
-    company.replaceChildren();
-    owner.replaceChildren();
-    query.value = "";
+  query?.addEventListener("input", render);
+  loadCompanyOwners = async () => {
+    if (loading || pending.size) return;
+    loading = true;
+    query.disabled = true;
+    rows.replaceChildren();
+    count.textContent = "";
     message.textContent = "Carregando empresas…";
-    dialog.showModal();
     try {
       const response = await fetch(endpoint());
       if (!response.ok) throw new Error(await responseError(response));
       const data = await response.json();
-      assignments = data.companies;
-      owner.replaceChildren(new Option("Selecione um responsável", ""), ...data.users.map(email => new Option(email, email)));
-      showCompanies();
+      companies = data.companies;
+      drafts.clear();
+      users = data.users;
+      render();
       message.textContent = "";
     } catch (error) { message.textContent = error.message; }
-    finally { open.disabled = false; }
-  });
-  document.querySelector("#closeCompanyOwnerDialog").addEventListener("click", () => dialog.close());
-  query.addEventListener("input", showCompanies);
-  company.addEventListener("change", showOwner);
-  owner.addEventListener("change", () => { save.disabled = !company.value || !owner.value; });
-  form.addEventListener("submit", async event => {
-    event.preventDefault();
-    const row = assignments.find(item => String(item.codigo) === company.value);
-    if (!row || !owner.value || save.disabled) return;
-    const email = owner.value;
-    for (const field of [query, company, owner, save]) field.disabled = true;
-    message.textContent = "Salvando responsável…";
-    try {
-      const response = await fetch(`${endpoint()}/${row.codigo}`, {
-        method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify({email})
-      });
-      if (!response.ok) throw new Error(await responseError(response));
-      row.email = email;
-      message.textContent = `Responsável da empresa ${row.codigo} atualizado.`;
-    } catch (error) { message.textContent = error.message; }
-    finally { for (const field of [query, company, owner, save]) field.disabled = false; }
-  });
+    finally { loading = false; query.disabled = false; }
+  };
 }

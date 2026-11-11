@@ -13,7 +13,7 @@
   <meta name="description" content="Jaguar Conecta | Organização, classificação e conciliação contábil">
   <link rel="stylesheet" href="./assets/css/app.css?v=base242-streamlit-1">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="investments" href="./assets/css/bank-investments.css?v=20261020-6">
-  <link rel="stylesheet" href="./assets/css/workspace.css?v=file-formats-20261106-1">
+  <link rel="stylesheet" href="./assets/css/workspace.css?v=responsaveis-1">
   <link rel="stylesheet" href="./assets/css/tools.css?v=company-tools-20261031-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=fixed-header-home-20261028-3">
   <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=black-attachments-20261109-1">
@@ -128,12 +128,13 @@
       <button class="main-nav-btn" data-view="converter" aria-label="Converter Extratos"><span class="nav-label">Converter Extratos</span></button>
       <button class="main-nav-btn" data-view="ledger" aria-label="Conciliação com Razão"><span class="nav-label">Conciliação com Razão</span></button>
       <button class="main-nav-btn" data-view="fiscal" aria-label="Conferência Fiscal × Contábil"><span class="nav-label">Conferência Fiscal × Contábil</span></button>
+      <button id="manageCompanyOwners" class="main-nav-btn" type="button" data-view="companyOwners" hidden><span class="nav-label">Responsáveis pelas empresas</span></button>
     </nav>
       <div id="siteAccessAccount" class="sidebar-account" hidden>
         <span id="siteAccessInitials" class="sidebar-account-avatar" aria-hidden="true"></span>
         <div class="sidebar-account-identity">
           <strong id="siteAccessName" dir="auto">Minha conta</strong>
-          <span>Sessão ativa</span>
+          <span id="siteAccessRole">Sessão ativa</span>
         </div>
         <button id="siteAccessExit" type="button" title="Sair da conta" aria-label="Sair da conta">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5m4-12 4 4-4 4m-5-4h11"/></svg>
@@ -149,6 +150,7 @@
         <section id="portfolioPicker" class="portfolio-picker home-redesign" aria-label="Carteiras dos colaboradores">
           <div class="portfolio-heading">
             <div class="home-intro-copy">
+              <span class="account-admin-badge" id="homeAdminBadge" hidden>Conta administradora</span>
               <span class="portfolio-eyebrow" id="portfolioGreeting">Boas-vindas ao seu espaço.</span>
               <h1>Clareza para<br><em>a sua rotina.</em></h1>
               <p>Do extrato à classificação, um caminho mais simples para o seu trabalho contábil.</p>
@@ -226,7 +228,6 @@
             </div>
             <label for="regimeFilter" class="visually-hidden">Filtrar por regime</label><select id="regimeFilter"><option value="">Todos os regimes</option><option>LUCRO REAL</option><option>LUCRO PRESUMIDO</option><option>SIMPLES NACIONAL</option></select>
             <label for="companySort" class="visually-hidden">Ordenar empresas</label><select id="companySort"><option value="code">Código crescente</option><option value="name">Nome de A a Z</option><option value="tools">Com ferramentas primeiro</option></select>
-            <button id="manageCompanyOwners" type="button" class="secondary-action" hidden>Gerenciar responsáveis</button>
             <button id="addCompany" type="button" class="secondary-action"><span aria-hidden="true">+</span> Adicionar empresa</button>
             </div>
             <div class="directory-toolbar">
@@ -237,6 +238,27 @@
           <div class="directory-results-heading"><h2>Empresas da carteira</h2><div class="search-meta"><span id="companyCount" role="status" aria-live="polite" aria-atomic="true">Carregando empresas…</span><button id="companyReset" class="directory-reset" type="button" hidden>Limpar filtros</button></div></div>
           <div class="grid" id="companyGrid" data-view="cards" aria-label="Empresas da carteira"></div>
         </section>
+      </section>
+
+      <section id="companyOwnersView" class="global-view" aria-labelledby="companyOwnerTitle">
+        <header class="page-head">
+          <h1 id="companyOwnerTitle" tabindex="-1">Responsáveis pelas empresas</h1>
+          <p>Consulte a carteira do escritório e atualize quem responde por cada empresa.</p>
+        </header>
+        <div class="owner-directory">
+          <div class="owner-toolbar">
+            <div><label for="ownerCompanySearch">Buscar empresa ou responsável</label>
+            <input id="ownerCompanySearch" type="search" placeholder="Código, nome ou e-mail" autocomplete="off"></div>
+            <span id="ownerCompanyCount" role="status"></span>
+          </div>
+          <p id="companyOwnerMessage" role="status"></p>
+          <div class="owner-table-scroll" role="region" aria-label="Empresas e responsáveis" tabindex="0">
+            <table class="owner-table">
+              <thead><tr><th scope="col">Código</th><th scope="col">Empresa</th><th scope="col">Responsável</th><th scope="col">Alteração</th></tr></thead>
+              <tbody id="ownerCompanyRows"></tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <section id="converterView" class="global-view">
@@ -823,19 +845,6 @@
             aria-expanded="false" title="Como usar esta ferramenta">?</button>
         </div>
 
-  <dialog id="companyOwnerDialog" class="company-dialog" aria-labelledby="companyOwnerTitle">
-    <form id="companyOwnerForm">
-      <div class="company-dialog-heading"><h2 id="companyOwnerTitle">Responsáveis pelas empresas</h2><button id="closeCompanyOwnerDialog" type="button" aria-label="Fechar gestão de responsáveis">×</button></div>
-      <label for="ownerCompanySearch">Buscar empresa pelo código ou nome</label>
-      <input id="ownerCompanySearch" type="search" autocomplete="off">
-      <label for="ownerCompany">Empresa</label>
-      <select id="ownerCompany" required></select>
-      <label for="ownerEmail">Responsável</label>
-      <select id="ownerEmail" required></select>
-      <p id="companyOwnerMessage" role="status"></p>
-      <button type="submit" disabled>Salvar responsável</button>
-    </form>
-  </dialog>
   <dialog id="companyDialog" class="company-dialog" aria-labelledby="companyDialogTitle">
     <form id="companyCreateForm">
       <div class="company-dialog-heading"><h2 id="companyDialogTitle">Adicionar empresa</h2><button id="closeCompanyDialog" type="button" aria-label="Fechar cadastro">×</button></div>
@@ -864,7 +873,7 @@
   <script src="./assets/js/site-access.js?v=site-loading-1"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
-  <script src="./assets/js/workspace-ui.js?v=carteiras-admin-1"></script>
+  <script src="./assets/js/workspace-ui.js?v=responsaveis-1"></script>
   <script src="./assets/js/company-guides.js?v=sicredi-pdf-2"></script>
   <script type="text/plain" data-lazy-tool="investments" src="./assets/js/bank-investments.js?v=20261020-8"></script>
   <script src="./assets/js/dom-utils.js?v=20261020-1"></script>
@@ -883,7 +892,7 @@
   <script src="./assets/js/base-investigation.js?v=jaguar-oficial-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
-  <script src="./assets/js/app.js?v=carteiras-admin-1"></script>
+  <script src="./assets/js/app.js?v=responsaveis-1"></script>
   <script src="./assets/js/migration.js?v=standard-preview-20261109-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>
