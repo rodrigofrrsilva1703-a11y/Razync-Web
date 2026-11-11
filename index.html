@@ -13,7 +13,7 @@
   <meta name="description" content="Jaguar Conecta | Organização, classificação e conciliação contábil">
   <link rel="stylesheet" href="./assets/css/app.css?v=base242-streamlit-1">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="investments" href="./assets/css/bank-investments.css?v=20261020-6">
-  <link rel="stylesheet" href="./assets/css/monthly-tasks.css?v=8">
+  <link rel="stylesheet" href="./assets/css/monthly-tasks.css?v=9">
   <link rel="stylesheet" href="./assets/css/workspace.css?v=notificacoes-2">
   <link rel="stylesheet" href="./assets/css/tools.css?v=company-tools-20261031-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=fixed-header-home-20261028-3">
@@ -249,16 +249,22 @@
           <p>Acompanhe o fechamento mensal das empresas da carteira.</p></div>
           <label>Competência<input id="monthlyTasksPeriod" type="month" min="2000-01" max="2099-12"></label>
         </header>
-        <div id="monthlyTasksMetrics" class="monthly-tasks-metrics" aria-label="Resumo das tarefas"></div>
-        <details id="monthlyTasksTeam" class="monthly-tasks-team" hidden>
-          <summary>Progresso da equipe</summary>
+        <div id="monthlyTasksViews" class="monthly-tasks-views" role="group" aria-label="Visualização das tarefas" hidden>
+          <button type="button" aria-pressed="true" data-task-view="queue" aria-controls="monthlyTasksQueue">Fila de trabalho</button>
+          <button type="button" aria-pressed="false" data-task-view="team" aria-controls="monthlyTasksTeam">Equipe</button>
+        </div>
+        <section id="monthlyTasksTeam" class="monthly-tasks-team" aria-labelledby="monthlyTasksTeamTitle" hidden>
+          <h2 id="monthlyTasksTeamTitle">Progresso da equipe</h2>
           <div id="monthlyTasksPeople"></div>
           <div id="monthlyTasksStages" aria-label="Empresas por próxima etapa"></div>
-        </details>
+        </section>
+        <div id="monthlyTasksQueue">
+        <div id="monthlyTasksMetrics" class="monthly-tasks-metrics" aria-label="Resumo das tarefas"></div>
         <div class="monthly-tasks-worklist">
           <h2>Empresas da competência</h2>
           <div class="monthly-tasks-controls">
             <label>Buscar empresa<input id="monthlyTasksSearch" type="search" placeholder="Nome ou código"></label>
+            <button id="monthlyTasksClear" type="button" class="secondary-action" hidden>Limpar filtros</button>
             <label>Status<select id="monthlyTasksFilter"><option value="">Todos</option><option value="pending">Não iniciado</option><option value="progress">Em andamento</option><option value="done">Concluído</option><option value="issue">Com pendência</option><option value="mine">Minhas pendências</option><option value="ready">Conciliação para confirmar</option><option value="na">Não se aplica</option></select></label>
             <label>Ordenar por<select id="monthlyTasksSort"><option value="queue">Prioridade da fila</option><option value="code">Código da empresa</option><option value="progress">Menor progresso</option></select></label>
             <details id="monthlyTasksImportPanel" hidden>
@@ -271,6 +277,7 @@
           </div>
           <p id="monthlyTasksImportMessage" role="status" hidden></p>
           <p id="monthlyTasksStatus" role="status"></p>
+          <p id="monthlyTasksActiveFilters" hidden></p>
         </div>
         <p id="monthlyTaskFeedback" role="status"></p>
         <div class="monthly-tasks-table" tabindex="0" role="region" aria-label="Tarefas por empresa">
@@ -278,6 +285,7 @@
             <thead><tr><th scope="col">Empresa</th><th scope="col">Documentos</th><th scope="col">Conciliação</th><th scope="col">Dívida ativa</th><th scope="col">Folha</th><th scope="col">Fiscal</th><th scope="col">Fechamento</th><th scope="col">Progresso</th><th scope="col">Pendências</th></tr></thead>
             <tbody id="monthlyTasksRows"></tbody>
           </table>
+        </div>
         </div>
       </section>
 
@@ -972,7 +980,7 @@
   <script src="./assets/js/base-investigation.js?v=jaguar-oficial-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=precise-formats-20261106-2"></script>
-  <script src="./assets/js/monthly-tasks.js?v=8"></script>
+  <script src="./assets/js/monthly-tasks.js?v=9"></script>
   <script src="./assets/js/app.js?v=tarefas-contabeis-1"></script>
   <script src="./assets/js/migration.js?v=standard-preview-20261109-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>

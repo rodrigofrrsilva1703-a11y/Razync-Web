@@ -8,6 +8,12 @@
   const status = get("monthlyTasksStatus");
   const metrics = get("monthlyTasksMetrics");
   const rows = get("monthlyTasksRows");
+  const queue = get("monthlyTasksQueue");
+  const views = get("monthlyTasksViews");
+  const clear = get("monthlyTasksClear");
+  const activeFilters = get("monthlyTasksActiveFilters");
+  const rowMessages = new Map();
+  let currentView = "queue";
   const team = get("monthlyTasksTeam");
   const people = get("monthlyTasksPeople");
   const importPanel = get("monthlyTasksImportPanel");
@@ -26,15 +32,37 @@
     return email ? email.split("@")[0].split(/[._-]/).map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(" ") : "Sem responsável";
   }
 
+  function setView(view) {
+    currentView = state?.admin && view === "team" ? "team" : "queue";
+    views.hidden = !state?.admin;
+    team.hidden = currentView !== "team";
+    queue.hidden = currentView === "team";
+    for (const button of views.querySelectorAll("button")) {
+      button.setAttribute("aria-pressed", String(button.dataset.taskView === currentView));
+    }
+  }
+
+  for (const button of views.querySelectorAll("button")) {
+    button.onclick = () => setView(button.dataset.taskView);
+  }
+  clear.onclick = () => {
+    search.value = filter.value = "";
+    ownerFilter = stageFilter = undefined;
+    renderTeam();
+    renderRows();
+    search.focus();
+  };
+
   function renderTeam() {
-    team.hidden = importPanel.hidden = !state.admin;
+    importPanel.hidden = !state.admin;
+    setView(currentView);
     people.replaceChildren();
     if (!state.admin) return;
     const all = document.createElement("button");
     all.type = "button";
     all.textContent = "Toda a equipe";
     all.setAttribute("aria-pressed", String(ownerFilter === undefined));
-    all.onclick = () => { ownerFilter = undefined; renderTeam(); renderRows(); };
+    all.onclick = () => { ownerFilter = undefined; setView("queue"); renderTeam(); renderRows(); search.focus(); };
     people.append(all);
     for (const group of state.progress) {
       const button = document.createElement("button");
@@ -46,7 +74,7 @@
       button.type = "button";
       button.setAttribute("aria-pressed", String(ownerFilter === group.owner));
       button.append(name, detail, progressBar(percent));
-      button.onclick = () => { ownerFilter = group.owner; renderTeam(); renderRows(); };
+      button.onclick = () => { ownerFilter = group.owner; setView("queue"); renderTeam(); renderRows(); search.focus(); };
       people.append(button);
     }
   }
@@ -67,8 +95,9 @@
       button.setAttribute("aria-pressed", String(stageFilter === index));
       button.onclick = () => {
         stageFilter = stageFilter === index ? undefined : index;
+        setView("queue");
         renderRows();
-        stages.children[index]?.focus();
+        search.focus();
       };
       stages.append(button);
     });
@@ -84,6 +113,9 @@
 
   function renderRows() {
     if (!state) return;
+    const viewport = rows.closest(".monthly-tasks-table");
+    const top = viewport.scrollTop;
+    const left = viewport.scrollLeft;
     rows.replaceChildren();
     renderStages();
     const term = search.value.trim().toLocaleLowerCase("pt-BR");
@@ -100,18 +132,28 @@
       if (key === "issue") return row.issue_status === "open";
       return row.status === key;
     };
+    const selected = [
+      term ? `Busca: ${search.value.trim()}` : "",
+      filter.value ? filter.selectedOptions[0].textContent : "",
+      ownerFilter !== undefined ? displayOwner(ownerFilter) : "",
+      stageFilter !== undefined ? state.steps[stageFilter] : ""
+    ].filter(Boolean);
+    clear.hidden = activeFilters.hidden = !selected.length;
+    activeFilters.textContent = selected.join(" · ");
+    const cards = [["", "Empresas"], ["issue", "Com pendência"], ["ready", "Conciliação para confirmar"], ["pending", "Não iniciadas"], ["progress", "Em andamento"], ["done", "Concluídas"]];
     metrics.replaceChildren();
-    for (const [key, label] of [["", "Empresas"], ["pending", "Não iniciadas"], ["progress", "Em andamento"], ["done", "Concluídas"], ["issue", "Com pendência"]]) {
+    for (const [key, label] of cards) {
       const button = document.createElement("button");
       const total = document.createElement("strong");
       button.type = "button";
       total.textContent = key ? matching.filter(row => matches(row, key)).length : matching.length;
+      button.dataset.metric = key;
       button.append(total, label);
       button.setAttribute("aria-pressed", String(filter.value === key));
       button.onclick = () => {
         filter.value = filter.value === key ? "" : key;
         renderRows();
-        metrics.querySelectorAll("button")[[ "", "pending", "progress", "done", "issue" ].indexOf(filter.value)].focus();
+        metrics.querySelector(`[data-metric="${filter.value}"]`)?.focus({preventScroll:true});
       };
       metrics.append(button);
     }
@@ -138,6 +180,11 @@
       }
       const key = `${state.period}/${item.code}`;
       row.dataset.taskKey = key;
+      const saveStatus = document.createElement("small");
+      saveStatus.className = "monthly-row-save";
+      saveStatus.setAttribute("role", "status");
+      company.append(saveStatus);
+      updateRowMessage(row, key);
       const next = nextStep(item);
       if (next >= 0) {
         const hint = document.createElement("small");
@@ -174,6 +221,16 @@
       issueCell.dataset.issue = item.issue_status;
       issueCell.append(issueEditor(item, saving.has(key)), historyView(key, item));
     }
+    viewport.scrollTop = top;
+    viewport.scrollLeft = left;
+  }
+
+  function updateRowMessage(row, key) {
+    const target = row.querySelector(".monthly-row-save");
+    const message = rowMessages.get(key);
+    target.textContent = message?.text ?? "";
+    target.dataset.state = message?.state ?? "";
+    target.title = message?.detail ?? "";
   }
 
   function renderProgress(cell, item) {
@@ -192,7 +249,9 @@
     refreshAfterIssue = false;
     metrics.replaceChildren();
     rows.replaceChildren();
-    team.hidden = importPanel.hidden = true;
+    importPanel.hidden = true;
+    const previousView = currentView;
+    setView("queue");
     status.textContent = "Carregando tarefas…";
     try {
       const query = period.value ? `?period=${encodeURIComponent(period.value)}` : "";
@@ -201,6 +260,7 @@
       const result = await response.json();
       if (controller.signal.aborted) return;
       state = result;
+      setView(previousView);
       period.value = state.period;
       if (!state.progress.some(item => item.owner === ownerFilter)) ownerFilter = undefined;
       renderTeam();
@@ -334,7 +394,14 @@
           const when = new Date(event.at).toLocaleString("pt-BR");
           const changes = event.changes.map(change => change.before === undefined ? change.field
             : `${change.field}: ${states[change.before]} → ${states[change.after]}`);
-          entry.textContent = `${displayOwner(event.actor)} · ${when} · ${changes.join("; ")}`;
+          const actor = document.createElement("strong");
+          actor.textContent = displayOwner(event.actor);
+          const time = document.createElement("time");
+          time.dateTime = event.at;
+          time.textContent = when;
+          const detail = document.createElement("p");
+          detail.textContent = changes.join(" · ");
+          entry.append(actor, time, detail);
           list.append(entry);
         }
       } catch (error) { message.textContent = error.message; }
@@ -364,9 +431,11 @@
     }
     row.querySelectorAll("select, button, textarea").forEach(field => { field.disabled = true; });
     row.setAttribute("aria-busy", "true");
+    rowMessages.set(key, {state:"saving", text:"Salvando…"});
+    updateRowMessage(row, key);
     const dialog = trigger.closest("dialog");
     const message = dialog?.querySelector(".monthly-issue-feedback") ?? feedback;
-    message.textContent = `Salvando empresa ${item.code}…`;
+    if (dialog) message.textContent = "Salvando…";
     let saved = false;
     try {
       const {steps, issue, action, issue_status, revision} = item;
@@ -389,8 +458,10 @@
         dialog?.close();
       }
       saved = true;
-      feedback.textContent = `Empresa ${item.code} atualizada.`;
+      rowMessages.set(key, {state:"saved", text:"Salvo"});
+      feedback.textContent = "";
     } catch (error) {
+      rowMessages.set(key, {state:"error", text:"Falha ao salvar", detail:error.message});
       message.textContent = `Empresa ${item.code}: ${error.message}`;
       if (changes.steps) {
         renderProgress(progress, item);
@@ -400,6 +471,7 @@
     } finally {
       saving.delete(key);
       row.removeAttribute("aria-busy");
+      updateRowMessage(row, key);
       if (state === snapshot) {
         if (saved || !row.isConnected) {
           renderTeam();
@@ -412,10 +484,10 @@
           refreshAfterIssue = false;
           renderRows();
           const replacement = rows.querySelector(`[data-task-key="${key}"]`);
-          replacement?.querySelector("step" in trigger.dataset ? `[data-step="${trigger.dataset.step}"]` : ".monthly-issue-editor > button")?.focus();
+          replacement?.querySelector("step" in trigger.dataset ? `[data-step="${trigger.dataset.step}"]` : ".monthly-issue-editor > button")?.focus({preventScroll:true});
         } else {
           row.querySelectorAll("select, button, textarea").forEach(field => { field.disabled = false; });
-          trigger.focus();
+          trigger.focus({preventScroll:true});
         }
       }
     }

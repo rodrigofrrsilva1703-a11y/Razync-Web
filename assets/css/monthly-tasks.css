@@ -102,3 +102,30 @@
 .monthly-history-dialog ul {list-style:none;padding:0;margin:10px 0}
 .monthly-history-dialog li {border-top:1px solid var(--border);padding:10px 0;line-height:1.5}
 .monthly-history-dialog p[role=status]:empty,.monthly-history-dialog ul:empty {display:none}
+
+.monthly-tasks-views:not([hidden]) {display:flex;gap:6px;margin:0 0 14px}
+.monthly-tasks-views button {
+  padding:8px 13px;border:1px solid var(--border);border-radius:8px;
+  background:var(--surface);color:var(--text);font:inherit;font-size:13px;cursor:pointer;
+}
+.monthly-tasks-views button[aria-pressed=true] {border-color:#6696e6;background:var(--surface-2);font-weight:700}
+.monthly-tasks-metrics [data-metric=issue],.monthly-tasks-metrics [data-metric=ready] {border-inline-start:3px solid #6696e6}
+#monthlyTasksActiveFilters {margin:8px 0 0;font-size:12px;color:var(--muted)}
+.monthly-tasks-table thead th:first-child {left:0;z-index:3}
+.monthly-tasks-table tbody td:first-child {
+  position:sticky;left:0;z-index:2;background:var(--surface);
+  border-inline-end:1px solid var(--border);
+}
+.monthly-tasks-table tbody tr:hover td:first-child {background:var(--surface-2)}
+.monthly-tasks-table select[data-step] {min-height:29px;padding:4px 5px}
+.monthly-tasks-table select[data-value=done] {border-color:var(--border);font-weight:500;color:var(--muted)}
+.monthly-tasks-table select[data-value=pending] {border-color:#6696e6;font-weight:650}
+.monthly-row-save:empty {display:none}
+.monthly-tasks-table .monthly-row-save[data-state=saved] {font-weight:650;color:var(--text)}
+.monthly-tasks-table .monthly-row-save[data-state=error] {font-weight:700;color:var(--text);text-decoration:underline}
+.monthly-history-dialog time {display:block;color:var(--muted);font-size:11px}
+.monthly-history-dialog li p {margin:4px 0 0;overflow-wrap:anywhere}
+@media(max-width:600px) {
+  .monthly-tasks-table th:first-child {width:132px}
+  .monthly-tasks-table tbody td:first-child strong {display:block;max-width:132px;overflow-wrap:anywhere}
+}
