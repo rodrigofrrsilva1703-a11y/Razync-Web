@@ -38,3 +38,11 @@
 #monthlyTaskForm legend {font-size:12px}
 #monthlyTaskSteps {display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px}
 #monthlyTaskForm button[type=submit] {justify-self:start}
+
+.monthly-tasks-metrics {display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin:16px 0}
+.monthly-tasks-metrics:empty {display:none}
+.monthly-tasks-metrics button {text-align:left;padding:11px 13px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);cursor:pointer;font:inherit;font-size:12px}
+.monthly-tasks-metrics strong {display:block;font-size:22px;margin-bottom:4px}
+.monthly-tasks-metrics button:hover,.monthly-tasks-metrics button[aria-pressed=true] {border-color:#6696e6;background:var(--surface-2)}
+#tasksView progress {display:block;width:100%;min-width:74px;height:6px;margin-top:6px;accent-color:#5685dd}
+#tasksView tbody tr:hover {background:var(--surface-2)}

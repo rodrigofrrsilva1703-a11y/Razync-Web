@@ -5,6 +5,7 @@
   const search = get("monthlyTasksSearch");
   const filter = get("monthlyTasksFilter");
   const status = get("monthlyTasksStatus");
+  const metrics = get("monthlyTasksMetrics");
   const rows = get("monthlyTasksRows");
   const team = get("monthlyTasksTeam");
   const people = get("monthlyTasksPeople");
@@ -50,21 +51,45 @@
       detail.textContent = `${group.completed}/${group.companies} empresas concluídas · ${group.issues} pendências`;
       button.type = "button";
       button.setAttribute("aria-pressed", String(ownerFilter === group.owner));
-      button.append(name, detail);
+      button.append(name, detail, progressBar(percent));
       button.onclick = () => { ownerFilter = group.owner; renderTeam(); renderRows(); };
       people.append(button);
     }
+  }
+
+  function progressBar(percent) {
+    const bar = document.createElement("progress");
+    bar.max = 100;
+    bar.value = percent;
+    bar.setAttribute("aria-label", `${percent}% das etapas concluídas`);
+    return bar;
   }
 
   function renderRows() {
     if (!state) return;
     rows.replaceChildren();
     const term = search.value.trim().toLocaleLowerCase("pt-BR");
-    const visible = state.companies.filter(row =>
+    const matching = state.companies.filter(row =>
       (ownerFilter === undefined || row.owner === ownerFilter) &&
-      `${row.code} ${row.name}`.toLocaleLowerCase("pt-BR").includes(term) &&
-      (!filter.value || (filter.value === "issue" ? row.issue_status === "open" : row.status === filter.value))
+      `${row.code} ${row.name}`.toLocaleLowerCase("pt-BR").includes(term)
     );
+    const matches = (row, key) => key === "issue" ? row.issue_status === "open" : row.status === key;
+    metrics.replaceChildren();
+    for (const [key, label] of [["", "Empresas"], ["pending", "Não iniciadas"], ["progress", "Em andamento"], ["done", "Concluídas"], ["issue", "Com pendência"]]) {
+      const button = document.createElement("button");
+      const total = document.createElement("strong");
+      button.type = "button";
+      total.textContent = key ? matching.filter(row => matches(row, key)).length : matching.length;
+      button.append(total, label);
+      button.setAttribute("aria-pressed", String(filter.value === key));
+      button.onclick = () => {
+        filter.value = filter.value === key ? "" : key;
+        renderRows();
+        metrics.querySelectorAll("button")[[ "", "pending", "progress", "done", "issue" ].indexOf(filter.value)].focus();
+      };
+      metrics.append(button);
+    }
+    const visible = matching.filter(row => !filter.value || matches(row, filter.value));
     status.textContent = visible.length ? `${visible.length} empresas` : "Nenhuma empresa encontrada.";
     for (const item of visible) {
       const row = rows.insertRow();
@@ -84,7 +109,9 @@
       tag.dataset.status = item.status;
       tag.textContent = labels[item.status];
       cell.append(tag);
-      row.insertCell().textContent = item.applicable ? `${item.done}/${item.applicable} · ${item.percent}%` : "—";
+      const progress = row.insertCell();
+      progress.textContent = item.applicable ? `${item.done}/${item.applicable} · ${item.percent}%` : "—";
+      if (item.applicable) progress.append(progressBar(item.percent));
       row.insertCell().textContent = names[item.issue_status];
       const button = document.createElement("button");
       button.type = "button";
@@ -101,6 +128,7 @@
     const controller = new AbortController();
     request = controller;
     state = null;
+    metrics.replaceChildren();
     rows.replaceChildren();
     team.hidden = importer.hidden = true;
     status.textContent = "Carregando tarefas…";
