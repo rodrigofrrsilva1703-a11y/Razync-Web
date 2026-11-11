@@ -20,6 +20,7 @@
   let state, ownerFilter, request, stageFilter;
   const saving = new Set();
   const issueDrafts = new Map();
+  let refreshAfterIssue = false;
 
   function displayOwner(email) {
     return email ? email.split("@")[0].split(/[._-]/).map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(" ") : "Sem responsável";
@@ -188,6 +189,7 @@
     const controller = new AbortController();
     request = controller;
     state = null;
+    refreshAfterIssue = false;
     metrics.replaceChildren();
     rows.replaceChildren();
     team.hidden = importPanel.hidden = true;
@@ -218,15 +220,29 @@
     summary.className = "secondary-action";
     summary.textContent = names[item.issue_status];
     summary.setAttribute("aria-label", `Pendência da empresa ${item.code}: ${summary.textContent}`);
+    const dialog = document.createElement("dialog");
+    dialog.className = "monthly-issue-dialog";
+    dialog.id = `monthly-issue-${item.code}`;
+    const header = document.createElement("header");
+    const title = document.createElement("h2");
+    title.id = `${dialog.id}-title`;
+    title.textContent = "Pendência da empresa";
+    const context = document.createElement("p");
+    context.textContent = `${item.code} · ${item.name} · ${state.period.split("-").reverse().join("/")}`;
+    header.append(title, context);
+    dialog.setAttribute("aria-labelledby", title.id);
+    summary.setAttribute("aria-controls", dialog.id);
+    summary.setAttribute("aria-haspopup", "dialog");
+    summary.disabled = busy;
+    summary.onclick = () => dialog.showModal();
+    dialog.addEventListener("close", () => {
+      if (!refreshAfterIssue || !dialog.isConnected) return;
+      refreshAfterIssue = false;
+      renderRows();
+      rows.querySelector(`[data-task-key="${key}"] .monthly-issue-editor > button`)?.focus();
+    });
+    dialog.addEventListener("cancel", event => { if (saving.has(key)) event.preventDefault(); });
     const form = document.createElement("form");
-    form.id = `monthly-issue-${item.code}`;
-    form.hidden = !issueDrafts.has(key);
-    summary.setAttribute("aria-controls", form.id);
-    summary.setAttribute("aria-expanded", String(!form.hidden));
-    summary.onclick = () => {
-      form.hidden = !form.hidden;
-      summary.setAttribute("aria-expanded", String(!form.hidden));
-    };
     const status = document.createElement("select");
     for (const [value, label] of [["none", "Sem pendência"], ["open", "Aberta"], ["resolved", "Resolvida"]]) {
       status.append(new Option(label, value));
@@ -246,13 +262,24 @@
     button.className = "secondary-action";
     button.textContent = "Salvar pendência";
     button.disabled = busy;
-    form.append(button);
+    const footer = document.createElement("footer");
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "secondary-action";
+    close.textContent = "Fechar";
+    close.onclick = () => dialog.close();
+    const message = document.createElement("p");
+    message.className = "monthly-issue-feedback";
+    message.setAttribute("role", "status");
+    footer.append(close, button);
+    form.append(message, footer);
     form.oninput = () => issueDrafts.set(key, {issue:issue.value, action:action.value, issue_status:status.value});
     form.onsubmit = event => {
       event.preventDefault();
       void saveTask(item, {issue:issue.value, action:action.value, issue_status:status.value}, button);
     };
-    details.append(summary, form);
+    dialog.append(header, form);
+    details.append(summary, dialog);
     return details;
   }
 
@@ -300,7 +327,9 @@
     }
     row.querySelectorAll("select, button, textarea").forEach(field => { field.disabled = true; });
     row.setAttribute("aria-busy", "true");
-    feedback.textContent = `Salvando empresa ${item.code}…`;
+    const dialog = trigger.closest("dialog");
+    const message = dialog?.querySelector(".monthly-issue-feedback") ?? feedback;
+    message.textContent = `Salvando empresa ${item.code}…`;
     let saved = false;
     try {
       const {steps, issue, action, issue_status, revision} = item;
@@ -318,11 +347,14 @@
         group.issues += Number(updated.issue_status === "open") - Number(item.issue_status === "open");
       }
       Object.assign(item, updated);
-      if ("issue" in changes) issueDrafts.delete(key);
+      if ("issue" in changes) {
+        issueDrafts.delete(key);
+        dialog?.close();
+      }
       saved = true;
       feedback.textContent = `Empresa ${item.code} atualizada.`;
     } catch (error) {
-      feedback.textContent = `Empresa ${item.code}: ${error.message}`;
+      message.textContent = `Empresa ${item.code}: ${error.message}`;
       if (changes.steps) {
         renderProgress(progress, item);
         trigger.value = item.steps[Number(trigger.dataset.step)];
@@ -334,6 +366,13 @@
       if (state === snapshot) {
         if (saved || !row.isConnected) {
           renderTeam();
+          if (rows.querySelector(".monthly-issue-dialog[open]")) {
+            refreshAfterIssue = true;
+            row.querySelectorAll("select, button, textarea").forEach(field => { field.disabled = false; });
+            renderProgress(progress, item);
+            return;
+          }
+          refreshAfterIssue = false;
           renderRows();
           const replacement = rows.querySelector(`[data-task-key="${key}"]`);
           replacement?.querySelector("step" in trigger.dataset ? `[data-step="${trigger.dataset.step}"]` : ".monthly-issue-editor > button")?.focus();
