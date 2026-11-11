@@ -24,10 +24,6 @@ from app.report_helpers import (
     _excel_report, _download, _period_bounds, _filter_period_frame, _preview_records,
 )
 from app.registry import CAPABILITIES, COMMON_TOOLS
-from app import standard_company_tools as standard_tools
-from app.company_access import owners as company_owners, is_admin
-from app.site_access import current_owner
-from pydantic import BaseModel, Field
 from app.company_service import catalog as company_catalog
 from app.advanced import workflow_modelo, processar_itau_generico, processar_daycoval_generico
 from app.conferencia import ler_modelo_excel, conciliar
@@ -107,15 +103,10 @@ def health():
 def companies():
     result = []
     visible = allowed_codes()
-    assignments = company_owners()
-    configured = standard_tools.configured_accounts_by_company()
     for item in company_catalog():
         if visible is not None and int(item["codigo"]) not in visible:
             continue
         row = dict(item)
-        if standard := standard_tools.capabilities(int(item["codigo"]), assignments, configured.get(int(item["codigo"]), {})):
-            result.append({**row, "capabilities": standard})
-            continue
         cap = dict(CAPABILITIES.get(int(item["codigo"]), {"status": "catalog_only", "tools": []}))
         if cap.get("status") == "api_ready":
             cap["tools"] = COMMON_TOOLS
@@ -133,8 +124,6 @@ def company(company_code: int):
     if not item:
         raise HTTPException(status_code=404, detail="Empresa não cadastrada.")
     row = dict(item)
-    if standard := standard_tools.capabilities(company_code):
-        return {**row, "capabilities": standard}
     cap = dict(CAPABILITIES.get(company_code, {"status": "catalog_only", "tools": []}))
     if cap.get("status") == "api_ready":
         cap["tools"] = COMMON_TOOLS
@@ -145,27 +134,8 @@ def company(company_code: int):
     return row
 
 
-class StandardBankAccount(BaseModel):
-    bank: str = Field(max_length=30)
-    account: str = Field(max_length=15)
-
-
-@app.post("/api/v1/companies/{company_code}/standard-bank-account")
-def configure_standard_account(company_code: int, payload: StandardBankAccount):
-    if not (is_admin() or current_owner.get() == standard_tools.STANDARD_OWNER):
-        raise HTTPException(403, "Apenas o responsável ou um administrador pode cadastrar a conta.")
-    if not any(int(row["codigo"]) == company_code for row in company_catalog()):
-        raise HTTPException(404, "Empresa não cadastrada.")
-    try:
-        return {"accounts": standard_tools.add_account(company_code, payload.bank, payload.account.strip())}
-    except ValueError as exc:
-        raise HTTPException(422, str(exc)) from exc
-
-
 def _process_modular(company_code: int, bank: str, content: bytes, filename: str) -> pd.DataFrame:
     bank = (bank or "").strip().casefold()
-    if standard_tools.enabled(company_code):
-        return standard_tools.read_statement(bank, content, filename)
     name = (filename or "").lower()
 
     if company_code in {47, 154, 912, 964, 1532}:
@@ -209,7 +179,7 @@ def _process_statement(company_code: int, bank: str, content: bytes, filename: s
 
 
 def _validated_bank(company_code: int, bank: str) -> str:
-    banks = standard_tools.BANKS if standard_tools.enabled(company_code) else CAPABILITIES.get(company_code, {}).get('banks', {})
+    banks = CAPABILITIES.get(company_code, {}).get('banks', {})
     if not banks:
         raise HTTPException(404, 'Empresa sem processador bancário específico.')
     bank = bank.strip().casefold()
@@ -221,8 +191,6 @@ def _validated_bank(company_code: int, bank: str) -> str:
 
 
 def _original_export(company_code, groups):
-    if standard_tools.enabled(company_code):
-        return gerar_modelo_abas(groups)
     from app import engine
     with engine.processing_context():
         if company_code in {969,1532} and len(groups) == 1:

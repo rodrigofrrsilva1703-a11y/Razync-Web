@@ -45,14 +45,7 @@ ELETRO_242_CLASSIFICATION_PROFILES = {
     },
 }
 
-def _require_standard_accounts(company):
-    from app import standard_company_tools as standard_tools
-    if standard_tools.enabled(company) and not accounts(company):
-        raise ValueError("Cadastre a conta contábil do banco na Base Inteligente antes de continuar.")
-
-
 def resolve_classification_options(company, options=None):
-    _require_standard_accounts(company)
     resolved = dict(options or {})
     if int(company) == 242:
         origem = str(resolved.get('origem_242') or '').strip().casefold()
@@ -154,10 +147,6 @@ class SourceFile(io.BytesIO):
         self.name = filename
 
 def _learning_records(company, content, filename, data_inicial='', data_final=''):
-    from app import standard_company_tools as standard_tools
-    standard = standard_tools.enabled(company)
-    configured_accounts = accounts(company)
-    _require_standard_accounts(company)
     if filename.lower().endswith('.json'):
         payload = json.loads(content)
         if not isinstance(payload, dict) or int(payload.get('company', -1)) != company:
@@ -166,10 +155,7 @@ def _learning_records(company, content, filename, data_inicial='', data_final=''
         if not isinstance(imported, list):
             raise ValueError('Base de classificações inválida.')
     else:
-        imported = engine.importar_arquivos_classificados(
-            [SourceFile(content, filename)], slug(company), configured_accounts,
-            bancos_configurados=configured_accounts.keys() if standard else None,
-        )
+        imported = engine.importar_arquivos_classificados([SourceFile(content, filename)], slug(company), accounts(company))
     if bool(data_inicial) != bool(data_final):
         raise ValueError('Informe as duas datas do período.')
     if data_inicial:
@@ -185,10 +171,8 @@ def _learning_records(company, content, filename, data_inicial='', data_final=''
         if not imported:
             raise ValueError('Nenhum padrão revisado foi encontrado no período informado.')
     for item in imported:
-        if not all(k in item for k in ('banco', 'assinatura', 'debito', 'credito', 'periodos')) or item['banco'] not in configured_accounts:
+        if not all(k in item for k in ('banco', 'assinatura', 'debito', 'credito', 'periodos')) or item['banco'] not in accounts(company):
             raise ValueError('Padrão inválido ou banco não configurado para esta empresa.')
-        if standard and configured_accounts[item['banco']] not in (str(item['debito']), str(item['credito'])):
-            raise ValueError('A conta bancária do arquivo difere da conta contábil cadastrada para esta empresa.')
     if not imported:
         raise ValueError('Nenhum padrão revisado foi encontrado. Envie um Modelo Domínio ou Razão com as contas preenchidas.')
     return imported

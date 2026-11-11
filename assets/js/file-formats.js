@@ -8,7 +8,6 @@
   function statementAccept(company, bank) {
     const code = Number(company?.codigo);
     if (!Object.hasOwn(company?.capabilities?.banks || {}, bank)) return '';
-    if (company?.capabilities?.standard_tools) return '.pdf,.xls,.xlsx,.csv,.ofx';
     if (pdfOnly.has(code)) return '.pdf';
     if (code === 1530) return '.xls,.xlsx';
     if (code === 841) return '.pdf,.xls,.xlsx';

@@ -10,7 +10,6 @@ from app import engine
 from app.advanced import append_dataframe_sheets
 from app.excel import _template_bytes, gerar_modelo_abas
 from app.registry import CAPABILITIES
-from app import standard_company_tools as standard_tools
 
 COLUNAS = ['DESCRIÇÃO', 'DATA', 'VALOR', 'DÉBITO', 'CRÉDITO', 'HISTÓRICO']
 SLUGS = {1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
@@ -30,8 +29,6 @@ def slug(code):
 
 
 def accounts(code):
-    if standard_tools.enabled(int(code)):
-        return standard_tools.accounts(int(code))
     banks = dict(CAPABILITIES.get(int(code), {}).get('banks', {}))
     if int(code) == 242:
         return {'bb': '8', 'itau_508': '508', 'itau_509': '509'}
@@ -108,8 +105,6 @@ def _sicredi_pdf_empresa(code, content):
 def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
-    if standard_tools.enabled(int(code)):
-        return standard_tools.read_statement(bank, content, filename)
     with engine.processing_context(slug(code)):
         if bank == 'sicredi' and content.startswith(b'%PDF'):
             if code == 1001:
