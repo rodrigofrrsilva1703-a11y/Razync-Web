@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    521: {
+      intro:"Envie o Movimento Mensal por Categoria em XLSX. O organizador lê os pagamentos da aba Caixa.",
+      note:"O Modelo Domínio usa a data de pagamento, valor negativo e conta contábil 5 no crédito.",
+      extrato:"Compare o Modelo Domínio com o extrato Caixa ou com o relatório de origem. A conferência abrange somente pagamentos.",
+      base:"Use um Modelo Domínio revisado com a conta Caixa 5 para ensinar a classificação dos pagamentos."
+    },
     3: {
       intro:"A Autokraft Industrial usa o mapa bancário em Excel para montar os lançamentos do Itaú e Daycoval.",
       note:"Confira se os movimentos do mapa pertencem à empresa 3 antes de gerar o Modelo Domínio."

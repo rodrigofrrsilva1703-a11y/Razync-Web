@@ -23,7 +23,7 @@ def _template_bytes() -> bytes:
     return base64.b64decode(RESOURCE.read_text(encoding="utf-8").strip())
 
 
-def gerar_modelo_abas(dados: dict[str, pd.DataFrame]) -> bytes:
+def gerar_modelo_abas(dados: dict[str, pd.DataFrame], *, date_format=None) -> bytes:
     wb = load_workbook(io.BytesIO(_template_bytes()))
     ws_base = wb[wb.sheetnames[0]]
 
@@ -80,7 +80,7 @@ def gerar_modelo_abas(dados: dict[str, pd.DataFrame]) -> bytes:
                     value = "" if pd.isna(dt) else dt.to_pydatetime()
                 cell.value = value
                 cell._style = copy(styles[col]["style"])
-                cell.number_format = styles[col]["number_format"]
+                cell.number_format = date_format if col == "DATA" and date_format else styles[col]["number_format"]
 
     wb.remove(ws_base)
     out = io.BytesIO()

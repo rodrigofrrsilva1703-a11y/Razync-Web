@@ -1990,7 +1990,9 @@ def ler_planilha_classificada(file_bytes, filename, empresa='nova_geracao'):
                     identificar_chave_banco_empresa(descricao_linha)
                     if col_descricao is not None else ''
                 ) or banco_aba or banco_arquivo
-                if empresa in {'valean_625', 'valean_626'}:
+                if empresa == 'bormais_521':
+                    bancos_validos = {'caixa'}
+                elif empresa in {'valean_625', 'valean_626'}:
                     bancos_validos = {'banco_brasil', 'caixa', 'sicredi'}
                 else:
                     bancos_validos = {
@@ -2000,10 +2002,11 @@ def ler_planilha_classificada(file_bytes, filename, empresa='nova_geracao'):
             assinatura = criar_assinatura_classificacao(historico)
             if banco_linha not in bancos_validos or not assinatura:
                 continue
-            data_lancamento = (
-                pd.to_datetime(linha[col_data], dayfirst=True, errors='coerce')
-                if col_data is not None else pd.NaT
-            )
+            data_raw = linha[col_data] if col_data is not None else None
+            if empresa == 'bormais_521' and pd.api.types.is_number(data_raw) and not pd.isna(data_raw):
+                data_lancamento = pd.to_datetime(float(data_raw), unit='D', origin='1899-12-30', errors='coerce')
+            else:
+                data_lancamento = pd.to_datetime(data_raw, dayfirst=True, errors='coerce')
             periodo = (
                 data_lancamento.strftime('%Y-%m') if not pd.isna(data_lancamento)
                 else normalizar_texto(filename)
@@ -2417,7 +2420,7 @@ def classificar_planilha_final(
                 resumo['regras_fixas_1000'] += 1
                 if linha_estava_parcial:
                     resumo['parciais_completados'] += 1
-            elif 'antecipad' in normalizar_texto(historico):
+            elif empresa_classificacao != 'bormais_521' and 'antecipad' in normalizar_texto(historico):
                 ws.cell(numero_linha, coluna_contrapartida).value = 532
                 resumo['automaticos'] += 1
                 resumo['antecipados'] += 1

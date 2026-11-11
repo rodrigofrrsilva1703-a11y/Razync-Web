@@ -12,7 +12,7 @@ from app.excel import _template_bytes, gerar_modelo_abas
 from app.registry import CAPABILITIES
 
 COLUNAS = ['DESCRIÇÃO', 'DATA', 'VALOR', 'DÉBITO', 'CRÉDITO', 'HISTÓRICO']
-SLUGS = {1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
+SLUGS = {521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
          242: 'eletro_forte', 1408: 'eletro_forte_filial_1408',
          266: 'nova_geracao_matriz', 1396: 'nova_geracao_filial',
          285: 'lcarlos', 968: 'radani', 1000: 'accede_automacao',
@@ -105,6 +105,17 @@ def _sicredi_pdf_empresa(code, content):
 def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
+    if code == 521:
+        from app.caixa_521 import read_payments
+        from app.global_tools import processar_arquivo
+        report = read_payments(content, optional=True) if filename.lower().endswith(".xlsx") else None
+        if report is not None:
+            return report
+        frame = processar_arquivo(content, filename)
+        banks = {engine.identificar_chave_banco_empresa(value) for value in frame["DESCRIÇÃO"]}
+        if banks - {"", "caixa"}:
+            raise ValueError("O extrato enviado não corresponde ao banco Caixa.")
+        return frame
     with engine.processing_context(slug(code)):
         if bank == 'sicredi' and content.startswith(b'%PDF'):
             if code == 1001:
@@ -198,15 +209,24 @@ def reconcile(code, bank, model, statements, options=None):
         account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 1408} else None
         main, excluded, _ = engine.ler_planilha_organizada_conferencia(model, real_bank, account)
         main, excluded = filter_frame(main, options), filter_frame(excluded, options)
+        if code == 521:
+            main = main.loc[main["VALOR"] < 0]
+            excluded = excluded.loc[excluded["VALOR"] < 0]
         if main.empty:
             raise ValueError('Nenhum lançamento do banco/conta selecionado foi encontrado no Modelo Domínio.')
         frames = [statement(code, bank, content, filename) for filename, content in statements]
         movements = filter_frame(pd.concat(frames, ignore_index=True), options)
+        if code == 521:
+            movements = movements.loc[movements["VALOR"] < 0]
+            if movements.empty:
+                raise ValueError("Nenhum pagamento encontrado no extrato no período selecionado.")
         daily, missing, extra, ignored = engine.conciliar_empresa_com_extrato(main, movements, excluded)
         summary = {'ok': missing.empty and extra.empty, 'planilha': len(main),
                    'extrato': len(movements), 'conferidos': len(main) - len(extra),
                    'faltando_planilha': len(missing), 'a_mais_planilha': len(extra),
                    'ignorados': len(ignored)}
+        if code == 521:
+            summary['escopo'] = 'Somente pagamentos'
         for side, suffix in [('planilha', 'PLANILHA'), ('extrato', 'EXTRATO')]:
             for name, label in [('entradas', 'ENTRADAS'), ('saidas', 'SAÍDAS')]:
                 summary[f'{name}_{side}'] = round(float(daily[f'{label} {suffix}'].sum()), 2)
@@ -315,6 +335,17 @@ def _workflow_1408(roles):
 def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
+        if code == 521:
+            from app.caixa_521 import read_payments
+            from app.excel import gerar_modelo_abas
+
+            uploads = roles.get("pagamentos", [])
+            if not uploads:
+                raise ValueError("Envie o relatório de pagamentos com a aba Caixa.")
+            frame = filter_frame(pd.concat([read_payments(content) for _, content in uploads], ignore_index=True), options)
+            if frame.empty:
+                raise ValueError("Nenhum pagamento no período selecionado.")
+            return gerar_modelo_abas({"Caixa": frame.sort_values("DATA", kind="stable")}, date_format="dd/mm/yyyy"), "BORMAIS_521_CAIXA_MODELO_DOMINIO.xlsx"
         if code == 1522:
             from app.santander_consolidado_1522 import workflow_1522
             return workflow_1522(roles, options)

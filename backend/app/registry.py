@@ -168,6 +168,10 @@ CAPABILITIES = {
     1532: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
 }
 
+CAPABILITIES[521] = {
+    "status": "api_ready", "workflow": "advanced", "banks": {"caixa": "5"},
+    "roles": [{"name": "pagamentos", "label": "Movimento Mensal por Categoria (aba Caixa)", "accept": ".xlsx", "multiple": True}],
+}
 COMMON_TOOLS = ["modelo_dominio", "base_inteligente", "conferencia_extrato"]
 CAPABILITIES[1248] = {'status':'api_ready','workflow':'advanced','banks':{'itau':'508'},
     'roles':[{'name':'extrato','label':'Extrato Itaú RGR','accept':'.pdf','multiple':False},

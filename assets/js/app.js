@@ -1684,6 +1684,14 @@ reconcileForm.addEventListener("submit",async event => {
       }
     });
 
+    if (result.summary?.escopo === "Somente pagamentos") {
+      const divergence = !result.summary.ok || (result.rows || []).some(row => !reconciliationBalances(row, "modelo").ok);
+      $("#reconcileMessage").textContent = divergence
+        ? "Conferência de pagamentos com divergências. Revise os lançamentos abaixo."
+        : "Os pagamentos analisados estão batendo. O relatório não inclui recebimentos.";
+      return;
+    }
+
     try {
       await globalThis.RazyncAssets?.load("investments");
       if (!isCurrent()) return;

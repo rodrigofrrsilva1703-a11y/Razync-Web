@@ -178,7 +178,7 @@ def history(period: str, company_code: int):
 
 
 def record_reconciliation(company, options, summary, rows):
-    if not current_owner.get() or not isinstance(options, dict):
+    if summary.get("escopo") == "Somente pagamentos" or not current_owner.get() or not isinstance(options, dict):
         return
     try:
         start = date.fromisoformat(options.get("data_inicial", ""))
