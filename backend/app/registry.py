@@ -168,6 +168,10 @@ CAPABILITIES = {
     1532: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
 }
 
+CAPABILITIES[745] = {
+    "status": "api_ready", "workflow": "advanced", "banks": {"itau": "508"},
+    "roles": [{"name": "extrato", "label": "Extrato Mensal Itaú Empresas", "accept": ".pdf", "multiple": True}],
+}
 CAPABILITIES[521] = {
     "status": "api_ready", "workflow": "advanced", "banks": {"caixa": "5"},
     "roles": [{"name": "pagamentos", "label": "Movimento Mensal por Categoria (aba Caixa)", "accept": ".xlsx", "multiple": True}],

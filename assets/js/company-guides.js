@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    745: {
+      intro:"Envie o Extrato Mensal Itaú Empresas em PDF para gerar o Modelo Domínio da conta contábil 508.",
+      note:"O sistema verifica os totais do PDF e separa as aplicações e os resgates automáticos dos lançamentos da conta corrente.",
+      extrato:"Compare o Modelo Domínio com o Extrato Mensal Itaú em PDF. Os saldos, as aplicações e os resgates automáticos ficam fora da comparação.",
+      base:"Use o Modelo Domínio revisado, com a conta Itaú 508, para ensinar as contrapartidas dos pagamentos e recebimentos."
+    },
     521: {
       intro:"Envie o Movimento Mensal por Categoria em XLSX. O organizador lê os pagamentos da aba Caixa.",
       note:"O Modelo Domínio usa a data de pagamento, valor negativo e conta contábil 5 no crédito.",

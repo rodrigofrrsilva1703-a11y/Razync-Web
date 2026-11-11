@@ -2420,7 +2420,7 @@ def classificar_planilha_final(
                 resumo['regras_fixas_1000'] += 1
                 if linha_estava_parcial:
                     resumo['parciais_completados'] += 1
-            elif empresa_classificacao != 'bormais_521' and 'antecipad' in normalizar_texto(historico):
+            elif empresa_classificacao not in {'bormais_521', 'dourado_745'} and 'antecipad' in normalizar_texto(historico):
                 ws.cell(numero_linha, coluna_contrapartida).value = 532
                 resumo['automaticos'] += 1
                 resumo['antecipados'] += 1

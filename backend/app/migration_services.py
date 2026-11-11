@@ -12,7 +12,7 @@ from app.excel import _template_bytes, gerar_modelo_abas
 from app.registry import CAPABILITIES
 
 COLUNAS = ['DESCRIÇÃO', 'DATA', 'VALOR', 'DÉBITO', 'CRÉDITO', 'HISTÓRICO']
-SLUGS = {521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
+SLUGS = {745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
          242: 'eletro_forte', 1408: 'eletro_forte_filial_1408',
          266: 'nova_geracao_matriz', 1396: 'nova_geracao_filial',
          285: 'lcarlos', 968: 'radani', 1000: 'accede_automacao',
@@ -105,6 +105,9 @@ def _sicredi_pdf_empresa(code, content):
 def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
+    if code == 745:
+        from app.itau_monthly_745 import read_statement
+        return read_statement(content)
     if code == 521:
         from app.caixa_521 import read_payments
         from app.global_tools import processar_arquivo
@@ -335,6 +338,21 @@ def _workflow_1408(roles):
 def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
+        if code == 745:
+            from app.itau_monthly_745 import read_statement
+            from app.excel import gerar_modelo_abas
+
+            uploads = roles.get("extrato", [])
+            if not uploads:
+                raise ValueError("Envie o Extrato Mensal Itaú em PDF.")
+            frames = [read_statement(content) for _, content in uploads]
+            periods = [frame["DATA"].iloc[0].to_period("M") for frame in frames]
+            if len(set(periods)) != len(periods):
+                raise ValueError("Envie somente um extrato mensal por competência.")
+            frame = filter_frame(pd.concat(frames, ignore_index=True), options)
+            if frame.empty:
+                raise ValueError("Nenhum lançamento no período selecionado.")
+            return gerar_modelo_abas({"Itaú": frame.sort_values("DATA", kind="stable")}, date_format="dd/mm/yyyy"), "DOURADO_745_ITAU_MODELO_DOMINIO.xlsx"
         if code == 521:
             from app.caixa_521 import read_payments
             from app.excel import gerar_modelo_abas
