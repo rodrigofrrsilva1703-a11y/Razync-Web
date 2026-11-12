@@ -8,14 +8,11 @@
   const status = get("monthlyTasksStatus");
   const metrics = get("monthlyTasksMetrics");
   const rows = get("monthlyTasksRows");
-  const queue = get("monthlyTasksQueue");
-  const views = get("monthlyTasksViews");
   const ownerField = get("monthlyTasksOwnerField");
   const ownerSelect = get("monthlyTasksOwner");
   const clear = get("monthlyTasksClear");
   const activeFilters = get("monthlyTasksActiveFilters");
   const rowMessages = new Map();
-  let currentView = "queue";
   const team = get("monthlyTasksTeam");
   const people = get("monthlyTasksPeople");
   const importPanel = get("monthlyTasksImportPanel");
@@ -34,20 +31,6 @@
     return email ? email.split("@")[0].split(/[._-]/).map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(" ") : "Sem responsável";
   }
 
-  function setView(view) {
-    currentView = state?.admin && view === "team" ? "team" : "queue";
-    views.hidden = !state?.admin;
-    ownerField.hidden = !state?.admin;
-    team.hidden = currentView !== "team";
-    queue.hidden = currentView === "team";
-    for (const button of views.querySelectorAll("button")) {
-      button.setAttribute("aria-pressed", String(button.dataset.taskView === currentView));
-    }
-  }
-
-  for (const button of views.querySelectorAll("button")) {
-    button.onclick = () => setView(button.dataset.taskView);
-  }
   clear.onclick = () => {
     search.value = filter.value = "";
     ownerFilter = stageFilter = undefined;
@@ -63,10 +46,10 @@
   };
 
   function renderTeam() {
-    importPanel.hidden = !state.admin;
-    setView(currentView);
+    const isAdmin = Boolean(state?.admin);
+    importPanel.hidden = ownerField.hidden = team.hidden = !isAdmin;
     people.replaceChildren();
-    if (!state.admin) return;
+    if (!isAdmin) return;
     const groups = [...state.progress].sort((a, b) => displayOwner(a.owner).localeCompare(displayOwner(b.owner), "pt-BR"));
     ownerSelect.replaceChildren(new Option("Toda a equipe", "*"));
     for (const group of groups) {
@@ -104,7 +87,6 @@
       button.setAttribute("aria-pressed", String(stageFilter === index));
       button.onclick = () => {
         stageFilter = stageFilter === index ? undefined : index;
-        setView("queue");
         renderRows();
         search.focus();
       };
@@ -267,9 +249,7 @@
     refreshAfterIssue = false;
     metrics.replaceChildren();
     rows.replaceChildren();
-    importPanel.hidden = true;
-    const previousView = currentView;
-    setView("queue");
+    renderTeam();
     status.textContent = "Carregando tarefas…";
     try {
       const query = period.value ? `?period=${encodeURIComponent(period.value)}` : "";
@@ -278,7 +258,6 @@
       const result = await response.json();
       if (controller.signal.aborted) return;
       state = result;
-      setView(previousView);
       period.value = state.period;
       if (!state.progress.some(item => item.owner === ownerFilter)) ownerFilter = undefined;
       renderTeam();

@@ -1,4 +1,4 @@
-.monthly-tasks-controls, .monthly-tasks-controls form, #monthlyTasksPeople {
+.monthly-tasks-controls, .monthly-tasks-controls form {
   display:flex;align-items:end;flex-wrap:wrap;gap:12px;
 }
 .monthly-tasks-controls form {margin-inline-start:auto}
@@ -10,12 +10,6 @@
 }
 .monthly-tasks-team {margin:20px 0}
 .monthly-tasks-team h2 {font-size:15px;margin:0 0 10px}
-#monthlyTasksPeople {align-items:stretch}
-#monthlyTasksPeople button {
-  text-align:left;display:grid;align-content:center;gap:5px;background:var(--surface);
-  border:1px solid var(--border);border-radius:8px;color:var(--text);font:inherit;padding:9px 11px;cursor:pointer;
-}
-#monthlyTasksPeople button[aria-pressed=true] {border-color:#6696e6}
 #monthlyTasksPeople span, #monthlyTasksStatus, #monthlyTasksImportMessage {color:var(--muted);font-size:12px}
 .monthly-tasks-table {overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
 .monthly-tasks-table table {width:100%;min-width:710px;border-collapse:collapse;text-align:left}
@@ -38,8 +32,7 @@
 .monthly-tasks-metrics button {min-height:79px;padding:12px 15px}
 .monthly-tasks-team,.monthly-tasks-worklist {background:var(--surface);border:1px solid var(--border);border-radius:12px}
 .monthly-tasks-team {margin:0 0 16px;padding:12px 15px}
-.monthly-tasks-team summary,#monthlyTasksImportPanel summary {font-size:13px;font-weight:650;cursor:pointer}
-.monthly-tasks-team[open] summary {margin-bottom:12px}
+#monthlyTasksImportPanel summary {font-size:13px;font-weight:650;cursor:pointer}
 .monthly-tasks-worklist {padding:15px;border-radius:12px 12px 0 0}
 .monthly-tasks-worklist h2 {font-size:16px;margin:0 0 12px}
 .monthly-tasks-worklist #monthlyTasksStatus {margin:10px 0 0}
@@ -103,12 +96,6 @@
 .monthly-history-dialog li {border-top:1px solid var(--border);padding:10px 0;line-height:1.5}
 .monthly-history-dialog p[role=status]:empty,.monthly-history-dialog ul:empty {display:none}
 
-.monthly-tasks-views:not([hidden]) {display:flex;gap:6px;margin:0 0 14px}
-.monthly-tasks-views button {
-  padding:8px 13px;border:1px solid var(--border);border-radius:8px;
-  background:var(--surface);color:var(--text);font:inherit;font-size:13px;cursor:pointer;
-}
-.monthly-tasks-views button[aria-pressed=true] {border-color:#6696e6;background:var(--surface-2);font-weight:700}
 .monthly-tasks-metrics [data-metric=issue],.monthly-tasks-metrics [data-metric=ready] {border-inline-start:3px solid #6696e6}
 #monthlyTasksActiveFilters {margin:8px 0 0;font-size:12px;color:var(--muted)}
 .monthly-tasks-table thead th:first-child {left:0;z-index:3}
@@ -144,16 +131,6 @@
 .monthly-tasks-heading h1 {margin: 0}
 .monthly-tasks-heading p {margin: 6px 0 0}
 .monthly-tasks-heading input {min-height: 40px; border-radius: 10px}
-.monthly-tasks-views:not([hidden]) {
-  width: fit-content;
-  margin: 14px 0;
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
-}
-.monthly-tasks-views button {border-color: transparent}
-.monthly-tasks-views button[aria-pressed=true] {background: var(--task-tint)}
 .monthly-tasks-metrics {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
   gap: 10px;
@@ -185,10 +162,8 @@
 .monthly-tasks-table tbody tr:focus-within td:first-child {background: var(--task-tint)}
 .monthly-tasks-table select[data-step] {min-height: 34px; border-radius: 8px}
 .monthly-tasks-table select[data-value=done] {border-color: #52947b}
-.monthly-tasks-team {padding: 18px; border-radius: 14px}
+.monthly-tasks-team {margin: 14px 0 0; padding: 14px; border-radius: 14px}
 #monthlyTasksPeople {display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr))}
-#monthlyTasksPeople button {padding: 14px; border-radius: 11px; overflow-wrap: anywhere}
-#monthlyTasksPeople button[aria-pressed=true],
 #monthlyTasksStages button[aria-pressed=true] {background: var(--task-tint)}
 #monthlyTasksStages button {border-radius: 999px; padding: 7px 11px}
 #tasksView :is(button, input, select, summary, [tabindex]):focus-visible {
