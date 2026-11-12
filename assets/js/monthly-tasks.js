@@ -326,23 +326,14 @@
     close.onclick = () => messageDialog.close();
     const statusMessage = document.createElement("p");
     statusMessage.setAttribute("role", "status");
-    const requestLabel = state.admin ? "Pedir revisão" : "Solicitar ajuda";
-    let replyTo = null;
-    let canRequest = false;
-
-    function compose(original = null) {
-      replyTo = original?.id ?? null;
-      form.hidden = !original && !canRequest;
-      cancelReply.hidden = !original;
-      label.replaceChildren(original ? `Responder a ${displayOwner(original.sender)}` : "Mensagem", field);
-      submit.textContent = original ? "Enviar resposta" : requestLabel;
-    }
+    label.append("Mensagem", field);
+    submit.textContent = "Enviar aviso";
 
     async function refresh() {
       const response = await fetch(url);
       if (!response.ok) throw new Error(await responseError(response));
       const data = await response.json();
-      canRequest = data.can_request;
+      form.hidden = !state?.admin || !data.can_request;
       messages.replaceChildren();
       for (const entry of data.messages) {
         const row = document.createElement("li");
@@ -354,33 +345,19 @@
         time.dateTime = entry.created_at;
         time.textContent = new Date(entry.created_at).toLocaleString("pt-BR");
         row.append(heading, body, time);
-        if (entry.sender !== myEmail() && entry.kind !== "resolved") {
-          const reply = document.createElement("button");
-          reply.type = "button";
-          reply.className = "secondary-action";
-          reply.textContent = "Responder";
-          reply.onclick = () => { compose(entry); field.focus(); };
-          row.append(reply);
-        }
         messages.append(row);
       }
-      compose();
       statusMessage.textContent = data.messages.length ? "" : "Nenhuma mensagem nesta tarefa.";
     }
 
-    const cancelReply = document.createElement("button");
-    cancelReply.type = "button";
-    cancelReply.className = "secondary-action";
-    cancelReply.textContent = "Cancelar resposta";
-    cancelReply.onclick = () => compose();
-    form.append(label, submit, cancelReply);
+    form.append(label, submit);
     form.addEventListener("submit", async event => {
       event.preventDefault();
       submit.disabled = true;
       try {
         const response = await fetch(url, {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({body:field.value, reply_to:replyTo})
+          body:JSON.stringify({body:field.value})
         });
         if (!response.ok) throw new Error(await responseError(response));
         field.value = "";

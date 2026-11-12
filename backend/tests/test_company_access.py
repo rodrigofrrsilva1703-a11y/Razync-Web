@@ -64,7 +64,7 @@ def test_company_reassignment_updates_access_without_limiting_admins(monkeypatch
     assert notice["unread"] == 1
     assert [row["company"] for row in notice["items"]] == [3]
     latest = notice["items"][0]["id"]
-    assert client.get(inbox, headers=admin).json() == {"items": [], "unread": 0}
+    assert client.get(inbox, headers=admin).json() == {"items": [], "unread": 0, "recipients": sorted(users[2:])}
     assert client.post(inbox + "/read", headers=other, json={"through": latest}).status_code == 200
     assert client.get(inbox, headers=regular).json()["unread"] == 1
     assert client.put(endpoint + "/3", headers=admin, json={"email": users[2]}).json()["changed"] is False

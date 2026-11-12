@@ -2787,6 +2787,22 @@ body[data-site-locked] #companyNotificationToast {display:none}
   background:var(--surface-2);font-size:11px;font-weight:650;
 }
 .company-notifications li button {margin-top: 8px}
+.company-notifications details {padding: 13px 16px; border-bottom: 1px solid var(--border)}
+.company-notifications summary {cursor: pointer; font-weight: 650}
+#companyNotificationForm {display: grid; gap: 10px; margin-top: 12px}
+#companyNotificationForm label {display: grid; gap: 5px}
+#companyNotificationForm :is(select, textarea) {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface-2);
+  font: inherit;
+}
+#companyNotificationForm button {justify-self: start}
+#companyNotificationSendStatus {margin: 0; font-size: 13px}
+#companyNotificationSendStatus:empty {display: none}
 .company-notifications li .company-notice-preview {
   display: -webkit-box;
   -webkit-box-orient: vertical;

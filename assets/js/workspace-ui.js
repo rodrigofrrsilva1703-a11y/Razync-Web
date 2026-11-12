@@ -338,6 +338,12 @@ function initializeCompanyNotifications() {
   const list = document.querySelector("#companyNotificationsList");
   const status = document.querySelector("#companyNotificationsStatus");
   const markRead = document.querySelector("#companyNotificationsRead");
+  const composer = document.querySelector("#companyNotificationCompose");
+  const sendForm = document.querySelector("#companyNotificationForm");
+  const recipientField = document.querySelector("#companyNotificationRecipient");
+  const bodyField = document.querySelector("#companyNotificationBody");
+  const sendStatus = document.querySelector("#companyNotificationSendStatus");
+  const sendButton = sendForm.querySelector("button");
   const endpoint = () => `${API()}/api/v1/company-access/notifications`;
   const date = new Intl.DateTimeFormat("pt-BR", {dateStyle:"short", timeStyle:"short"});
   const noticeLabels = {help:"Pedido de ajuda", review:"Pedido de revisão", reply:"Resposta na tarefa", resolved:"Pendência resolvida"};
@@ -348,6 +354,7 @@ function initializeCompanyNotifications() {
   let toastTimer;
   let toastOpen = false;
   let saving = false;
+  let availableRecipients;
 
   function dismissToast() {
     clearTimeout(toastTimer);
@@ -367,7 +374,8 @@ function initializeCompanyNotifications() {
     const company = `${item.company} · ${item.name}`;
     const message = items.length > 1
       ? `${items.length} novos avisos na caixa de notificações.`
-      : `${noticeLabels[item.kind] ?? "Nova atribuição de empresa"} · ${company}`;
+      : item.kind === "direct" ? `Mensagem de ${item.sender}`
+        : `${noticeLabels[item.kind] ?? "Nova atribuição de empresa"} · ${company}`;
     toastText.textContent = message;
     toast.hidden = false;
     toastOpen = true;
@@ -386,6 +394,14 @@ function initializeCompanyNotifications() {
   });
 
   function render(data) {
+    composer.hidden = !Array.isArray(data.recipients);
+    if (!composer.hidden && JSON.stringify(data.recipients) !== availableRecipients) {
+      availableRecipients = JSON.stringify(data.recipients);
+      const selected = recipientField.value;
+      recipientField.replaceChildren(new Option("Selecione o colaborador", ""));
+      for (const email of data.recipients) recipientField.add(new Option(email, email));
+      recipientField.value = data.recipients.includes(selected) ? selected : "";
+    }
     badge.textContent = data.unread > 99 ? "99+" : data.unread;
     badge.hidden = !data.unread;
     nav.setAttribute("aria-label", data.unread ? `Notificações, ${data.unread} não lidas` : "Notificações");
@@ -398,8 +414,9 @@ function initializeCompanyNotifications() {
       const title = document.createElement("strong");
       const detail = document.createElement("p");
       const time = document.createElement("time");
-      title.textContent = `${item.company} · ${item.name}`;
-      detail.textContent = item.kind
+      const direct = item.kind === "direct";
+      title.textContent = direct ? "Mensagem da administração" : `${item.company} · ${item.name}`;
+      detail.textContent = direct ? item.sender : item.kind
         ? `${noticeLabels[item.kind]} · ${item.period.split("-").reverse().join("/")}`
         : "Você agora é responsável por esta empresa.";
       time.dateTime = item.created_at;
@@ -414,10 +431,10 @@ function initializeCompanyNotifications() {
       const open = document.createElement("button");
       open.type = "button";
       open.className = "secondary-action";
-      open.textContent = "Abrir tarefa";
+      open.textContent = direct ? "Marcar como lida" : "Abrir tarefa";
       open.onclick = async () => {
-        const opened = await showGlobalView("tasks", {company:item.company, period:item.period});
-        if (!opened || item.read_at) return;
+        if (!direct && !await showGlobalView("tasks", {company:item.company, period:item.period})) return;
+        if (item.read_at) return;
         try {
           const response = await fetch(`${endpoint()}/read`, {
             method:"POST", headers:{"Content-Type":"application/json"},
@@ -428,7 +445,7 @@ function initializeCompanyNotifications() {
           // The task is open. Keep the notice unread if the update fails.
         }
       };
-      summary.append(open);
+      if (!direct || !item.read_at) summary.append(open);
       row.append(summary, time);
       if (!item.read_at) {
         const label = document.createElement("span");
@@ -439,6 +456,27 @@ function initializeCompanyNotifications() {
       list.append(row);
     }
   }
+
+  sendForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (sendButton.disabled) return;
+    sendButton.disabled = true;
+    sendStatus.textContent = "Enviando…";
+    try {
+      const response = await fetch(`${endpoint()}/send`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({recipient:recipientField.value, body:bodyField.value}),
+        signal:AbortSignal.timeout(10000)
+      });
+      if (!response.ok) throw new Error(await responseError(response));
+      sendForm.reset();
+      sendStatus.textContent = "Mensagem enviada.";
+    } catch (error) {
+      sendStatus.textContent = error.message || "Não foi possível confirmar o envio.";
+    } finally {
+      sendButton.disabled = false;
+    }
+  });
 
   loadCompanyNotifications = (interactive = false) => {
     if (pending) return pending;

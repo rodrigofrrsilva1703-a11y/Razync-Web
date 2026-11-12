@@ -53,6 +53,9 @@ def _db():
     db.execute("""CREATE TABLE IF NOT EXISTS monthly_task_notices (
         notice INTEGER PRIMARY KEY, message INTEGER NOT NULL
     )""")
+    db.execute("""CREATE TABLE IF NOT EXISTS direct_notification_messages (
+        notice INTEGER PRIMARY KEY, sender TEXT NOT NULL, body TEXT NOT NULL
+    )""")
     return db
 
 
@@ -218,8 +221,9 @@ def list_notifications():
     visible = (
         " FROM company_notifications n LEFT JOIN company_owners o ON o.company=n.company "
         "LEFT JOIN monthly_task_notices link ON link.notice=n.id "
-        "LEFT JOIN monthly_task_messages m ON m.id=link.message WHERE n.recipient=? "
-        "AND ((m.id IS NULL AND o.email=n.recipient) OR "
+        "LEFT JOIN monthly_task_messages m ON m.id=link.message "
+        "LEFT JOIN direct_notification_messages d ON d.notice=n.id WHERE n.recipient=? "
+        "AND (d.notice IS NOT NULL OR (m.id IS NULL AND o.email=n.recipient) OR "
         "(m.owner=COALESCE(o.email,?) AND (m.owner=n.recipient OR ?))) "
         "AND NOT EXISTS (SELECT 1 FROM archived_companies a WHERE a.company=n.company)"
     )
@@ -228,11 +232,43 @@ def list_notifications():
         db.row_factory = sqlite3.Row
         db.execute("BEGIN")
         items = [dict(row) for row in db.execute(
-            "SELECT n.id,n.company,n.name,n.created_at,n.read_at,m.period,m.kind,m.body,m.sender" + visible +
+            "SELECT n.id,n.company,n.name,n.created_at,n.read_at,m.period,"
+            "CASE WHEN d.notice IS NOT NULL THEN 'direct' ELSE m.kind END AS kind,"
+            "COALESCE(d.body,m.body) AS body,COALESCE(d.sender,m.sender) AS sender" + visible +
             " ORDER BY n.id DESC LIMIT 50", params,
         )]
         unread = db.execute("SELECT count(*)" + visible + " AND n.read_at IS NULL", params).fetchone()[0]
-    return {"items": items, "unread": unread}
+    result = {"items": items, "unread": unread}
+    if is_admin():
+        result["recipients"] = sorted(notification_collaborators())
+    return result
+
+
+def notification_collaborators():
+    return allowlist() - administrators() - suspended_users()
+
+
+class DirectNotification(BaseModel):
+    recipient: str = Field(max_length=254)
+    body: str = Field(max_length=2000)
+
+
+@router.post("/notifications/send", status_code=201)
+def send_notification(payload: DirectNotification):
+    _require_admin()
+    sender = _notification_recipient()
+    recipient = payload.recipient.strip().casefold()
+    body = payload.body.strip()
+    if not body or recipient not in notification_collaborators():
+        raise HTTPException(422, "Escolha um colaborador ativo e escreva uma mensagem.")
+    with closing(_db()) as db, db:
+        # Direct notices share the inbox sequence and have no associated company.
+        notice = db.execute(
+            "INSERT INTO company_notifications(company,name,recipient,created_at) VALUES(0,'',?,?)",
+            (recipient, datetime.now(timezone.utc).isoformat()),
+        ).lastrowid
+        db.execute("INSERT INTO direct_notification_messages VALUES(?,?,?)", (notice, sender, body))
+    return {"ok": True}
 
 
 class ReadNotifications(BaseModel):

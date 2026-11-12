@@ -38,7 +38,6 @@ class TaskUpdate(BaseModel):
 
 class TaskMessage(BaseModel):
     body: str = Field(max_length=2000)
-    reply_to: int | None = Field(default=None, gt=0)
 
 
 def task_owner(db, company_code):
@@ -51,21 +50,6 @@ def task_company(company_code):
     if company is None:
         raise HTTPException(404, "Empresa não cadastrada.")
     return company
-
-
-def add_message(db, period, company_code, name, owner, sender, kind, body, recipients, reply_to=None):
-    timestamp = datetime.now(timezone.utc).isoformat()
-    message_id = db.execute(
-        "INSERT INTO monthly_task_messages(period,company,owner,sender,kind,body,created_at,reply_to) VALUES(?,?,?,?,?,?,?,?)",
-        (period, company_code, owner, sender, kind, body, timestamp, reply_to),
-    ).lastrowid
-    for recipient in recipients - {sender, ""}:
-        notice_id = db.execute(
-            "INSERT INTO company_notifications(company,name,recipient,created_at) VALUES(?,?,?,?)",
-            (company_code, name, recipient, timestamp),
-        ).lastrowid
-        db.execute("INSERT INTO monthly_task_notices VALUES(?,?)", (notice_id, message_id))
-    return message_id
 
 
 @router.get("/{period}/{company_code}/messages")
@@ -83,14 +67,15 @@ def task_messages(period: str, company_code: int):
             "SELECT id,sender,kind,body,created_at,reply_to FROM monthly_task_messages "
             "WHERE period=? AND company=? AND owner=? ORDER BY id DESC LIMIT 50", (period, company_code, owner),
         )]
-    recipients = {owner} if admin else company_access.administrators()
-    return {"messages": messages[::-1], "can_request": bool(recipients - {email, ""})}
+    return {"messages": messages[::-1], "can_request": admin and owner in company_access.notification_collaborators()}
 
 
 @router.post("/{period}/{company_code}/messages", status_code=201)
 def send_task_message(period: str, company_code: int, message: TaskMessage):
     period_date(period)
     email, admin = identity()
+    if not admin:
+        raise HTTPException(403, "Somente administradores podem enviar mensagens.")
     company = task_company(company_code)
     body = message.body.strip()
     if not body:
@@ -98,21 +83,18 @@ def send_task_message(period: str, company_code: int, message: TaskMessage):
     with closing(db_connection()) as db, db:
         db.execute("BEGIN IMMEDIATE")
         owner = task_owner(db, company_code)
-        if not admin and owner != email:
-            raise HTTPException(403, "Esta empresa não está na sua carteira.")
-        if message.reply_to is not None:
-            original = db.execute(
-                "SELECT sender FROM monthly_task_messages WHERE id=? AND period=? AND company=? AND owner=?",
-                (message.reply_to, period, company_code, owner),
-            ).fetchone()
-            if not original or original[0] == email or original[0] not in company_access.administrators() | {owner}:
-                raise HTTPException(422, "Esta mensagem não está disponível para resposta.")
-            kind, recipients = "reply", {original[0]}
-        else:
-            kind, recipients = ("review", {owner}) if admin else ("help", company_access.administrators())
-        if not recipients - {email, ""}:
-            raise HTTPException(422, "Não há um destinatário disponível para esta solicitação.")
-        message_id = add_message(db, period, company_code, company["nome"], owner, email, kind, body, recipients, message.reply_to)
+        if owner not in company_access.notification_collaborators():
+            raise HTTPException(422, "Esta empresa precisa de um colaborador ativo como responsável.")
+        timestamp = datetime.now(timezone.utc).isoformat()
+        message_id = db.execute(
+            "INSERT INTO monthly_task_messages(period,company,owner,sender,kind,body,created_at) VALUES(?,?,?,?,'review',?,?)",
+            (period, company_code, owner, email, body, timestamp),
+        ).lastrowid
+        notice = db.execute(
+            "INSERT INTO company_notifications(company,name,recipient,created_at) VALUES(?,?,?,?)",
+            (company_code, company["nome"], owner, timestamp),
+        ).lastrowid
+        db.execute("INSERT INTO monthly_task_notices VALUES(?,?)", (notice, message_id))
     return {"id": message_id}
 
 def db_connection():
@@ -200,7 +182,7 @@ def dashboard(period: str | None = None):
 def save_task(period: str, company_code: int, update: TaskUpdate):
     period_date(period)
     email, admin = identity()
-    company = task_company(company_code)
+    task_company(company_code)
     data = update.model_dump(exclude={"revision"})
     if data["issue_status"] == "open" and not data["issue"].strip():
         raise HTTPException(422, "Descreva a pendência aberta.")
@@ -220,17 +202,6 @@ def save_task(period: str, company_code: int, update: TaskUpdate):
             (period, company_code, json.dumps(data, ensure_ascii=False), update.revision + 1),
         )
         before = json.loads(existing[1]) if existing else EMPTY
-        if before["issue_status"] == "open" and data["issue_status"] == "resolved":
-            requesters = {row[0] for row in db.execute(
-                "SELECT DISTINCT sender FROM monthly_task_messages "
-                "WHERE period=? AND company=? AND owner=? AND kind IN ('help','review') "
-                "AND id > COALESCE((SELECT MAX(id) FROM monthly_task_messages "
-                "WHERE period=? AND company=? AND owner=? AND kind='resolved'),0)",
-                (period, company_code, owner, period, company_code, owner),
-            )}
-            recipients = (requesters & (company_access.administrators() | {owner})) - {email, ""}
-            if requesters:
-                add_message(db, period, company_code, company["nome"], owner, email, "resolved", "A pendência da tarefa foi resolvida.", recipients)
         changes = [
             {"field": label, "before": old, "after": new}
             for label, old, new in zip(STEP_LABELS, before["steps"], data["steps"]) if old != new
