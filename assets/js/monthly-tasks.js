@@ -74,11 +74,14 @@
       if (ownerFilter !== undefined && ownerFilter !== group.owner) continue;
       const card = document.createElement("article");
       const name = document.createElement("strong");
+      const percentage = document.createElement("strong");
+      percentage.className = "monthly-team-percent";
       const detail = document.createElement("span");
-      const percent = group.applicable ? Math.round(100 * group.done / group.applicable) : 0;
-      name.textContent = `${displayOwner(group.owner)} · ${percent}% das etapas`;
-      detail.textContent = `${group.completed}/${group.companies} empresas concluídas · ${group.issues} pendências`;
-      card.append(name, detail, progressBar(percent));
+      const percent = companyPercent(group.completed, group.companies);
+      name.textContent = displayOwner(group.owner);
+      percentage.textContent = `${percent}%`;
+      detail.textContent = `${group.completed} de ${group.companies} empresas concluídas · ${group.issues} pendências`;
+      card.append(name, percentage, detail, progressBar(percent, "empresas concluídas"));
       people.append(card);
     }
     ownerSelect.value = ownerFilter ?? "*";
@@ -87,8 +90,7 @@
   const closed = row => row.status === "done" && row.issue_status !== "open";
   const nextStep = row => row.steps.indexOf("pending");
   const myEmail = () => globalThis.RazyncSiteAccess?.identity();
-  const dateFormat = new Intl.DateTimeFormat("pt-BR", {timeZone: "UTC"});
-  const brazilDate = new Intl.DateTimeFormat("sv-SE", {timeZone: "America/Sao_Paulo"});
+  const companyPercent = (completed, total) => total ? Math.round(100 * completed / total) : 0;
 
   function renderStages() {
     const stages = get("monthlyTasksStages");
@@ -110,11 +112,11 @@
     });
   }
 
-  function progressBar(percent) {
+  function progressBar(percent, label = "etapas concluídas") {
     const bar = document.createElement("progress");
     bar.max = 100;
     bar.value = percent;
-    bar.setAttribute("aria-label", `${percent}% das etapas concluídas`);
+    bar.setAttribute("aria-label", `${percent}% de ${label}`);
     return bar;
   }
 
@@ -132,11 +134,8 @@
       `${row.code} ${row.name}`.toLocaleLowerCase("pt-BR").includes(term)
     );
     const ready = row => row.reconciliation_ready && row.steps[1] === "pending";
-    const today = brazilDate.format(new Date());
-    const overdue = row => row.due && row.due < today && !closed(row) && row.status !== "na";
     const matches = (row, key) => {
       if (key === "done") return closed(row);
-      if (key === "overdue") return overdue(row);
       if (key === "ready") return ready(row);
       if (key === "mine") return row.owner === myEmail() && row.issue_status === "open";
       if (key === "issue") return row.issue_status === "open";
@@ -150,15 +149,21 @@
     ].filter(Boolean);
     clear.hidden = activeFilters.hidden = !selected.length;
     activeFilters.textContent = selected.join(" · ");
-    const cards = [["", "Empresas"], ["overdue", "Vencidas"], ["issue", "Com pendência"], ["ready", "Conciliação para confirmar"], ["pending", "Não iniciadas"], ["progress", "Em andamento"], ["done", "Concluídas"]];
+    const cards = [["", "Empresas"], ["issue", "Com pendência"], ["ready", "Conciliação para confirmar"], ["pending", "Não iniciadas"], ["progress", "Em andamento"], ["done", "Concluídas"]];
     metrics.replaceChildren();
     for (const [key, label] of cards) {
       const button = document.createElement("button");
       const total = document.createElement("strong");
       button.type = "button";
-      total.textContent = key ? matching.filter(row => matches(row, key)).length : matching.length;
+      const count = key ? matching.filter(row => matches(row, key)).length : matching.length;
+      total.textContent = key === "done" ? `${count}/${matching.length}` : count;
       button.dataset.metric = key;
       button.append(total, label);
+      if (key === "done") {
+        const percentage = document.createElement("span");
+        percentage.textContent = `${companyPercent(count, matching.length)}% das empresas`;
+        button.append(percentage);
+      }
       button.setAttribute("aria-pressed", String(filter.value === key));
       button.onclick = () => {
         filter.value = filter.value === key ? "" : key;
@@ -170,8 +175,8 @@
     const visible = matching.filter(row => !filter.value || matches(row, filter.value));
     visible.sort((a, b) => {
       if (sort.value === "queue") {
-        const rank = row => overdue(row) ? 0 : row.issue_status === "open" ? 1 : ready(row) ? 2 : closed(row) || row.status === "na" ? 4 : 3;
-        return rank(a) - rank(b) || (a.due || "9999").localeCompare(b.due || "9999") || b.percent - a.percent || a.code - b.code;
+        const rank = row => row.issue_status === "open" ? 0 : ready(row) ? 1 : closed(row) || row.status === "na" ? 3 : 2;
+        return rank(a) - rank(b) || b.percent - a.percent || a.code - b.code;
       }
       if (sort.value === "progress") return a.percent - b.percent || a.code - b.code;
       return a.code - b.code;
@@ -183,14 +188,6 @@
       const title = document.createElement("strong");
       title.textContent = `${item.code} · ${item.name}`;
       company.append(title);
-      if (item.due && !closed(item) && item.status !== "na") {
-        const deadline = document.createElement("time");
-        deadline.dateTime = item.due;
-        deadline.className = "monthly-task-due";
-        deadline.dataset.overdue = String(Boolean(overdue(item)));
-        deadline.textContent = `${overdue(item) ? "Vencida" : "Prazo"} · ${dateFormat.format(new Date(item.due))}`;
-        company.append(deadline);
-      }
       if (state.admin) {
         const owner = document.createElement("small");
         owner.textContent = displayOwner(item.owner);
