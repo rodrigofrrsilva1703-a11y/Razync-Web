@@ -198,7 +198,7 @@ def enrich(statement_pdf,supporting_xlsx):
                  if bi not in used_bank and int(round(float(row["VALOR"])*100))==amount
                  and abs((pd.Timestamp(row["DATA"]).date()-item["DATA"]).days)==1]
         if len(matches)==1:
-            apply(matches[0],ai],"Identificado — diferença de um dia, valor único")
+            apply(matches[0],ai,"Identificado — diferença de um dia, valor único")
     audit=[]
     for ai,item in enumerate(auxiliary):
         key=(item["DATA"],item["CENTAVOS"])
