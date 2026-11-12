@@ -50,8 +50,8 @@ def read_statement(content):
         identity = IDENTIDADE.search(header)
         if not identity or int(identity[1]) != 1795 or identity[2].lstrip('0') != '338388-1':
             raise ValueError('Agência ou conta bancária não corresponde à empresa 1399.')
-        if not re.search(r'0?27\.514\.567/0001-32', header):
-            raise ValueError('CNPJ do Bradesco não corresponde à empresa 1399.')
+        # Neste layout, o CNPJ do titular é desenhado como imagem e não
+        # aparece na camada de texto. Agência e conta são conferidas acima.
         start, end = [datetime.strptime(value, '%d/%m/%Y').date() for value in identity.groups()[2:]]
         if start > end or (start.year, start.month) != (end.year, end.month):
             raise ValueError('Extrato deve corresponder a uma competência mensal.')
