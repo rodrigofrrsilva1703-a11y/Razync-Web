@@ -174,7 +174,7 @@ def read_itau_statement(content, filename):
             raise ValueError('Envie um PDF válido do extrato Itaú.')
     if lower.endswith('.ofx'):
         text=content[:15000].decode('latin-1',errors='ignore')
-        bankid=re.search(r'<BANKID>\\s*(\\d+)',text,re.I)
+        bankid=re.search(r'<BANKID>\s*(\d+)',text,re.I)
         if bankid and bankid.group(1).lstrip('0')!='341':
             raise ValueError('Este OFX não pertence ao Banco Itaú.')
     rows=engine.processar_extrato_conferencia_empresa(content,filename,'itau')
@@ -196,7 +196,7 @@ def read_itau_statement(content, filename):
     frame['DÉBITO']=frame['VALOR'].map(lambda value:'514' if value>0 else '')
     frame['CRÉDITO']=frame['VALOR'].map(lambda value:'514' if value<0 else '')
     frame['HISTÓRICO']=[
-        ('Recebido: ' if value>0 else 'Pago: ')+re.sub(r'^(?:Pago|Recebido)\\s*:\\s*','',str(history),flags=re.I).strip()
+        ('Recebido: ' if value>0 else 'Pago: ')+re.sub(r'^(?:Pago|Recebido)\s*:\s*','',str(history),flags=re.I).strip()
         for value,history in zip(frame['VALOR'],frame['HISTÓRICO'])
     ]
     return frame[COLUNAS].reset_index(drop=True)
