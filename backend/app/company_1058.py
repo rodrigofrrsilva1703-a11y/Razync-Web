@@ -91,7 +91,7 @@ def read_itau(content):
     return pd.DataFrame(rows,columns=COLUNAS).sort_values('DATA',kind='stable').reset_index(drop=True)
 
 
-def read_caixa(content):
+def read_caixa(content, *, holder="QUARTETO DE OBRAS LTDA", agency="4115", account="000578789424-0"):
     if not content.startswith(b'%PDF') or len(content)>25*1024*1024:
         raise ValueError('Envie um extrato PDF válido da Caixa (até 25 MB).')
     try:
@@ -104,8 +104,8 @@ def read_caixa(content):
     except Exception as exc:
         raise ValueError('Falha ao ler extrato da Caixa.') from exc
     compact=' '.join(text.split())
-    if 'QUARTETO DE OBRAS LTDA' not in compact.upper() or not re.search(r'4115\s*\|\s*1292\s*\|\s*000578789424-0',compact):
-        raise ValueError('Titular ou agência/conta Caixa não corresponde à empresa 1058.')
+    if holder not in compact.upper() or not re.search(rf'(?<!\d){re.escape(agency)}\s*\|\s*1292\s*\|\s*{re.escape(account)}\b', compact):
+        raise ValueError('Titular ou agência/conta Caixa não corresponde à empresa selecionada.')
     month=re.search(r'M[eê]s\s*:\s*([A-Za-zçÇãÃ]+)\s*/\s*(20\d{2})',text,re.I)
     if not month:
         raise ValueError('Competência do extrato Caixa não identificada.')

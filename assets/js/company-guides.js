@@ -6,7 +6,7 @@
     1165: {
       intro:"Informe o mês e o ano da competência e envie a planilha mensal da Otom em XLSX.",
       note:"Itaú 508, Nubank 506 e Caixa 504 mantêm a data bancária. As despesas e os estornos dos cartões entram no último dia do mês na conta 581.",
-      extrato:"Use o Modelo Domínio e anexe a planilha mensal original no campo de cada banco que deseja conferir.",
+      extrato:"Use o Modelo Domínio e anexe o extrato bancário original em PDF no campo do Itaú, Nubank ou Caixa.",
       base:"Use o Modelo Domínio revisado para ensinar contrapartidas dos bancos e do cartão de crédito 581."
     },
     1151: {

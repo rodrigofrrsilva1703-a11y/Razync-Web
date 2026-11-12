@@ -33,7 +33,7 @@ def cents(text):
 
 def pdf(content, bank):
     if not content.startswith(b"%PDF") or len(content)>25*1024*1024:
-        raise ValueError(f"Empresa 1151: envie extrato {bank} PDF válido até 25 MB.")
+        raise ValueError(f"Envie extrato {bank} PDF válido até 25 MB.")
     try:
         doc=fitz.open(stream=content,filetype="pdf")
     except Exception as exc:
@@ -53,13 +53,13 @@ def frame(rows, bank, account):
     } for day,value,history in rows],columns=COLUNAS)
 
 
-def read_itau(content):
+def read_itau(content, *, holder=r"MRI\s+SERVICE\s+LTDA", agency="0718", account="0099511-1"):
     doc=pdf(content,"Itaú")
     try:
         head=doc[0].get_text()
-        if not (re.search(r"MRI\s+SERVICE\s+LTDA",head,re.I) and
-                re.search(r"Agência\s+0718\s+Conta\s+0099511-1",head,re.I)):
-            raise ValueError("Extrato Itaú não corresponde à MRI Service, agência 0718, conta 0099511-1.")
+        if not (re.search(holder, head, re.I) and
+                re.search(rf"Agência\s+{re.escape(agency)}\s+Conta\s+{re.escape(account)}\b", head, re.I)):
+            raise ValueError("Titular ou agência/conta Itaú não corresponde à empresa selecionada.")
         period=re.search(r"Lançamentos do período:\s*(\d{2}/\d{2}/20\d{2})\s+até\s+(\d{2}/\d{2}/20\d{2})",head)
         if not period:
             raise ValueError("Período do Itaú não encontrado.")
@@ -77,12 +77,12 @@ def read_itau(content):
                     continue
                 day=datetime.strptime(date_word[4],"%d/%m/%Y").date()
                 y=(date_word[1]+date_word[3])/2
-                amount_words=[w for w in words if 460<w[0]<520 and
+                amount_words=[w for w in words if 480<w[2]<525 and
                               abs((w[1]+w[3])/2-y)<4.1 and MONEY.fullmatch(w[4])]
-                balance_words=[w for w in words if w[0]>=520 and
+                balance_words=[w for w in words if w[2]>=530 and
                                abs((w[1]+w[3])/2-y)<4.1 and MONEY.fullmatch(w[4])]
                 description=" ".join(w[4] for w in sorted(words,key=lambda w:w[0]) if
-                                     95<w[0]<370 and abs((w[1]+w[3])/2-y)<4.5)
+                                     83<w[0]<370 and abs((w[1]+w[3])/2-y)<4.5)
                 upper=description.upper()
                 if "SALDO ANTERIOR" in upper:
                     if not balance_words or opening is not None:
@@ -101,7 +101,7 @@ def read_itau(content):
                 if len(amount_words)!=1:
                     raise ValueError(f"Lançamento Itaú sem valor identificável em {day}.")
                 if not description:
-                    above=[w for w in words if 95<w[0]<230 and
+                    above=[w for w in words if 83<w[0]<230 and
                            3<y-(w[1]+w[3])/2<13]
                     description=" ".join(w[4] for w in sorted(above,key=lambda w:w[0]))
                 # In multipart descriptions, another line above the date contains
@@ -138,21 +138,21 @@ def _lines(page):
     return [(y,sorted(words,key=lambda w:w[0])) for y,words in groups]
 
 
-def read_nubank(content):
+def read_nubank(content, *, holder=r"MRI\s+SERVICE\s+LTDA", account="55741782-3"):
     doc=pdf(content,"Nubank")
     try:
         header=doc[0].get_text()
-        if not (re.search(r"MRI\s+SERVICE\s+LTDA",header,re.I) and
-                re.search(r"55741782-3",header) and
-                "VALORES EM R$" in header and "Movimentações" in header):
-            raise ValueError("Extrato Nubank não corresponde à MRI Service ou ao período informado.")
+        identity = re.compile(rf"(?<!\d){re.escape(account)}(?!\d)")
+        if not (re.search(holder, header, re.I) and identity.search(header)
+                and "VALORES EM R$" in header and "Movimentações" in header):
+            raise ValueError("Titular ou conta Nubank não corresponde à empresa selecionada.")
         # O PDF coloca rótulos e valores em colunas separadas. A ordem
         # do texto extraído não corresponde à ordem visual do resumo.
         summary_words=doc[0].get_text("words")
         summary=[]
         for w in summary_words:
             y=(w[1]+w[3])/2
-            if w[0]>480 and 155<y<255 and re.fullmatch(r"[+-]?[\d.]+,\d{2}",w[4]):
+            if w[2]>510 and 155<y<260 and re.fullmatch(r"[+-]?[\d.]+,\d{2}",w[4]):
                 summary.append((y,w[4]))
         summary.sort()
         if len(summary)!=5:
@@ -166,14 +166,14 @@ def read_nubank(content):
         rows=[]
         for page_idx,page in enumerate(doc):
             head=page.get_text()
-            if not ("MRI SERVICE LTDA" in head and "55741782-3" in head):
+            if not (re.search(holder, head, re.I) and identity.search(head)):
                 raise ValueError("Extrato Nubank contém página de outra conta.")
             for y,words in _lines(page):
                 if y<(270 if page_idx==0 else 160) or y>715:
                     continue
                 left=" ".join(w[4] for w in words if w[0]<260).strip()
                 beneficiary=" ".join(w[4] for w in words if 260<=w[0]<482).strip()
-                money=[w[4] for w in words if w[0]>=485 and
+                money=[w[4] for w in words if w[0]>=440 and w[2]>=510 and
                        re.fullmatch(r"(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}",w[4])]
                 date_match=re.match(r"^(\d{2})\s+("+"|".join(MONTHS)+r")\s+(20\d{2})\b",left)
                 if date_match:

@@ -117,12 +117,20 @@ def bank_frame(bank, rows, transfers=()):
 
 
 def statement(bank, content, filename):
-    if not filename.lower().endswith(".xlsx"):
-        raise ValueError("Empresa 1165: envie a planilha mensal da Otom em XLSX.")
-    banks, _ = read_workbook(content)
-    if bank not in banks:
-        raise ValueError("A aba do banco selecionado não foi encontrada na planilha mensal.")
-    return bank_frame(bank, banks[bank])
+    from app.company_1058 import read_caixa
+    from app.company_1151 import read_itau, read_nubank
+
+    if not filename.lower().endswith(".pdf"):
+        raise ValueError("Empresa 1165: envie o extrato bancário em PDF.")
+    if bank == "itau":
+        return read_itau(content, holder=r"OTOM\s+ENGENHARIA", agency="1514", account="0053524-2")
+    if bank == "nubank":
+        return read_nubank(content, holder=r"OTOM\s+TECNOLOGIA\s+E\s+SERVI[CÇ]OS\s+LTDA",
+                           account="761916503-5")
+    if bank == "caixa":
+        return read_caixa(content, holder="OTOM TECNOLOGIA E SERVICOS LTDA",
+                          agency="7634", account="000579052579-9")
+    raise ValueError("Banco não configurado para a empresa 1165.")
 
 
 def workflow(roles, options):
