@@ -310,7 +310,7 @@ def test_eletro_principal_is_preserved_and_placeholder_is_replaced():
 def test_api_health_catalog_cors_and_safe_error():
     assert client.get('/health').status_code == 200
     companies = client.get('/api/v1/companies').json()
-    assert len(companies) == 53
+    assert len(companies) == 54
     assert next(c for c in companies if str(c['codigo']) == '626')['capabilities']['banks']['sicredi'] == '1155'
     response = client.get('/health',headers={'Origin':'https://rodrigofrrsilva1703-a11y.github.io'})
     assert 'X-Razync-Summary' in response.headers['access-control-expose-headers']
