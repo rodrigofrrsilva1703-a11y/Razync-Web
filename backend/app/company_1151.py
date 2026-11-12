@@ -146,10 +146,21 @@ def read_nubank(content):
                 re.search(r"55741782-3",header) and
                 "06 DE AGOSTO DE 2026" in header and "04 DE SETEMBRO DE 2026" in header):
             raise ValueError("Extrato Nubank não corresponde à MRI Service ou ao período informado.")
-        sums=re.search(r"Saldo inicial\s+([\d.]+,\d{2}).*?Total de entradas\s+\+([\d.]+,\d{2}).*?Total de saídas\s+-([\d.]+,\d{2}).*?Saldo final do período\s+([\d.]+,\d{2})",header,re.S)
-        if not sums:
+        # O PDF coloca rótulos e valores em colunas separadas. A ordem
+        # do texto extraído não corresponde à ordem visual do resumo.
+        summary_words=doc[0].get_text("words")
+        summary=[]
+        for w in summary_words:
+            y=(w[1]+w[3])/2
+            if w[0]>480 and 155<y<255 and re.fullmatch(r"[+-]?[\d.]+,\d{2}",w[4]):
+                summary.append((y,w[4]))
+        summary.sort()
+        if len(summary)!=5:
             raise ValueError("Resumo de saldos Nubank não reconhecido.")
-        opening,expected_in,expected_out,closing=map(cents,sums.groups())
+        opening=cents(summary[0][1])
+        expected_in=cents(summary[2][1].lstrip("+"))
+        expected_out=cents(summary[3][1].lstrip("-"))
+        closing=cents(summary[4][1])
         current=section=None
         daily=defaultdict(lambda:{"in":0,"out":0,"exp_in":None,"exp_out":None,"balance":None})
         rows=[]
