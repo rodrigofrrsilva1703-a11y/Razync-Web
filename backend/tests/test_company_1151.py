@@ -71,3 +71,24 @@ def test_advanced_workflow_routes_to_1151():
     with patch("app.company_1151.workflow_1151",return_value=(b"file","1151.xlsx")) as wf:
         assert _workflow(1151,{"itau":[]}, {})==(b"file","1151.xlsx")
     wf.assert_called_once()
+
+
+def test_reconciliation_nubank_uses_model_month_without_extra_september():
+    from app import migration_services as services
+    from app import engine
+    main=bank_rows("506","NUBANK",[("2026-08-06",234.69,"Pix no Crédito")])
+    statement_all=bank_rows("506","NUBANK",[
+        ("2026-08-06",234.69,"Pix no Crédito"),
+        ("2026-09-03",-56.47,"ENEL")])
+    with patch.object(engine,"ler_planilha_organizada_conferencia",
+                      return_value=(main,main.iloc[0:0].copy(),None)), \
+         patch.object(services,"statement",return_value=statement_all), \
+         patch.object(engine,"conciliar_empresa_com_extrato") as compare:
+        compare.return_value=(
+            pd.DataFrame([{"ENTRADAS PLANILHA":234.69,"SAÍDAS PLANILHA":0,
+                           "ENTRADAS EXTRATO":234.69,"SAÍDAS EXTRATO":0}]),
+            pd.DataFrame(),pd.DataFrame(),pd.DataFrame())
+        summary,_=services.reconcile(1151,"nubank",b"modelo",[("nu.pdf",b"%PDF")])
+    compared=compare.call_args.args[1]
+    assert compared["VALOR"].tolist()==[234.69]
+    assert summary["extrato"]==1
