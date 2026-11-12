@@ -58,10 +58,13 @@ def read_statement(content):
         records, current_date, heading = [], None, ''
         opening = closing = total_credit = total_debit = None
         active = False
+        finished = False
         for page in document.pages:
             for words in linhas(page):
                 line = ' '.join(w['text'] for w in words)
                 label = normalizar(line)
+                if finished:
+                    continue
                 if 'DATA' in label and 'LANCAMENTO' in label and 'SALDO' in label:
                     active = True
                     continue
@@ -76,6 +79,7 @@ def read_statement(content):
                         raise ValueError('Totais bancários não reconhecidos.')
                     total_credit, total_debit, closing = centavos(credit[0]), abs(centavos(debit[0])), centavos(balance[0])
                     active = False
+                    finished = True
                     continue
                 if label.startswith(('ULTIMOS LANCAMENTOS', 'SALDOS INVEST')):
                     active = False
