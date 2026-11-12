@@ -234,10 +234,61 @@
 }
 #monthlyTasksPeople .monthly-owner-issues {grid-column: 1 / -1}
 
+#tasksView .monthly-tasks-heading {
+  border: 0;
+  padding: 4px 0 12px;
+  gap: 10px 20px;
+}
+.monthly-tasks-scope {min-width: 0}
+.monthly-tasks-scope label, .monthly-tasks-controls label {font-size: 14px}
+.monthly-tasks-scope :is(input, select), .monthly-tasks-controls :is(input, select) {
+  min-width: 0;
+  min-height: 42px;
+}
+.monthly-tasks-worklist {padding: 12px 14px}
+.monthly-tasks-controls {gap: 8px 12px}
+.monthly-tasks-controls > label:first-child {flex-basis: 180px}
+.monthly-tasks-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 135px), 1fr));
+  gap: 4px;
+  margin: 12px 0 8px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+.monthly-tasks-metrics button {
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  min-height: 42px;
+  padding: 5px 8px;
+  border-color: transparent;
+  border-radius: 7px;
+}
+.monthly-tasks-metrics strong {font-size: 17px}
+.monthly-tasks-metrics button[aria-pressed=true] {box-shadow: none}
+.monthly-tasks-metrics button span {font-size: 11px}
+.monthly-tasks-team {
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+.monthly-tasks-team summary {padding: 6px 0; font-size: 13px; font-weight: 650; cursor: pointer}
+#monthlyTasksPeople {column-gap: 16px; row-gap: 0}
+#monthlyTasksPeople article {
+  padding-inline: 2px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+#monthlyTasksPeople .monthly-owner-count {color: var(--text)}
+
 @media (max-width: 680px) {
-  .monthly-tasks-metrics {gap: 6px; margin: 10px 0}
-  .monthly-tasks-metrics button {min-height: 59px; padding: 8px 10px; gap: 3px}
-  .monthly-tasks-metrics strong {font-size: 20px}
+  .monthly-tasks-metrics {margin: 10px 0 6px}
   .monthly-tasks-table {overflow: visible; max-height: none; border: 0; background: none}
   .monthly-tasks-table table, .monthly-tasks-table tbody {display: block; min-width: 0}
   .monthly-tasks-table thead {
