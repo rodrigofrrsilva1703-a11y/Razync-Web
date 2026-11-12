@@ -44,6 +44,7 @@ EMPRESAS = [
     {"codigo": 1114, "nome": "VAREJAO DOS PRIMOS COM MAT ELET TINTAS E FERRAGENS LTDA (Filial 0003)", "regime": "LUCRO PRESUMIDO"},
     {"codigo": 1198, "nome": "TWV ADMINISTRADORA HOTELEIRA LTDA", "regime": "SIMPLES NACIONAL"},
     {"codigo": 1131, "nome": "COTAS PREMIADAS", "regime": "Não informado"},
+    {"codigo": 1151, "nome": "MRI SERVICE LTDA", "regime": "Não informado"},
     {"codigo": 1208, "nome": "KAIROS DESMONTE INDUSTRIAIS EIRELI - ME", "regime": "LUCRO PRESUMIDO", "chave_sistema": "kairos_1208"},
     {"codigo": 1211, "nome": "GZ IMPORTADORA E EXPORTADORA LTDA EPP (ANTIGA BODY-UP)", "regime": "LUCRO PRESUMIDO", "chave_sistema": "gz_1211"},
     {"codigo": 1248, "nome": "RGR IMPORTADORA E EXPORTADORA LTDA - EPP", "regime": "LUCRO PRESUMIDO"},
