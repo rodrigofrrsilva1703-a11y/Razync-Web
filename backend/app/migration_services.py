@@ -223,9 +223,6 @@ def reconcile(code, bank, model, statements, options=None):
             excluded = excluded.loc[excluded["VALOR"] < 0]
         if main.empty:
             raise ValueError('Nenhum lançamento do banco/conta selecionado foi encontrado no Modelo Domínio.')
-        if code == 1024:
-            from app.empresa_1024 import workflow_1024
-            return workflow_1024(roles, options)
         if code == 977:
             from app.francesinhas_977 import bank_frames
 
@@ -356,6 +353,9 @@ def _workflow_1408(roles):
 def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
+        if code == 1024:
+            from app.empresa_1024 import workflow_1024
+            return workflow_1024(roles, options)
         if code == 977:
             from app.francesinhas_977 import bank_frames
 
