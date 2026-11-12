@@ -166,6 +166,7 @@ CAPABILITIES = {
     },
     1530: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
     1532: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
+    1537: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "8"}},
 }
 
 CAPABILITIES[977] = {

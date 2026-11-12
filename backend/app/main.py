@@ -138,7 +138,7 @@ def _process_modular(company_code: int, bank: str, content: bytes, filename: str
     bank = (bank or "").strip().casefold()
     name = (filename or "").lower()
 
-    if company_code in {47, 154, 912, 964, 1532}:
+    if company_code in {47, 154, 912, 964, 1532, 1537}:
         return migrated_statement(company_code, bank, content, filename)
 
     if company_code == 88:
@@ -199,7 +199,7 @@ def _original_export(company_code, groups):
         if company_code in {47,88,841,912,964,1530} and len(groups) == 1:
             return engine.gerar_excel_modelo_dominio(next(iter(groups.values())), formato_data='dd/mm/yyyy' if company_code in {47,912,964,1530,1532} else None)
         blocks = {name:{'principal':frame,'retirados':pd.DataFrame()} for name,frame in groups.items()}
-        return engine.gerar_excel_nova_geracao(blocks, prefixar_historicos=company_code not in {154,1208})
+        return engine.gerar_excel_nova_geracao(blocks, prefixar_historicos=company_code not in {154,1208,1537})
 
 
 def _sheet_name(bank: str) -> str:

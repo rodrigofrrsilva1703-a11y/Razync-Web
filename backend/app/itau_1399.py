@@ -28,21 +28,23 @@ def _center(word):
     return (word[1] + word[3])/2
 
 
-def read_statement(content):
+def read_statement(content, *, holder=r"JETMAQ\s+COMERCIAL\s+DE\s+MAQUINAS",
+                   tax_id="27.514.567/0001-32", agency="7111", account="0097478-3",
+                   accounting_account="508", salary_names=()):
     if not content.startswith(b"%PDF") or len(content)>35*1024*1024:
-        raise ValueError("Empresa 1399: envie o extrato Itaú PDF válido de até 35 MB.")
+        raise ValueError("Envie o extrato Itaú PDF válido de até 35 MB.")
     try:
         doc = fitz.open(stream=content,filetype="pdf")
     except Exception as exc:
-        raise ValueError("Não foi possível abrir o extrato Itaú 1399.") from exc
+        raise ValueError("Não foi possível abrir o extrato Itaú.") from exc
     with doc:
         if not 1<=len(doc)<=30:
             raise ValueError("Número de páginas do Itaú inválido.")
         first=doc[0].get_text()
-        if (not re.search(r"JETMAQ\s+COMERCIAL\s+DE\s+MAQUINAS",first,re.I)
-            or "27.514.567/0001-32" not in first
-            or not re.search(r"7111\s+Conta\s+0097478-3",first,re.I)):
-            raise ValueError("Extrato Itaú não corresponde à empresa 1399 (agência 7111, conta 0097478-3).")
+        if (not re.search(holder, first, re.I)
+            or (tax_id and tax_id not in first)
+            or not re.search(rf"(?<!\d){re.escape(agency)}\s+Conta\s+0*{re.escape(account.lstrip('0'))}\b", first, re.I)):
+            raise ValueError("Titular ou agência/conta Itaú não corresponde à empresa selecionada.")
         period = re.search(
             r"Lançamentos do período:\s*(\d{2}/\d{2}/20\d{2})\s+até\s+(\d{2}/\d{2}/20\d{2})",
             first,re.I)
@@ -108,6 +110,8 @@ def read_statement(content):
                 history=join_history_description(label, merchant_name)
                 amount=cents(values[0])
                 if not amount:raise ValueError("Lançamento Itaú com valor zero.")
+                if amount < 0 and merchant_name.casefold() in salary_names:
+                    history = f"Salários - {merchant_name}"
                 transactions.append((day,amount,history))
         if not transactions or opening is None or not checks:
             raise ValueError("Extrato Itaú sem saldos ou movimentos reconhecidos.")
@@ -124,7 +128,7 @@ def read_statement(content):
             "DESCRIÇÃO":"BANCO ITAÚ",
             "DATA":pd.Timestamp(day),
             "VALOR":value/100,
-            "DÉBITO":"508" if value>0 else "",
-            "CRÉDITO":"508" if value<0 else "",
+            "DÉBITO":accounting_account if value>0 else "",
+            "CRÉDITO":accounting_account if value<0 else "",
             "HISTÓRICO":("Recebido: " if value>0 else "Pago: ")+history
         } for day,value,history in transactions],columns=COLUNAS)
