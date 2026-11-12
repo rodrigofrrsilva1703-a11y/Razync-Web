@@ -265,6 +265,12 @@ def reconcile(code, bank, model, statements, options=None):
         else:
             frames = [statement(code, bank, content, filename) for filename, content in statements]
             movements = filter_frame(pd.concat(frames, ignore_index=True), options)
+            if code == 1151 and bank == 'nubank' and not dates(options)[0]:
+                # O extrato Nubank cruza agosto e setembro: comparar somente
+                # as competências presentes no Modelo Domínio, já conferido.
+                model_months = set(pd.to_datetime(main['DATA'], dayfirst=True).dt.to_period('M'))
+                statement_months = pd.to_datetime(movements['DATA'], dayfirst=True).dt.to_period('M')
+                movements = movements.loc[statement_months.isin(model_months)].copy()
         if code == 521:
             movements = movements.loc[movements["VALOR"] < 0]
             if movements.empty:
