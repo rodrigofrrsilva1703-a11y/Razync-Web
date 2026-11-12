@@ -34,6 +34,7 @@ EMPRESAS = [
     {"codigo": 1001, "nome": "ACCEDE EQUIPAMENTOS INDUSTRIAIS LTDA - EPP", "regime": "LUCRO PRESUMIDO", "chave_sistema": "accede_equipamentos"},
     {"codigo": 1024, "nome": "TELES V S ADVOGADOS", "regime": "Não informado"},
     {"codigo": 1033, "nome": "TERRATEST BRASIL FUNDACOES ESPECIAIS LTDA", "regime": "Não informado"},
+    {"codigo": 1058, "nome": "QUARTETO DE OBRAS LTDA", "regime": "Não informado"},
     {"codigo": 1064, "nome": "TECH CONTROL AUTOMACAO BRASIL LTDA", "regime": "SIMPLES NACIONAL"},
     {"codigo": 1096, "nome": "UP PACK BRAZIL EIRELI EPP", "regime": "LUCRO PRESUMIDO", "chave_sistema": "up_pack"},
     {"codigo": 1108, "nome": "CHM HOLDING PATRIMONIAL LTDA", "regime": "LUCRO PRESUMIDO"},
