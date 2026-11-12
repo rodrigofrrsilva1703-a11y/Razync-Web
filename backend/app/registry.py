@@ -197,6 +197,11 @@ CAPABILITIES[521] = {
     "status": "api_ready", "workflow": "advanced", "banks": {"caixa": "5"},
     "roles": [{"name": "pagamentos", "label": "Movimento Mensal por Categoria (aba Caixa)", "accept": ".xlsx", "multiple": True}],
 }
+CAPABILITIES[1033] = {
+    "status": "api_ready", "workflow": "advanced",
+    "banks": {"bradesco": "9"},
+    "roles": [{"name": "extrato", "label": "Extrato mensal Bradesco (PDF)", "accept": ".pdf", "multiple": True}],
+}
 CAPABILITIES[1024] = {
     "status": "api_ready", "workflow": "advanced",
     "banks": {"banco_brasil": "8"},
