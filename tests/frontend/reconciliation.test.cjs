@@ -141,8 +141,8 @@ test('extrato: timer não submete o formulário de outra empresa',()=> {
 });
 
 test('as transições de empresa cancelam a conferência',()=> {
-  for(const name of ['openCompany(company)','closeCompany()','showGlobalView(name)']) {
-    const start = source.indexOf(`function ${name} {`);
+  for(const name of ['openCompany','closeCompany','showGlobalView']) {
+    const start = source.indexOf(`function ${name}(`);
     assert.ok(start>=0,name);
     const end = source.indexOf('\n}',start);
     assert.ok(end>start,name);
