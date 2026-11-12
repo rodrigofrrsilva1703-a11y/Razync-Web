@@ -158,6 +158,10 @@ def read_itau_statement(content, filename):
     import io
 
     lower=str(filename or '').lower()
+    if lower.endswith('.pdf'):
+        from app.itau_1058_monthly import looks_like_quarteto_itau, read_itau_monthly
+        if looks_like_quarteto_itau(content):
+            return read_itau_monthly(content)
     if lower.endswith(('.xlsx','.xls')):
         # Planilha de favorecidos não pode ser usada como se fosse extrato.
         try:
