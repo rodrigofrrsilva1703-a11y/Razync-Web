@@ -3,6 +3,24 @@
 (function () {
   "use strict";
   const DETAILS = {
+    1024: {
+      intro:"Envie o extrato Banco do Brasil em PDF e a planilha de entradas e saídas para complementar os históricos da conta 8.",
+      note:"O cruzamento só substitui históricos quando o lançamento é identificado com segurança; valores repetidos ou ambíguos permanecem para conferência.",
+      extrato:"Use o PDF original do Banco do Brasil e o Modelo Domínio revisado da conta 8, na mesma competência.",
+      base:"Ensine as classificações utilizando os lançamentos revisados do Banco do Brasil 8."
+    },
+    1033: {
+      intro:"Envie o extrato mensal Bradesco em PDF da empresa 1033, conta contábil 9.",
+      note:"O leitor identifica tarifas e históricos em várias linhas, verifica os saldos e ignora posições do Invest Fácil.",
+      extrato:"Compare o Modelo Domínio com o extrato Bradesco mensal em PDF da mesma competência.",
+      base:"Ensine as classificações dos lançamentos revisados da conta Bradesco 9."
+    },
+    1058: {
+      intro:"Organize a planilha de favorecidos do Itaú 514 em XLSX e o extrato Caixa 504 em PDF, cada banco na sua aba.",
+      note:"A planilha do Itaú gera pagamentos, mas não substitui o extrato bancário necessário para a conferência.",
+      extrato:"Na Conferência, use o extrato bancário do Itaú (PDF ou OFX, também XLS/XLSX/CSV compatíveis), não a planilha de favorecidos. Para a Caixa 504, envie o PDF. Selecione o banco correto e o Modelo Domínio correspondente à competência.",
+      base:"Ensine e revise os lançamentos por banco e conta contábil, sem misturar Itaú 514 e Caixa 504."
+    },
     977: {
       intro:"Envie os extratos do Bradesco (510) e do Banco do Brasil (8) em PDF. Anexe o ZIP de francesinhas do Bradesco para detalhar os créditos de cobrança.",
       note:"O sistema substitui o crédito consolidado pelos títulos liquidados quando agência, conta, data de crédito e total conferem. O Excel separa os bancos em abas.",
