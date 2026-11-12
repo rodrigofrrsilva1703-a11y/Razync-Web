@@ -144,7 +144,7 @@ def read_nubank(content):
         header=doc[0].get_text()
         if not (re.search(r"MRI\s+SERVICE\s+LTDA",header,re.I) and
                 re.search(r"55741782-3",header) and
-                "06 DE AGOSTO DE 2026" in header and "04 DE SETEMBRO DE 2026" in header):
+                "VALORES EM R$" in header and "Movimentações" in header):
             raise ValueError("Extrato Nubank não corresponde à MRI Service ou ao período informado.")
         # O PDF coloca rótulos e valores em colunas separadas. A ordem
         # do texto extraído não corresponde à ordem visual do resumo.
@@ -175,9 +175,9 @@ def read_nubank(content):
                 beneficiary=" ".join(w[4] for w in words if 260<=w[0]<482).strip()
                 money=[w[4] for w in words if w[0]>=485 and
                        re.fullmatch(r"(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}",w[4])]
-                date_match=re.match(r"^(\d{2})\s+(AGO|SET)\s+2026\b",left)
+                date_match=re.match(r"^(\d{2})\s+("+"|".join(MONTHS)+r")\s+(20\d{2})\b",left)
                 if date_match:
-                    current=date(2026,MONTHS[date_match[2]],int(date_match[1]))
+                    current=date(int(date_match[3]),MONTHS[date_match[2]],int(date_match[1]))
                     left=left[date_match.end():].strip()
                     section=None
                 if current is None:
