@@ -13,7 +13,7 @@ from app.excel import _template_bytes, gerar_modelo_abas
 from app.registry import CAPABILITIES
 
 COLUNAS = ['DESCRIÇÃO', 'DATA', 'VALOR', 'DÉBITO', 'CRÉDITO', 'HISTÓRICO']
-SLUGS = {1033: 'terratest_1033', 1024: 'teles_veras_1024', 818: 'youz_818', 803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
+SLUGS = {1058: 'quarteto_1058', 1033: 'terratest_1033', 1024: 'teles_veras_1024', 818: 'youz_818', 803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
          242: 'eletro_forte', 1408: 'eletro_forte_filial_1408',
          266: 'nova_geracao_matriz', 1396: 'nova_geracao_filial',
          285: 'lcarlos', 968: 'radani', 1000: 'accede_automacao',
@@ -106,6 +106,13 @@ def _sicredi_pdf_empresa(code, content):
 def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
+    if code == 1058:
+        from app.company_1058 import read_caixa, read_itau
+        if bank == 'itau' and filename.lower().endswith('.xlsx'):
+            return read_itau(content)
+        if bank == 'caixa' and filename.lower().endswith('.pdf'):
+            return read_caixa(content)
+        raise ValueError('Empresa 1058: Itaú exige XLSX, Caixa exige PDF.')
     if code == 1033:
         from app.bradesco_1033 import read_statement
         if bank != 'bradesco' or not filename.lower().endswith('.pdf'):
@@ -358,6 +365,9 @@ def _workflow_1408(roles):
 def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
+        if code == 1058:
+            from app.company_1058 import workflow_1058
+            return workflow_1058(roles, options)
         if code == 1033:
             from app.bradesco_1033 import workflow_1033
             return workflow_1033(roles, options)
