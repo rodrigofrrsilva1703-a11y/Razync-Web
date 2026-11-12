@@ -79,8 +79,23 @@ def read_statement(content):
                     continue
                 if not start<=day<=end:
                     continue
-                if len(values)!=1 or not label:
-                    raise ValueError(f"Lançamento Itaú incompleto em {date_text}.")
+                if len(values)!=1:
+                    raise ValueError(f"Lançamento Itaú sem valor válido em {date_text}.")
+                if not label:
+                    # RENDIMENTOS, RECEBIMENTO REDE VISA e COMPRA NO
+                    # DÉBITO têm o nome dividido acima e abaixo da data.
+                    # Linhas adjacentes ficam a ~5,3 pt; novos movimentos
+                    # têm espaçamento maior. Nunca buscar em outra página.
+                    nearby = [w for w in words
+                              if 85 <= w[0] < 225
+                              and 3.5 < abs(_center(w)-y) <= 7.5]
+                    before = sorted((w for w in nearby if _center(w)<y),
+                                    key=lambda w: (_center(w), w[0]))
+                    after = sorted((w for w in nearby if _center(w)>y),
+                                   key=lambda w: (_center(w), w[0]))
+                    label = " ".join(w[4] for w in before+after).strip()
+                if not label:
+                    raise ValueError(f"Histórico Itaú não encontrado em {date_text}.")
                 low=(dates[i-1][1]+y)/2 if i else y-12
                 high=(dates[i+1][1]+y)/2 if i+1<len(dates) else y+12
                 merchant=[w for w in words if 225<=w[0]<362 and low<=_center(w)<high]
