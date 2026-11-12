@@ -287,6 +287,50 @@
 }
 #monthlyTasksPeople .monthly-owner-count {color: var(--text)}
 
+#tasksView .monthly-tasks-heading {
+  display: grid;
+  align-items: start;
+  gap: 14px;
+}
+.monthly-tasks-scope {width: 100%; align-items: stretch}
+.monthly-tasks-search {flex: 1 1 220px}
+.monthly-tasks-scope input[type=search] {width: 100%}
+.monthly-tasks-dashboard {display: grid; gap: 12px}
+.monthly-tasks-main, .monthly-tasks-sidebar {min-width: 0}
+.monthly-tasks-sidebar {display: grid; align-content: start; gap: 8px}
+.monthly-tasks-sidebar > [hidden] {display: none}
+.monthly-tasks-side-panel {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.monthly-tasks-side-panel h2 {margin: 0; font-size: 15px}
+.monthly-tasks-side-panel p {margin: 5px 0; color: var(--muted); font-size: 13px}
+.monthly-tasks-side-panel summary {padding: 0}
+.monthly-tasks-side-panel[open] summary {margin-bottom: 8px}
+.monthly-tasks-side-panel #monthlyTasksStages button {font-size: 12px}
+#monthlyTasksAutomation:not([hidden]) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+}
+#monthlyTasksReadyFilter {margin-inline-start: auto}
+#monthlyTasksReadyFilter[aria-pressed=true] {border-color: var(--task-accent); background: var(--task-tint)}
+.monthly-tasks-controls > label:first-child {flex: 0 1 auto}
+
+@media (min-width: 1180px) {
+  .monthly-tasks-dashboard {grid-template-columns: minmax(0, 1fr) minmax(250px, 22%); align-items: start}
+  .monthly-tasks-main {grid-area: 1 / 1}
+  .monthly-tasks-sidebar {grid-area: 1 / 2; gap: 12px}
+  #monthlyTasksAutomation:not([hidden]) {display: grid; gap: 7px}
+  #monthlyTasksReadyFilter {margin-inline-start: 0; justify-self: start}
+  #monthlyTasksPeople {grid-template-columns: minmax(0, 1fr)}
+  .monthly-tasks-table table {min-width: 790px}
+}
+
 @media (max-width: 680px) {
   .monthly-tasks-metrics {margin: 10px 0 6px}
   .monthly-tasks-table {overflow: visible; max-height: none; border: 0; background: none}

@@ -7,6 +7,9 @@
   const filter = get("monthlyTasksFilter");
   const status = get("monthlyTasksStatus");
   const metrics = get("monthlyTasksMetrics");
+  const automation = get("monthlyTasksAutomation");
+  const readyCount = get("monthlyTasksReadyCount");
+  const readyFilter = get("monthlyTasksReadyFilter");
   const rows = get("monthlyTasksRows");
   const ownerField = get("monthlyTasksOwnerField");
   const ownerSelect = get("monthlyTasksOwner");
@@ -14,6 +17,7 @@
   const activeFilters = get("monthlyTasksActiveFilters");
   const rowMessages = new Map();
   const team = get("monthlyTasksTeam");
+  team.open = matchMedia("(min-width: 1180px)").matches;
   const people = get("monthlyTasksPeople");
   const importPanel = get("monthlyTasksImportPanel");
   const importer = get("monthlyTasksImport");
@@ -43,6 +47,11 @@
     stageFilter = undefined;
     renderTeam();
     renderRows();
+  };
+  readyFilter.onclick = () => {
+    filter.value = filter.value === "ready" ? "" : "ready";
+    renderRows();
+    search.focus();
   };
 
   function renderTeam() {
@@ -124,6 +133,13 @@
       `${row.code} ${row.name}`.toLocaleLowerCase("pt-BR").includes(term)
     );
     const ready = row => row.reconciliation_ready && row.steps[1] === "pending";
+    const awaitingConfirmation = matching.filter(ready).length;
+    automation.hidden = false;
+    readyCount.textContent = awaitingConfirmation === 1
+      ? "1 empresa aguarda confirmação"
+      : `${awaitingConfirmation} empresas aguardam confirmação`;
+    readyFilter.setAttribute("aria-pressed", String(filter.value === "ready"));
+    readyFilter.disabled = awaitingConfirmation === 0 && filter.value !== "ready";
     const matches = (row, key) => {
       if (key === "done") return closed(row);
       if (key === "ready") return ready(row);
@@ -145,7 +161,7 @@
       const button = document.createElement("button");
       const total = document.createElement("strong");
       button.type = "button";
-      const count = key ? matching.filter(row => matches(row, key)).length : matching.length;
+      const count = key === "ready" ? awaitingConfirmation : key ? matching.filter(row => matches(row, key)).length : matching.length;
       total.textContent = key === "done" ? `${count}/${matching.length}` : count;
       button.dataset.metric = key;
       button.append(total, label);
@@ -254,6 +270,7 @@
     const controller = new AbortController();
     request = controller;
     state = null;
+    automation.hidden = true;
     refreshAfterIssue = false;
     metrics.replaceChildren();
     rows.replaceChildren();
