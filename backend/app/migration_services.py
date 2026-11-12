@@ -13,7 +13,7 @@ from app.excel import _template_bytes, gerar_modelo_abas
 from app.registry import CAPABILITIES
 
 COLUNAS = ['DESCRIÇÃO', 'DATA', 'VALOR', 'DÉBITO', 'CRÉDITO', 'HISTÓRICO']
-SLUGS = {1131: 'cotas_premiadas_1131', 1058: 'quarteto_1058', 1033: 'terratest_1033', 1024: 'teles_veras_1024', 818: 'youz_818', 803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
+SLUGS = {1151: 'mri_service_1151', 1131: 'cotas_premiadas_1131', 1058: 'quarteto_1058', 1033: 'terratest_1033', 1024: 'teles_veras_1024', 818: 'youz_818', 803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
          242: 'eletro_forte', 1408: 'eletro_forte_filial_1408',
          266: 'nova_geracao_matriz', 1396: 'nova_geracao_filial',
          285: 'lcarlos', 968: 'radani', 1000: 'accede_automacao',
@@ -106,6 +106,15 @@ def _sicredi_pdf_empresa(code, content):
 def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
+    if code == 1151:
+        if not filename.lower().endswith(".pdf"):
+            raise ValueError("Empresa 1151: extrato bancário deve ser PDF.")
+        from app.company_1151 import read_itau, read_nubank
+        if bank=="itau":
+            return read_itau(content)
+        if bank=="nubank":
+            return read_nubank(content)
+        raise ValueError("Banco não configurado para a empresa 1151.")
     if code == 1131:
         if bank != "itau" or not filename.lower().endswith(".pdf"):
             raise ValueError("Empresa 1131: envie o extrato Itaú PDF.")
@@ -237,7 +246,7 @@ def reconcile(code, bank, model, statements, options=None):
     options = options or {}
     with engine.processing_context(slug(code)):
         real_bank = 'itau' if bank.startswith('itau') else bank
-        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 977, 1408, 1058} else None
+        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 977, 1408, 1058, 1151} else None
         main, excluded, _ = engine.ler_planilha_organizada_conferencia(model, real_bank, account)
         main, excluded = filter_frame(main, options), filter_frame(excluded, options)
         if code == 521:
@@ -375,6 +384,9 @@ def _workflow_1408(roles):
 def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
+        if code == 1151:
+            from app.company_1151 import workflow_1151
+            return workflow_1151(roles,options)
         if code == 1131:
             from app.itau_1131 import workflow_1131
             return workflow_1131(roles, options)
