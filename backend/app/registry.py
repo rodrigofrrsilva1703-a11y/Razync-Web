@@ -197,6 +197,14 @@ CAPABILITIES[521] = {
     "status": "api_ready", "workflow": "advanced", "banks": {"caixa": "5"},
     "roles": [{"name": "pagamentos", "label": "Movimento Mensal por Categoria (aba Caixa)", "accept": ".xlsx", "multiple": True}],
 }
+CAPABILITIES[1058] = {
+    "status": "api_ready", "workflow": "advanced",
+    "banks": {"itau": "514", "caixa": "504"},
+    "roles": [
+        {"name": "itau", "label": "Itaú 514 — planilha de movimentações", "accept": ".xlsx", "multiple": True, "optional": True},
+        {"name": "caixa", "label": "Caixa 504 — extrato por período", "accept": ".pdf", "multiple": True, "optional": True},
+    ],
+}
 CAPABILITIES[1033] = {
     "status": "api_ready", "workflow": "advanced",
     "banks": {"bradesco": "9"},
