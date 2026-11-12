@@ -13,7 +13,7 @@ from app.excel import _template_bytes, gerar_modelo_abas
 from app.registry import CAPABILITIES
 
 COLUNAS = ['DESCRIÇÃO', 'DATA', 'VALOR', 'DÉBITO', 'CRÉDITO', 'HISTÓRICO']
-SLUGS = {818: 'youz_818', 803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
+SLUGS = {1024: 'teles_veras_1024', 818: 'youz_818', 803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
          242: 'eletro_forte', 1408: 'eletro_forte_filial_1408',
          266: 'nova_geracao_matriz', 1396: 'nova_geracao_filial',
          285: 'lcarlos', 968: 'radani', 1000: 'accede_automacao',
@@ -218,6 +218,9 @@ def reconcile(code, bank, model, statements, options=None):
             excluded = excluded.loc[excluded["VALOR"] < 0]
         if main.empty:
             raise ValueError('Nenhum lançamento do banco/conta selecionado foi encontrado no Modelo Domínio.')
+        if code == 1024:
+            from app.empresa_1024 import workflow_1024
+            return workflow_1024(roles, options)
         if code == 977:
             from app.francesinhas_977 import bank_frames
 
