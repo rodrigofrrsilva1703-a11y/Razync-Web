@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    1131: {
+      intro:"Envie o extrato Itaú da empresa 1131 (PDF) e o documento auxiliar de agosto em PDF, para identificar históricos sem alterar os valores bancários.",
+      note:"O extrato é a única fonte de lançamentos. Históricos só são substituídos por data e valor únicos; diferenças de um dia exigem valor único no mês. Divergências e duplicidades são listadas para revisão.",
+      extrato:"Compare o Modelo Domínio da conta 508 com o extrato Itaú original da mesma competência. O documento auxiliar não substitui o extrato bancário.",
+      base:"Classifique os lançamentos da conta Itaú 508 usando o Modelo Domínio revisado, sem alterar a competência."
+    },
     1024: {
       intro:"Envie o extrato Banco do Brasil em PDF e a planilha de entradas e saídas para complementar os históricos da conta 8.",
       note:"O cruzamento só substitui históricos quando o lançamento é identificado com segurança; valores repetidos ou ambíguos permanecem para conferência.",
