@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    1187: {
+      intro:"Envie o extrato Banco Inter PDF e a planilha caixa.xlsx da empresa 1187 para organizar os lançamentos na conta 505.",
+      note:"O extrato PDF é digitalizado: a leitura usa OCR com conferência de cada saldo. A planilha só fornece históricos, por data, valor e sinal exatos, admitindo diferença de um dia apenas quando o valor é único. Uma diferença de R$ 0,33 entre saldos iniciais será apresentada como aviso.",
+      extrato:"Na Conferência com Extrato, escolha Banco Inter 505 e envie o PDF original. Compare com a aba do Modelo Domínio da mesma competência.",
+      base:"Use os lançamentos bancários com históricos revisados para orientar a Base Inteligente da conta Inter 505."
+    },
     1165: {
       intro:"Informe o mês e o ano da competência e envie a planilha mensal da Otom em XLSX.",
       note:"Itaú 508, Nubank 506 e Caixa 504 mantêm a data bancária. As despesas e os estornos dos cartões entram no último dia do mês na conta 581.",
