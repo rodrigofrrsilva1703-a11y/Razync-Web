@@ -24,7 +24,7 @@ NU_PREFIXES = (
     "Pagamento de fatura", "Resgate RDB", "Valor adicionado",
     "Valor enviado como", "Compra no débito",
 )
-PRIVATE = re.compile(r"\b(?:\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2})\b")
+PRIVATE = re.compile(r"(?:\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b|\b\d{3}\.\d{3}\.\d{3}-\d{2}\b|[•*]{3}\.\d{3}\.\d{3}-[•*]{2})")
 
 
 def cents(text):
