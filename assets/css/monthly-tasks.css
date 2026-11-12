@@ -162,8 +162,12 @@
 .monthly-tasks-table tbody tr:focus-within td:first-child {background: var(--task-tint)}
 .monthly-tasks-table select[data-step] {min-height: 34px; border-radius: 8px}
 .monthly-tasks-table select[data-value=done] {border-color: #52947b}
-.monthly-tasks-team {margin: 14px 0 0; padding: 14px; border-radius: 14px}
-#monthlyTasksPeople {display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr))}
+.monthly-tasks-team {margin: 12px 0 0; padding: 12px; border-radius: 14px}
+#monthlyTasksPeople {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 6px 8px;
+}
 #monthlyTasksStages button[aria-pressed=true] {background: var(--task-tint)}
 #monthlyTasksStages button {border-radius: 999px; padding: 7px 11px}
 #tasksView :is(button, input, select, summary, [tabindex]):focus-visible {
@@ -207,19 +211,33 @@
 .monthly-tasks-table th {background: var(--task-tint)}
 .monthly-tasks-table tbody tr:nth-child(even) {background: color-mix(in srgb, var(--surface-2) 48%, var(--surface))}
 .monthly-tasks-metrics button span {color: var(--muted)}
-.monthly-team-percent {font-size: 25px; font-variant-numeric: tabular-nums}
+.monthly-team-percent, .monthly-owner-count {font-variant-numeric: tabular-nums}
+.monthly-team-percent {
+  min-width: 3.4em;
+  padding: 2px 5px;
+  border-radius: 6px;
+  background: var(--task-tint);
+  text-align: center;
+  font-size: 12px;
+}
 #monthlyTasksPeople article {
   display: grid;
-  align-content: start;
-  gap: 6px;
-  padding: 15px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px 9px;
+  padding: 7px 9px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--surface-2);
   overflow-wrap: anywhere;
+  font-size: 13px;
 }
+#monthlyTasksPeople .monthly-owner-issues {grid-column: 1 / -1}
 
 @media (max-width: 680px) {
+  .monthly-tasks-metrics {gap: 6px; margin: 10px 0}
+  .monthly-tasks-metrics button {min-height: 59px; padding: 8px 10px; gap: 3px}
+  .monthly-tasks-metrics strong {font-size: 20px}
   .monthly-tasks-table {overflow: visible; max-height: none; border: 0; background: none}
   .monthly-tasks-table table, .monthly-tasks-table tbody {display: block; min-width: 0}
   .monthly-tasks-table thead {

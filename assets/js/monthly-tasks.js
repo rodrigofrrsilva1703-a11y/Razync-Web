@@ -60,11 +60,19 @@
       const percentage = document.createElement("strong");
       percentage.className = "monthly-team-percent";
       const detail = document.createElement("span");
+      detail.className = "monthly-owner-count";
       const percent = companyPercent(group.completed, group.companies);
       name.textContent = displayOwner(group.owner);
       percentage.textContent = `${percent}%`;
-      detail.textContent = `${group.completed} de ${group.companies} empresas concluídas · ${group.issues} pendências`;
-      card.append(name, percentage, detail, progressBar(percent, "empresas concluídas"));
+      detail.textContent = `${group.completed} de ${group.companies}`;
+      detail.setAttribute("aria-label", `${detail.textContent} empresas concluídas`);
+      card.append(name, detail, percentage);
+      if (group.issues) {
+        const issues = document.createElement("span");
+        issues.className = "monthly-owner-issues";
+        issues.textContent = group.issues === 1 ? "1 pendência" : `${group.issues} pendências`;
+        card.append(issues);
+      }
       people.append(card);
     }
     ownerSelect.value = ownerFilter ?? "*";
@@ -94,11 +102,11 @@
     });
   }
 
-  function progressBar(percent, label = "etapas concluídas") {
+  function progressBar(percent) {
     const bar = document.createElement("progress");
     bar.max = 100;
     bar.value = percent;
-    bar.setAttribute("aria-label", `${percent}% de ${label}`);
+    bar.setAttribute("aria-label", `${percent}% das etapas concluídas`);
     return bar;
   }
 
