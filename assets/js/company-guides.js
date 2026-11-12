@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    1151: {
+      intro:"Envie o extrato Itaú PDF da conta 508 e/ou o extrato Nubank PDF da conta 506. O Excel final separa cada banco em sua própria aba.",
+      note:"O Nubank abrange agosto e setembro. Sem intervalo informado, o organizador usa agosto, competência do extrato Itaú. Todos os lançamentos do PDF Nubank são conferidos antes do filtro; saldos e totais não são movimentos.",
+      extrato:"Para conferência, selecione Itaú 508 ou Nubank 506 e envie o PDF do banco correspondente. Compare com a aba do mesmo banco e período no Modelo Domínio.",
+      base:"Utilize os lançamentos bancários separados por conta Itaú 508 e Nubank 506 para ensinar a classificação, sem misturar bancos."
+    },
     1131: {
       intro:"Envie o extrato Itaú da empresa 1131 (PDF) e o documento auxiliar de agosto em PDF, para identificar históricos sem alterar os valores bancários.",
       note:"O extrato é a única fonte de lançamentos. Históricos só são substituídos por data e valor únicos; diferenças de um dia exigem valor único no mês. Divergências e duplicidades são listadas para revisão.",
