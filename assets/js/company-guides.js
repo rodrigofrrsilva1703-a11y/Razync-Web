@@ -213,6 +213,11 @@
       intro:"A empresa 1530 utiliza o extrato Itaú para gerar o Modelo Domínio.",
       note:"Conta Itaú configurada: 508. Confirme o período e confira os históricos."
     },
+    1536: {
+      intro:"Envie o extrato Itaú em PDF para gerar o Modelo Domínio da conta 508.",
+      note:"O sistema lê o PDF digitalizado e valida os valores pelos saldos diários do extrato.",
+      extrato:"Use o Modelo Domínio e o extrato Itaú original em PDF para conferir a conta 508."
+    },
     1537: {
       intro:"Envie o extrato Itaú em PDF para gerar o Modelo Domínio da conta 508.",
       note:"Os pagamentos aos favorecidos cadastrados para a empresa aparecem com o histórico Salários e o nome do favorecido.",
