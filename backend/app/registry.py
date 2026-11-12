@@ -207,6 +207,14 @@ CAPABILITIES[1166] = {
     **CAPABILITIES[1165],
     "banks": {"itau": "508", "nubank": "506", "caixa": "1367"},
 }
+CAPABILITIES[1187] = {
+    "status":"api_ready","workflow":"advanced",
+    "banks":{"inter":"505"},
+    "roles":[
+        {"name":"extrato","label":"Extrato Banco Inter (PDF)","accept":".pdf","multiple":False},
+        {"name":"planilha","label":"Planilha auxiliar de históricos (XLSX)","accept":".xlsx","multiple":False},
+    ],
+}
 CAPABILITIES[1151] = {
     "status":"api_ready","workflow":"advanced",
     "banks":{"itau":"508","nubank":"506"},
