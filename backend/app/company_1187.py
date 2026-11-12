@@ -115,8 +115,8 @@ def parse_text(text):
     m=re.search(r"Per[ií]odo:\s*(\d{2}/\d{2}/20\d{2})\s+a\s+(\d{2}/\d{2}/20\d{2})",text,re.I)
     if not m:
         raise ValueError("Período do extrato Inter não reconhecido.")
-    start=pd.Timestamp(m[1],dayfirst=True).date()
-    end=pd.Timestamp(m[2],dayfirst=True).date()
+    start=pd.to_datetime(m[1],dayfirst=True).date()
+    end=pd.to_datetime(m[2],dayfirst=True).date()
     if start>end or (start.year,start.month)!=(end.year,end.month):
         raise ValueError("O extrato Inter deve conter uma competência.")
     entries=[];daily=[];day=None
