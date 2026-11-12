@@ -40,6 +40,24 @@ def test_itau_1399_synthetic_checks_daily_balances_and_repeated_values():
     assert "FORNECEDOR TESTE" in frame.iloc[0]["HISTÓRICO"]
 
 
+def test_itau_1399_multiline_history_same_pdf_page():
+    pdf=pdf_lines([
+        (35,50,"JETMAQ COMERCIAL DE MAQUINAS  CNPJ 27.514.567/0001-32"),
+        (430,65,"7111 Conta 0097478-3"),
+        (35,90,"Lançamentos do período: 01/08/2026 até 31/08/2026"),
+        (35,125,"31/07/2026"),(89,125,"SALDO ANTERIOR"),(520,125,"100,00"),
+        (89,139.7,"RENDIMENTOS REND PAGO APLIC"),
+        (35,145,"05/08/2026"),(470,145,"3,23"),
+        (89,150.3,"AUT MAIS"),
+        (35,165,"05/08/2026"),(89,165,"SALDO TOTAL DISPONIVEL DIA"),
+        (520,165,"103,23"),
+    ])
+    result=read_itau(pdf)
+    assert len(result)==1
+    assert result.iloc[0]["VALOR"]==3.23
+    assert "RENDIMENTOS REND PAGO APLIC AUT MAIS" in result.iloc[0]["HISTÓRICO"]
+
+
 def test_itau_1399_rejects_inconsistent_balance():
     pdf=pdf_lines([
         (35,50,"JETMAQ COMERCIAL DE MAQUINAS  CNPJ 27.514.567/0001-32"),
