@@ -170,7 +170,7 @@ CAPABILITIES = {
 
 CAPABILITIES[977] = {
     "status": "api_ready", "workflow": "advanced",
-    "banks": {"bradesco": "510", "banco_brasil": "9"},
+    "banks": {"bradesco": "510", "banco_brasil": "8"},
     "tools": ["modelo_dominio", "conferencia_extrato", "base_inteligente"],
     "roles": [
         {"name": "bradesco", "label": "Extrato Mensal Bradesco", "accept": ".pdf", "optional": True},

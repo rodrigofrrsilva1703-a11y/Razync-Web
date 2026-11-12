@@ -4,7 +4,7 @@
   "use strict";
   const DETAILS = {
     977: {
-      intro:"Envie os extratos do Bradesco (510) e do Banco do Brasil (9) em PDF. Anexe o ZIP de francesinhas do Bradesco para detalhar os créditos de cobrança.",
+      intro:"Envie os extratos do Bradesco (510) e do Banco do Brasil (8) em PDF. Anexe o ZIP de francesinhas do Bradesco para detalhar os créditos de cobrança.",
       note:"O sistema substitui o crédito consolidado pelos títulos liquidados quando agência, conta, data de crédito e total conferem. O Excel separa os bancos em abas.",
       extrato:"No campo Bradesco, selecione o PDF e o mesmo ZIP usado no Organizador. Para o Banco do Brasil, envie o PDF da competência.",
       base:"Use o Modelo Domínio revisado para ensinar as contrapartidas de cada conta."
