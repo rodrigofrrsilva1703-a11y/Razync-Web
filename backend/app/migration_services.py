@@ -13,7 +13,7 @@ from app.excel import _template_bytes, gerar_modelo_abas
 from app.registry import CAPABILITIES
 
 COLUNAS = ['DESCRIÇÃO', 'DATA', 'VALOR', 'DÉBITO', 'CRÉDITO', 'HISTÓRICO']
-SLUGS = {1151: 'mri_service_1151', 1131: 'cotas_premiadas_1131', 1058: 'quarteto_1058', 1033: 'terratest_1033', 1024: 'teles_veras_1024', 818: 'youz_818', 803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
+SLUGS = {1187: 'okktech_1187', 1151: 'mri_service_1151', 1131: 'cotas_premiadas_1131', 1058: 'quarteto_1058', 1033: 'terratest_1033', 1024: 'teles_veras_1024', 818: 'youz_818', 803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
          242: 'eletro_forte', 1408: 'eletro_forte_filial_1408',
          266: 'nova_geracao_matriz', 1396: 'nova_geracao_filial',
          285: 'lcarlos', 968: 'radani', 1000: 'accede_automacao',
@@ -110,6 +110,11 @@ def statement(code, bank, content, filename):
     if code in {1165, 1166}:
         from app.otom_1165 import statement as otom_statement
         return otom_statement(bank, content, filename, company=code)
+    if code == 1187:
+        if bank != "inter" or not filename.lower().endswith(".pdf"):
+            raise ValueError("Empresa 1187: envie extrato Banco Inter PDF.")
+        from app.company_1187 import read_statement
+        return read_statement(content)
     if code == 1151:
         if not filename.lower().endswith(".pdf"):
             raise ValueError("Empresa 1151: extrato bancário deve ser PDF.")
@@ -250,7 +255,7 @@ def reconcile(code, bank, model, statements, options=None):
     options = options or {}
     with engine.processing_context(slug(code)):
         real_bank = 'itau' if bank.startswith('itau') else bank
-        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 977, 1408, 1058, 1151, 1165, 1166} else None
+        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 977, 1408, 1058, 1151, 1165, 1166, 1187} else None
         main, excluded, _ = engine.ler_planilha_organizada_conferencia(model, real_bank, account)
         main, excluded = filter_frame(main, options), filter_frame(excluded, options)
         if code == 521:
@@ -400,6 +405,9 @@ def _workflow(code, roles, options):
         if code in {1165, 1166}:
             from app.otom_1165 import workflow as otom_workflow
             return otom_workflow(roles, options, company=code)
+        if code == 1187:
+            from app.company_1187 import workflow_1187
+            return workflow_1187(roles, options)
         if code == 1151:
             from app.company_1151 import workflow_1151
             return workflow_1151(roles,options)
