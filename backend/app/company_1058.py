@@ -8,6 +8,8 @@ import re
 import unicodedata
 
 import pandas as pd
+
+from app.history_names import join_history_description
 from pypdf import PdfReader
 
 COLUNAS = ['DESCRIÇÃO', 'DATA', 'VALOR', 'DÉBITO', 'CRÉDITO', 'HISTÓRICO']
@@ -83,7 +85,7 @@ def read_itau(content):
             raise ValueError(f'Histórico insuficiente na linha {index+1} da planilha Itaú.')
         # Relatório de operações com FAVORECIDO: "Crédito em conta" significa
         # transferência/pagamento ao favorecido, NÃO entrada na conta origem.
-        history = ' - '.join(dict.fromkeys(filter(None,(desc,fav))))
+        history = join_history_description(desc, fav)
         rows.append({'DESCRIÇÃO':'BANCO ITAÚ','DATA':date,'VALOR':-amount/100,
                      'DÉBITO':'','CRÉDITO':'514','HISTÓRICO':'Pago: '+history})
     if not rows:
