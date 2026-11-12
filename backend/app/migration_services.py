@@ -107,12 +107,17 @@ def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
     if code == 1058:
-        from app.company_1058 import read_caixa, read_itau
-        if bank == 'itau' and filename.lower().endswith('.xlsx'):
-            return read_itau(content)
-        if bank == 'caixa' and filename.lower().endswith('.pdf'):
+        from app.company_1058 import read_caixa
+        if bank == 'caixa':
+            if not filename.lower().endswith('.pdf'):
+                raise ValueError('Empresa 1058: a Caixa exige extrato PDF.')
             return read_caixa(content)
-        raise ValueError('Empresa 1058: Itaú exige XLSX, Caixa exige PDF.')
+        if bank == 'itau':
+            if not filename.lower().endswith(('.pdf', '.ofx', '.xls', '.xlsx', '.csv')):
+                raise ValueError('Empresa 1058: envie extrato Itaú PDF, OFX, XLS, XLSX ou CSV.')
+            from app.company_1058 import read_itau_statement
+            return read_itau_statement(content, filename)
+        raise ValueError('Banco não configurado para a empresa 1058.')
     if code == 1033:
         from app.bradesco_1033 import read_statement
         if bank != 'bradesco' or not filename.lower().endswith('.pdf'):
@@ -227,7 +232,7 @@ def reconcile(code, bank, model, statements, options=None):
     options = options or {}
     with engine.processing_context(slug(code)):
         real_bank = 'itau' if bank.startswith('itau') else bank
-        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 977, 1408} else None
+        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 977, 1408, 1058} else None
         main, excluded, _ = engine.ler_planilha_organizada_conferencia(model, real_bank, account)
         main, excluded = filter_frame(main, options), filter_frame(excluded, options)
         if code == 521:
