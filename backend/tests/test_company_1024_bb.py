@@ -9,6 +9,13 @@ from app.empresa_1024 import enrich
 
 
 class Empresa1024Tests(unittest.TestCase):
+    def test_workflow_dispatch_uses_company_1024(self):
+        from app.migration_services import _workflow
+        with patch("app.empresa_1024.workflow_1024", return_value=(b"file", "1024.xlsx")) as processor:
+            result = _workflow(1024, {"extrato": [], "planilha": []}, {})
+        self.assertEqual(result, (b"file", "1024.xlsx"))
+        processor.assert_called_once()
+
     def test_unique_value_replaces_only_history(self):
         frame = pd.DataFrame([{
             "DESCRIÇÃO": "BANCO DO BRASIL",
