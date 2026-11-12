@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    977: {
+      intro:"Envie os extratos do Bradesco (510) e do Banco do Brasil (9) em PDF. Anexe o ZIP de francesinhas do Bradesco para detalhar os créditos de cobrança.",
+      note:"O sistema substitui o crédito consolidado pelos títulos liquidados quando agência, conta, data de crédito e total conferem. O Excel separa os bancos em abas.",
+      extrato:"No campo Bradesco, selecione o PDF e o mesmo ZIP usado no Organizador. Para o Banco do Brasil, envie o PDF da competência.",
+      base:"Use o Modelo Domínio revisado para ensinar as contrapartidas de cada conta."
+    },
     818: {
       intro:"Envie o extrato Santander e o relatório de boletos liquidados em PDF para gerar o Modelo Domínio da conta 509.",
       note:"A identificação usa o valor cobrado e o dia útil seguinte à liquidação, considerando segunda a sexta. O histórico original é preservado se o cruzamento não for único.",

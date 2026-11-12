@@ -168,6 +168,16 @@ CAPABILITIES = {
     1532: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
 }
 
+CAPABILITIES[977] = {
+    "status": "api_ready", "workflow": "advanced",
+    "banks": {"bradesco": "510", "banco_brasil": "9"},
+    "tools": ["modelo_dominio", "conferencia_extrato", "base_inteligente"],
+    "roles": [
+        {"name": "bradesco", "label": "Extrato Mensal Bradesco", "accept": ".pdf", "optional": True},
+        {"name": "banco_brasil", "label": "Extrato Banco do Brasil", "accept": ".pdf", "optional": True},
+        {"name": "francesinhas", "label": "Francesinhas Bradesco", "accept": ".zip", "optional": True},
+    ],
+}
 CAPABILITIES[818] = {
     "status": "api_ready", "workflow": "advanced", "banks": {"santander": "509"},
     "roles": [

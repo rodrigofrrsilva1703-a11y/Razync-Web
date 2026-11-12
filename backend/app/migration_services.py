@@ -210,7 +210,7 @@ def reconcile(code, bank, model, statements, options=None):
     options = options or {}
     with engine.processing_context(slug(code)):
         real_bank = 'itau' if bank.startswith('itau') else bank
-        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 1408} else None
+        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 977, 1408} else None
         main, excluded, _ = engine.ler_planilha_organizada_conferencia(model, real_bank, account)
         main, excluded = filter_frame(main, options), filter_frame(excluded, options)
         if code == 521:
@@ -218,8 +218,17 @@ def reconcile(code, bank, model, statements, options=None):
             excluded = excluded.loc[excluded["VALOR"] < 0]
         if main.empty:
             raise ValueError('Nenhum lançamento do banco/conta selecionado foi encontrado no Modelo Domínio.')
-        frames = [statement(code, bank, content, filename) for filename, content in statements]
-        movements = filter_frame(pd.concat(frames, ignore_index=True), options)
+        if code == 977:
+            from app.francesinhas_977 import bank_frames
+
+            pdfs = [upload for upload in statements if upload[0].lower().endswith(".pdf")]
+            zips = [upload for upload in statements if upload[0].lower().endswith(".zip")]
+            if not pdfs or len(pdfs) + len(zips) != len(statements):
+                raise ValueError("Envie o extrato em PDF e, para o Bradesco, o ZIP das francesinhas se utilizado.")
+            movements = filter_frame(bank_frames(bank, pdfs, zips), options)
+        else:
+            frames = [statement(code, bank, content, filename) for filename, content in statements]
+            movements = filter_frame(pd.concat(frames, ignore_index=True), options)
         if code == 521:
             movements = movements.loc[movements["VALOR"] < 0]
             if movements.empty:
@@ -339,6 +348,33 @@ def _workflow_1408(roles):
 def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
+        if code == 977:
+            from app.francesinhas_977 import bank_frames
+            from app.excel import gerar_modelo_abas
+
+            zips = roles.get("francesinhas", [])
+            if zips and not roles.get("bradesco"):
+                raise ValueError("Envie o extrato Bradesco junto com o ZIP das francesinhas.")
+            sheets = {}
+            for bank, label in (("bradesco", "Bradesco"), ("banco_brasil", "Banco do Brasil")):
+                uploads = roles.get(bank, [])
+                if not uploads:
+                    continue
+                frame = filter_frame(bank_frames(bank, uploads, zips if bank == "bradesco" else ()), options)
+                if frame.empty:
+                    continue
+                paid = frame["VALOR"] < 0
+                account = accounts(code)[bank]
+                frame["DÉBITO"] = ["" if payment else account for payment in paid]
+                frame["CRÉDITO"] = [account if payment else "" for payment in paid]
+                frame["HISTÓRICO"] = [
+                    ("Pago: " if payment else "Recebido: ") + re.sub(r"^(?:Pago|Recebido):\s*", "", history, flags=re.I)
+                    for payment, history in zip(paid, frame["HISTÓRICO"])
+                ]
+                sheets[label] = frame.sort_values("DATA", kind="stable")
+            if not sheets:
+                raise ValueError("Envie pelo menos um extrato com lançamentos no período.")
+            return gerar_modelo_abas(sheets, date_format="dd/mm/yyyy"), "EMPRESA_977_MODELO_DOMINIO.xlsx"
         if code == 818:
             from app.santander_boletos_818 import enrich
             from app.excel import gerar_modelo_abas
