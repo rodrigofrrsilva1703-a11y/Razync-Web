@@ -140,8 +140,18 @@ def read_auxiliary(content, period):
     try:
         for page in doc:
             words = page.get_text("words", sort=True)
+            # O resumo inicial "01/ago Saldo Reiscon" não é movimentação.
+            # Somente as linhas abaixo do cabeçalho Data/Descrição/Débito/Crédito.
+            header_y = [
+                (w[1]+w[3])/2 for w in words
+                if w[0] < 145 and _norm(w[4]) == "data"
+            ]
+            if not header_y:
+                raise ValueError("Documento auxiliar sem cabeçalho da tabela de lançamentos.")
+            start_y = min(header_y) + 10
             for date_word in words:
-                if date_word[0] > 135:
+                y = (date_word[1]+date_word[3])/2
+                if date_word[0] > 135 or y < start_y:
                     continue
                 date_match = SHORT_DATE.fullmatch(_norm(date_word[4]))
                 if not date_match or MONTHS.get(date_match[2]) != month:
