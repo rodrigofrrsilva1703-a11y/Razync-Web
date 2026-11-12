@@ -62,6 +62,38 @@ Data Mov. Nr. Doc. Histórico Valor Saldo
             read_caixa(b'%PDF synthetic')
 
 
+def test_conferencia_itau_usa_leitor_central_e_conta_514():
+    from app.company_1058 import read_itau_statement
+    records=[{'DESCRIÇÃO':'BANCO ITAÚ','DATA':'03/08/2026','VALOR':-120.0,'HISTÓRICO':'PAGAMENTO PIX'},
+             {'DESCRIÇÃO':'BANCO ITAÚ','DATA':'04/08/2026','VALOR':50.0,'HISTÓRICO':'Recebido: Cliente'}]
+    with patch('app.engine.processar_extrato_conferencia_empresa',return_value=records) as parser:
+        frame=read_itau_statement(b'%PDF testing','extrato.pdf')
+    parser.assert_called_once_with(b'%PDF testing','extrato.pdf','itau')
+    assert frame['VALOR'].tolist()==[-120.0,50.0]
+    assert frame['CRÉDITO'].tolist()==['514','']
+    assert frame['DÉBITO'].tolist()==['','514']
+    assert frame['HISTÓRICO'].tolist()==['Pago: PAGAMENTO PIX','Recebido: Cliente']
+
+
+def test_conferencia_itau_rejeita_banco_errado():
+    from app.company_1058 import read_itau_statement
+    rows=[{'DESCRIÇÃO':'BANCO BRADESCO','DATA':'03/08/2026','VALOR':-10,'HISTÓRICO':'PIX'}]
+    with patch('app.engine.processar_extrato_conferencia_empresa',return_value=rows):
+        with pytest.raises(ValueError,match='não foi identificado'):
+            read_itau_statement(b'%PDF testing','extrato.pdf')
+
+
+def test_conferencia_1058_exige_conta_514_na_selecao():
+    from app import migration_services as services
+    from app import engine
+    model=pd.DataFrame([{'DESCRIÇÃO':'BANCO ITAÚ','DATA':pd.Timestamp('2026-08-03'),'VALOR':-100.0,'HISTÓRICO':'Pago: Teste'}])
+    with patch.object(engine,'ler_planilha_organizada_conferencia',return_value=(model,pd.DataFrame(columns=model.columns),None)) as reader, \
+         patch.object(services,'statement',return_value=model), \
+         patch.object(engine,'conciliar_empresa_com_extrato',return_value=(pd.DataFrame(columns=['ENTRADAS PLANILHA','SAÍDAS PLANILHA','ENTRADAS EXTRATO','SAÍDAS EXTRATO']),pd.DataFrame(),pd.DataFrame(),pd.DataFrame())):
+        services.reconcile(1058,'itau',b'model',[('extrato.pdf',b'%PDF')])
+    assert reader.call_args.args[2]=='514'
+
+
 def test_1058_usa_workflow_especifico():
     from app.migration_services import _workflow
     with patch('app.company_1058.workflow_1058', return_value=(b'file','ok.xlsx')) as process:
