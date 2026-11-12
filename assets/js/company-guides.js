@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    1399: {
+      intro:"Envie o extrato Itaú 508 e/ou o Bradesco 9 em PDF. O Modelo Domínio reúne os movimentos em um arquivo Excel, com abas separadas por banco.",
+      note:"O Itaú é conferido pelos saldos diários; o Bradesco pelos saldos de cada transação. Saldo anterior, saldos informativos, Últimos Lançamentos e Invest Fácil não entram como movimentos. Históricos usam razão social sem CPF/CNPJ.",
+      extrato:"Escolha Itaú 508 ou Bradesco 9 e compare o Modelo Domínio da mesma conta e competência com o PDF respectivo.",
+      base:"Classifique os lançamentos por banco e conta: Itaú 508 e Bradesco 9."
+    },
     1187: {
       intro:"Envie o extrato Banco Inter PDF e a planilha caixa.xlsx da empresa 1187 para organizar os lançamentos na conta 505.",
       note:"O extrato PDF é digitalizado: a leitura usa OCR com conferência de cada saldo. A planilha só fornece históricos, por data, valor e sinal exatos, admitindo diferença de um dia apenas quando o valor é único. Uma diferença de R$ 0,33 entre saldos iniciais será apresentada como aviso.",
