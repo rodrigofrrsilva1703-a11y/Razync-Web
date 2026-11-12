@@ -201,7 +201,8 @@ CAPABILITIES[1058] = {
     "status": "api_ready", "workflow": "advanced",
     "banks": {"itau": "514", "caixa": "504"},
     "roles": [
-        {"name": "itau", "label": "Itaú 514 — planilha de movimentações", "accept": ".xlsx", "multiple": True, "optional": True},
+        {"name": "itau", "label": "Itaú 514 — extrato mensal bancário", "accept": ".pdf", "multiple": True, "optional": True},
+        {"name": "planilha_itau", "label": "Itaú 514 — planilha auxiliar de identificação", "accept": ".xlsx", "multiple": True, "optional": True},
         {"name": "caixa", "label": "Caixa 504 — extrato por período", "accept": ".pdf", "multiple": True, "optional": True},
     ],
 }
