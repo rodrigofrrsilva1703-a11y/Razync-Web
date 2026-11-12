@@ -197,6 +197,13 @@ CAPABILITIES[521] = {
     "status": "api_ready", "workflow": "advanced", "banks": {"caixa": "5"},
     "roles": [{"name": "pagamentos", "label": "Movimento Mensal por Categoria (aba Caixa)", "accept": ".xlsx", "multiple": True}],
 }
+CAPABILITIES[1131] = {
+    "status":"api_ready","workflow":"advanced","banks":{"itau":"508"},
+    "roles":[
+        {"name":"extrato","label":"Extrato Itaú 508 (PDF)","accept":".pdf","multiple":False},
+        {"name":"auxiliar","label":"Documento auxiliar de históricos (PDF)","accept":".pdf","multiple":False},
+    ],
+}
 CAPABILITIES[1058] = {
     "status": "api_ready", "workflow": "advanced",
     "banks": {"itau": "514", "caixa": "504"},
