@@ -106,13 +106,25 @@ def movement(label, account, day, cents, history, counterpart=""):
             account if paid else counterpart, history)
 
 
+FISCAL_DOCUMENTS = {
+    "nf": "NF", "nota fiscal": "NF", "nfe": "NF-e", "nf-e": "NF-e",
+    "nfse": "NFS-e", "nfs-e": "NFS-e", "danfe": "DANFE",
+}
+
+
+def bank_history(supplier, kind, document, cents):
+    fiscal_type = FISCAL_DOCUMENTS.get(normalized(kind))
+    history = f"{supplier} {fiscal_type} {document}" if fiscal_type and document else supplier
+    return ("Pago: " if cents < 0 else "Recebido: ") + history
+
+
 def bank_frame(bank, rows, transfers=()):
     label = next(name for key, name in BANKS.values() if key == bank)
     account = CAPABILITIES[1165]["banks"][bank]
     return pd.DataFrame([
-        movement(label, account, day, cents, ("Pago: " if cents < 0 else "Recebido: ") + supplier,
+        movement(label, account, day, cents, bank_history(supplier, kind, document, cents),
                  "581" if index in transfers else "")
-        for index, (day, cents, supplier, _, _) in enumerate(rows)
+        for index, (day, cents, supplier, kind, document) in enumerate(rows)
     ], columns=COLUMNS)
 
 
@@ -146,7 +158,7 @@ def workflow(roles, options):
 
     candidates = defaultdict(list)
     for bank, rows in banks.items():
-        for index, (day, cents, supplier, _, _) in enumerate(rows):
+        for index, (day, cents, supplier, kind, document) in enumerate(rows):
             if cents < 0 and re.match(r"^(?:pagto|pagamento)\s+cartao(?:\s+de)?\s+credito\b", normalized(supplier)):
                 candidates[bank, day, -cents].append(index)
     transfers = defaultdict(set)
