@@ -92,7 +92,7 @@ def test_conferencia_itau_rejeita_banco_errado():
     from app.company_1058 import read_itau_statement
     rows=[{'DESCRIÇÃO':'BANCO BRADESCO','DATA':'03/08/2026','VALOR':-10,'HISTÓRICO':'PIX'}]
     with patch('app.engine.processar_extrato_conferencia_empresa',return_value=rows):
-        with pytest.raises(ValueError,match='não foi identificado'):
+        with pytest.raises(ValueError,match='outro banco'):
             read_itau_statement(b'%PDF testing','extrato.pdf')
 
 
