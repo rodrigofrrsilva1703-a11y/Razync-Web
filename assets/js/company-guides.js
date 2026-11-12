@@ -214,9 +214,9 @@
       note:"Conta Itaú configurada: 508. Confirme o período e confira os históricos."
     },
     1537: {
-      intro:"Envie o extrato Itaú em PDF para gerar o Modelo Domínio da conta 8.",
+      intro:"Envie o extrato Itaú em PDF para gerar o Modelo Domínio da conta 508.",
       note:"Os pagamentos aos favorecidos cadastrados para a empresa aparecem com o histórico Salários e o nome do favorecido.",
-      extrato:"Use o Modelo Domínio e o extrato Itaú original em PDF para conferir os movimentos da conta 8.",
+      extrato:"Use o Modelo Domínio e o extrato Itaú original em PDF para conferir os movimentos da conta 508.",
       base:"Use o Modelo Domínio revisado para ensinar as contrapartidas de pagamentos e recebimentos do Itaú."
     },
     1532: {
