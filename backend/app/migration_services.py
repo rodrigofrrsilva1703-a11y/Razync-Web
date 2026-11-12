@@ -12,7 +12,7 @@ from app.excel import _template_bytes, gerar_modelo_abas
 from app.registry import CAPABILITIES
 
 COLUNAS = ['DESCRIÇÃO', 'DATA', 'VALOR', 'DÉBITO', 'CRÉDITO', 'HISTÓRICO']
-SLUGS = {745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
+SLUGS = {803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
          242: 'eletro_forte', 1408: 'eletro_forte_filial_1408',
          266: 'nova_geracao_matriz', 1396: 'nova_geracao_filial',
          285: 'lcarlos', 968: 'radani', 1000: 'accede_automacao',
@@ -338,6 +338,24 @@ def _workflow_1408(roles):
 def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
+        if code == 803:
+            from app.excel import gerar_modelo_abas
+
+            uploads = roles.get("extrato", [])
+            if not uploads:
+                raise ValueError("Envie o Extrato Mensal Bradesco em PDF.")
+            frames = [statement(code, "bradesco", content, filename) for filename, content in uploads]
+            frame = filter_frame(pd.concat(frames, ignore_index=True), options)
+            if frame.empty:
+                raise ValueError("Nenhum lançamento no período selecionado.")
+            paid = frame["VALOR"] < 0
+            frame["DÉBITO"] = ["9" if not payment else "" for payment in paid]
+            frame["CRÉDITO"] = ["9" if payment else "" for payment in paid]
+            frame["HISTÓRICO"] = [
+                ("Pago: " if payment else "Recebido: ") + history
+                for payment, history in zip(paid, frame["HISTÓRICO"])
+            ]
+            return gerar_modelo_abas({"Bradesco": frame.sort_values("DATA", kind="stable")}, date_format="dd/mm/yyyy"), "FELIX_GITTI_803_BRADESCO_MODELO_DOMINIO.xlsx"
         if code == 745:
             from app.itau_monthly_745 import read_statement
             from app.excel import gerar_modelo_abas

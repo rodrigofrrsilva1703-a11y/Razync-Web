@@ -168,6 +168,10 @@ CAPABILITIES = {
     1532: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
 }
 
+CAPABILITIES[803] = {
+    "status": "api_ready", "workflow": "advanced", "banks": {"bradesco": "9"},
+    "roles": [{"name": "extrato", "label": "Extrato Mensal Bradesco", "accept": ".pdf", "multiple": True}],
+}
 CAPABILITIES[745] = {
     "status": "api_ready", "workflow": "advanced", "banks": {"itau": "508"},
     "roles": [{"name": "extrato", "label": "Extrato Mensal Itaú Empresas", "accept": ".pdf", "multiple": True}],

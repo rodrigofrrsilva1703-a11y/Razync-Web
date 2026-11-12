@@ -2,7 +2,7 @@
 (() => {
   // Audited against migration_services.statement / main._process_modular.
   // These readers consume PDF bytes directly, regardless of the file picker.
-  const pdfOnly = new Set([47,88,154,285,625,626,734,745,912,964,969,1208,1211,1248,1522,1532]);
+  const pdfOnly = new Set([47,88,154,285,625,626,734,745,803,912,964,969,1208,1211,1248,1522,1532]);
   // These companies use engine.processar_extrato_unificado for reconciliation.
   const universalStatements = new Set([3,178,242,266,343,521,968,1000,1001,1064,1096,1396,1402,1408,1529]);
   function statementAccept(company, bank) {

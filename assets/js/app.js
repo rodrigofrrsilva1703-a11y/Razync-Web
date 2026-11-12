@@ -287,7 +287,7 @@ function render(items) {
     if (tools && banks.length) {
       const bankCount = document.createElement("span");
       const bankNames = [...new Set(banks.map(bank => bankName(bank)))];
-      bankCount.textContent = `${bankNames.length} ${bankNames.length === 1 ? 'banco' : 'bancos'}`;
+      bankCount.textContent = banks.length === 1 ? bankLabel(banks[0], company.capabilities.banks[banks[0]]) : `${bankNames.length} ${bankNames.length === 1 ? 'banco' : 'bancos'}`;
       bankCount.title = banks.map(bank => bankLabel(bank, company.capabilities.banks[bank])).join(', ');
       details.appendChild(bankCount);
     }
@@ -862,7 +862,16 @@ function renderWorkflow(company) {
       renderBankSelector(organizerPicker,roleBankMap,{mode:"multi",controlRoleFields:true});
     }
 
-    $("#toolDescription").textContent = "Este fluxo usa arquivos complementares. Envie cada documento no campo correspondente.";
+    if (!filterByBanks && !roleBanks.length && Object.keys(banks).length) {
+      const bankInfo = document.createElement("p");
+      bankInfo.className = "helper";
+      bankInfo.textContent = "Banco disponível: " + Object.entries(banks).map(([bank, account]) => bankLabel(bank, account)).join(", ");
+      organizerPicker.append(bankInfo);
+      organizerPicker.hidden = false;
+    }
+    $("#toolDescription").textContent = (cap.roles || []).length === 1
+      ? "Envie o arquivo indicado para gerar o Modelo Domínio."
+      : "Este fluxo usa arquivos complementares. Envie cada documento no campo correspondente.";
   } else if (workflow === "standard_multi_bank") {
     standardFields.hidden = true;
     advancedFields.hidden = false;

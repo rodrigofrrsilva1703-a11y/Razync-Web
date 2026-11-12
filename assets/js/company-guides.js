@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    803: {
+      intro:"Envie o Extrato Mensal Bradesco em PDF para gerar o Modelo Domínio da conta contábil 9.",
+      note:"O sistema usa a conta 9 no crédito dos pagamentos e no débito dos recebimentos.",
+      extrato:"Compare o Modelo Domínio com o extrato Bradesco em PDF da mesma competência.",
+      base:"Use o Modelo Domínio revisado para ensinar as contrapartidas dos movimentos do Bradesco."
+    },
     745: {
       intro:"Envie o Extrato Mensal Itaú Empresas em PDF para gerar o Modelo Domínio da conta contábil 508.",
       note:"O sistema verifica os totais do PDF e separa as aplicações e os resgates automáticos dos lançamentos da conta corrente.",
