@@ -166,6 +166,7 @@ CAPABILITIES = {
     },
     1530: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
     1532: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
+    1535: {"status": "api_ready", "workflow": "standard", "banks": {"banco_brasil": "8"}},
     1536: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
     1537: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
 }

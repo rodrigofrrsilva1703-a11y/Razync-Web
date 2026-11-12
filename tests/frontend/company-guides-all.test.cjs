@@ -28,10 +28,10 @@ const demo=(code,extra={})=>({
 test('cobre exatamente todas as empresas com ferramenta, além da 266 existente',()=>{
   const expected=apiCodes.filter(code=>code!==266);
   assert.deepEqual([...knownCodes].sort((a,b)=>a-b),expected);
-  assert.equal(apiCodes.length,47);
-  assert.equal(expected.length,46);
+  assert.equal(apiCodes.length,48);
+  assert.equal(expected.length,47);
   for(const code of expected){
-    assert.ok([521,745,803,818,977,1165,1166,1536,1537].includes(code) || catalog.some(company=>company.codigo===code),String(code));
+    assert.ok([521,745,803,818,977,1165,1166,1535,1536,1537].includes(code) || catalog.some(company=>company.codigo===code),String(code));
     for(const tool of ['organizar','base','extrato']){
       const guide=resolve(demo(code),tool);
       assert.ok(guide,code+' / '+tool);

@@ -111,6 +111,12 @@ def statement(code, bank, content, filename):
     if code in {1165, 1166}:
         from app.otom_1165 import statement as otom_statement
         return otom_statement(bank, content, filename, company=code)
+    if code == 1535:
+        if bank != "banco_brasil" or not filename.lower().endswith(".pdf"):
+            raise ValueError("Empresa 1535: envie o extrato Banco do Brasil em PDF.")
+        from app.bb_1535 import read_statement
+
+        return read_statement(content)
     if code == 1536:
         if bank != "itau" or not filename.lower().endswith(".pdf"):
             raise ValueError("Empresa 1536: envie o extrato Itaú em PDF.")
@@ -287,7 +293,7 @@ def reconcile(code, bank, model, statements, options=None):
     options = options or {}
     with engine.processing_context(slug(code)):
         real_bank = 'itau' if bank.startswith('itau') else bank
-        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 977, 1408, 1058, 1151, 1165, 1166, 1187, 1399, 1536, 1537} else None
+        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 977, 1408, 1058, 1151, 1165, 1166, 1187, 1399, 1535, 1536, 1537} else None
         main, excluded, _ = engine.ler_planilha_organizada_conferencia(model, real_bank, account)
         main, excluded = filter_frame(main, options), filter_frame(excluded, options)
         if code == 521:
