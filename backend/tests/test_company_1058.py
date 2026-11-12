@@ -75,6 +75,19 @@ def test_conferencia_itau_usa_leitor_central_e_conta_514():
     assert frame['HISTÓRICO'].tolist()==['Pago: PAGAMENTO PIX','Recebido: Cliente']
 
 
+def test_conferencia_itau_descricoes_genericas_com_assinatura_do_banco():
+    from app.company_1058 import read_itau_statement
+    records=[{'DESCRIÇÃO':'CONTA CORRENTE','DATA':'03/08/2026','VALOR':-18.0,
+              'HISTÓRICO':'PIX'}]
+    with patch('app.engine.processar_extrato_conferencia_empresa',return_value=records), \
+         patch('app.engine.identificar_banco_inteligente',return_value='BANCO ITAU'), \
+         patch('pypdf.PdfReader') as pdf:
+        pdf.return_value.pages = [type('P',(),{'extract_text':lambda self:'Itaú Empresas'})()]
+        result=read_itau_statement(b'%PDF synthetic','extrato.pdf')
+    assert len(result)==1
+    assert result.iloc[0]['CRÉDITO']=='514'
+
+
 def test_conferencia_itau_rejeita_banco_errado():
     from app.company_1058 import read_itau_statement
     rows=[{'DESCRIÇÃO':'BANCO BRADESCO','DATA':'03/08/2026','VALOR':-10,'HISTÓRICO':'PIX'}]
