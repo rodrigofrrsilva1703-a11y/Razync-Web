@@ -151,6 +151,57 @@ def read_caixa(content):
                         for x in movements],columns=COLUNAS)
 
 
+
+def read_itau_statement(content, filename):
+    """Lê o EXTRATO real para conferência, separado do relatório de pagamentos."""
+    from app import engine
+    import io
+
+    lower=str(filename or '').lower()
+    if lower.endswith(('.xlsx','.xls')):
+        # Planilha de favorecidos não pode ser usada como se fosse extrato.
+        try:
+            raw=pd.read_excel(BytesIO(content),header=None,nrows=30,dtype=object)
+            names=[_norm(v) for values in raw.values for v in values if pd.notna(v)]
+            if {'data','tipo','favorecido','valor','descricao'} <= set(names):
+                raise ValueError('A planilha de favorecidos do Itaú não é um extrato bancário. Envie o extrato da conta para a conferência.')
+        except ValueError:
+            raise
+        except Exception:
+            pass
+    if lower.endswith('.pdf'):
+        if not content.startswith(b'%PDF'):
+            raise ValueError('Envie um PDF válido do extrato Itaú.')
+    if lower.endswith('.ofx'):
+        text=content[:15000].decode('latin-1',errors='ignore')
+        bankid=re.search(r'<BANKID>\\s*(\\d+)',text,re.I)
+        if bankid and bankid.group(1).lstrip('0')!='341':
+            raise ValueError('Este OFX não pertence ao Banco Itaú.')
+    rows=engine.processar_extrato_conferencia_empresa(content,filename,'itau')
+    frame=pd.DataFrame(rows)
+    if frame.empty or not {'DATA','VALOR','HISTÓRICO','DESCRIÇÃO'} <= set(frame.columns):
+        raise ValueError('Nenhum movimento bancário válido encontrado no extrato Itaú.')
+    # Rejeitar leitor genérico que identificou outro banco ou origem desconhecida.
+    banks=frame['DESCRIÇÃO'].fillna('').map(_norm)
+    if not banks.map(lambda value: 'itau' in value).all():
+        raise ValueError('O arquivo não foi identificado com segurança como extrato Itaú.')
+    frame=frame.copy()
+    frame['DATA']=pd.to_datetime(frame['DATA'],dayfirst=True,errors='coerce')
+    frame['VALOR']=pd.to_numeric(frame['VALOR'],errors='coerce')
+    if frame['DATA'].isna().any() or frame['VALOR'].isna().any():
+        raise ValueError('Extrato Itaú contém data ou valor inválido.')
+    frame=frame.loc[frame['VALOR'].abs()>=0.005].copy()
+    if frame.empty:
+        raise ValueError('Extrato Itaú sem movimentações.')
+    frame['DÉBITO']=frame['VALOR'].map(lambda value:'514' if value>0 else '')
+    frame['CRÉDITO']=frame['VALOR'].map(lambda value:'514' if value<0 else '')
+    frame['HISTÓRICO']=[
+        ('Recebido: ' if value>0 else 'Pago: ')+re.sub(r'^(?:Pago|Recebido)\\s*:\\s*','',str(history),flags=re.I).strip()
+        for value,history in zip(frame['VALOR'],frame['HISTÓRICO'])
+    ]
+    return frame[COLUNAS].reset_index(drop=True)
+
+
 def workflow_1058(roles,options):
     from app.excel import gerar_modelo_abas
     from app.migration_services import filter_frame
