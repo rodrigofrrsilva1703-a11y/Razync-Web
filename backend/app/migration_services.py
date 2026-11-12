@@ -106,6 +106,11 @@ def _sicredi_pdf_empresa(code, content):
 def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
+    if code == 1024:
+        from app.empresa_1024 import _statement
+        if bank not in {"bb", "banco_brasil"} or not filename.lower().endswith(".pdf"):
+            raise ValueError("Empresa 1024: envie o extrato BB em PDF.")
+        return _statement(content)[0]
     if code == 745:
         from app.itau_monthly_745 import read_statement
         return read_statement(content)
