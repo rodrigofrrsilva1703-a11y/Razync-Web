@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    1165: {
+      intro:"Informe o mês e o ano da competência e envie a planilha mensal da Otom em XLSX.",
+      note:"Itaú 508, Nubank 506 e Caixa 504 mantêm a data bancária. As despesas e os estornos dos cartões entram no último dia do mês na conta 581.",
+      extrato:"Use o Modelo Domínio e anexe a planilha mensal original no campo de cada banco que deseja conferir.",
+      base:"Use o Modelo Domínio revisado para ensinar contrapartidas dos bancos e do cartão de crédito 581."
+    },
     1151: {
       intro:"Envie o extrato Itaú PDF da conta 508 e/ou o extrato Nubank PDF da conta 506. O Excel final separa cada banco em sua própria aba.",
       note:"O Nubank abrange agosto e setembro. Sem intervalo informado, o organizador usa agosto, competência do extrato Itaú. Todos os lançamentos do PDF Nubank são conferidos antes do filtro; saldos e totais não são movimentos.",

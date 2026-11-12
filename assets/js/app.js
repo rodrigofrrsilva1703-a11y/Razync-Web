@@ -328,7 +328,7 @@ function bankName(bank) {
   const names = {
     itau:"Itaú", itau_508:"Itaú", itau_509:"Itaú",
     bradesco:"Bradesco", sicredi:"Sicredi", banco_brasil:"Banco do Brasil",
-    caixa:"Caixa", inter:"Banco Inter", safra:"Safra", btg:"BTG",
+    caixa:"Caixa", nubank:"Nubank", inter:"Banco Inter", safra:"Safra", btg:"BTG",
     santander:"Santander", daycoval:"Daycoval", fibra:"Banco Fibra"
   };
   return names[bank] || bank;
@@ -827,6 +827,12 @@ function renderWorkflow(company) {
   if (workflow === "advanced") {
     standardFields.hidden = true;
     advancedFields.hidden = false;
+    if (cap.requires_competence) {
+      const field = document.createElement("div");
+      field.className = "field-group";
+      field.innerHTML = '<label for="organizerCompetence">Competência (mês e ano)</label><input id="organizerCompetence" type="month" data-option="competencia" required>';
+      advancedFields.appendChild(field);
+    }
     for (const role of cap.roles || []) {
       const wrap = document.createElement("div");
       wrap.className = "field-group";
@@ -1185,9 +1191,12 @@ form.addEventListener("submit", async (event) => {
       if (!roles.length) throw new Error("Envie os arquivos necessários para esta empresa.");
       const options = {};
       for (const input of $$("[data-option]")) options[input.dataset.option] = input.dataset.manualDate ? dateApiValue(input) : input.value;
-      const standardPeriod = readPeriod("#processStart","#processEnd");
-      options.data_inicial = standardPeriod.data_inicial;
-      options.data_final = standardPeriod.data_final;
+      if (cap.requires_competence && !options.competencia) throw new Error("Informe o mês e o ano da competência.");
+      if (!cap.requires_competence) {
+        const standardPeriod = readPeriod("#processStart","#processEnd");
+        options.data_inicial = standardPeriod.data_inicial;
+        options.data_final = standardPeriod.data_final;
+      }
       const bankOptions=$$("[data-selected-bank]");
       if(bankOptions.length) {
         options.bancos=bankOptions.filter(input=>input.checked).map(input=>input.dataset.selectedBank);

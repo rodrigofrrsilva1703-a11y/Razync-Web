@@ -3623,6 +3623,10 @@ _processar_extrato_conferencia_legado = processar_extrato_conferencia_empresa
 
 def identificar_chave_banco_empresa(valor):
     texto = normalizar_texto(texto_celula_seguro(valor))
+    if texto.strip() == "cartao de credito":
+        return "cartao_credito"
+    if "nubank" in texto:
+        return "nubank"
     if "caixa" in texto or "cef" in texto:
         return "caixa"
     if "inter" in texto:

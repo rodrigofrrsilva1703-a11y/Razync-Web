@@ -206,7 +206,7 @@ def _sheet_name(bank: str) -> str:
     names = {
         "itau": "Itaú", "itau_508": "Itaú 508", "itau_509": "Itaú 509",
         "bradesco": "Bradesco", "sicredi": "Sicredi", "banco_brasil": "Banco do Brasil",
-        "bb": "Banco do Brasil", "caixa": "Caixa", "inter": "Banco Inter",
+        "bb": "Banco do Brasil", "caixa": "Caixa", "nubank": "Nubank", "inter": "Banco Inter",
         "safra": "Safra", "btg": "BTG", "santander": "Santander",
         "daycoval": "Daycoval", "fibra": "Fibra",
     }
@@ -386,7 +386,7 @@ def _reconcile_multi(company_code: int, banks: list[str], model: bytes, files: l
     display_names = {
         "itau": "Itaú", "itau_508": "Itaú", "itau_509": "Itaú",
         "bradesco": "Bradesco", "fibra": "Banco Fibra", "sicredi": "Sicredi",
-        "banco_brasil": "Banco do Brasil", "caixa": "Caixa", "inter": "Banco Inter",
+        "banco_brasil": "Banco do Brasil", "caixa": "Caixa", "nubank": "Nubank", "inter": "Banco Inter",
         "safra": "Safra", "btg": "BTG", "santander": "Santander",
         "daycoval": "Daycoval",
     }
