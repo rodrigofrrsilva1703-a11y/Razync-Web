@@ -142,11 +142,6 @@ def read_nubank(content, *, holder=r"MRI\s+SERVICE\s+LTDA", account="55741782-3"
     doc=pdf(content,"Nubank")
     try:
         header=doc[0].get_text()
-        if account is None:
-            account_match = re.search(r"\bConta\s+(\d+-\d)\b", header, re.I)
-            if not account_match:
-                raise ValueError("Conta não identificada no cabeçalho do Nubank.")
-            account = account_match[1]
         identity = re.compile(rf"(?<!\d){re.escape(account)}(?!\d)")
         if not (re.search(holder, header, re.I) and identity.search(header)
                 and "VALORES EM R$" in header and "Movimentações" in header):
@@ -163,6 +158,7 @@ def read_nubank(content, *, holder=r"MRI\s+SERVICE\s+LTDA", account="55741782-3"
         if len(summary)!=5:
             raise ValueError("Resumo de saldos Nubank não reconhecido.")
         opening=cents(summary[0][1])
+        net_yield=cents(summary[1][1])
         expected_in=cents(summary[2][1].lstrip("+"))
         expected_out=cents(summary[3][1].lstrip("-"))
         closing=cents(summary[4][1])
@@ -230,8 +226,20 @@ def read_nubank(content, *, holder=r"MRI\s+SERVICE\s+LTDA", account="55741782-3"
                 raise ValueError(f"Saldo Nubank divergente em {day}.")
         credits=sum(v for _,v,_ in rows if v>0)
         debits=-sum(v for _,v,_ in rows if v<0)
-        if (credits,debits,running)!=(expected_in,expected_out,closing):
+        if (credits,debits,running+net_yield)!=(expected_in,expected_out,closing):
             raise ValueError("Resumo Nubank não fecha com a movimentação.")
+        if net_yield:
+            month_names = ("JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO",
+                           "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO")
+            period = re.findall(r"(\d{2}) DE (" + "|".join(month_names) + r") DE (20\d{2})",
+                                header.split("VALORES EM R$", 1)[0].upper())
+            if len(period) != 2:
+                raise ValueError("Período não identificado para o rendimento líquido Nubank.")
+            period_dates = [date(int(year), month_names.index(month) + 1, int(day))
+                            for day, month, year in period]
+            if not period_dates[0] <= min(daily) <= max(daily) <= period_dates[1]:
+                raise ValueError("Movimentação fora do período do rendimento Nubank.")
+            rows.append((period_dates[1], net_yield, "Rendimento líquido"))
         return frame(rows,"NUBANK","506")
     finally:
         doc.close()

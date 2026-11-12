@@ -141,13 +141,13 @@ def statement(bank, content, filename, *, company=1165):
     if company == 1166:
         holder = r"OTOM\s+CONSULTORIA\s+LTDA"
         if bank == "itau":
-            return read_itau(content, holder=r"OTOM\s+(?:CONSULTORIA|ENGENHARIA)",
-                             agency="0736", account="12857-8")
+            return read_itau(content, holder=r"OTOM\s+CONSULTORIA",
+                             agency="1514", account="0045051-7")
         if bank == "nubank":
-            return read_nubank(content, holder=holder, account=None)
+            return read_nubank(content, holder=holder, account="507059585-5")
         if bank == "caixa":
-            return read_caixa(content, holder="OTOM CONSULTORIA LTDA", agency="2347",
-                              account="317-1", operation="003", accounting_account="1367")
+            return read_caixa(content, holder="OTOM CONSULTORIA LTDA", agency="7634",
+                              account="000579052578-0", accounting_account="1367")
     if bank == "itau":
         return read_itau(content, holder=r"OTOM\s+ENGENHARIA", agency="1514", account="0053524-2")
     if bank == "nubank":
