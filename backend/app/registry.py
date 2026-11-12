@@ -168,6 +168,13 @@ CAPABILITIES = {
     1532: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
 }
 
+CAPABILITIES[818] = {
+    "status": "api_ready", "workflow": "advanced", "banks": {"santander": "509"},
+    "roles": [
+        {"name": "extrato", "label": "Extrato Santander", "accept": ".pdf"},
+        {"name": "boletos", "label": "Relatório Santander de boletos liquidados", "accept": ".pdf"},
+    ],
+}
 CAPABILITIES[803] = {
     "status": "api_ready", "workflow": "advanced", "banks": {"bradesco": "9"},
     "roles": [{"name": "extrato", "label": "Extrato Mensal Bradesco", "accept": ".pdf", "multiple": True}],

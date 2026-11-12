@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    818: {
+      intro:"Envie o extrato Santander e o relatório de boletos liquidados em PDF para gerar o Modelo Domínio da conta 509.",
+      note:"A identificação usa o valor cobrado e o dia útil seguinte à liquidação, considerando segunda a sexta. O histórico original é preservado se o cruzamento não for único.",
+      extrato:"Compare o Modelo Domínio com o extrato Santander. Nos créditos agrupados, os nomes dos pagadores aparecem juntos, com a data e o valor do banco.",
+      base:"Use o Modelo Domínio revisado para ensinar as contrapartidas dos movimentos do Santander 509."
+    },
     803: {
       intro:"Envie o Extrato Mensal Bradesco em PDF para gerar o Modelo Domínio da conta contábil 9.",
       note:"O sistema usa a conta 9 no crédito dos pagamentos e no débito dos recebimentos.",

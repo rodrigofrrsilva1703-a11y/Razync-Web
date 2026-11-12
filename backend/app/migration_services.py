@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import io
+import re
 import zipfile
 from datetime import datetime
 
@@ -12,7 +13,7 @@ from app.excel import _template_bytes, gerar_modelo_abas
 from app.registry import CAPABILITIES
 
 COLUNAS = ['DESCRIÇÃO', 'DATA', 'VALOR', 'DÉBITO', 'CRÉDITO', 'HISTÓRICO']
-SLUGS = {803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
+SLUGS = {818: 'youz_818', 803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
          242: 'eletro_forte', 1408: 'eletro_forte_filial_1408',
          266: 'nova_geracao_matriz', 1396: 'nova_geracao_filial',
          285: 'lcarlos', 968: 'radani', 1000: 'accede_automacao',
@@ -338,6 +339,26 @@ def _workflow_1408(roles):
 def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
+        if code == 818:
+            from app.santander_boletos_818 import enrich
+            from app.excel import gerar_modelo_abas
+
+            extracts, reports = roles.get("extrato", []), roles.get("boletos", [])
+            if len(extracts) != 1 or len(reports) != 1:
+                raise ValueError("Envie um extrato e um relatório de boletos liquidados da mesma competência.")
+            filename, statement_pdf = extracts[0]
+            frame = statement(code, "santander", statement_pdf, filename)
+            frame = filter_frame(enrich(frame, statement_pdf, reports[0][1]), options)
+            if frame.empty:
+                raise ValueError("Nenhum lançamento no período selecionado.")
+            paid = frame["VALOR"] < 0
+            frame["DÉBITO"] = ["509" if not payment else "" for payment in paid]
+            frame["CRÉDITO"] = ["509" if payment else "" for payment in paid]
+            frame["HISTÓRICO"] = [
+                ("Pago: " if payment else "Recebido: ") + re.sub(r"^(?:Pago|Recebido):\s*", "", history, flags=re.I)
+                for payment, history in zip(paid, frame["HISTÓRICO"])
+            ]
+            return gerar_modelo_abas({"Santander": frame.sort_values("DATA", kind="stable")}, date_format="dd/mm/yyyy"), "YOUZ_818_SANTANDER_MODELO_DOMINIO.xlsx"
         if code == 803:
             from app.excel import gerar_modelo_abas
 

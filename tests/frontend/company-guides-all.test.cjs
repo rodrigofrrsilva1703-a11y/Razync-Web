@@ -14,7 +14,7 @@ vm.createContext(context);
 vm.runInContext(script,context,{filename:'company-guides.js'});
 const {resolve,knownCodes}=context.window.RAZYNC_COMPANY_HELP;
 const apiCodes=[...registry.matchAll(/^    (\d+): \{/gm)].map(match=>Number(match[1]));
-apiCodes.push(521,745,803,1248);
+apiCodes.push(521,745,803,818,1248);
 apiCodes.sort((a,b)=>a-b);
 const demo=(code,extra={})=>({
   codigo:code,
@@ -28,10 +28,10 @@ const demo=(code,extra={})=>({
 test('cobre exatamente todas as empresas com ferramenta, além da 266 existente',()=>{
   const expected=apiCodes.filter(code=>code!==266);
   assert.deepEqual([...knownCodes].sort((a,b)=>a-b),expected);
-  assert.equal(apiCodes.length,34);
-  assert.equal(expected.length,33);
+  assert.equal(apiCodes.length,35);
+  assert.equal(expected.length,34);
   for(const code of expected){
-    assert.ok([521,745,803].includes(code) || catalog.some(company=>company.codigo===code),String(code));
+    assert.ok([521,745,803,818].includes(code) || catalog.some(company=>company.codigo===code),String(code));
     for(const tool of ['organizar','base','extrato']){
       const guide=resolve(demo(code),tool);
       assert.ok(guide,code+' / '+tool);
