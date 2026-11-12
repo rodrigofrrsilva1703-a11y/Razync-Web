@@ -16,8 +16,8 @@
       base:"Ensine as classificações dos lançamentos revisados da conta Bradesco 9."
     },
     1058: {
-      intro:"Organize a planilha de favorecidos do Itaú 514 em XLSX e o extrato Caixa 504 em PDF, cada banco na sua aba.",
-      note:"A planilha do Itaú gera pagamentos, mas não substitui o extrato bancário necessário para a conferência.",
+      intro:"Envie o extrato mensal Itaú 514 em PDF e a planilha de favorecidos em XLSX para identificar históricos. A Caixa 504 usa o extrato PDF.",
+      note:"O extrato Itaú é a fonte de todas as movimentações e valores; a planilha auxiliar só complementa históricos com correspondência segura. Valores repetidos ambíguos permanecem com o histórico bancário para revisão.",
       extrato:"Na Conferência, use o extrato bancário do Itaú (PDF ou OFX, também XLS/XLSX/CSV compatíveis), não a planilha de favorecidos. Para a Caixa 504, envie o PDF. Selecione o banco correto e o Modelo Domínio correspondente à competência.",
       base:"Ensine e revise os lançamentos por banco e conta contábil, sem misturar Itaú 514 e Caixa 504."
     },
