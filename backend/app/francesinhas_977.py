@@ -130,7 +130,7 @@ def bank_frames(bank, uploads, zip_uploads=()):
     if bank == "banco_brasil":
         if zip_uploads:
             raise ValueError("Envie o ZIP no campo do Bradesco.")
-        return pd.concat([pd.DataFrame(ler_extrato_bb_consultas(content)) for _, content in uploads], ignore_index=True)
+        return pd.concat([pd.DataFrame(ler_extrato_bb_consultas(content, preserve_columns=True)) for _, content in uploads], ignore_index=True)
     if bank != "bradesco":
         raise ValueError("Banco indisponível para a empresa 977.")
     if len(zip_uploads) > 1:

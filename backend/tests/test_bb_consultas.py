@@ -236,3 +236,27 @@ def test_bb_consultas_documento_colado_ao_valor_preserva_movimentos():
     assert "551.189.000.037.273" in records[1]["HISTÓRICO"]
     assert "556.844.000.017.800" in records[2]["HISTÓRICO"]
     assert sum(Decimal(str(record["VALOR"])) for record in records) == 0
+
+
+def test_empresa_977_preserva_colunas_numericas_na_extracao(monkeypatch):
+    from types import SimpleNamespace
+    from app.francesinhas_977 import bank_frames
+
+    header = 'Consultas - Extrato de conta corrente\nLançamentos\n'
+    movements = (
+        '01/03/2026 0000 00000 000 Saldo Anterior 0,00 C\n'
+        '03/03/2026 0000 13158 328 Pagto cartão crédito 153.916.640 847,16 C\n'
+        '03/03/2026 0000 00000 351 BB Rende Fácil 9.903 847,16 D 0,00 C\n'
+        '31/03/2026 0000 00000 999 S A L D O 0,00 C'
+    )
+    plain = header + 'Dt. balancete Dt. movimento\n' + movements.replace('13158 328', '13158328')
+    layout = header + 'Dt.           Dt.\nbalancete     movimento\n' + movements
+
+    def extract_text(extraction_mode='plain'):
+        return layout if extraction_mode == 'layout' else plain
+
+    reader = SimpleNamespace(pages=[SimpleNamespace(extract_text=extract_text)])
+    monkeypatch.setattr('app.bb_consultas.PdfReader', lambda *args, **kwargs: reader)
+    frame = bank_frames('banco_brasil', [('extrato.pdf', b'%PDF')])
+    assert frame.VALOR.tolist() == [847.16, -847.16]
+    assert '153.916.640' in frame.iloc[0]['HISTÓRICO']

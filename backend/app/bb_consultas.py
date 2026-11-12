@@ -45,19 +45,22 @@ def _cents(value, nature):
     return cents if nature.upper() == 'C' else -cents
 
 
-def ler_extrato_bb_consultas(content: bytes) -> list[dict]:
+def ler_extrato_bb_consultas(content: bytes, *, preserve_columns: bool = False) -> list[dict]:
     if not content.startswith(b'%PDF') or len(content) > 25 * 1024 * 1024:
         raise ValueError('Banco do Brasil: envie um PDF válido de até 25 MB.')
     try:
         reader = PdfReader(io.BytesIO(content), strict=False)
         if not 1 <= len(reader.pages) <= 50:
             raise ValueError('Banco do Brasil: envie o extrato completo com até 50 páginas.')
-        text = '\n'.join(page.extract_text() or '' for page in reader.pages)
+        # Some BB PDFs lose spaces between numeric columns in plain extraction.
+        header_text = '\n'.join(page.extract_text() or '' for page in reader.pages)
+        text = ('\n'.join(page.extract_text(extraction_mode='layout') or '' for page in reader.pages)
+                if preserve_columns else header_text)
     except ValueError:
         raise
     except Exception as exc:
         raise ValueError('Não foi possível abrir o PDF do Banco do Brasil.') from exc
-    if not _TITLE.search(text) or not re.search(r'Dt\.\s*balancete\s*Dt\.\s*movimento', text, re.I):
+    if not _TITLE.search(header_text) or not re.search(r'Dt\.\s*balancete\s*Dt\.\s*movimento', header_text, re.I):
         raise ValueError('Banco do Brasil: layout Consultas não reconhecido.')
     records = []
     opening = closing = running = None

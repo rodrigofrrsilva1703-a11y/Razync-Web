@@ -350,7 +350,6 @@ def _workflow(code, roles, options):
     with engine.processing_context(slug(code)):
         if code == 977:
             from app.francesinhas_977 import bank_frames
-            from app.excel import gerar_modelo_abas
 
             zips = roles.get("francesinhas", [])
             if zips and not roles.get("bradesco"):
@@ -377,7 +376,6 @@ def _workflow(code, roles, options):
             return gerar_modelo_abas(sheets, date_format="dd/mm/yyyy"), "EMPRESA_977_MODELO_DOMINIO.xlsx"
         if code == 818:
             from app.santander_boletos_818 import enrich
-            from app.excel import gerar_modelo_abas
 
             extracts, reports = roles.get("extrato", []), roles.get("boletos", [])
             if len(extracts) != 1 or len(reports) != 1:
@@ -396,7 +394,6 @@ def _workflow(code, roles, options):
             ]
             return gerar_modelo_abas({"Santander": frame.sort_values("DATA", kind="stable")}, date_format="dd/mm/yyyy"), "YOUZ_818_SANTANDER_MODELO_DOMINIO.xlsx"
         if code == 803:
-            from app.excel import gerar_modelo_abas
 
             uploads = roles.get("extrato", [])
             if not uploads:
@@ -415,7 +412,6 @@ def _workflow(code, roles, options):
             return gerar_modelo_abas({"Bradesco": frame.sort_values("DATA", kind="stable")}, date_format="dd/mm/yyyy"), "FELIX_GITTI_803_BRADESCO_MODELO_DOMINIO.xlsx"
         if code == 745:
             from app.itau_monthly_745 import read_statement
-            from app.excel import gerar_modelo_abas
 
             uploads = roles.get("extrato", [])
             if not uploads:
@@ -430,7 +426,6 @@ def _workflow(code, roles, options):
             return gerar_modelo_abas({"Itaú": frame.sort_values("DATA", kind="stable")}, date_format="dd/mm/yyyy"), "DOURADO_745_ITAU_MODELO_DOMINIO.xlsx"
         if code == 521:
             from app.caixa_521 import read_payments
-            from app.excel import gerar_modelo_abas
 
             uploads = roles.get("pagamentos", [])
             if not uploads:
