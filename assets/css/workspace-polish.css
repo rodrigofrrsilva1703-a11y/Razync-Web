@@ -245,3 +245,65 @@ html[data-theme="dark"] .app-shell .file-selection > .file-selection-item {
 #companyPanel#companyPanel .bank-choice small{font-size:11px}
 #companyPanel#companyPanel .bank-select-all{width:auto!important;min-height:32px;padding:6px 10px!important;font-size:11px}
 @media(max-width:560px){#companyPanel#companyPanel .bank-selector-head{flex-wrap:wrap}#companyPanel#companyPanel .bank-choice{flex:1 1 140px}}
+
+#companyPanel .organizer-competence {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 16px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+#companyPanel .organizer-competence legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text);
+}
+#companyPanel .organizer-competence-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(88px, 108px);
+  gap: 10px;
+  max-width: 380px;
+}
+#companyPanel .organizer-competence-controls label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--text);
+  font-size: 12px;
+}
+#companyPanel .organizer-competence-controls :is(select, input) {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+#companyPanel .organizer-competence-controls select {
+  text-transform: capitalize;
+}
+#companyPanel .organizer-competence-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+#companyPanel .organizer-competence-summary output {
+  color: var(--text);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+html[data-theme="dark"] #companyPanel .organizer-competence {
+  color-scheme: dark;
+}

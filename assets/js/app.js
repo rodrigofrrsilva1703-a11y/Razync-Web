@@ -799,6 +799,51 @@ function renderReconcileBankFields(banks, company=selected) {
   });
 }
 
+function renderOrganizerCompetence() {
+  const field = document.createElement("fieldset");
+  field.className = "organizer-competence";
+  const monthNames = new Intl.DateTimeFormat("pt-BR", {month:"long", timeZone:"UTC"});
+  const months = Array.from({length:12}, (_, index) => {
+    const label = monthNames.format(new Date(Date.UTC(2000, index, 1)));
+    return `<option value="${String(index + 1).padStart(2, "0")}">${label}</option>`;
+  }).join("");
+  field.innerHTML = `
+    <legend>Competência</legend>
+    <div class="organizer-competence-controls">
+      <label for="organizerMonth">Mês
+        <select id="organizerMonth" required>
+          <option value="">Selecione</option>${months}
+        </select>
+      </label>
+      <label for="organizerYear">Ano
+        <input id="organizerYear" type="text" inputmode="numeric" maxlength="4"
+          pattern="[0-9]{4}" placeholder="AAAA" required>
+      </label>
+    </div>
+    <input type="hidden" data-option="competencia">
+    <div class="organizer-competence-summary">
+      <span>Data dos lançamentos do cartão</span>
+      <output for="organizerMonth organizerYear" aria-live="polite">Selecione mês e ano</output>
+    </div>`;
+
+  const month = field.querySelector("#organizerMonth");
+  const year = field.querySelector("#organizerYear");
+  const competence = field.querySelector("[data-option]");
+  const output = field.querySelector("output");
+  const dateFormat = new Intl.DateTimeFormat("pt-BR", {dateStyle:"short", timeZone:"UTC"});
+  function update() {
+    const validYear = /^[0-9]{4}$/.test(year.value) && Number(year.value) >= 1900;
+    year.setCustomValidity(year.value.length === 4 && !validYear ? "Informe um ano a partir de 1900." : "");
+    competence.value = month.value && validYear ? `${year.value}-${month.value}` : "";
+    output.textContent = competence.value
+      ? dateFormat.format(new Date(Date.UTC(Number(year.value), Number(month.value), 0)))
+      : "Selecione mês e ano";
+  }
+  field.addEventListener("input", update);
+  field.addEventListener("change", update);
+  return field;
+}
+
 function renderWorkflow(company) {
   const cap = company.capabilities || {};
   const workflow = cap.workflow || "standard";
@@ -827,12 +872,7 @@ function renderWorkflow(company) {
   if (workflow === "advanced") {
     standardFields.hidden = true;
     advancedFields.hidden = false;
-    if (cap.requires_competence) {
-      const field = document.createElement("div");
-      field.className = "field-group";
-      field.innerHTML = '<label for="organizerCompetence">Competência (mês e ano)</label><input id="organizerCompetence" type="month" data-option="competencia" required>';
-      advancedFields.appendChild(field);
-    }
+    if (cap.requires_competence) advancedFields.appendChild(renderOrganizerCompetence());
     for (const role of cap.roles || []) {
       const wrap = document.createElement("div");
       wrap.className = "field-group";
