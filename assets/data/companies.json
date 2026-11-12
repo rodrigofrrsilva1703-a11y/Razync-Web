@@ -199,6 +199,11 @@
     "regime": "LUCRO PRESUMIDO"
   },
   {
+    "codigo": 1131,
+    "nome": "COTAS PREMIADAS",
+    "regime": "Não informado"
+  },
+  {
     "codigo": 1198,
     "nome": "TWV ADMINISTRADORA HOTELEIRA LTDA",
     "regime": "SIMPLES NACIONAL"
