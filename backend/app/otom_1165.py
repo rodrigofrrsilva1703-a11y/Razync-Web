@@ -154,7 +154,7 @@ def workflow(roles, options):
             continue
         if day > end:
             raise ValueError("A planilha contém lançamento de cartão posterior à competência selecionada.")
-        history = " + ".join(part for part in (supplier, kind, document) if part)
+        history = f"{supplier} NF {document}" if normalized(kind) == "nf" and document else supplier
         card_rows.append(movement(CARD, "581", end, cents, history))
 
     sheets = {
