@@ -36,7 +36,10 @@ def _ledger(content):
         history = line[columns["historico"]]
         if pd.isna(history) or not str(history).strip():
             continue
-        day = pd.to_datetime(line[columns["data"]], dayfirst=True, errors="coerce")
+        raw_day = line[columns["data"]]
+        day = (pd.to_datetime(raw_day, unit="D", origin="1899-12-30", errors="coerce")
+               if isinstance(raw_day, (int, float)) else
+               pd.to_datetime(raw_day, dayfirst=True, errors="coerce"))
         if pd.isna(day):
             continue
         incoming = line[columns["entrada"]]
