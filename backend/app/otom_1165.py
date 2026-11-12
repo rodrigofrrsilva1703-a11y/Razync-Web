@@ -85,8 +85,12 @@ def read_workbook(content):
     try:
         for sheet in book.worksheets:
             title = normalized(sheet.title)
+            if title == "cef":
+                title = "bco cef"
             if title in BANKS:
                 key, _ = BANKS[title]
+                if key in banks:
+                    raise ValueError(f"Mais de uma aba para o banco {key}.")
                 banks[key] = list(sheet_rows(sheet))
             elif title.startswith("c.credito "):
                 match = re.match(r"c\.credito\s+(itau|nubank)\b", title)
@@ -118,9 +122,9 @@ def bank_history(supplier, kind, document, cents):
     return ("Pago: " if cents < 0 else "Recebido: ") + history
 
 
-def bank_frame(bank, rows, transfers=()):
+def bank_frame(bank, rows, transfers=(), *, company=1165):
     label = next(name for key, name in BANKS.values() if key == bank)
-    account = CAPABILITIES[1165]["banks"][bank]
+    account = CAPABILITIES[company]["banks"][bank]
     return pd.DataFrame([
         movement(label, account, day, cents, bank_history(supplier, kind, document, cents),
                  "581" if index in transfers else "")
@@ -128,12 +132,22 @@ def bank_frame(bank, rows, transfers=()):
     ], columns=COLUMNS)
 
 
-def statement(bank, content, filename):
+def statement(bank, content, filename, *, company=1165):
     from app.company_1058 import read_caixa
     from app.company_1151 import read_itau, read_nubank
 
     if not filename.lower().endswith(".pdf"):
-        raise ValueError("Empresa 1165: envie o extrato bancário em PDF.")
+        raise ValueError(f"Empresa {company}: envie o extrato bancário em PDF.")
+    if company == 1166:
+        holder = r"OTOM\s+CONSULTORIA\s+LTDA"
+        if bank == "itau":
+            return read_itau(content, holder=r"OTOM\s+(?:CONSULTORIA|ENGENHARIA)",
+                             agency="0736", account="12857-8")
+        if bank == "nubank":
+            return read_nubank(content, holder=holder, account=None)
+        if bank == "caixa":
+            return read_caixa(content, holder="OTOM CONSULTORIA LTDA", agency="2347",
+                              account="317-1", operation="003", accounting_account="1367")
     if bank == "itau":
         return read_itau(content, holder=r"OTOM\s+ENGENHARIA", agency="1514", account="0053524-2")
     if bank == "nubank":
@@ -145,7 +159,7 @@ def statement(bank, content, filename):
     raise ValueError("Banco não configurado para a empresa 1165.")
 
 
-def workflow(roles, options):
+def workflow(roles, options, *, company=1165):
     end = competence(options.get("competencia"))
     uploads = roles.get("movimento", [])
     if len(uploads) != 1 or not uploads[0][0].lower().endswith(".xlsx"):
@@ -178,9 +192,9 @@ def workflow(roles, options):
         card_rows.append(movement(CARD, "581", end, cents, history))
 
     sheets = {
-        label: bank_frame(bank, banks[bank], transfers[bank]).sort_values("DATA", kind="stable")
+        label: bank_frame(bank, banks[bank], transfers[bank], company=company).sort_values("DATA", kind="stable")
         for bank, label in BANKS.values() if banks.get(bank)
     }
     if card_rows:
         sheets[CARD] = pd.DataFrame(card_rows, columns=COLUMNS)
-    return gerar_modelo_abas(sheets, date_format="dd/mm/yyyy"), f"OTOM_1165_{end:%Y-%m}_MODELO_DOMINIO.xlsx"
+    return gerar_modelo_abas(sheets, date_format="dd/mm/yyyy"), f"OTOM_{company}_{end:%Y-%m}_MODELO_DOMINIO.xlsx"

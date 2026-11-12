@@ -16,7 +16,7 @@ renderWorkflow = function(company) {
   $("#toolDescription").textContent += " Anexe os documentos e clique em Gerar prévia para conferir os lançamentos.";
   const companyCode = Number(company.codigo);
   const eletro = [242,1408].includes(companyCode);
-  $("#standardPeriod").hidden = companyCode === 1408 || companyCode === 1165;
+  $("#standardPeriod").hidden = companyCode === 1408 || Boolean(company.capabilities?.requires_competence);
   $("#eletro242Classification").hidden = companyCode !== 242;
   $("#eletro1408Classification").hidden = companyCode !== 1408;
 

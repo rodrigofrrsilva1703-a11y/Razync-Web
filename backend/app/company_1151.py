@@ -58,7 +58,7 @@ def read_itau(content, *, holder=r"MRI\s+SERVICE\s+LTDA", agency="0718", account
     try:
         head=doc[0].get_text()
         if not (re.search(holder, head, re.I) and
-                re.search(rf"Agência\s+{re.escape(agency)}\s+Conta\s+{re.escape(account)}\b", head, re.I)):
+                re.search(rf"Agência\s+{re.escape(agency)}\s+Conta\s+0*{re.escape(account.lstrip('0'))}\b", head, re.I)):
             raise ValueError("Titular ou agência/conta Itaú não corresponde à empresa selecionada.")
         period=re.search(r"Lançamentos do período:\s*(\d{2}/\d{2}/20\d{2})\s+até\s+(\d{2}/\d{2}/20\d{2})",head)
         if not period:
@@ -142,6 +142,11 @@ def read_nubank(content, *, holder=r"MRI\s+SERVICE\s+LTDA", account="55741782-3"
     doc=pdf(content,"Nubank")
     try:
         header=doc[0].get_text()
+        if account is None:
+            account_match = re.search(r"\bConta\s+(\d+-\d)\b", header, re.I)
+            if not account_match:
+                raise ValueError("Conta não identificada no cabeçalho do Nubank.")
+            account = account_match[1]
         identity = re.compile(rf"(?<!\d){re.escape(account)}(?!\d)")
         if not (re.search(holder, header, re.I) and identity.search(header)
                 and "VALORES EM R$" in header and "Movimentações" in header):

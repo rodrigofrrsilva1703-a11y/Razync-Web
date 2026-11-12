@@ -9,6 +9,12 @@
       extrato:"Use o Modelo Domínio e anexe o extrato bancário original em PDF no campo do Itaú, Nubank ou Caixa.",
       base:"Use o Modelo Domínio revisado para ensinar contrapartidas dos bancos e do cartão de crédito 581."
     },
+    1166: {
+      intro:"Informe o mês e o ano da competência e envie a planilha mensal da Otom Consultoria em XLSX.",
+      note:"Itaú 508, Nubank 506 e Caixa 1367 mantêm a data bancária. As despesas e os estornos dos cartões entram no último dia do mês na conta 581.",
+      extrato:"Use o Modelo Domínio e anexe o extrato bancário original em PDF no campo do Itaú, Nubank ou Caixa.",
+      base:"Use o Modelo Domínio revisado para ensinar contrapartidas dos bancos e do cartão de crédito 581."
+    },
     1151: {
       intro:"Envie o extrato Itaú PDF da conta 508 e/ou o extrato Nubank PDF da conta 506. O Excel final separa cada banco em sua própria aba.",
       note:"O Nubank abrange agosto e setembro. Sem intervalo informado, o organizador usa agosto, competência do extrato Itaú. Todos os lançamentos do PDF Nubank são conferidos antes do filtro; saldos e totais não são movimentos.",

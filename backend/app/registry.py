@@ -203,6 +203,10 @@ CAPABILITIES[1165] = {
     "base_accounts": {"cartao_credito": "581"},
     "roles": [{"name": "movimento", "label": "Planilha de Movimento Mensal da Otom", "accept": ".xlsx"}],
 }
+CAPABILITIES[1166] = {
+    **CAPABILITIES[1165],
+    "banks": {"itau": "508", "nubank": "506", "caixa": "1367"},
+}
 CAPABILITIES[1151] = {
     "status":"api_ready","workflow":"advanced",
     "banks":{"itau":"508","nubank":"506"},

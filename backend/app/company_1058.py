@@ -91,7 +91,8 @@ def read_itau(content):
     return pd.DataFrame(rows,columns=COLUNAS).sort_values('DATA',kind='stable').reset_index(drop=True)
 
 
-def read_caixa(content, *, holder="QUARTETO DE OBRAS LTDA", agency="4115", account="000578789424-0"):
+def read_caixa(content, *, holder="QUARTETO DE OBRAS LTDA", agency="4115", account="000578789424-0",
+               operation="1292", accounting_account="504"):
     if not content.startswith(b'%PDF') or len(content)>25*1024*1024:
         raise ValueError('Envie um extrato PDF válido da Caixa (até 25 MB).')
     try:
@@ -104,7 +105,10 @@ def read_caixa(content, *, holder="QUARTETO DE OBRAS LTDA", agency="4115", accou
     except Exception as exc:
         raise ValueError('Falha ao ler extrato da Caixa.') from exc
     compact=' '.join(text.split())
-    if holder not in compact.upper() or not re.search(rf'(?<!\d){re.escape(agency)}\s*\|\s*1292\s*\|\s*{re.escape(account)}\b', compact):
+    account_pattern = r'0*' + re.escape(account.lstrip('0'))
+    operation_pattern = r'0*' + re.escape(operation.lstrip('0'))
+    identity = rf'(?<!\d){re.escape(agency)}\s*\|\s*{operation_pattern}\s*\|\s*{account_pattern}\b'
+    if holder not in compact.upper() or not re.search(identity, compact):
         raise ValueError('Titular ou agência/conta Caixa não corresponde à empresa selecionada.')
     month=re.search(r'M[eê]s\s*:\s*([A-Za-zçÇãÃ]+)\s*/\s*(20\d{2})',text,re.I)
     if not month:
@@ -145,8 +149,8 @@ def read_caixa(content, *, holder="QUARTETO DE OBRAS LTDA", agency="4115", accou
         if running!=item['balance']:
             raise ValueError('Saldo bancário Caixa divergente; confira o PDF.')
     return pd.DataFrame([{'DESCRIÇÃO':'BANCO CAIXA','DATA':x['date'],'VALOR':x['value']/100,
-                         'DÉBITO':'504' if x['value']>0 else '',
-                         'CRÉDITO':'504' if x['value']<0 else '',
+                         'DÉBITO':accounting_account if x['value']>0 else '',
+                         'CRÉDITO':accounting_account if x['value']<0 else '',
                          'HISTÓRICO':('Recebido: ' if x['value']>0 else 'Pago: ')+x['history']}
                         for x in movements],columns=COLUNAS)
 

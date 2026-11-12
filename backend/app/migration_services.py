@@ -107,9 +107,9 @@ def _sicredi_pdf_empresa(code, content):
 def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
-    if code == 1165:
+    if code in {1165, 1166}:
         from app.otom_1165 import statement as otom_statement
-        return otom_statement(bank, content, filename)
+        return otom_statement(bank, content, filename, company=code)
     if code == 1151:
         if not filename.lower().endswith(".pdf"):
             raise ValueError("Empresa 1151: extrato bancário deve ser PDF.")
@@ -250,7 +250,7 @@ def reconcile(code, bank, model, statements, options=None):
     options = options or {}
     with engine.processing_context(slug(code)):
         real_bank = 'itau' if bank.startswith('itau') else bank
-        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 977, 1408, 1058, 1151, 1165} else None
+        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 977, 1408, 1058, 1151, 1165, 1166} else None
         main, excluded, _ = engine.ler_planilha_organizada_conferencia(model, real_bank, account)
         main, excluded = filter_frame(main, options), filter_frame(excluded, options)
         if code == 521:
@@ -269,7 +269,7 @@ def reconcile(code, bank, model, statements, options=None):
         else:
             frames = [statement(code, bank, content, filename) for filename, content in statements]
             movements = filter_frame(pd.concat(frames, ignore_index=True), options)
-            if code == 1165 and not dates(options)[0]:
+            if code in {1165, 1166} and not dates(options)[0]:
                 months = set(pd.to_datetime(main["DATA"]).dt.to_period("M"))
                 movements = movements.loc[pd.to_datetime(movements["DATA"]).dt.to_period("M").isin(months)]
             if code == 1151 and bank == 'nubank' and not dates(options)[0]:
@@ -397,9 +397,9 @@ def _workflow_1408(roles):
 def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
-        if code == 1165:
+        if code in {1165, 1166}:
             from app.otom_1165 import workflow as otom_workflow
-            return otom_workflow(roles, options)
+            return otom_workflow(roles, options, company=code)
         if code == 1151:
             from app.company_1151 import workflow_1151
             return workflow_1151(roles,options)
