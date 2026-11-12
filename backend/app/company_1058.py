@@ -181,10 +181,29 @@ def read_itau_statement(content, filename):
     frame=pd.DataFrame(rows)
     if frame.empty or not {'DATA','VALOR','HISTÓRICO','DESCRIÇÃO'} <= set(frame.columns):
         raise ValueError('Nenhum movimento bancário válido encontrado no extrato Itaú.')
-    # Rejeitar leitor genérico que identificou outro banco ou origem desconhecida.
+    # Leitores universais nem sempre devolvem o nome do banco em DESCRIÇÃO.
+    # Rejeitar indicação explícita de OUTRO banco, mas aceitar descrições
+    # genéricas quando o documento ou o parser confirma tratar-se de Itaú.
     banks=frame['DESCRIÇÃO'].fillna('').map(_norm)
-    if not banks.map(lambda value: 'itau' in value).all():
-        raise ValueError('O arquivo não foi identificado com segurança como extrato Itaú.')
+    known_other=('bradesco','santander','sicredi','caixa','banco do brasil',
+                 'bancodobrasil','safra','daycoval','bancointer','btg','fibra')
+    if banks.map(lambda value: any(item.replace(' ','') in value.replace(' ','') for item in known_other)).any():
+        raise ValueError('O extrato foi identificado como outro banco, não Itaú.')
+    if not banks.map(lambda value:'itau' in value).all():
+        marker=''
+        if lower.endswith('.pdf'):
+            try:
+                from pypdf import PdfReader
+                doc=PdfReader(BytesIO(content),strict=False)
+                marker=' '.join((page.extract_text() or '')[:5000] for page in doc.pages[:2])
+            except Exception:
+                marker=''
+        elif lower.endswith(('.ofx','.csv')):
+            marker=content[:5000].decode('latin1',errors='ignore')
+        from app.engine import identificar_banco_inteligente
+        detected=identificar_banco_inteligente(marker,filename)
+        if detected not in ('BANCO ITAU','BANCO ITAÚ'):
+            raise ValueError('Não foi possível confirmar que o extrato pertence ao Itaú. Envie o extrato original, preferencialmente PDF ou OFX.')
     frame=frame.copy()
     frame['DATA']=pd.to_datetime(frame['DATA'],dayfirst=True,errors='coerce')
     frame['VALOR']=pd.to_numeric(frame['VALOR'],errors='coerce')
