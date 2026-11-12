@@ -91,6 +91,28 @@
 .monthly-issue-dialog footer {display:flex;justify-content:flex-end;gap:8px;margin:4px 0 0;padding:0}
 .monthly-issue-feedback:empty {display:none}
 
+.monthly-message-trigger {margin-top: 6px}
+.monthly-message-dialog > p {color: var(--muted); font-size: 13px}
+.monthly-message-dialog > p:empty {display: none}
+.monthly-message-dialog ol {list-style: none; margin: 12px 0; padding: 0}
+.monthly-message-dialog ol:empty {display: none}
+.monthly-message-dialog li {padding: 10px 0; border-top: 1px solid var(--border)}
+.monthly-message-dialog li p {margin: 5px 0; white-space: pre-wrap; overflow-wrap: anywhere}
+.monthly-message-dialog li time {color: var(--muted); font-size: 12px}
+.monthly-message-dialog li button {margin-inline-start: 8px}
+.monthly-message-dialog form:not([hidden]) {display: flex; gap: 8px; flex-wrap: wrap}
+.monthly-message-dialog label {display: grid; flex-basis: 100%; gap: 6px}
+.monthly-message-dialog textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+}
+.monthly-message-dialog > button {margin-top: 10px}
+
 .monthly-history {margin-top:6px}
 .monthly-history-dialog ul {list-style:none;padding:0;margin:10px 0}
 .monthly-history-dialog li {border-top:1px solid var(--border);padding:10px 0;line-height:1.5}

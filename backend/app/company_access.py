@@ -43,6 +43,16 @@ def _db():
         "ON company_notifications(recipient, id DESC)"
     )
     db.execute("CREATE TABLE IF NOT EXISTS archived_companies (company INTEGER PRIMARY KEY)")
+    db.execute("""CREATE TABLE IF NOT EXISTS monthly_task_messages (
+        id INTEGER PRIMARY KEY, period TEXT NOT NULL, company INTEGER NOT NULL,
+        owner TEXT NOT NULL, sender TEXT NOT NULL, kind TEXT NOT NULL,
+        body TEXT NOT NULL, created_at TEXT NOT NULL, reply_to INTEGER
+    )""")
+    db.execute("""CREATE INDEX IF NOT EXISTS monthly_task_messages_scope
+        ON monthly_task_messages(period,company,owner,id)""")
+    db.execute("""CREATE TABLE IF NOT EXISTS monthly_task_notices (
+        notice INTEGER PRIMARY KEY, message INTEGER NOT NULL
+    )""")
     return db
 
 
@@ -206,23 +216,28 @@ def _notification_recipient():
 def list_notifications():
     email = _notification_recipient()
     visible = (
-        " FROM company_notifications n JOIN company_owners o "
-        "ON o.company=n.company AND o.email=n.recipient WHERE n.recipient=? "
+        " FROM company_notifications n LEFT JOIN company_owners o ON o.company=n.company "
+        "LEFT JOIN monthly_task_notices link ON link.notice=n.id "
+        "LEFT JOIN monthly_task_messages m ON m.id=link.message WHERE n.recipient=? "
+        "AND ((m.id IS NULL AND o.email=n.recipient) OR "
+        "(m.owner=COALESCE(o.email,?) AND (m.owner=n.recipient OR ?))) "
         "AND NOT EXISTS (SELECT 1 FROM archived_companies a WHERE a.company=n.company)"
     )
+    params = (email, owner_for(0, {}), is_admin())
     with closing(_db()) as db, db:
         db.row_factory = sqlite3.Row
         db.execute("BEGIN")
         items = [dict(row) for row in db.execute(
-            "SELECT n.id, n.company, n.name, n.created_at, n.read_at" + visible +
-            " ORDER BY n.id DESC LIMIT 50", (email,),
+            "SELECT n.id,n.company,n.name,n.created_at,n.read_at,m.period,m.kind,m.body,m.sender" + visible +
+            " ORDER BY n.id DESC LIMIT 50", params,
         )]
-        unread = db.execute("SELECT count(*)" + visible + " AND n.read_at IS NULL", (email,)).fetchone()[0]
+        unread = db.execute("SELECT count(*)" + visible + " AND n.read_at IS NULL", params).fetchone()[0]
     return {"items": items, "unread": unread}
 
 
 class ReadNotifications(BaseModel):
     through: int = Field(gt=0, le=9223372036854775807)
+    single: bool = False
 
 
 @router.post("/notifications/read")
@@ -231,9 +246,7 @@ def mark_notifications_read(payload: ReadNotifications):
     with closing(_db()) as db, db:
         db.execute(
             "UPDATE company_notifications SET read_at=? "
-            "WHERE recipient=? AND id<=? AND read_at IS NULL "
-            "AND EXISTS (SELECT 1 FROM company_owners o WHERE o.company=company_notifications.company "
-            "AND o.email=company_notifications.recipient)",
-            (datetime.now(timezone.utc).isoformat(), email, payload.through),
+            "WHERE recipient=? AND id<=? AND read_at IS NULL AND (NOT ? OR id=?)",
+            (datetime.now(timezone.utc).isoformat(), email, payload.through, payload.single, payload.through),
         )
     return {"ok": True}

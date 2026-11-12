@@ -340,6 +340,7 @@ function initializeCompanyNotifications() {
   const markRead = document.querySelector("#companyNotificationsRead");
   const endpoint = () => `${API()}/api/v1/company-access/notifications`;
   const date = new Intl.DateTimeFormat("pt-BR", {dateStyle:"short", timeStyle:"short"});
+  const noticeLabels = {help:"Pedido de ajuda", review:"Pedido de revisão", reply:"Resposta na tarefa", resolved:"Pendência resolvida"};
   let latest = null;
   let seen = 0;
   let seenKey;
@@ -365,8 +366,8 @@ function initializeCompanyNotifications() {
     const [item] = items;
     const company = `${item.company} · ${item.name}`;
     const message = items.length > 1
-      ? `${company} e mais ${items.length - 1} ${items.length === 2 ? "empresa atribuída" : "empresas atribuídas"}.`
-      : company;
+      ? `${items.length} novos avisos na caixa de notificações.`
+      : `${noticeLabels[item.kind] ?? "Nova atribuição de empresa"} · ${company}`;
     toastText.textContent = message;
     toast.hidden = false;
     toastOpen = true;
@@ -374,7 +375,7 @@ function initializeCompanyNotifications() {
       try { toast.showPopover(); }
       catch { toast.removeAttribute("popover"); }
     }
-    announcement.textContent = `Nova atribuição de empresa. ${message}`;
+    announcement.textContent = message;
     scheduleToastDismissal();
   }
 
@@ -398,15 +399,41 @@ function initializeCompanyNotifications() {
       const detail = document.createElement("p");
       const time = document.createElement("time");
       title.textContent = `${item.company} · ${item.name}`;
-      detail.textContent = "Você agora é responsável por esta empresa.";
+      detail.textContent = item.kind
+        ? `${noticeLabels[item.kind]} · ${item.period.split("-").reverse().join("/")}`
+        : "Você agora é responsável por esta empresa.";
       time.dateTime = item.created_at;
       time.textContent = date.format(new Date(item.created_at));
       summary.append(title, detail);
+      if (item.body) {
+        const preview = document.createElement("p");
+        preview.className = "company-notice-preview";
+        preview.textContent = item.body;
+        summary.append(preview);
+      }
+      const open = document.createElement("button");
+      open.type = "button";
+      open.className = "secondary-action";
+      open.textContent = "Abrir tarefa";
+      open.onclick = async () => {
+        const opened = await showGlobalView("tasks", {company:item.company, period:item.period});
+        if (!opened || item.read_at) return;
+        try {
+          const response = await fetch(`${endpoint()}/read`, {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({through:item.id, single:true}), signal:AbortSignal.timeout(10000)
+          });
+          if (response.ok) await loadCompanyNotifications();
+        } catch {
+          // The task is open. Keep the notice unread if the update fails.
+        }
+      };
+      summary.append(open);
       row.append(summary, time);
       if (!item.read_at) {
         const label = document.createElement("span");
         label.className = "company-notification-unread";
-        label.textContent = "Nova";
+        label.textContent = item.kind === "help" || item.kind === "review" ? "Precisa de ação" : "Nova";
         title.after(label);
       }
       list.append(row);

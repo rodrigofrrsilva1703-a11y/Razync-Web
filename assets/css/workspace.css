@@ -2786,6 +2786,14 @@ body[data-site-locked] #companyNotificationToast {display:none}
   display:inline-block;margin-inline-start:8px;padding:2px 6px;border-radius:4px;
   background:var(--surface-2);font-size:11px;font-weight:650;
 }
+.company-notifications li button {margin-top: 8px}
+.company-notifications li .company-notice-preview {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: var(--text);
+}
 
 #addCompany[hidden] {display:none!important}
 .owner-table th:last-child {width:150px}

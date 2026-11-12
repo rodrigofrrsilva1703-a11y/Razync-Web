@@ -1902,7 +1902,7 @@ enhanceFileInputs(document);
 
 
 let navigationVersion = 0;
-async function showGlobalView(name) {
+async function showGlobalView(name, taskTarget) {
   if ((name === "companyOwners" || name === "userAccess") && !globalThis.jaguarCompanyAccess?.admin) return;
   const version = ++navigationVersion;
   if (name === "fiscal" && globalThis.RazyncAssets && !RazyncAssets.isLoaded("fiscal")) {
@@ -1935,7 +1935,8 @@ async function showGlobalView(name) {
   window.RazyncWorkspaceResume?.save();
   if (name === "tasks") {
     $("#monthlyTasksTitle").focus({preventScroll:true});
-    globalThis.JaguarMonthlyTasks.open();
+    window.scrollTo({top:0, behavior:taskTarget ? "instant" : "smooth"});
+    return globalThis.JaguarMonthlyTasks.open(taskTarget);
   }
   if (name === "companyNotifications") {
     $("#companyNotificationsTitle").focus({preventScroll:true});

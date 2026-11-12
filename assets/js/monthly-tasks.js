@@ -19,6 +19,11 @@
   const importer = get("monthlyTasksImport");
   const importMessage = get("monthlyTasksImportMessage");
   const feedback = get("monthlyTaskFeedback");
+  const messageDialog = document.createElement("dialog");
+  messageDialog.className = "monthly-issue-dialog monthly-message-dialog";
+  messageDialog.setAttribute("aria-labelledby", "monthlyMessageTitle");
+  get("tasksView").append(messageDialog);
+  const messageLabels = {help:"Pedido de ajuda", review:"Pedido de revisão", reply:"Resposta", resolved:"Pendência resolvida"};
   const endpoint = () => `${API()}/api/v1/monthly-tasks`;
   const labels = {pending:"Não iniciado", progress:"Em andamento", done:"Concluído", na:"Não se aplica"};
   const names = {none:"Registrar", open:"Aberta", resolved:"Resolvida"};
@@ -227,7 +232,13 @@
       const issueCell = row.insertCell();
       issueCell.dataset.issue = item.issue_status;
       issueCell.dataset.label = "Pendências";
-      issueCell.append(issueEditor(item, saving.has(key)), historyView(key, item));
+      const conversation = document.createElement("button");
+      conversation.type = "button";
+      conversation.className = "secondary-action monthly-message-trigger";
+      conversation.textContent = "Mensagens";
+      conversation.setAttribute("aria-label", `Mensagens da empresa ${item.code}`);
+      conversation.onclick = () => openConversation(item, state.period);
+      issueCell.append(issueEditor(item, saving.has(key)), historyView(key, item), conversation);
     }
     viewport.scrollTop = top;
     viewport.scrollLeft = left;
@@ -249,7 +260,12 @@
     cell.append(tag);
   }
 
-  async function load() {
+  async function load(target) {
+    if (target?.company) {
+      period.value = target.period || "";
+      search.value = filter.value = "";
+      ownerFilter = stageFilter = undefined;
+    }
     request?.abort();
     const controller = new AbortController();
     request = controller;
@@ -270,8 +286,121 @@
       if (!state.progress.some(item => item.owner === ownerFilter)) ownerFilter = undefined;
       renderTeam();
       renderRows();
+      if (target?.company) {
+        const item = state.companies.find(row => row.code === target.company);
+        if (!item) {
+          feedback.textContent = "Esta empresa não está disponível na sua carteira.";
+          return false;
+        }
+        const trigger = rows.querySelector(`[data-task-key="${state.period}/${item.code}"] .monthly-message-trigger`);
+        trigger?.focus();
+        if (target.period) return openConversation(item, state.period);
+        return true;
+      }
     } catch (error) {
       if (!controller.signal.aborted) status.textContent = `Não foi possível carregar as tarefas. ${error.message}`;
+    }
+  }
+
+  async function openConversation(item, taskPeriod) {
+    const url = `${endpoint()}/${taskPeriod}/${item.code}/messages`;
+    const title = document.createElement("h2");
+    title.id = "monthlyMessageTitle";
+    title.textContent = "Mensagens da tarefa";
+    const context = document.createElement("p");
+    context.textContent = `${item.code} · ${item.name} · ${taskPeriod.split("-").reverse().join("/")}`;
+    const messages = document.createElement("ol");
+    const form = document.createElement("form");
+    form.hidden = true;
+    const label = document.createElement("label");
+    const field = document.createElement("textarea");
+    field.required = true;
+    field.maxLength = 2000;
+    const submit = document.createElement("button");
+    submit.type = "submit";
+    submit.className = "secondary-action";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "secondary-action";
+    close.textContent = "Fechar";
+    close.onclick = () => messageDialog.close();
+    const statusMessage = document.createElement("p");
+    statusMessage.setAttribute("role", "status");
+    const requestLabel = state.admin ? "Pedir revisão" : "Solicitar ajuda";
+    let replyTo = null;
+    let canRequest = false;
+
+    function compose(original = null) {
+      replyTo = original?.id ?? null;
+      form.hidden = !original && !canRequest;
+      cancelReply.hidden = !original;
+      label.replaceChildren(original ? `Responder a ${displayOwner(original.sender)}` : "Mensagem", field);
+      submit.textContent = original ? "Enviar resposta" : requestLabel;
+    }
+
+    async function refresh() {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(await responseError(response));
+      const data = await response.json();
+      canRequest = data.can_request;
+      messages.replaceChildren();
+      for (const entry of data.messages) {
+        const row = document.createElement("li");
+        const heading = document.createElement("strong");
+        const body = document.createElement("p");
+        const time = document.createElement("time");
+        heading.textContent = `${messageLabels[entry.kind]} · ${displayOwner(entry.sender)}`;
+        body.textContent = entry.body;
+        time.dateTime = entry.created_at;
+        time.textContent = new Date(entry.created_at).toLocaleString("pt-BR");
+        row.append(heading, body, time);
+        if (entry.sender !== myEmail() && entry.kind !== "resolved") {
+          const reply = document.createElement("button");
+          reply.type = "button";
+          reply.className = "secondary-action";
+          reply.textContent = "Responder";
+          reply.onclick = () => { compose(entry); field.focus(); };
+          row.append(reply);
+        }
+        messages.append(row);
+      }
+      compose();
+      statusMessage.textContent = data.messages.length ? "" : "Nenhuma mensagem nesta tarefa.";
+    }
+
+    const cancelReply = document.createElement("button");
+    cancelReply.type = "button";
+    cancelReply.className = "secondary-action";
+    cancelReply.textContent = "Cancelar resposta";
+    cancelReply.onclick = () => compose();
+    form.append(label, submit, cancelReply);
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      submit.disabled = true;
+      try {
+        const response = await fetch(url, {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({body:field.value, reply_to:replyTo})
+        });
+        if (!response.ok) throw new Error(await responseError(response));
+        field.value = "";
+        await refresh();
+        statusMessage.textContent = "Mensagem enviada.";
+      } catch (error) {
+        statusMessage.textContent = error.message;
+      } finally {
+        submit.disabled = false;
+      }
+    });
+    messageDialog.replaceChildren(title, context, messages, form, statusMessage, close);
+    statusMessage.textContent = "Carregando mensagens…";
+    if (!messageDialog.open) messageDialog.showModal();
+    try {
+      await refresh();
+      return true;
+    } catch (error) {
+      statusMessage.textContent = error.message;
+      return false;
     }
   }
 
