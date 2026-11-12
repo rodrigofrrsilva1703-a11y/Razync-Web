@@ -13,7 +13,7 @@ from app.excel import _template_bytes, gerar_modelo_abas
 from app.registry import CAPABILITIES
 
 COLUNAS = ['DESCRIÇÃO', 'DATA', 'VALOR', 'DÉBITO', 'CRÉDITO', 'HISTÓRICO']
-SLUGS = {1024: 'teles_veras_1024', 818: 'youz_818', 803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
+SLUGS = {1033: 'terratest_1033', 1024: 'teles_veras_1024', 818: 'youz_818', 803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
          242: 'eletro_forte', 1408: 'eletro_forte_filial_1408',
          266: 'nova_geracao_matriz', 1396: 'nova_geracao_filial',
          285: 'lcarlos', 968: 'radani', 1000: 'accede_automacao',
@@ -106,6 +106,11 @@ def _sicredi_pdf_empresa(code, content):
 def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
+    if code == 1033:
+        from app.bradesco_1033 import read_statement
+        if bank != 'bradesco' or not filename.lower().endswith('.pdf'):
+            raise ValueError('Empresa 1033: envie um extrato Bradesco em PDF.')
+        return read_statement(content)
     if code == 1024:
         from app.empresa_1024 import _statement
         if bank not in {"bb", "banco_brasil"} or not filename.lower().endswith(".pdf"):
@@ -353,6 +358,9 @@ def _workflow_1408(roles):
 def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
+        if code == 1033:
+            from app.bradesco_1033 import workflow_1033
+            return workflow_1033(roles, options)
         if code == 1024:
             from app.empresa_1024 import workflow_1024
             return workflow_1024(roles, options)
