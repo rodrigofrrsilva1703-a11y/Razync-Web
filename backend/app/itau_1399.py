@@ -8,6 +8,8 @@ import re
 import fitz
 import pandas as pd
 
+from app.history_names import join_history_description
+
 COLUNAS = ["DESCRIÇÃO", "DATA", "VALOR", "DÉBITO", "CRÉDITO", "HISTÓRICO"]
 DATE = re.compile(r"\d{2}/\d{2}/20\d{2}")
 MONEY = re.compile(r"-?(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}")
@@ -103,7 +105,7 @@ def read_statement(content):
                 merchant_name=" ".join(w[4] for w in merchant)
                 merchant_name=PRIVATE.sub("",merchant_name).strip()
                 merchant_name=" ".join(merchant_name.split())
-                history=label + (" - "+merchant_name if merchant_name else "")
+                history=join_history_description(label, merchant_name)
                 amount=cents(values[0])
                 if not amount:raise ValueError("Lançamento Itaú com valor zero.")
                 transactions.append((day,amount,history))
