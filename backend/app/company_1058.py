@@ -225,28 +225,77 @@ def read_itau_statement(content, filename):
     return frame[COLUNAS].reset_index(drop=True)
 
 
-def workflow_1058(roles,options):
+def workflow_1058(roles, options):
+    """Organizar: PDF Itaú como fonte dos lançamentos; XLSX só complementa histórico."""
     from app.excel import gerar_modelo_abas
+    from app.advanced import append_dataframe_sheets
+    from app.itau_1058_enrichment import enrich
     from app.migration_services import filter_frame
-    frames={}
-    for bank,label,parser,ext in (('itau','Itaú',read_itau,'.xlsx'),('caixa','Caixa',read_caixa,'.pdf')):
-        uploads=roles.get(bank) or []
-        if not uploads:
-            continue
-        periods=set()
-        parts=[]
-        for filename,content in uploads:
-            if not filename.lower().endswith(ext):
-                raise ValueError(f'Empresa 1058: arquivo {label} deve ter extensão {ext}.')
-            frame=parser(content)
-            months=set(frame['DATA'].dt.to_period('M'))
-            if len(months)!=1 or months & periods:
-                raise ValueError(f'Competência repetida ou inconsistente nos arquivos {label}.')
+
+    sheets = {}
+    audits = []
+    extratos_itau = roles.get('itau') or []
+    planilhas_itau = roles.get('planilha_itau') or []
+    if extratos_itau or planilhas_itau:
+        if not extratos_itau or not planilhas_itau:
+            raise ValueError('Para organizar o Itaú 514, envie o extrato mensal PDF e a planilha auxiliar XLSX.')
+        statement_periods = {}
+        for filename, content in extratos_itau:
+            if not filename.lower().endswith('.pdf'):
+                raise ValueError('Itaú 514: o extrato deve ser PDF.')
+            from app.itau_1058_monthly import read_itau_monthly
+            frame = read_itau_monthly(content)
+            periods = set(frame['DATA'].dt.to_period('M'))
+            if len(periods) != 1 or next(iter(periods)) in statement_periods:
+                raise ValueError('Extrato Itaú com competência duplicada ou inconsistente.')
+            statement_periods[next(iter(periods))] = content
+
+        auxiliary_periods = {}
+        for filename, content in planilhas_itau:
+            if not filename.lower().endswith('.xlsx'):
+                raise ValueError('Itaú 514: a planilha auxiliar deve ser XLSX.')
+            frame = read_itau(content)
+            periods = set(frame['DATA'].dt.to_period('M'))
+            if len(periods) != 1 or next(iter(periods)) in auxiliary_periods:
+                raise ValueError('Planilha Itaú com competência duplicada ou inconsistente.')
+            auxiliary_periods[next(iter(periods))] = content
+
+        if set(statement_periods) != set(auxiliary_periods):
+            raise ValueError('As competências dos extratos Itaú e das planilhas auxiliares não correspondem.')
+        parts = []
+        for period in sorted(statement_periods):
+            frame, audit = enrich(statement_periods[period], auxiliary_periods[period])
+            parts.append(frame)
+            if not audit.empty:
+                audits.append(audit.assign(COMPETÊNCIA=str(period)))
+        result = filter_frame(pd.concat(parts, ignore_index=True), options)
+        if not result.empty:
+            sheets['Itaú'] = result.sort_values('DATA', kind='stable')
+
+    caixa_uploads = roles.get('caixa') or []
+    if caixa_uploads:
+        periods = set()
+        parts = []
+        for filename, content in caixa_uploads:
+            if not filename.lower().endswith('.pdf'):
+                raise ValueError('Caixa 504: envie o extrato PDF.')
+            frame = read_caixa(content)
+            months = set(frame['DATA'].dt.to_period('M'))
+            if len(months) != 1 or months & periods:
+                raise ValueError('Competência Caixa repetida ou inconsistente.')
             periods.update(months)
             parts.append(frame)
-        result=filter_frame(pd.concat(parts,ignore_index=True),options)
-        if not result.empty:
-            frames[label]=result.sort_values('DATA',kind='stable')
-    if not frames:
-        raise ValueError('Envie a planilha Itaú e/ou o extrato Caixa com lançamentos no período selecionado.')
-    return gerar_modelo_abas(frames,date_format='dd/mm/yyyy'),'EMPRESA_1058_MODELO_DOMINIO.xlsx'
+        caixa = filter_frame(pd.concat(parts, ignore_index=True), options)
+        if not caixa.empty:
+            sheets['Caixa'] = caixa.sort_values('DATA', kind='stable')
+
+    if not sheets:
+        raise ValueError('Envie os extratos e a planilha auxiliar do Itaú e/ou o extrato Caixa no período selecionado.')
+    workbook = gerar_modelo_abas(sheets, date_format='dd/mm/yyyy')
+    if audits:
+        audit = pd.concat(audits, ignore_index=True)
+        # Rastreabilidade: somente o período selecionado aparece na auditoria.
+        audit = filter_frame(audit.rename(columns={'DATA':'DATA'}), options)
+        if not audit.empty:
+            workbook = append_dataframe_sheets(workbook, {'Identificações Itaú': audit})
+    return workbook, 'EMPRESA_1058_MODELO_DOMINIO.xlsx'
