@@ -13,6 +13,8 @@ import re
 import fitz
 import pandas as pd
 
+from app.history_names import join_history_description
+
 COLUNAS = ["DESCRIÇÃO", "DATA", "VALOR", "DÉBITO", "CRÉDITO", "HISTÓRICO"]
 DATE_LONG = re.compile(r"^\d{2}/\d{2}/20\d{2}$")
 MONEY = re.compile(r"^-?(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}$")
@@ -207,7 +209,7 @@ def read_nubank(content, *, holder=r"MRI\s+SERVICE\s+LTDA", account="55741782-3"
                 info[section]+=abs(value)
                 beneficiary=PRIVATE.sub("",beneficiary)
                 beneficiary=re.sub(r"[-\s]+$","",beneficiary).strip()
-                history=left + ((" - "+beneficiary) if beneficiary else "")
+                history=join_history_description(left, beneficiary)
                 rows.append((current,value,history))
         if not rows:
             raise ValueError("Nubank sem movimentações identificadas.")
