@@ -90,7 +90,7 @@ def test_1399_organizes_banks_separately_and_keeps_duplicates():
 
 
 def test_1399_statement_dispatch_and_filter_account():
-    from app import itau_1399,bradesco_1399
+    from app import itau_1399,bradesco_1399,company_1399
     with patch.object(itau_1399,"read_statement",return_value=fake_rows("508","BANCO ITAÚ")) as reader:
         services.statement(1399,"itau",b"%PDF","itau.pdf")
         reader.assert_called_once()
