@@ -20,7 +20,7 @@
       .map(code => [code, 'noBankMovement']),
   ]);
   const accountingStatus = company => accountingStatuses[statusByCode.get(Number(company.codigo))];
-  function select(items,{query='',regime='',filter='all',sort='code'}={}) {
+  function select(items,{query='',regime='',accounting='',filter='all',sort='code'}={}) {
     const words=text(query).split(/\s+/).filter(Boolean);
     const exactCode = words.length===1 && /^\d+$/.test(words[0]) ? Number(words[0]) : null;
     return items.filter(company => {
@@ -28,7 +28,7 @@
       if(filter==='organizer' && !hasTools(company))return false;
       if(filter==='catalog' && hasTools(company))return false;
       if(filter==='multibank' && Object.keys(company.capabilities?.banks || {}).length<2)return false;
-      if(Object.hasOwn(accountingStatuses,filter) && statusByCode.get(Number(company.codigo))!==filter)return false;
+      if(accounting && statusByCode.get(Number(company.codigo))!==accounting)return false;
       const searchable=text(`${company.codigo} ${company.nome} ${company.regime || ''} ${accountingStatus(company)?.label || ''}`);
       return words.every(word=>searchable.includes(word) || (/^\d+$/.test(word) && Number(company.codigo)===Number(word)));
     }).sort((a,b)=>{

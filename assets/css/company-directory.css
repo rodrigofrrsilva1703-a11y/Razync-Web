@@ -164,3 +164,8 @@ html[data-theme=dark] #companiesView #companyGrid .company-row-action b {backgro
 html[data-theme=dark] #companiesView #companyGrid .company-accounting-status {
   color: var(--text)!important;
 }
+
+#companiesView #companyAccountingFilter { min-width: 0; }
+@media (max-width: 760px) {
+  #companiesView #companyAccountingFilter { grid-column: 1 / -1; }
+}

@@ -219,8 +219,6 @@ function render(items) {
     organizer: current.filter(hasCompanyTools).length,
     multibank: current.filter(c=>Object.keys(c.capabilities?.banks || {}).length > 1).length,
     catalog: current.filter(c=>!hasCompanyTools(c)).length,
-    digital: RazyncDirectory.select(current,{filter:'digital'}).length,
-    noBankMovement: RazyncDirectory.select(current,{filter:'noBankMovement'}).length,
   };
   $$('.company-filter').forEach(button => {
     const badge = button.querySelector('.filter-count');
@@ -1829,13 +1827,14 @@ function filterCompanies() {
   const query = search.value.trim();
   grid.dataset.searching = String(Boolean(query));
   const regime = $('#regimeFilter').value;
+  const accounting = $('#companyAccountingFilter').value;
   const current = companies.filter(companyBelongsToPortfolio);
   const clear = $('#companySearchClear');if(clear)clear.hidden=!query;
-  const reset = $('#companyReset');if(reset)reset.hidden=!(query || regime || companyFilter!=='all');
-  render(RazyncDirectory.select(current,{query,regime,filter:companyFilter,sort:$('#companySort')?.value || 'code'}));
+  const reset = $('#companyReset');if(reset)reset.hidden=!(query || regime || accounting || companyFilter!=='all');
+  render(RazyncDirectory.select(current,{query,regime,accounting,filter:companyFilter,sort:$('#companySort')?.value || 'code'}));
 }
 function resetCompanyFilters() {
-  search.value='';$('#regimeFilter').value='';companyFilter='all';
+  search.value='';$('#regimeFilter').value='';$('#companyAccountingFilter').value='';companyFilter='all';
   $$('.company-filter').forEach(button=>{
     const active=button.dataset.filter==='all';button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));
   });
@@ -1843,6 +1842,7 @@ function resetCompanyFilters() {
 }
 search.addEventListener("input", filterCompanies);
 $('#regimeFilter').addEventListener('change',filterCompanies);
+$('#companyAccountingFilter').addEventListener('change',filterCompanies);
 $('#companySort')?.addEventListener('change',filterCompanies);
 $('#companySearchClear')?.addEventListener('click',()=>{search.value='';filterCompanies();search.focus();});
 $('#companyReset')?.addEventListener('click',resetCompanyFilters);

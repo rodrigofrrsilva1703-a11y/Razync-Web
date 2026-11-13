@@ -30,7 +30,7 @@
   <link rel="stylesheet" href="./assets/css/base-maintenance.css?v=company-tools-20261031-1">
   <link rel="stylesheet" href="./assets/css/admin-auth.css?v=password-eye-20261106-1">
   <link rel="stylesheet" href="./assets/css/tool-preparation.css?v=company-upload-three-parts-20261031-3">
-  <link rel="stylesheet" href="./assets/css/company-directory.css?v=accounting-status-1">
+  <link rel="stylesheet" href="./assets/css/company-directory.css?v=accounting-status-2">
   <link rel="stylesheet" href="./assets/css/base-investigation.css?v=assistant-shortcut-1">
   <link rel="stylesheet" href="./assets/css/themes.css?v=admin-close-1">
   <link rel="stylesheet" href="./assets/css/sidebar-motion.css?v=20261029-1">
@@ -231,12 +231,16 @@
             </div>
             <label for="regimeFilter" class="visually-hidden">Filtrar por regime</label><select id="regimeFilter"><option value="">Todos os regimes</option><option>LUCRO REAL</option><option>LUCRO PRESUMIDO</option><option>SIMPLES NACIONAL</option></select>
             <label for="companySort" class="visually-hidden">Ordenar empresas</label><select id="companySort"><option value="code">Código crescente</option><option value="name">Nome de A a Z</option><option value="tools">Com ferramentas primeiro</option></select>
+            <label for="companyAccountingFilter" class="visually-hidden">Filtrar por situação contábil</label>
+            <select id="companyAccountingFilter">
+              <option value="">Situação contábil</option>
+              <option value="digital">Contabilidade digital</option>
+              <option value="noBankMovement">Sem movimento bancário</option>
+            </select>
             </div>
             <div class="directory-toolbar">
               <div class="company-filters" role="group" aria-label="Filtrar empresas da carteira"><button type="button" class="company-filter active" data-filter="all" aria-pressed="true">Todas <span class="filter-count" aria-hidden="true"></span></button><button type="button" class="company-filter" data-filter="organizer" aria-pressed="false">Com ferramentas <span class="filter-count" aria-hidden="true"></span></button><button type="button" class="company-filter" data-filter="multibank" aria-pressed="false">Múltiplos bancos <span class="filter-count" aria-hidden="true"></span></button><button type="button" class="company-filter" data-filter="catalog" aria-pressed="false">Sem ferramenta <span class="filter-count" aria-hidden="true"></span></button>
-                <button type="button" class="company-filter" data-filter="digital" aria-pressed="false">Contabilidade digital <span class="filter-count" aria-hidden="true"></span></button>
-                <button type="button" class="company-filter" data-filter="noBankMovement" aria-pressed="false">Sem movimento bancário <span class="filter-count" aria-hidden="true"></span></button>
-              </div>
+</div>
               <div class="directory-views" role="group" aria-label="Visualização das empresas"><button type="button" data-company-view="cards" aria-pressed="true"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="12" y="3" width="5" height="5" rx="1"/><rect x="3" y="12" width="5" height="5" rx="1"/><rect x="12" y="12" width="5" height="5" rx="1"/></svg>Cartões</button><button type="button" data-company-view="list" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 5h10M7 10h10M7 15h10M3 5h.1M3 10h.1M3 15h.1"/></svg>Lista</button></div>
             </div>
           </div>
@@ -1080,13 +1084,13 @@
   <script src="./assets/js/lazy-assets.js?v=20261024-2"></script>
   <script src="./assets/js/workbook-result.js?v=base-investigation-20261030-1"></script>
   <script src="./assets/js/organizer-jobs.js?v=20261026-1"></script>
-  <script src="./assets/js/company-directory.js?v=accounting-status-1"></script>
+  <script src="./assets/js/company-directory.js?v=accounting-status-2"></script>
   <script src="./assets/js/converter-global.js?v=standard-preview-20261109-1"></script>
   <script src="./assets/js/base-investigation.js?v=assistant-shortcut-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=horeb-1092-1"></script>
   <script src="./assets/js/monthly-tasks.js?v=admin-notices-1"></script>
-  <script src="./assets/js/app.js?v=accounting-status-1"></script>
+  <script src="./assets/js/app.js?v=accounting-status-2"></script>
   <script src="./assets/js/migration.js?v=otom-1166-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>

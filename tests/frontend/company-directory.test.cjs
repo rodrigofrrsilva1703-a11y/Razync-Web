@@ -67,9 +67,9 @@ test('situação contábil filtra os códigos informados dentro da carteira',()=
   const digital=[163,594,1128,1159,1382,1448,1481,1491];
   const noBankMovement=[167,307,414,604,627,733,1007,1059,1134,1220,1243,1295,1370,1414,1510];
   const portfolio=[...digital,...noBankMovement,1092].map(codigo=>({codigo,nome:'Empresa '+codigo,regime:'LUCRO REAL'}));
-  assert.deepEqual(select(portfolio,{filter:'digital'}),digital);
-  assert.deepEqual(select(portfolio,{filter:'noBankMovement'}),noBankMovement);
-  assert.deepEqual(select(portfolio,{filter:'digital',query:'594',regime:'LUCRO REAL'}),[594]);
+  assert.deepEqual(select(portfolio,{accounting:'digital'}),digital);
+  assert.deepEqual(select(portfolio,{accounting:'noBankMovement'}),noBankMovement);
+  assert.deepEqual(select(portfolio,{accounting:'digital',query:'594',regime:'LUCRO REAL'}),[594]);
   assert.deepEqual(select(portfolio,{query:'sem movimento bancario'}),noBankMovement);
   assert.equal(context.RazyncDirectory.accountingStatus({codigo:'163'}).label,'Contabilidade digital');
   assert.equal(context.RazyncDirectory.accountingStatus({codigo:1092}),undefined);
