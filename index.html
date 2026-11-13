@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="./assets/css/app.css?v=base242-streamlit-1">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="investments" href="./assets/css/bank-investments.css?v=20261020-6">
   <link rel="stylesheet" href="./assets/css/monthly-tasks.css?v=task-notices-1">
-  <link rel="stylesheet" href="./assets/css/workspace.css?v=admin-panel-1">
+  <link rel="stylesheet" href="./assets/css/workspace.css?v=admin-panel-2">
   <link rel="stylesheet" href="./assets/css/tools.css?v=company-tools-20261031-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=fixed-header-home-20261028-3">
   <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=otom-period-1">
@@ -937,25 +937,27 @@
   </div>
 
 
-  <button id="adminToolsToggle" type="button" aria-haspopup="dialog" aria-controls="adminToolsPanel" aria-expanded="false" hidden>
+  <button id="adminToolsToggle" class="floating-shortcut" type="button" aria-label="Administração" data-tooltip="Administração" aria-haspopup="dialog" aria-controls="adminToolsPanel" aria-expanded="false" hidden>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-3.5 7-10V5l-7-3-7 3v7c0 6.5 7 10 7 10Z M9 12l2 2 4-4"/></svg>
-    <span>Administração</span>
   </button>
   <dialog id="adminToolsPanel" aria-labelledby="adminToolsTitle">
     <header>
-      <h2 id="adminToolsTitle">Administração</h2>
+      <div class="admin-panel-brand">
+        <img src="./assets/jaguar-conecta.png?v=oficial-1" width="40" height="40" alt="">
+        <h2 id="adminToolsTitle">Administração</h2>
+      </div>
       <form method="dialog"><button type="submit" aria-label="Fechar administração" autofocus>×</button></form>
     </header>
     <nav aria-label="Ferramentas administrativas">
-      <button id="manageCompanyOwners" type="button" data-admin-view="companyOwners">Responsáveis pelas empresas <span aria-hidden="true">→</span></button>
-      <button id="manageUserAccess" type="button" data-admin-view="userAccess">Controle de acesso <span aria-hidden="true">→</span></button>
-      <button id="addCompany" type="button">Adicionar empresa <span aria-hidden="true">+</span></button>
+      <button id="manageCompanyOwners" type="button" data-admin-view="companyOwners"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2m2-16a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 4v2"/></svg>Responsáveis pelas empresas <span aria-hidden="true">→</span></button>
+      <button id="manageUserAccess" type="button" data-admin-view="userAccess"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></svg>Controle de acesso <span aria-hidden="true">→</span></button>
+      <button id="addCompany" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V4h12v17m-12 0h18M7 8h4m-4 4h4m-4 4h4m7-6h6m-3-3v6"/></svg>Adicionar empresa <span aria-hidden="true">+</span></button>
     </nav>
   </dialog>
 
-  <button id="companyNotificationsNav" type="button" aria-controls="companyNotificationsView" hidden>
+  <button id="companyNotificationsNav" class="floating-shortcut" type="button" aria-label="Notificações" data-tooltip="Notificações" aria-controls="companyNotificationsView" hidden>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0"/></svg>
-    <span>Notificações</span><span id="companyNotificationsBadge" aria-hidden="true" hidden></span>
+    <span id="companyNotificationsBadge" aria-hidden="true" hidden></span>
   </button>
   <div id="companyNotificationToast" popover="manual" hidden>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0"/></svg>

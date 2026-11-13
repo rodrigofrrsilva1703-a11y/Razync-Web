@@ -3256,18 +3256,18 @@ body:not([data-site-locked]):not(.nav-drawer-open) #adminToolsToggle:not([hidden
 }
 #adminToolsPanel {
   position: fixed;
-  inset: 0 0 0 auto;
+  inset: 10px max(10px, env(safe-area-inset-right)) 10px auto;
   margin: 0;
-  width: min(380px, 100vw);
-  height: 100dvh;
+  width: min(340px, calc(100vw - 28px));
+  height: auto;
   max-width: none;
   max-height: none;
   box-sizing: border-box;
   padding: max(20px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) 20px 18px;
-  border: 0;
-  border-inline-start: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
+  border: 1px solid #ffffff16;
+  border-radius: 18px;
+  background: linear-gradient(165deg, #1c304c, #14243b 65%);
+  color: #fff;
   box-shadow: -14px 0 48px #0003;
 }
 #adminToolsPanel::backdrop { background: #0007; }
@@ -3276,29 +3276,30 @@ body:not([data-site-locked]):not(.nav-drawer-open) #adminToolsToggle:not([hidden
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ffffff18;
 }
 #adminToolsPanel h2 { margin: 0; font-size: 20px; }
 #adminToolsPanel nav { display: grid; gap: 8px; }
 #adminToolsPanel button {
   min-height: 44px;
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: 9px;
-  background: var(--surface-2);
-  color: var(--text);
+  background: transparent;
+  color: #d8e1ef;
   font: inherit;
   cursor: pointer;
 }
 #adminToolsPanel header button { width: 44px; font-size: 22px; }
 #adminToolsPanel nav button {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   padding: 9px 12px;
   text-align: start;
 }
-#adminToolsPanel button:hover { border-color: var(--accent); }
+#adminToolsPanel button:hover { background: #203653; color: #fff; }
 #adminToolsPanel button:focus-visible, #adminToolsToggle:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -3307,3 +3308,55 @@ body:not([data-site-locked]):not(.nav-drawer-open) #adminToolsToggle:not([hidden
   #adminToolsPanel[open] { animation: admin-panel-enter .18s ease-out; }
   @keyframes admin-panel-enter { from { transform: translateX(100%); } }
 }
+
+#adminToolsToggle.floating-shortcut,
+#companyNotificationsNav.floating-shortcut {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+}
+.floating-shortcut::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  right: calc(100% + 9px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  white-space: nowrap;
+  visibility: hidden;
+  pointer-events: none;
+}
+.floating-shortcut:is(:hover, :focus-visible)::after { visibility: visible; }
+#companyNotificationsBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  padding: 2px 4px;
+  text-align: center;
+}
+.admin-panel-brand { display: flex; align-items: center; gap: 10px; }
+.admin-panel-brand img { flex: none; object-fit: contain; }
+#adminToolsPanel nav button span { margin-inline-start: auto; }
+#adminToolsPanel nav svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+html[data-theme="dark"] #adminToolsPanel {
+  background: var(--surface-soft);
+  border-color: var(--border);
+}
+html[data-theme="dark"] #adminToolsPanel button { color: #d5e4ff; }
+html[data-theme="dark"] #adminToolsPanel button:hover { background: #17243a; }
