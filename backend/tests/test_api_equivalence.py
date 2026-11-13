@@ -243,7 +243,7 @@ def test_txt_keeps_original_history_and_excel_serial_dates():
 
 def test_company_catalog_does_not_advertise_fiscal_or_tax_tools():
     result=client.get('/api/v1/companies').json()
-    assert len(result)==58
+    assert len(result)==59
     assert all('conferencia_fiscal' not in row['capabilities']['tools'] for row in result)
     assert all('conferencia_impostos' not in row['capabilities']['tools'] for row in result)
     assert all(row['capabilities'].get('status') != 'fiscal_only' for row in result)
