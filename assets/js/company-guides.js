@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    1303: {
+      intro:"Envie os extratos mensais PDF da BMZ Moto Peças: Itaú (conta contábil 508) e/ou Banco do Brasil (conta 8). O Modelo Domínio será exportado em um único Excel com abas separadas por banco.",
+      note:"No Itaú, preserve os PIX, IOF, tarifas, juros e rendimentos, inclusive históricos que ocupam mais de uma linha. No Banco do Brasil, mantenha os débitos e os estornos em lançamentos individuais. Confira os saldos antes da exportação e ignore somente os saldos informativos.",
+      extrato:"Escolha Itaú 508 ou Banco do Brasil 8 e anexe o PDF original da mesma competência do Modelo Domínio; pagamentos e estornos são conferidos individualmente.",
+      base:"Ensine as classificações a partir do Modelo Domínio revisado, separando Itaú 508 e Banco do Brasil 8 sem misturar históricos das contas."
+    },
     1167: {
       intro:"A empresa 1167 tem movimento em Banco do Brasil 8, Sicoob 506, Itaú 508 e Bradesco 507 (Ag. 538, CC 0301794-0). Envie um ou mais extratos em PDF; o Excel Modelo Domínio terá uma aba para cada banco.",
       note:"Os extratos são de julho/2026. No Bradesco, a lista de julho continua na página 2, mas Últimos Lançamentos de agosto e Saldos Invest Fácil devem ficar fora. Itaú: históricos e favorecidos podem estar em várias linhas, sem duplicação. BB: BB Rende Fácil é movimento real. Sicoob: saldos negativos e valores C/D, com validação por dia.",
