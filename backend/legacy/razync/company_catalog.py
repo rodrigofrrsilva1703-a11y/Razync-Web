@@ -49,6 +49,7 @@ EMPRESAS = [
     {"codigo": 1151, "nome": "MRI SERVICE LTDA", "regime": "Não informado"},
     {"codigo": 1187, "nome": "OKKTECH REPRESENTACOES COMERCIAIS", "regime": "Não informado"},
     {"codigo": 1160, "nome": "GUNG WEN COMERCIO VAREJISTA DE PECAS E ACESSORIOS", "regime": "Não informado"},
+    {"codigo": 1167, "nome": "IMPERIO GONG COMERCIO VAREJISTA DE PECAS E ACESSORIOS LTDA", "regime": "Não informado"},
     {"codigo": 1208, "nome": "KAIROS DESMONTE INDUSTRIAIS EIRELI - ME", "regime": "LUCRO PRESUMIDO", "chave_sistema": "kairos_1208"},
     {"codigo": 1211, "nome": "GZ IMPORTADORA E EXPORTADORA LTDA EPP (ANTIGA BODY-UP)", "regime": "LUCRO PRESUMIDO", "chave_sistema": "gz_1211"},
     {"codigo": 1248, "nome": "RGR IMPORTADORA E EXPORTADORA LTDA - EPP", "regime": "LUCRO PRESUMIDO"},
