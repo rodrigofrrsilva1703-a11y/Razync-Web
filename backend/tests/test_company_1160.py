@@ -98,6 +98,8 @@ def test_bb_preserves_debit_and_reversal_with_balance():
         (460,221,"50,00"),(495,221,"D"),
         (65,239,"13/07/2026"),(265,239,"Estorno de Débito"),
         (460,239,"50,00"),(495,239,"C"),(503,239,"100,00"),(543,239,"D"),
+        (65,257,"31/07/2026"),(265,257,"S A L D O"),
+        (503,257,"100,00"),(543,257,"D"),
     ]])
     result=module.read_banco_brasil(content)
     assert result["VALOR"].tolist()==[-50.0,50.0]
