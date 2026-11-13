@@ -155,7 +155,34 @@ def _learning_records(company, content, filename, data_inicial='', data_final=''
         if not isinstance(imported, list):
             raise ValueError('Base de classificações inválida.')
     else:
-        imported = engine.importar_arquivos_classificados([SourceFile(content, filename)], slug(company), accounts(company))
+        # Razões antigos exportados pelo Domínio podem ser OLE/BIFF com
+        # apontadores internos de planilha inválidos. O leitor especializado
+        # tenta a recuperação em memória, sem regravar o documento original.
+        # Se não for possível, não submeter o mesmo XLS corrompido ao leitor
+        # genérico, que expõe ao usuário "Expected BOF record".
+        if filename.lower().endswith('.xls'):
+            from razync.dominio_ledger import _ler_bruto
+            recovered = _ler_bruto(content, filename)
+            if recovered is None or recovered.empty:
+                raise ValueError(
+                    'Não foi possível ler este Razão .xls do Domínio: a estrutura '
+                    'interna do arquivo está inconsistente. Exporte novamente '
+                    'o Razão como XLSX no Domínio ou envie o XLS original para '
+                    'análise da recuperação. Nenhum lançamento foi aprendido.'
+                )
+        try:
+            imported = engine.importar_arquivos_classificados(
+                [SourceFile(content, filename)], slug(company), accounts(company))
+        except Exception as exc:
+            if filename.lower().endswith('.xls') and (
+                'BOF' in str(exc) or 'Unsupported format' in str(exc)
+            ):
+                raise ValueError(
+                    'O Razão .xls não pôde ser interpretado integralmente. '
+                    'Exporte novamente em XLSX ou envie o XLS original para '
+                    'avaliar sua recuperação. Nenhum lançamento foi aprendido.'
+                ) from exc
+            raise
     if bool(data_inicial) != bool(data_final):
         raise ValueError('Informe as duas datas do período.')
     if data_inicial:
