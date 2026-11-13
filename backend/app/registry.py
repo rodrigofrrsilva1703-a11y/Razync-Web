@@ -189,6 +189,15 @@ CAPABILITIES[977] = {
         {"name": "francesinhas", "label": "Francesinhas Bradesco", "accept": ".zip", "optional": True},
     ],
 }
+CAPABILITIES[1092] = {
+    "status": "api_ready", "workflow": "advanced", "banks": {"sicredi": "505"},
+    "tools": ["modelo_dominio", "conferencia_extrato", "base_inteligente"],
+    "roles": [
+        {"name": "extrato", "label": "Extrato mensal Sicredi", "accept": ".pdf"},
+        {"name": "comprovantes", "label": "Comprovantes Sicredi (boletos, DDA e DARF)", "accept": ".pdf",
+         "multiple": True, "optional": True},
+    ],
+}
 CAPABILITIES[818] = {
     "status": "api_ready", "workflow": "advanced", "banks": {"santander": "509"},
     "roles": [

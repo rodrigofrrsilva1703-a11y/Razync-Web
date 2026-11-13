@@ -108,6 +108,11 @@ def _sicredi_pdf_empresa(code, content):
 def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
+    if code == 1092:
+        if bank != "sicredi" or not filename.lower().endswith(".pdf"):
+            raise ValueError("Empresa 1092: envie o extrato Sicredi em PDF.")
+        from app.sicredi_1092 import read_statement
+        return read_statement(content, accounts(code)[bank])
     if code == 1130:
         from app.rt_moto_1130 import statement as read_rt_statement
         return read_rt_statement(bank, content, filename)
@@ -336,7 +341,7 @@ def reconcile(code, bank, model, statements, options=None):
     options = options or {}
     with engine.processing_context(slug(code)):
         real_bank = 'itau' if bank.startswith('itau') else bank
-        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 799, 933, 977, 1050, 1160, 1167, 1303, 1408, 1058, 1130, 1151, 1165, 1166, 1187, 1399, 1535, 1536, 1537} else None
+        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 799, 933, 977, 1050, 1092, 1160, 1167, 1303, 1408, 1058, 1130, 1151, 1165, 1166, 1187, 1399, 1535, 1536, 1537} else None
         main, excluded, _ = engine.ler_planilha_organizada_conferencia(model, real_bank, account)
         main, excluded = filter_frame(main, options), filter_frame(excluded, options)
         if code == 521:
@@ -554,6 +559,18 @@ def _workflow(code, roles, options):
             if not sheets:
                 raise ValueError("Envie pelo menos um extrato com lançamentos no período.")
             return gerar_modelo_abas(sheets, date_format="dd/mm/yyyy"), "EMPRESA_977_MODELO_DOMINIO.xlsx"
+        if code == 1092:
+            from app.sicredi_1092 import enrich
+
+            extracts = roles.get("extrato", [])
+            if len(extracts) != 1:
+                raise ValueError("Envie um extrato mensal Sicredi por processamento.")
+            filename, content = extracts[0]
+            frame = statement(code, "sicredi", content, filename)
+            frame = filter_frame(enrich(frame, [pdf for _, pdf in roles.get("comprovantes", [])]), options)
+            if frame.empty:
+                raise ValueError("Nenhum lançamento no período selecionado.")
+            return gerar_modelo_abas({"Sicredi": frame.sort_values("DATA", kind="stable")}, date_format="dd/mm/yyyy"), "HOREB_1092_SICREDI_MODELO_DOMINIO.xlsx"
         if code == 818:
             from app.santander_boletos_818 import enrich
 
