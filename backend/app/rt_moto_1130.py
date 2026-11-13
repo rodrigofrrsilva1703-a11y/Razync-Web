@@ -57,6 +57,12 @@ def workflow(roles, options):
     from app.excel import gerar_modelo_abas
     from app.migration_services import filter_frame
 
+    selected = options.get("bancos", list(LABELS))
+    if not isinstance(selected, list) or not selected or any(
+        not isinstance(bank, str) or bank not in LABELS for bank in selected
+    ):
+        raise ValueError("Selecione as contas da RT Moto que deseja organizar.")
+
     groups = {}
     seen = set()
     for role in ("itau", "bb"):
@@ -64,6 +70,8 @@ def workflow(roles, options):
             if not filename.lower().endswith(".pdf"):
                 raise ValueError("Envie os extratos da RT Moto em PDF.")
             bank, frame = ("itau", statement("itau", content, filename)) if role == "itau" else read_bb(content)
+            if bank not in selected:
+                continue
             keys = {(bank, month) for month in frame["DATA"].dt.to_period("M").unique()}
             if seen & keys:
                 raise ValueError(f"Envie somente um extrato por competência para {LABELS[bank]}.")
@@ -75,5 +83,5 @@ def workflow(roles, options):
         if not frame.empty:
             sheets[LABELS[bank]] = frame.sort_values("DATA", kind="stable")
     if not sheets:
-        raise ValueError("Envie pelo menos um extrato com lançamentos no período selecionado.")
+        raise ValueError("Envie pelo menos um extrato das contas selecionadas com lançamentos no período.")
     return gerar_modelo_abas(sheets, date_format="dd/mm/yyyy"), "RT_MOTO_1130_MODELO_DOMINIO.xlsx"

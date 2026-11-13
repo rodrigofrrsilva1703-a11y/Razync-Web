@@ -437,7 +437,8 @@ function renderBankSelector(container, banks, options={}) {
 
     const textBox = document.createElement("span");
     const strong = document.createElement("strong");
-    strong.textContent = bankName(bank);
+    strong.textContent = bank === "banco_brasil" && Object.hasOwn(banks, "bb_filial")
+      ? "Banco do Brasil · Matriz" : bankName(bank);
     const small = document.createElement("small");
     small.textContent = account ? `Conta ${account}` : "Conta não informada";
     textBox.append(strong,small);
@@ -910,14 +911,26 @@ function renderWorkflow(company) {
 
     const filterByBanks = [3,178,343,266,1396].includes(Number(company.codigo));
     const roleBanks = Object.keys(banks).filter(bank => (cap.roles || []).some(role => role.name === bank));
-    if (filterByBanks) {
+    if (cap.detects_banks) {
+      const syncUploads = selectedBanks => {
+        for (const role of ["itau", "bb"]) {
+          const visible = role === "itau" ? selectedBanks.includes("itau")
+            : selectedBanks.some(bank => bank !== "itau");
+          const group = advancedFields.querySelector(`[data-role-group="${role}"]`);
+          group.hidden = !visible;
+          group.querySelector("[data-role]").disabled = !visible;
+        }
+      };
+      renderBankSelector(organizerPicker, banks, {mode:"multi", sendSelectedBanks:true, onSelectionChange:syncUploads});
+      syncUploads(Object.keys(banks));
+    } else if (filterByBanks) {
       renderBankSelector(organizerPicker,banks,{mode:"multi",sendSelectedBanks:true});
     } else if (roleBanks.length && !cap.detects_banks) {
       const roleBankMap = Object.fromEntries(roleBanks.map(bank=>[bank,banks[bank]]));
       renderBankSelector(organizerPicker,roleBankMap,{mode:"multi",controlRoleFields:true});
     }
 
-    if (!filterByBanks && (!roleBanks.length || cap.detects_banks) && Object.keys(banks).length) {
+    if (!filterByBanks && !roleBanks.length && !cap.detects_banks && Object.keys(banks).length) {
       const bankInfo = document.createElement("p");
       bankInfo.className = "helper";
       bankInfo.textContent = "Contas disponíveis: " + Object.entries(banks).map(([bank, account]) => bankLabel(bank, account)).join(", ");
@@ -1254,7 +1267,7 @@ form.addEventListener("submit", async (event) => {
       }
       const bankOptions=$$("[data-selected-bank]");
       if(bankOptions.length) {
-        options.bancos=bankOptions.filter(input=>input.checked).map(input=>input.dataset.selectedBank);
+        options.bancos=bankOptions.filter(input=>input.checked).map(input=>cap.detects_banks ? input.value : input.dataset.selectedBank);
         if(!options.bancos.length)throw new Error("Selecione pelo menos um banco para organizar.");
       }
       data.append("roles_json", JSON.stringify(roles));
