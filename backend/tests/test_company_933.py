@@ -11,7 +11,9 @@ from app import migration_services as services
 
 def create_statement(*, wrong_total=False, wrong_account=False):
     pdf=fitz.open()
-    pages=[pdf.new_page(width=595,height=842),pdf.new_page(width=595,height=842)]
+    pdf.new_page(width=595,height=842)
+    pdf.new_page(width=595,height=842)
+    pages=[pdf[0],pdf[1]]
     for i,page in enumerate(pages,1):
         page.insert_text((28,42),f"extrato mensal ag 6255 cc {'19059-5' if wrong_account else '19059-4'} ago 2026 {i:03}|002",fontsize=8)
         if i==1:
