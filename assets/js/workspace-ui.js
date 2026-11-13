@@ -192,6 +192,7 @@ function initializeCompanyOwners() {
   const query = document.querySelector("#ownerCompanySearch");
   if (!query) return;
   const rows = document.querySelector("#ownerCompanyRows");
+  const filters = document.querySelector("#ownerCompanyFilters");
   const count = document.querySelector("#ownerCompanyCount");
   const message = document.querySelector("#companyOwnerMessage");
   const endpoint = () => `${API()}/api/v1/company-access/assignments`;
@@ -200,7 +201,7 @@ function initializeCompanyOwners() {
   const removalMessage = document.querySelector("#removeCompanyStatus");
   const removeConfirm = removalForm.querySelector('button[type="submit"]');
   const cancelRemove = document.querySelector("#cancelRemoveCompany");
-  let companies = [], users = [], loading = false, removing;
+  let companies = [], users = [], loading = false, removing, selectedFilter = "all";
   cancelRemove.onclick = () => removalDialog.close();
   removalDialog.addEventListener("cancel", event => {
     if (removeConfirm.disabled) event.preventDefault();
@@ -225,23 +226,40 @@ function initializeCompanyOwners() {
   };
   const pending = new Set();
 
-  function render() {
-    const term = query.value.trim().toLocaleLowerCase("pt-BR");
-    const matching = companies.filter(row => `${row.codigo} ${row.nome} ${row.email}`.toLocaleLowerCase("pt-BR").includes(term));
+  const searchKey = value => value.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase("pt-BR");
+
+  function render(updatedCode) {
+    const terms = searchKey(query.value.trim()).split(/\s+/).filter(Boolean);
+    const assigned = companies.filter(company => company.email).length;
+    const counts = {all:companies.length, assigned, unassigned:companies.length - assigned};
+    for (const button of filters.querySelectorAll("button")) {
+      button.firstElementChild.textContent = counts[button.dataset.ownerFilter];
+      button.setAttribute("aria-pressed", String(button.dataset.ownerFilter === selectedFilter));
+    }
+    const matching = companies.filter(company => {
+      if (selectedFilter !== "all" && Boolean(company.email) !== (selectedFilter === "assigned")) return false;
+      const key = searchKey(`${company.codigo} ${company.nome} ${company.email || ""} ${company.regime || ""}`);
+      return terms.every(term => key.includes(term));
+    });
     count.textContent = `${matching.length} de ${companies.length} empresas`;
     rows.replaceChildren();
     for (const company of matching) {
       const row = rows.insertRow();
+      if (company.codigo === updatedCode) row.classList.add("owner-row-updated");
       const companyCell = row.insertCell();
       const name = document.createElement("strong");
       const code = document.createElement("small");
       name.textContent = company.nome;
       code.textContent = "#" + company.codigo;
-      companyCell.append(name, code);
+      companyCell.append(code, name);
       const ownerCell = row.insertCell();
       ownerCell.textContent = company.email || "Sem responsável";
+      ownerCell.classList.toggle("owner-unassigned", !company.email);
       const regimeCell = row.insertCell();
-      regimeCell.textContent = company.regime || "Não informado";
+      const regimeBadge = document.createElement("span");
+      regimeBadge.className = "owner-regime";
+      regimeBadge.textContent = company.regime || "Não informado";
+      regimeCell.append(regimeBadge);
       const actions = row.insertCell();
       const edit = document.createElement("button");
       edit.type = "button";
@@ -252,6 +270,7 @@ function initializeCompanyOwners() {
       const button = document.createElement("button");
       button.type = "button";
       button.textContent = "Salvar";
+      button.className = "owner-save";
       button.disabled = true;
       button.hidden = true;
       const select = document.createElement("select");
@@ -272,7 +291,9 @@ function initializeCompanyOwners() {
       cancel.hidden = true;
       cancel.onclick = () => {
         ownerCell.textContent = company.email || "Sem responsável";
-        regimeCell.textContent = currentRegime;
+        regimeCell.replaceChildren(regimeBadge);
+        row.classList.remove("owner-row-editing");
+        remove.hidden = false;
         select.value = company.email || "";
         regime.value = currentRegime;
         button.disabled = button.hidden = cancel.hidden = true;
@@ -280,6 +301,8 @@ function initializeCompanyOwners() {
         edit.focus();
       };
       edit.onclick = () => {
+        row.classList.add("owner-row-editing");
+        remove.hidden = true;
         ownerCell.replaceChildren(select);
         regimeCell.replaceChildren(regime);
         edit.hidden = true;
@@ -327,8 +350,9 @@ function initializeCompanyOwners() {
         } finally {
           pending.delete(company.codigo);
           if (updated || !row.isConnected) {
-            render();
-            rows.querySelector(`button[aria-label="Alterar empresa ${company.codigo}"]`)?.focus({preventScroll:true});
+            render(updated ? company.codigo : undefined);
+            const target = rows.querySelector(`button[aria-label="Alterar empresa ${company.codigo}"]`) || query;
+            if (rows.closest(".global-view").classList.contains("active")) target.focus({preventScroll:true});
           } else {
             select.disabled = regime.disabled = cancel.disabled = remove.disabled = false;
             updateButton();
@@ -343,7 +367,17 @@ function initializeCompanyOwners() {
     }
   }
 
-  query?.addEventListener("input", render);
+  query.addEventListener("input", () => render());
+  for (const filter of filters.querySelectorAll("button")) {
+    filter.onclick = () => {
+      if (selectedFilter === filter.dataset.ownerFilter) return;
+      selectedFilter = filter.dataset.ownerFilter;
+      render();
+      if (window.matchMedia("(prefers-reduced-motion: no-preference)").matches) {
+        rows.animate([{opacity:.45}, {opacity:1}], {duration:240, easing:"ease-out"});
+      }
+    };
+  }
   loadCompanyOwners = async () => {
     if (loading || pending.size) return;
     loading = true;
@@ -357,6 +391,7 @@ function initializeCompanyOwners() {
       const data = await response.json();
       companies = data.companies;
       users = data.users;
+      filters.hidden = false;
       render();
       message.textContent = "";
     } catch (error) { message.textContent = error.message; }

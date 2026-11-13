@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="./assets/css/app.css?v=base242-streamlit-1">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="investments" href="./assets/css/bank-investments.css?v=20261020-6">
   <link rel="stylesheet" href="./assets/css/monthly-tasks.css?v=task-notices-1">
-  <link rel="stylesheet" href="./assets/css/workspace.css?v=access-directory-3">
+  <link rel="stylesheet" href="./assets/css/workspace.css?v=company-directory-1">
   <link rel="stylesheet" href="./assets/css/tools.css?v=company-tools-20261031-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=fixed-header-home-20261028-3">
   <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=otom-period-1">
@@ -343,13 +343,21 @@
           <h1 id="companyOwnerTitle" tabindex="-1">Responsáveis pelas empresas</h1>
           <p>Consulte a carteira do escritório e atualize quem responde por cada empresa.</p>
         </header>
-        <div class="owner-directory">
-          <div class="owner-toolbar">
-            <div><label for="ownerCompanySearch">Buscar empresa ou responsável</label>
-            <input id="ownerCompanySearch" type="search" placeholder="Código, nome ou e-mail" autocomplete="off"></div>
-            <span id="ownerCompanyCount" role="status"></span>
+        <div class="owner-directory access-directory">
+          <div class="access-toolbar">
+            <label class="access-search" for="ownerCompanySearch">
+              <span class="access-search-icon" aria-hidden="true"></span>
+              <span class="sr-only">Buscar empresa ou responsável</span>
+              <input id="ownerCompanySearch" type="search" placeholder="Código, empresa ou responsável" autocomplete="off">
+            </label>
+            <div id="ownerCompanyFilters" class="access-dashboard-filters" role="group" aria-label="Filtrar empresas" hidden>
+              <button type="button" data-owner-filter="all" aria-pressed="true"><strong>0</strong>Todas</button>
+              <button type="button" data-owner-filter="assigned" aria-pressed="false"><strong>0</strong>Com responsável</button>
+              <button type="button" data-owner-filter="unassigned" aria-pressed="false"><strong>0</strong>Sem responsável</button>
+            </div>
             <button id="addCompany" type="button" hidden class="secondary-action"><span aria-hidden="true">+</span> Adicionar empresa</button>
           </div>
+          <div class="access-directory-meta"><span id="ownerCompanyCount" role="status"></span></div>
           <p id="companyOwnerMessage" role="status"></p>
           <div class="owner-table-scroll" role="region" aria-label="Empresas e responsáveis" tabindex="0">
             <table class="owner-table">
@@ -1009,7 +1017,7 @@
   <script src="./assets/js/site-access.js?v=alterar-senha-2"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
-  <script src="./assets/js/workspace-ui.js?v=access-directory-3"></script>
+  <script src="./assets/js/workspace-ui.js?v=company-directory-1"></script>
   <script src="./assets/js/company-guides.js?v=bb-1535-1"></script>
   <script type="text/plain" data-lazy-tool="investments" src="./assets/js/bank-investments.js?v=20261020-8"></script>
   <script src="./assets/js/dom-utils.js?v=20261020-1"></script>

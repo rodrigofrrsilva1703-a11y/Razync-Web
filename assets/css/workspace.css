@@ -2865,29 +2865,25 @@ body[data-site-locked] #companyNotificationToast {display:none}
 .owner-directory :is(button, select, input, summary):focus-visible {outline: 2px solid #6696e6; outline-offset: 2px}
 .company-row-owner {display: block; flex-basis: 100%; color: var(--muted); font-size: 12px}
 @media (max-width: 760px) {
-  #companyOwnersView .owner-table, #userAccessView .owner-table,
-  #companyOwnersView tbody, #userAccessView tbody {display: block}
-  #companyOwnersView thead, #userAccessView thead {
+  #userAccessView .owner-table, #userAccessView tbody {display: block}
+  #userAccessView thead {
     position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
   }
-  .owner-directory tbody tr {
+  #userAccessView .owner-directory tbody tr {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 8px 12px;
     border-top: 1px solid var(--border);
   }
-  .owner-directory tbody td {min-width: 0; padding: 5px; border: 0}
-  .owner-directory tbody td:first-child, .owner-directory tbody td:last-child {grid-column: 1 / -1}
-  #companyOwnersView tbody td:nth-child(2)::before {content: "Responsável"}
-  #companyOwnersView tbody td:nth-child(3)::before {content: "Regime tributário"}
-  #companyOwnersView tbody td::before {display: block; color: var(--muted); font-size: 12px}
+  #userAccessView .owner-directory tbody td {min-width: 0; padding: 5px; border: 0}
+  #userAccessView .owner-directory tbody td:first-child, #userAccessView .owner-directory tbody td:last-child {grid-column: 1 / -1}
 }
 
-#userAccessView {
+:is(#userAccessView, #companyOwnersView) {
   container-type: inline-size;
   --access-bg: #fff;
   --access-subtle: #f5f7fb;
@@ -2899,7 +2895,7 @@ body[data-site-locked] #companyNotificationToast {display:none}
   --access-red: #a63747;
   --access-columns: minmax(0, 1.7fr) minmax(126px, 1fr) minmax(224px, 1.65fr) 108px;
 }
-html[data-theme="dark"] #userAccessView {
+html[data-theme="dark"] :is(#userAccessView, #companyOwnersView) {
   --access-bg: #0b0b0b;
   --access-subtle: #151515;
   --access-line: #313131;
@@ -2954,7 +2950,7 @@ html[data-theme="dark"] #userAccessView {
   top: 8px;
   transform: rotate(45deg);
 }
-#userAccessView #userAccessSearch {
+:is(#userAccessView, #companyOwnersView) .access-search input {
   width: 100%;
   min-height: 42px;
   padding-inline: 36px 12px;
@@ -3133,4 +3129,95 @@ html[data-theme="dark"] #userAccessView {
   .access-dashboard-filters button {flex: 1; padding-inline: 3px}
   .access-account-list {padding: 0 8px 8px; display: grid; gap: 7px}
   .access-account {border: 1px solid var(--access-line); border-radius: 10px}
+}
+
+#companyOwnersView .owner-directory {
+  border-color: var(--access-line);
+  border-radius: 16px;
+  background: var(--access-bg);
+}
+#companyOwnersView .access-search {max-width: none}
+#companyOwnersView #addCompany {
+  min-height: 40px;
+  border: 1px solid var(--access-line);
+  border-radius: 9px;
+  color: var(--access-blue);
+  background: var(--access-subtle);
+  font-size: 12px;
+}
+#companyOwnerMessage {padding-inline: 20px; color: var(--access-blue)}
+#companyOwnersView .owner-table-scroll {overflow: visible}
+#companyOwnersView .owner-table {
+  color: var(--access-text);
+  table-layout: fixed;
+  min-width: 0;
+}
+#companyOwnersView .owner-table :is(th, td) {border-color: var(--access-line)}
+#companyOwnersView .owner-table th {background: var(--access-subtle); color: var(--access-muted)}
+#companyOwnersView .owner-table th:nth-child(1) {width: 30%}
+#companyOwnersView .owner-table th:nth-child(2) {width: 27%}
+#companyOwnersView .owner-table th:nth-child(3) {width: 21%}
+#companyOwnersView .owner-table th:last-child {width: 22%}
+#companyOwnersView .owner-table td {padding: 10px 16px; overflow-wrap: anywhere}
+#companyOwnersView .owner-table td[colspan] {padding: 18px 20px; color: var(--access-muted)}
+#companyOwnersView .owner-table td strong {margin-top: 4px; font-size: 13px}
+#companyOwnersView .owner-table td small {
+  width: fit-content;
+  margin: 0;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--access-subtle);
+  color: var(--access-muted);
+  font-variant-numeric: tabular-nums;
+}
+.owner-regime {
+  display: inline-block;
+  padding: 4px 7px;
+  border: 1px solid var(--access-line);
+  border-radius: 6px;
+  background: var(--access-subtle);
+  color: var(--access-text);
+  font-size: 11px;
+  font-weight: 650;
+}
+.owner-unassigned {color: var(--access-muted)}
+#companyOwnersView .owner-table :is(button, select) {
+  background: var(--access-bg);
+  color: var(--access-text);
+  border: 1px solid var(--access-line);
+  border-radius: 8px;
+}
+#companyOwnersView .owner-table button {margin: 2px 4px 2px 0; min-height: 34px; font-size: 12px}
+#companyOwnersView .owner-table :is(.admin-edit, .owner-save) {color: var(--access-blue)}
+#companyOwnersView .owner-table .admin-remove {color: var(--access-red)}
+#companyOwnersView .owner-table tr:is(:hover, :focus-within, .owner-row-editing) {background: var(--access-subtle)}
+#companyOwnersView :is(button, input, select):focus-visible {outline: 2px solid var(--access-blue); outline-offset: 2px}
+#companyOwnersView .owner-table :is(.owner-row-editing, .owner-row-updated) {box-shadow: inset 3px 0 var(--access-blue)}
+#companyOwnersView .owner-table .owner-row-updated {box-shadow: inset 3px 0 var(--access-green)}
+@media (prefers-reduced-motion: no-preference) {
+  #companyOwnersView.active .owner-directory {animation: access-reveal 390ms cubic-bezier(.2,.7,.25,1)}
+  #companyOwnersView .owner-row-updated {animation: access-update 900ms ease-out}
+  #companyOwnersView .owner-table :is(button, tr) {transition: background-color 160ms, border-color 160ms}
+}
+@container (width < 760px) {
+  #companyOwnersView .owner-table, #companyOwnersView tbody {display: block}
+  #companyOwnersView thead {position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)}
+  #companyOwnersView tbody {padding: 0 10px 10px}
+  #companyOwnersView tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border: 1px solid var(--access-line);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    padding: 5px;
+  }
+  #companyOwnersView .owner-table td {padding: 6px; border: 0; min-width: 0}
+  #companyOwnersView td:is(:first-child, :last-child) {grid-column: 1 / -1}
+  #companyOwnersView td::before {display: block; margin-bottom: 3px; color: var(--access-muted); font-size: 11px}
+  #companyOwnersView td:nth-child(2)::before {content: "Responsável"}
+  #companyOwnersView td:nth-child(3)::before {content: "Regime tributário"}
+}
+@media (max-width: 560px) {
+  #companyOwnersView .access-toolbar {gap: 8px}
+  #companyOwnersView .access-dashboard-filters button {gap: 4px}
 }
