@@ -14,7 +14,7 @@ from app.excel import _template_bytes, gerar_modelo_abas
 from app.registry import CAPABILITIES
 
 COLUNAS = ['DESCRIÇÃO', 'DATA', 'VALOR', 'DÉBITO', 'CRÉDITO', 'HISTÓRICO']
-SLUGS = {1160: 'gung_wen_1160', 933: 'cljm_933', 799: 'urocabral_799', 1399: 'jetmaq_1399', 1187: 'okktech_1187', 1151: 'mri_service_1151', 1131: 'cotas_premiadas_1131', 1058: 'quarteto_1058', 1033: 'terratest_1033', 1024: 'teles_veras_1024', 818: 'youz_818', 803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
+SLUGS = {1167: 'imperio_gong_1167', 1160: 'gung_wen_1160', 933: 'cljm_933', 799: 'urocabral_799', 1399: 'jetmaq_1399', 1187: 'okktech_1187', 1151: 'mri_service_1151', 1131: 'cotas_premiadas_1131', 1058: 'quarteto_1058', 1033: 'terratest_1033', 1024: 'teles_veras_1024', 818: 'youz_818', 803: 'felix_gitti_803', 745: 'dourado_745', 521: 'bormais_521', 1522: 'priscila_camargo_1522', 1248: 'rgr_1248', 3: 'autokraft_industrial', 178: 'autokraft_projetos', 343: 'isa',
          242: 'eletro_forte', 1408: 'eletro_forte_filial_1408',
          266: 'nova_geracao_matriz', 1396: 'nova_geracao_filial',
          285: 'lcarlos', 968: 'radani', 1000: 'accede_automacao',
@@ -141,6 +141,13 @@ def statement(code, bank, content, filename):
         return read_statement(content, holder=r"RODRIGUEZ\s+GONCALES\s+SOCIEDADE\s+DE\s+ADVOGADOS",
                               tax_id=None, agency="0644", account="0007377-7",
                               accounting_account=accounts(code)[bank], salary_names=names)
+    if code == 1167:
+        if not filename.lower().endswith(".pdf"):
+            raise ValueError("Empresa 1167: extratos devem ser PDF.")
+        from app.company_1167 import READERS
+        if bank not in READERS:
+            raise ValueError("Empresa 1167: banco não cadastrado.")
+        return READERS[bank](content)
     if code == 1160:
         if not filename.lower().endswith(".pdf"):
             raise ValueError("Empresa 1160: extratos devem ser PDF.")
@@ -317,7 +324,7 @@ def reconcile(code, bank, model, statements, options=None):
     options = options or {}
     with engine.processing_context(slug(code)):
         real_bank = 'itau' if bank.startswith('itau') else bank
-        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 799, 933, 977, 1160, 1408, 1058, 1130, 1151, 1165, 1166, 1187, 1399, 1535, 1536, 1537} else None
+        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 799, 933, 977, 1160, 1167, 1408, 1058, 1130, 1151, 1165, 1166, 1187, 1399, 1535, 1536, 1537} else None
         main, excluded, _ = engine.ler_planilha_organizada_conferencia(model, real_bank, account)
         main, excluded = filter_frame(main, options), filter_frame(excluded, options)
         if code == 521:
@@ -470,6 +477,9 @@ def _workflow(code, roles, options):
         if code in {1165, 1166}:
             from app.otom_1165 import workflow as otom_workflow
             return otom_workflow(roles, options, company=code)
+        if code == 1167:
+            from app.company_1167 import workflow_1167
+            return workflow_1167(roles,options)
         if code == 1160:
             from app.company_1160 import workflow_1160
             return workflow_1160(roles,options)
