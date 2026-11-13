@@ -986,8 +986,11 @@
   <dialog id="removeCompanyDialog" class="company-dialog" aria-labelledby="removeCompanyTitle">
     <form id="removeCompanyForm">
       <h2 id="removeCompanyTitle">Remover empresa</h2>
+      <p>Tem certeza de que deseja remover esta empresa?</p>
       <p id="removeCompanyName"></p>
       <p>A empresa sairá da carteira e da fila de tarefas. Os registros já salvos serão preservados.</p>
+      <label for="removeCompanyPassword">Senha de acesso ao Jaguar Conecta</label>
+      <input id="removeCompanyPassword" type="password" autocomplete="current-password" maxlength="512" required>
       <p id="removeCompanyStatus" role="status"></p>
       <div class="monthly-history">
         <button id="cancelRemoveCompany" class="secondary-action" type="button" autofocus>Cancelar</button>
@@ -1023,7 +1026,7 @@
   <script src="./assets/js/site-access.js?v=alterar-senha-2"></script>
   <script src="./assets/js/attachment-support.js?v=20261021-1"></script>
   <script src="./assets/js/date-fields.js?v=1"></script>
-  <script src="./assets/js/workspace-ui.js?v=company-directory-1"></script>
+  <script src="./assets/js/workspace-ui.js?v=company-removal-2"></script>
   <script src="./assets/js/company-guides.js?v=rt-moto-1"></script>
   <script type="text/plain" data-lazy-tool="investments" src="./assets/js/bank-investments.js?v=20261020-8"></script>
   <script src="./assets/js/dom-utils.js?v=20261020-1"></script>

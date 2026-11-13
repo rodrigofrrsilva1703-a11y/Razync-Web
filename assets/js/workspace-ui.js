@@ -199,10 +199,15 @@ function initializeCompanyOwners() {
   const removalDialog = document.querySelector("#removeCompanyDialog");
   const removalForm = document.querySelector("#removeCompanyForm");
   const removalMessage = document.querySelector("#removeCompanyStatus");
+  const removalPassword = document.querySelector("#removeCompanyPassword");
   const removeConfirm = removalForm.querySelector('button[type="submit"]');
   const cancelRemove = document.querySelector("#cancelRemoveCompany");
   let companies = [], users = [], loading = false, removing, selectedFilter = "all";
   cancelRemove.onclick = () => removalDialog.close();
+  removalDialog.addEventListener("close", () => {
+    removalPassword.value = "";
+    removing = null;
+  });
   removalDialog.addEventListener("cancel", event => {
     if (removeConfirm.disabled) event.preventDefault();
   });
@@ -210,10 +215,15 @@ function initializeCompanyOwners() {
     event.preventDefault();
     if (!removing || removeConfirm.disabled) return;
     const {codigo} = removing;
-    removeConfirm.disabled = cancelRemove.disabled = true;
+    const password = removalPassword.value;
+    if (!password) return;
+    removalPassword.value = "";
+    removalPassword.disabled = removeConfirm.disabled = cancelRemove.disabled = true;
     removalMessage.textContent = "Removendo…";
     try {
-      const response = await fetch(`${API()}/api/v1/company-access/companies/${codigo}`, {method:"DELETE"});
+      const response = await fetch(`${API()}/api/v1/company-access/companies/${codigo}`, {
+        method:"DELETE", headers:{"Content-Type":"application/json"}, body:JSON.stringify({password})
+      });
       if (!response.ok) throw new Error(await responseError(response));
       companies = companies.filter(row => row.codigo !== codigo);
       removalDialog.close();
@@ -222,7 +232,10 @@ function initializeCompanyOwners() {
       message.textContent = `Empresa ${codigo} removida do catálogo.`;
       await loadCompanies();
     } catch (error) { removalMessage.textContent = error.message; }
-    finally { removeConfirm.disabled = cancelRemove.disabled = false; }
+    finally {
+      removalPassword.disabled = removeConfirm.disabled = cancelRemove.disabled = false;
+      if (removalDialog.open) removalPassword.focus();
+    }
   };
   const pending = new Set();
 

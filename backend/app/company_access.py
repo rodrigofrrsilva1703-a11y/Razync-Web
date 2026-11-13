@@ -6,7 +6,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
+from starlette.concurrency import run_in_threadpool
+
+from app import site_access
 
 from app.site_access import allowlist, current_owner, set_user_suspended, suspended_users, user_presence
 
@@ -167,9 +170,38 @@ def list_assignments():
     }
 
 
+class CompanyRemoval(BaseModel):
+    password: SecretStr = Field(min_length=1, max_length=512)
+
+
 @router.delete("/companies/{company_code}")
-def archive_company(company_code: int):
+async def archive_company(company_code: int, request: Request):
     _require_admin()
+    try:
+        body = bytearray()
+        async for chunk in request.stream():
+            if len(body) + len(chunk) > 8192:
+                raise ValueError()
+            body.extend(chunk)
+        payload = CompanyRemoval.model_validate_json(body)
+    except (ValueError, TypeError):
+        raise HTTPException(422, "Informe a senha de acesso ao Jaguar Conecta.") from None
+
+    if not site_access.allow_attempt(request):
+        raise HTTPException(429, "Muitas tentativas. Aguarde um minuto.")
+    try:
+        valid = await run_in_threadpool(
+            site_access.verify_password, current_owner.get(), payload.password.get_secret_value()
+        )
+    except (RuntimeError, OSError):
+        raise HTTPException(503, "Não foi possível verificar a senha agora.") from None
+    if not valid:
+        raise HTTPException(403, "A senha da conta logada não confere.")
+
+    return await run_in_threadpool(_archive_confirmed_company, company_code)
+
+
+def _archive_confirmed_company(company_code):
     from app.company_service import catalog
 
     if not any(int(row["codigo"]) == company_code for row in catalog()):
