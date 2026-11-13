@@ -116,7 +116,7 @@ def _ler_bruto(file_bytes: bytes, filename: str):
     try:
         # Algumas exportações são XLSX (ZIP) com extensão .xls.
         # Priorizar a assinatura real do arquivo, nunca apenas o nome.
-        if file_bytes.startswith(b"PK\\x03\\x04".replace(b"\\\\", b"\\")):
+        if file_bytes.startswith(b"PK\x03\x04"):
             return pd.read_excel(io.BytesIO(file_bytes), header=None,
                                  dtype=object, engine="openpyxl")
         if extensao == ".xlsx":
