@@ -83,7 +83,7 @@ def read_statement(content):
         within = False
         current_date = None
         for page in document:
-            if "Conta Corrente | Movimentação" in page.get_text():
+            if "conta corrente | movimentacao" in _normalize(page.get_text()):
                 within = True
             if not within:
                 continue
