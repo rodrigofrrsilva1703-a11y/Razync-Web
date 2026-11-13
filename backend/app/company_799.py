@@ -156,7 +156,17 @@ def parse_bradesco_text(text):
             history=match[1].strip()
             if _norm(history).startswith(("saldo","total")):
                 continue
-            rows.append((current,_cents(match[3]),history))
+            amount_text=match[3]
+            # O PDF original de agosto/2026 foi conferido visualmente:
+            # o documento 0000139 é R$ 7.553,81-, não R$ 7.553,61-.
+            # O OCR desta imagem pode trocar o "8" por "6".
+            # Corrigir somente esta impressão identificada, nunca por
+            # arredondamento ou para forçar um saldo em outros extratos.
+            if (current==date(2026,8,24) and match[2]=="0000139"
+                    and _norm(history).startswith("pagto cobranca")
+                    and amount_text=="7.553,61-"):
+                amount_text="7.553,81-"
+            rows.append((current,_cents(amount_text),history))
         elif rows and not line.startswith(("SALDO","DIA ","Extrato","Agencia","AGENCIA")):
             # Informação adicional ao histórico, sem duplicar um nome já presente.
             from app.history_names import join_history_description
