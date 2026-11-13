@@ -141,6 +141,11 @@ def statement(code, bank, content, filename):
         return read_statement(content, holder=r"RODRIGUEZ\s+GONCALES\s+SOCIEDADE\s+DE\s+ADVOGADOS",
                               tax_id=None, agency="0644", account="0007377-7",
                               accounting_account=accounts(code)[bank], salary_names=names)
+    if code == 1050:
+        if bank != "itau" or not filename.lower().endswith(".pdf"):
+            raise ValueError("Empresa 1050: envie o extrato mensal Itaú PDF.")
+        from app.company_1050 import read_statement
+        return read_statement(content)
     if code == 1303:
         if not filename.lower().endswith(".pdf"):
             raise ValueError("Empresa 1303: extratos devem estar em PDF.")
@@ -331,7 +336,7 @@ def reconcile(code, bank, model, statements, options=None):
     options = options or {}
     with engine.processing_context(slug(code)):
         real_bank = 'itau' if bank.startswith('itau') else bank
-        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 799, 933, 977, 1160, 1167, 1303, 1408, 1058, 1130, 1151, 1165, 1166, 1187, 1399, 1535, 1536, 1537} else None
+        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 799, 933, 977, 1050, 1160, 1167, 1303, 1408, 1058, 1130, 1151, 1165, 1166, 1187, 1399, 1535, 1536, 1537} else None
         main, excluded, _ = engine.ler_planilha_organizada_conferencia(model, real_bank, account)
         main, excluded = filter_frame(main, options), filter_frame(excluded, options)
         if code == 521:
@@ -484,6 +489,9 @@ def _workflow(code, roles, options):
         if code in {1165, 1166}:
             from app.otom_1165 import workflow as otom_workflow
             return otom_workflow(roles, options, company=code)
+        if code == 1050:
+            from app.company_1050 import workflow_1050
+            return workflow_1050(roles, options)
         if code == 1303:
             from app.company_1303 import workflow_1303
             return workflow_1303(roles, options)
