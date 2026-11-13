@@ -2,6 +2,10 @@
 
 Nova versão web do Razync.
 
+## Hospedagem fora do GitHub Pages e do Railway
+
+Consulte o [guia de hospedagem externa](docs/hospedagem-externa.md) para usar o ZIP da branch principal, configurar a API e preservar os dados da instalação atual.
+
 ## Objetivo
 
 Migrar os processadores e ferramentas do Razync em Streamlit para uma arquitetura web com:
