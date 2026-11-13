@@ -3361,9 +3361,50 @@ html[data-theme="dark"] #adminToolsPanel {
 html[data-theme="dark"] #adminToolsPanel button { color: #d5e4ff; }
 html[data-theme="dark"] #adminToolsPanel button:hover { background: #17243a; }
 
-/* Reserve the two lower shortcut slots for notifications and administration. */
-body:not([data-site-locked]):not(.nav-drawer-open):has(#adminToolsToggle:not([hidden]))
-#baseAiHost button.base-ai-launcher {
-  right: max(20px, calc(env(safe-area-inset-right) + 2px));
-  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 110px);
+
+/* Visible shortcuts share one axis and collapse unused slots. */
+body {
+  --shortcut-size: 44px;
+  --shortcut-step: calc(var(--shortcut-size) + 12px);
+  --shortcut-right: max(18px, env(safe-area-inset-right));
+  --shortcut-bottom: max(18px, env(safe-area-inset-bottom));
+  --notification-slot: 0px;
+  --admin-slot: 0px;
+  --assistant-slot: 0px;
+}
+body:not([data-site-locked]):not(.nav-drawer-open):has(#companiesView.active):has(#companyNotificationsNav:not([hidden])) {
+  --notification-slot: var(--shortcut-step);
+}
+body:not([data-site-locked]):not(.nav-drawer-open):has(#adminToolsToggle:not([hidden])) {
+  --admin-slot: var(--shortcut-step);
+}
+body:has(#baseAiHost .base-ai-launcher:not([hidden])) {
+  --assistant-slot: var(--shortcut-step);
+}
+#companyNotificationsNav {
+  right: var(--shortcut-right);
+  bottom: var(--shortcut-bottom);
+}
+#adminToolsToggle {
+  right: var(--shortcut-right);
+  bottom: calc(var(--shortcut-bottom) + var(--notification-slot));
+}
+body #baseAiHost button.base-ai-launcher {
+  box-sizing: border-box;
+  width: var(--shortcut-size) !important;
+  height: var(--shortcut-size) !important;
+  min-height: var(--shortcut-size) !important;
+  right: var(--shortcut-right);
+  bottom: calc(var(--shortcut-bottom) + var(--notification-slot) + var(--admin-slot));
+}
+#companyToolHelp,
+#companyToolHelpButton {
+  box-sizing: border-box;
+  width: var(--shortcut-size);
+  height: var(--shortcut-size);
+  min-width: var(--shortcut-size);
+}
+#companyToolHelp {
+  right: var(--shortcut-right);
+  bottom: calc(var(--shortcut-bottom) + var(--notification-slot) + var(--admin-slot) + var(--assistant-slot));
 }
