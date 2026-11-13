@@ -98,7 +98,7 @@ def read_banco_brasil(content):
         if not month_match:
             raise ValueError("BB 1160: competência não encontrada.")
         month,year=map(int,month_match.groups())
-        rows=[];checks=[];opening=None;last_row=None
+        rows=[];checks=[];opening=None;closing_seen=False
         for page in doc:
             words=page.get_text("words",sort=True)
             for w in words:
@@ -118,6 +118,10 @@ def read_banco_brasil(content):
                     opening=_cents(balance[0])*(-1 if balance_sign==["D"] else 1)
                     continue
                 if _normalize(description).strip().replace(" ","") in ("saldo","saldoatual"):
+                    if day.month==month and day.year==year and len(balance)==1 and len(balance_sign)==1:
+                        checks.append((len(rows),_cents(balance[0])*
+                                       (-1 if balance_sign[0]=="D" else 1),day))
+                        closing_seen=True
                     continue
                 if day.month!=month or day.year!=year:
                     continue
@@ -128,8 +132,8 @@ def read_banco_brasil(content):
                 rows.append((day,value,description))
                 if balance and balance_sign:
                     checks.append((len(rows),_cents(balance[0])*(-1 if balance_sign[0]=="D" else 1),day))
-        if opening is None or not rows or not checks:
-            raise ValueError("BB 1160: extrato sem abertura, saldos ou movimentos.")
+        if opening is None or not rows or not checks or not closing_seen:
+            raise ValueError("BB 1160: extrato sem abertura, saldo final ou movimentos.")
         running=opening;last=0
         for count,balance,day in checks:
             running+=sum(v for _,v,_ in rows[last:count])
