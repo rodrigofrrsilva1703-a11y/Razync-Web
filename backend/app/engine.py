@@ -1939,7 +1939,9 @@ def identificar_banco_classificacao_eletro_forte(nome_aba='', descricao='', debi
 
 def ler_planilha_classificada(file_bytes, filename, empresa='nova_geracao'):
     """Lê planilha revisada e cria padrões exclusivos da empresa informada."""
-    xls = pd.ExcelFile(io.BytesIO(file_bytes))
+    # XLSX renomeado para XLS: identificar o ZIP pelo cabeçalho real.
+    engine_excel = 'openpyxl' if file_bytes.startswith(b'PK\\x03\\x04') else None
+    xls = pd.ExcelFile(io.BytesIO(file_bytes), engine=engine_excel)
     registros = []
     banco_arquivo = identificar_chave_banco_empresa(filename)
     for nome_aba in xls.sheet_names:
