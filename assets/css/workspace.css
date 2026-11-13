@@ -3339,12 +3339,21 @@ html[data-theme="dark"] #adminToolsPanel {
   width: 44px;
   padding: 0;
   place-items: center;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  background: transparent;
+  border: 0;
+  background: none;
+  box-shadow: none;
   color: var(--muted);
 }
-#adminToolsPanel .admin-panel-close:hover { background: var(--surface); color: var(--text); }
+#adminToolsPanel .admin-panel-close:is(:hover, :active, :focus-visible) {
+  background: none;
+  box-shadow: none;
+  color: var(--text);
+}
+#adminToolsPanel .admin-panel-close svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.6;
+}
 .admin-panel-nav {
   --admin-gutter: clamp(14px, 5vw, 24px);
   display: grid;
@@ -3425,6 +3434,8 @@ html[data-theme="dark"] #adminToolsPanel {
   }
   #adminToolsPanel[open] .admin-panel-nav { animation: admin-content-enter .28s .045s ease-out both; }
   #adminToolsPanel button { transition: background-color .16s ease; }
+  #adminToolsPanel .admin-panel-close svg { transition: transform .22s ease; }
+  #adminToolsPanel .admin-panel-close:hover svg { transform: rotate(90deg); }
   #adminToolsPanel .admin-panel-arrow { transition: transform .16s ease; }
   #adminToolsPanel nav button:is(:hover, :focus-visible) .admin-panel-arrow { transform: translateX(3px); }
   @keyframes admin-header-drift {
