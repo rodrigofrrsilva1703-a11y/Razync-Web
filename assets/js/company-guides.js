@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    1167: {
+      intro:"A empresa 1167 tem movimento em Banco do Brasil 8, Sicoob 506, Itaú 508 e Bradesco 507 (Ag. 538, CC 0301794-0). Envie um ou mais extratos em PDF; o Excel Modelo Domínio terá uma aba para cada banco.",
+      note:"Os extratos são de julho/2026. No Bradesco, a lista de julho continua na página 2, mas Últimos Lançamentos de agosto e Saldos Invest Fácil devem ficar fora. Itaú: históricos e favorecidos podem estar em várias linhas, sem duplicação. BB: BB Rende Fácil é movimento real. Sicoob: saldos negativos e valores C/D, com validação por dia.",
+      extrato:"Na Conferência com Extrato, selecione o banco da aba do Excel correspondente e envie o PDF original da mesma competência.",
+      base:"Classifique cada movimentação respeitando contas 8 (BB), 506 (Sicoob), 508 (Itaú) e 507 (Bradesco)."
+    },
     1160: {
       intro:"Envie os extratos PDF da empresa 1160: Banco do Brasil 8, Sicoob 506, Itaú 508 e Bradesco 515 (agência 538, CC 0301811-3). O Excel terá uma aba por banco.",
       note:"Julho/2026: o Banco do Brasil e o Sicoob possuem débitos de empréstimos e estornos, que devem ser preservados separadamente. O Itaú contém razão social em linhas múltiplas, sem repetir nomes. O Bradesco inclui Últimos Lançamentos de agosto, que não pertencem a julho. Os saldos são conferidos antes da exportação.",
