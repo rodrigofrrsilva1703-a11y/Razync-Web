@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    799: {
+      intro:"Organize os extratos Bradesco 9 e Santander 513 da Urocabral em PDF. O arquivo final possui uma aba por banco.",
+      note:"O Bradesco é digitalizado e exige OCR com conferência de saldos por dia; o Santander é digital e lista os movimentos em ordem decrescente. Saldos, investimentos informativos e limites não são lançamentos. Não ajuste valores para fazer o saldo bater.",
+      extrato:"Selecione Bradesco 9 ou Santander 513 para confrontar o Modelo Domínio da mesma competência com o extrato daquele banco.",
+      base:"Classifique os lançamentos separados por banco, respeitando Bradesco 9 e Santander 513."
+    },
     1130: {
       intro:"Anexe os PDFs do Itaú e do Banco do Brasil para escriturar o movimento da matriz e da filial na empresa 1130.",
       note:"A conta corrente 240-2 é exportada na conta contábil 8 e a 563-0 na 1138. O Itaú sai na conta 508.",
