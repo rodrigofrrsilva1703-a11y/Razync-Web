@@ -218,6 +218,14 @@ CAPABILITIES[1166] = {
     **CAPABILITIES[1165],
     "banks": {"itau": "508", "nubank": "506", "caixa": "1367"},
 }
+CAPABILITIES[799] = {
+    "status":"api_ready","workflow":"advanced",
+    "banks":{"bradesco":"9","santander":"513"},
+    "roles":[
+        {"name":"bradesco","label":"Bradesco 9 — extrato mensal digitalizado (PDF)","accept":".pdf","multiple":True,"optional":True},
+        {"name":"santander","label":"Santander 513 — extrato Empresas (PDF)","accept":".pdf","multiple":True,"optional":True},
+    ],
+}
 CAPABILITIES[1399] = {
     "status": "api_ready", "workflow": "advanced",
     "banks": {"itau": "508", "bradesco": "9"},
