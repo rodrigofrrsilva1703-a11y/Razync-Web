@@ -3255,58 +3255,120 @@ body:not([data-site-locked]):not(.nav-drawer-open) #adminToolsToggle:not([hidden
   stroke-linejoin: round;
 }
 #adminToolsPanel {
+  --admin-card: #ffffff08;
+  --admin-card-hover: #78b4ff1c;
+  --admin-line: #a3c7ff26;
+  --admin-muted: #b4c6e0;
+  --admin-accent: #a8d0ff;
   position: fixed;
-  inset: 10px max(10px, env(safe-area-inset-right)) 10px auto;
+  inset: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom)) auto;
   margin: 0;
-  width: min(340px, calc(100vw - 28px));
+  width: min(380px, calc(100% - max(12px, env(safe-area-inset-right)) - max(12px, env(safe-area-inset-left))));
   height: auto;
   max-width: none;
   max-height: none;
   box-sizing: border-box;
-  padding: max(20px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) 20px 18px;
-  border: 1px solid #ffffff16;
-  border-radius: 18px;
-  background: linear-gradient(165deg, #1c304c, #14243b 65%);
-  color: #fff;
-  box-shadow: -14px 0 48px #0003;
+  padding: clamp(14px, 4vw, 24px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--admin-line);
+  border-radius: 22px;
+  background: radial-gradient(ellipse at top right, #386aab59, transparent 48%),
+    linear-gradient(160deg, #192e49, #122136 62%);
+  color: #f6f9ff;
+  box-shadow: -16px 16px 56px #0005;
 }
-#adminToolsPanel::backdrop { background: #0007; }
+html[data-theme="dark"] #adminToolsPanel {
+  background: radial-gradient(ellipse at top right, #28508650, transparent 48%),
+    linear-gradient(160deg, #141f30, #0e1521 62%);
+}
+#adminToolsPanel::backdrop { background: #08122085; }
 #adminToolsPanel header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #ffffff18;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--admin-line);
 }
-#adminToolsPanel h2 { margin: 0; font-size: 20px; }
-#adminToolsPanel nav { display: grid; gap: 8px; }
+.admin-panel-brand { display: flex; align-items: center; gap: 10px; }
+.admin-panel-brand img { flex: none; object-fit: contain; }
+#adminToolsPanel h2 { margin: 0; font-size: clamp(17px, 5vw, 23px); }
+#adminToolsPanel nav { display: grid; gap: 10px; }
 #adminToolsPanel button {
   min-height: 44px;
-  border: 1px solid transparent;
-  border-radius: 9px;
-  background: transparent;
-  color: #d8e1ef;
+  border: 1px solid var(--admin-line);
+  border-radius: 13px;
+  background: var(--admin-card);
+  color: inherit;
   font: inherit;
   cursor: pointer;
 }
 #adminToolsPanel header button { width: 44px; font-size: 22px; }
 #adminToolsPanel nav button {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 9px 12px;
+  gap: 10px;
+  padding: 12px 10px;
   text-align: start;
 }
-#adminToolsPanel button:hover { background: #203653; color: #fff; }
+#adminToolsPanel button:is(:hover, :focus-visible) {
+  background: var(--admin-card-hover);
+  border-color: #a8d0ff70;
+}
 #adminToolsPanel button:focus-visible, #adminToolsToggle:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--admin-accent, var(--accent));
   outline-offset: 2px;
 }
+.admin-panel-action { display: grid; gap: 4px; }
+.admin-panel-action strong { font-size: .88rem; line-height: 1.3; }
+.admin-panel-action small { color: var(--admin-muted); font-size: .76rem; line-height: 1.35; }
+.admin-panel-arrow { color: var(--admin-accent); font-size: 1.1rem; }
+#adminToolsPanel nav svg {
+  width: 38px;
+  height: 38px;
+  padding: 9px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: #7fb7ff19;
+  color: var(--admin-accent);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  #adminToolsPanel[open] { animation: admin-panel-enter .18s ease-out; }
-  @keyframes admin-panel-enter { from { transform: translateX(100%); } }
+  #adminToolsPanel {
+    opacity: 0;
+    transform: translateX(22px);
+    transition: opacity .2s ease, transform .24s cubic-bezier(.2, .75, .25, 1),
+      display .24s allow-discrete, overlay .24s allow-discrete;
+  }
+  #adminToolsPanel[open] { opacity: 1; transform: translateX(0); }
+  #adminToolsPanel::backdrop {
+    opacity: 0;
+    transition: opacity .24s ease, display .24s allow-discrete, overlay .24s allow-discrete;
+  }
+  #adminToolsPanel[open]::backdrop { opacity: 1; }
+  @starting-style {
+    #adminToolsPanel[open] { opacity: 0; transform: translateX(22px); }
+    #adminToolsPanel[open]::backdrop { opacity: 0; }
+  }
+  #adminToolsPanel[open] nav button { animation: admin-action-enter .28s ease-out backwards; }
+  #adminToolsPanel[open] nav button:nth-child(2) { animation-delay: .04s; }
+  #adminToolsPanel[open] nav button:nth-child(3) { animation-delay: .08s; }
+  #adminToolsPanel button { transition: background-color .18s ease, border-color .18s ease; }
+  .admin-panel-arrow { transition: transform .18s ease; }
+  #adminToolsPanel nav button:is(:hover, :focus-visible) .admin-panel-arrow { transform: translateX(2px); }
+  @keyframes admin-action-enter {
+    from { opacity: 0; transform: translateX(8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
 }
 
 #adminToolsToggle.floating-shortcut,
@@ -3341,27 +3403,6 @@ body:not([data-site-locked]):not(.nav-drawer-open) #adminToolsToggle:not([hidden
   padding: 2px 4px;
   text-align: center;
 }
-.admin-panel-brand { display: flex; align-items: center; gap: 10px; }
-.admin-panel-brand img { flex: none; object-fit: contain; }
-#adminToolsPanel nav button span { margin-inline-start: auto; }
-#adminToolsPanel nav svg {
-  width: 18px;
-  height: 18px;
-  flex: none;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-html[data-theme="dark"] #adminToolsPanel {
-  background: var(--surface-soft);
-  border-color: var(--border);
-}
-html[data-theme="dark"] #adminToolsPanel button { color: #d5e4ff; }
-html[data-theme="dark"] #adminToolsPanel button:hover { background: #17243a; }
-
-
 /* Visible shortcuts share one axis and collapse unused slots. */
 body {
   --shortcut-size: 44px;
