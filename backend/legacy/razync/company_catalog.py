@@ -53,6 +53,7 @@ EMPRESAS = [
     {"codigo": 1208, "nome": "KAIROS DESMONTE INDUSTRIAIS EIRELI - ME", "regime": "LUCRO PRESUMIDO", "chave_sistema": "kairos_1208"},
     {"codigo": 1211, "nome": "GZ IMPORTADORA E EXPORTADORA LTDA EPP (ANTIGA BODY-UP)", "regime": "LUCRO PRESUMIDO", "chave_sistema": "gz_1211"},
     {"codigo": 1248, "nome": "RGR IMPORTADORA E EXPORTADORA LTDA - EPP", "regime": "LUCRO PRESUMIDO"},
+    {"codigo": 1303, "nome": "BMZ MOTO PEÇAS", "regime": "Não informado", "chave_sistema": "bmz_moto_1303"},
     {"codigo": 1320, "nome": "T. W. GUAIMBÊ – EXCLUSIVE SUÍTES HOTEL LTDA", "regime": "LUCRO PRESUMIDO"},
     {"codigo": 1396, "nome": "NOVA GERAÇÃO COMERCIAL ELETRICA LTDA (FILIAL)", "regime": "LUCRO PRESUMIDO", "chave_sistema": "nova_geracao", "estabelecimento": "filial"},
     {"codigo": 1399, "nome": "JETMAQ COMERCIAL DE MAQUINAS", "regime": "Não informado"},
