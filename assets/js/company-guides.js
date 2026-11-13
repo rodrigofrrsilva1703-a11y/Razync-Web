@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    1160: {
+      intro:"Envie os extratos PDF da empresa 1160: Banco do Brasil 8, Sicoob 506, Itaú 508 e Bradesco 515 (agência 538, CC 0301811-3). O Excel terá uma aba por banco.",
+      note:"Julho/2026: o Banco do Brasil e o Sicoob possuem débitos de empréstimos e estornos, que devem ser preservados separadamente. O Itaú contém razão social em linhas múltiplas, sem repetir nomes. O Bradesco inclui Últimos Lançamentos de agosto, que não pertencem a julho. Os saldos são conferidos antes da exportação.",
+      extrato:"Na Conferência com Extrato, selecione o banco da mesma aba do Modelo Domínio e utilize o PDF correspondente à competência.",
+      base:"Classifique os lançamentos de cada banco sem misturar as contas 8, 506, 508 e 515."
+    },
     933: {
       intro:"Envie o extrato mensal Itaú PDF da CLJM, conta contábil 508. O sistema processa a movimentação da conta corrente e exporta o Modelo Domínio.",
       note:"Confere os totais de créditos e débitos e o saldo final do resumo mensal. Inclui aplicações e resgates automáticos registrados na conta corrente, mas ignora saldos informativos, tabelas de CDB e resumos de investimentos. Reconhece operações que continuam na página seguinte.",
