@@ -593,7 +593,7 @@ function initializeUserAccess() {
   const clock = new Intl.DateTimeFormat("pt-BR", {timeZone:"America/Sao_Paulo", dateStyle:"short", timeStyle:"short"});
   const formatTime = seconds => seconds == null ? "—" : clock.format(new Date(seconds * 1000));
 
-  function render() {
+  function render(animate = false) {
     const term = search.value.trim().toLowerCase();
     const online = user => !user.suspended && user.connected;
     const subsets = {all:users, online:users.filter(online), suspended:users.filter(user => user.suspended)};
@@ -607,6 +607,10 @@ function initializeUserAccess() {
     for (const user of matches) {
       const row = document.createElement("li");
       row.className = "access-account";
+      if (animate && rows.childElementCount < 8) {
+        row.classList.add("access-account-enter");
+        row.style.setProperty("--access-delay", `${rows.childElementCount * 35}ms`);
+      }
       const account = document.createElement("div");
       account.className = "access-account-identity";
       const avatar = document.createElement("span");
@@ -694,7 +698,7 @@ function initializeUserAccess() {
   for (const button of filters.querySelectorAll("button")) {
     button.onclick = () => {
       selectedFilter = button.dataset.accessFilter;
-      render();
+      render(true);
     };
   }
   loadUserAccess = async (silent = false) => {
@@ -710,7 +714,7 @@ function initializeUserAccess() {
       if (JSON.stringify(users) === JSON.stringify(data) && rows.childElementCount) return;
       const focused = document.activeElement?.dataset.userEmail;
       users = data;
-      render();
+      render(!silent);
       if (focused) rows.querySelector(`[data-user-email="${CSS.escape(focused)}"]`)?.focus({preventScroll:true});
     } catch (error) { if (!silent) message.textContent = error.message; }
     finally { loading = false; }

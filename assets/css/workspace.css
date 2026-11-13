@@ -2919,6 +2919,16 @@ body[data-site-locked] #companyNotificationToast {display:none}
   border-color: var(--indicator);
   background: color-mix(in srgb, var(--indicator) 13%, var(--surface));
 }
+.access-dashboard-filters button {
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+.access-dashboard-filters button[aria-pressed=true] {
+  box-shadow: inset 0 -2px var(--indicator);
+}
+@media (hover: hover) {
+  .access-dashboard-filters button:hover {border-color: var(--indicator); transform: translateY(-2px)}
+}
+.access-dashboard-filters button:active {transform: translateY(0) scale(.98)}
 .access-dashboard-filters strong {font-size: 25px; line-height: 1; font-variant-numeric: tabular-nums}
 .access-directory {border: 1px solid var(--border); border-radius: 15px; background: var(--surface)}
 .access-toolbar label {font-size: 13px}
@@ -2933,6 +2943,7 @@ body[data-site-locked] #companyNotificationToast {display:none}
   border-top: 1px solid var(--border);
 }
 .access-account:hover, .access-account:focus-within {background: var(--surface-2)}
+.access-account {transition: background-color 160ms ease}
 .access-account-identity {display: flex; align-items: center; gap: 10px; min-width: 0}
 .access-account-identity strong {font-size: 14px; overflow-wrap: anywhere}
 .access-account-identity small {display: block; margin-top: 3px; color: var(--muted)}
@@ -2966,6 +2977,10 @@ body[data-site-locked] #companyNotificationToast {display:none}
 .access-account-actions .admin-remove::before {content: "⊖"; margin-inline-end: 5px}
 .access-account-actions .admin-restore::before {content: "↻"; margin-inline-end: 5px}
 .access-account-actions button:disabled {opacity: .55; cursor: wait}
+.access-account-actions button:not(:disabled):hover {
+  border-color: var(--access-blue);
+  background: color-mix(in srgb, var(--access-blue) 12%, var(--surface));
+}
 .access-account-activity {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2977,6 +2992,19 @@ body[data-site-locked] #companyNotificationToast {display:none}
 .access-time-note {margin: 0; padding: 0 16px 12px; color: var(--muted); font-size: 12px}
 .access-empty {padding: 16px; border-top: 1px solid var(--border); color: var(--muted)}
 #userAccessView :is(button, input, summary):focus-visible {outline: 2px solid var(--access-blue); outline-offset: 2px}
+@media (prefers-reduced-motion: no-preference) {
+  #userAccessView.active .access-dashboard-heading {animation: access-reveal 260ms ease-out both}
+  #userAccessView.active .access-dashboard-filters:not([hidden]) {animation: access-reveal 280ms ease-out both}
+  .access-account-enter {animation: access-reveal 250ms ease-out var(--access-delay, 0ms) backwards}
+}
+@keyframes access-reveal {
+  from {opacity: 0; transform: translateY(7px)}
+  to {opacity: 1; transform: translateY(0)}
+}
+@media (prefers-reduced-motion: reduce) {
+  .access-account, .access-dashboard-filters button {transition: none}
+  .access-dashboard-filters button:is(:hover, :active) {transform: none}
+}
 @media (max-width: 860px) {
   .access-account {grid-template-columns: minmax(0, 1fr) auto; gap: 10px 6px}
   .access-account-identity, .access-account-activity {grid-column: 1 / -1}
