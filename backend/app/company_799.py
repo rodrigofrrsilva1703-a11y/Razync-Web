@@ -103,8 +103,6 @@ def read_santander(content):
         raise ValueError("Santander: extrato sem movimentos.")
     # O extrato é decrescente. Em uma mesma data, inverter a ordem impressa.
     rows=list(reversed(rows))
-    if len({(d,v,b,h) for d,v,b,h in rows})!=len(rows):
-        raise ValueError("Santander: linhas duplicadas; revisão necessária.")
     opening=rows[0][2]-rows[0][1]
     running=opening
     for day,value,balance,history in rows:
