@@ -1,1 +1,0 @@
-"""API do Razync Web."""

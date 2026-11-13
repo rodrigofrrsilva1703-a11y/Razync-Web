@@ -1884,11 +1884,10 @@ async function loadCompanyAccessProfile() {
     const profile = await response.json();
     globalThis.jaguarCompanyAccess = profile;
     const admin = profile.enabled && profile.admin;
-    $("#manageCompanyOwners").hidden = !admin;
-    $("#manageUserAccess").hidden = !admin;
+    $("#adminToolsToggle").hidden = !admin;
+    if (!admin && $("#adminToolsPanel").open) $("#adminToolsPanel").close();
     $("#homeAdminBadge").hidden = !admin;
     $("#siteAccessRole").textContent = admin ? "Conta administradora" : "Sessão ativa";
-    $("#addCompany").hidden = !admin;
   } catch { /* The connection control can retry loading the profile. */ }
 }
 
@@ -2041,6 +2040,31 @@ async function showGlobalView(name, taskTarget) {
   }
   window.scrollTo({top:0, behavior:"smooth"});
 }
+
+const adminToolsToggle = $("#adminToolsToggle");
+const adminToolsPanel = $("#adminToolsPanel");
+
+adminToolsToggle.addEventListener("click", () => {
+  if (!globalThis.jaguarCompanyAccess?.admin || adminToolsPanel.open) return;
+  adminToolsPanel.showModal();
+  adminToolsToggle.setAttribute("aria-expanded", "true");
+});
+adminToolsPanel.addEventListener("close", () => {
+  adminToolsToggle.setAttribute("aria-expanded", "false");
+});
+adminToolsPanel.addEventListener("click", event => {
+  if (event.target === adminToolsPanel) {
+    const bounds = adminToolsPanel.getBoundingClientRect();
+    if (event.clientX < bounds.left) adminToolsPanel.close();
+  }
+});
+adminToolsPanel.querySelectorAll("[data-admin-view]").forEach(button => {
+  button.addEventListener("click", () => {
+    adminToolsPanel.close();
+    showGlobalView(button.dataset.adminView);
+  });
+});
+$("#addCompany").addEventListener("click", () => adminToolsPanel.close());
 
 document.querySelectorAll(".main-nav-btn").forEach(btn => {
   btn.addEventListener("click", () => showGlobalView(btn.dataset.view));

@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="./assets/css/app.css?v=base242-streamlit-1">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="investments" href="./assets/css/bank-investments.css?v=20261020-6">
   <link rel="stylesheet" href="./assets/css/monthly-tasks.css?v=task-notices-1">
-  <link rel="stylesheet" href="./assets/css/workspace.css?v=company-directory-1">
+  <link rel="stylesheet" href="./assets/css/workspace.css?v=admin-panel-1">
   <link rel="stylesheet" href="./assets/css/tools.css?v=company-tools-20261031-1">
   <link rel="stylesheet" href="./assets/css/layout.css?v=fixed-header-home-20261028-3">
   <link rel="stylesheet" href="./assets/css/workspace-polish.css?v=otom-period-1">
@@ -130,8 +130,7 @@
       <button class="main-nav-btn" data-view="ledger" aria-label="Conciliação com Razão"><span class="nav-label">Conciliação com Razão</span></button>
       <button class="main-nav-btn" data-view="fiscal" aria-label="Conferência Fiscal × Contábil"><span class="nav-label">Conferência Fiscal × Contábil</span></button>
       <button class="main-nav-btn" type="button" data-view="tasks"><span class="nav-label">Tarefas</span></button>
-      <button id="manageUserAccess" class="main-nav-btn" type="button" data-view="userAccess" hidden><span class="nav-label">Controle de acesso</span></button>
-      <button id="manageCompanyOwners" class="main-nav-btn" type="button" data-view="companyOwners" hidden><span class="nav-label">Responsáveis pelas empresas</span></button>
+
     </nav>
       <div id="siteAccessAccount" class="sidebar-account" hidden>
         <span id="siteAccessInitials" class="sidebar-account-avatar" aria-hidden="true"></span>
@@ -355,7 +354,7 @@
               <button type="button" data-owner-filter="assigned" aria-pressed="false"><strong>0</strong>Com responsável</button>
               <button type="button" data-owner-filter="unassigned" aria-pressed="false"><strong>0</strong>Sem responsável</button>
             </div>
-            <button id="addCompany" type="button" hidden class="secondary-action"><span aria-hidden="true">+</span> Adicionar empresa</button>
+
           </div>
           <div class="access-directory-meta"><span id="ownerCompanyCount" role="status"></span></div>
           <p id="companyOwnerMessage" role="status"></p>
@@ -938,6 +937,22 @@
   </div>
 
 
+  <button id="adminToolsToggle" type="button" aria-haspopup="dialog" aria-controls="adminToolsPanel" aria-expanded="false" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-3.5 7-10V5l-7-3-7 3v7c0 6.5 7 10 7 10Z M9 12l2 2 4-4"/></svg>
+    <span>Administração</span>
+  </button>
+  <dialog id="adminToolsPanel" aria-labelledby="adminToolsTitle">
+    <header>
+      <h2 id="adminToolsTitle">Administração</h2>
+      <form method="dialog"><button type="submit" aria-label="Fechar administração" autofocus>×</button></form>
+    </header>
+    <nav aria-label="Ferramentas administrativas">
+      <button id="manageCompanyOwners" type="button" data-admin-view="companyOwners">Responsáveis pelas empresas <span aria-hidden="true">→</span></button>
+      <button id="manageUserAccess" type="button" data-admin-view="userAccess">Controle de acesso <span aria-hidden="true">→</span></button>
+      <button id="addCompany" type="button">Adicionar empresa <span aria-hidden="true">+</span></button>
+    </nav>
+  </dialog>
+
   <button id="companyNotificationsNav" type="button" aria-controls="companyNotificationsView" hidden>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0"/></svg>
     <span>Notificações</span><span id="companyNotificationsBadge" aria-hidden="true" hidden></span>
@@ -1046,7 +1061,7 @@
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=rt-moto-1"></script>
   <script src="./assets/js/monthly-tasks.js?v=admin-notices-1"></script>
-  <script src="./assets/js/app.js?v=rt-moto-2"></script>
+  <script src="./assets/js/app.js?v=admin-panel-1"></script>
   <script src="./assets/js/migration.js?v=otom-1166-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>
