@@ -114,6 +114,11 @@ def _recuperar_xls_biff_irregular(file_bytes: bytes, *, workbook: bool = False):
 def _ler_bruto(file_bytes: bytes, filename: str):
     extensao = os.path.splitext(filename)[1].casefold()
     try:
+        # Algumas exportações são XLSX (ZIP) com extensão .xls.
+        # Priorizar a assinatura real do arquivo, nunca apenas o nome.
+        if file_bytes.startswith(b"PK\\x03\\x04".replace(b"\\\\", b"\\")):
+            return pd.read_excel(io.BytesIO(file_bytes), header=None,
+                                 dtype=object, engine="openpyxl")
         if extensao == ".xlsx":
             xls = pd.ExcelFile(io.BytesIO(file_bytes))
             return pd.read_excel(xls, sheet_name=xls.sheet_names[0], header=None, dtype=object)
