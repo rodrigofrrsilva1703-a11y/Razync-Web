@@ -150,10 +150,20 @@ def read_statement(content):
                 f"débitos {debits/100:.2f}. Nenhum arquivo foi exportado.")
         if opening+credits-debits!=closing:
             raise ValueError("Itaú 933: saldo final diverge do saldo inicial e movimentos.")
-        # Movimento C/C completo com aplicações/resgates automáticos deve
-        # zerar a diferença que o resumo não inclui.
-        if sum(value for _,value,_ in result)!=0:
-            raise ValueError("Itaú 933: aplicações/resgates automáticos não fecharam.")
+        # O Itaú traz um totalizador específico das aplicações automáticas
+        # fora do resumo. Confirmar cada lado em vez de presumir saldo de
+        # conta corrente sempre constante em todos os meses.
+        auto_text="\n".join(page.get_text(sort=True) for page in list(doc)[:2])
+        totalizer=re.search(
+            r"na conta corrente\s*\(1\)\s+([\d.]+,\d{2})\s+([\d.]+,\d{2}-)",
+            auto_text, re.I)
+        if totalizer:
+            actual_rescues=sum(value for _,value,name in result
+                               if value>0 and _norm(name).startswith("res aplic aut mais"))
+            actual_apps=-sum(value for _,value,name in result
+                             if value<0 and _norm(name).startswith("apl aplic aut mais"))
+            if (actual_rescues,actual_apps)!=(_cents(totalizer[1]),-_cents(totalizer[2])):
+                raise ValueError("Itaú 933: totalizador de aplicações/resgates não confere.")
         return pd.DataFrame([{
             "DESCRIÇÃO":"BANCO ITAÚ", "DATA":pd.Timestamp(day),
             "VALOR":amount/100, "DÉBITO":"508" if amount>0 else "",
