@@ -132,7 +132,7 @@ def _reparar_endereco_aba_ole(file_bytes: bytes):
             inicios = []
             for offset in range(fim_globais, len(fluxo) - 8):
                 if fluxo[offset:offset + 2] not in (
-                    b"\\x09\\x08", b"\\x09\\x04", b"\\x09\\x02", b"\\x09\\x00"
+                    b"\x09\x08", b"\x09\x04", b"\x09\x02", b"\x09\x00"
                 ):
                     continue
                 tamanho = struct.unpack_from("<H", fluxo, offset + 2)[0]
