@@ -71,20 +71,34 @@ def _recuperar_xls_biff_irregular(file_bytes: bytes, *, workbook: bool = False):
         if not registros_abas or fim_globais is None:
             return None
 
+        # Recuperação conservadora: alguns relatórios têm o BOUNDSHEET
+        # apontando para BLANK (0x0201) em vez do BOF da aba. O BOF BIFF8
+        # verdadeiro é 0x0809; versões antigas usam 0x0409/0x0209/0x0009.
+        # Validamos tamanho, versão e tipo de substream antes de corrigir.
         inicios = []
-        cursor = fim_globais
-        while True:
-            indice = fluxo.find(b"\x09\x08", cursor)
-            if indice < 0:
-                break
-            if indice + 8 <= len(fluxo):
+        vistos = set()
+        for marcador in (b"\x09\x08", b"\x09\x04", b"\x09\x02", b"\x09\x00"):
+            cursor = fim_globais
+            while True:
+                indice = fluxo.find(marcador, cursor)
+                if indice < 0:
+                    break
+                cursor = indice + 2
+                if indice in vistos or indice + 8 > len(fluxo):
+                    continue
                 tamanho = struct.unpack_from("<H", fluxo, indice + 2)[0]
-                if tamanho >= 4 and indice + 4 + tamanho <= len(fluxo):
-                    versao, tipo = struct.unpack_from("<HH", fluxo, indice + 4)
-                    if versao in (0x0500, 0x0600) and tipo in (0x0010, 0x0020, 0x0040):
-                        inicios.append(indice)
-            cursor = indice + 2
-        if len(inicios) < len(registros_abas):
+                if tamanho < 4 or indice + 4 + tamanho > len(fluxo):
+                    continue
+                versao, tipo = struct.unpack_from("<HH", fluxo, indice + 4)
+                if versao not in (0x0200, 0x0300, 0x0400, 0x0500, 0x0600):
+                    continue
+                if tipo not in (0x0010, 0x0020, 0x0040):
+                    continue
+                vistos.add(indice)
+                inicios.append(indice)
+        inicios.sort()
+        if len(inicios) != len(registros_abas):
+            # Arquivos ambíguos não são reescritos nem importados parcialmente.
             return None
         for registro, inicio in zip(registros_abas, inicios):
             struct.pack_into("<I", fluxo, registro + 4, inicio)
