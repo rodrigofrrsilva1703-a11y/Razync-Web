@@ -219,6 +219,8 @@ function render(items) {
     organizer: current.filter(hasCompanyTools).length,
     multibank: current.filter(c=>Object.keys(c.capabilities?.banks || {}).length > 1).length,
     catalog: current.filter(c=>!hasCompanyTools(c)).length,
+    digital: RazyncDirectory.select(current,{filter:'digital'}).length,
+    noBankMovement: RazyncDirectory.select(current,{filter:'noBankMovement'}).length,
   };
   $$('.company-filter').forEach(button => {
     const badge = button.querySelector('.filter-count');
@@ -266,10 +268,15 @@ function render(items) {
     regime.textContent = company.regime || 'Regime não informado';
     const status = document.createElement("span");
     status.className = "mini-status";
-    status.textContent = hasCompanyTools(company)
+    const accountingStatus = RazyncDirectory.accountingStatus(company);
+    status.textContent = accountingStatus?.label || (hasCompanyTools(company)
       ? (company.capabilities?.status === 'api_ready' ? 'Em validação' : statusFor(company))
-      : 'Sem ferramenta';
-    status.title = hasCompanyTools(company) ? statusFor(company) : 'Ferramenta ainda não cadastrada';
+      : 'Sem ferramenta');
+    status.title = accountingStatus?.description || (hasCompanyTools(company) ? statusFor(company) : 'Ferramenta ainda não cadastrada');
+    if (accountingStatus) {
+      status.classList.add('company-accounting-status');
+      row.setAttribute('aria-label', `${row.getAttribute('aria-label')}. ${accountingStatus.label}`);
+    }
     heading.append(code, status);
     meta.append(regime);
     if (globalThis.jaguarCompanyAccess?.admin && Object.hasOwn(company, "responsavel")) {
@@ -292,7 +299,7 @@ function render(items) {
     const toolCount = document.createElement("span");
     toolCount.className = "company-tool-count";
     toolCount.textContent = tools ? `${tools} ${tools === 1 ? 'ferramenta' : 'ferramentas'}` : 'Aguardando ferramenta';
-    details.appendChild(toolCount);
+    if (tools || !accountingStatus) details.appendChild(toolCount);
     if (tools && banks.length) {
       const bankCount = document.createElement("span");
       const bankNames = [...new Set(banks.map(bank => bankName(bank)))];
@@ -1017,7 +1024,8 @@ function openCompany(company) {
   $("#panelCode").textContent = `Empresa ${company.codigo}`;
   $("#panelName").textContent = company.nome;
   $("#panelRegime").textContent = company.regime;
-  const panelStatusText = statusFor(company);
+  const accountingStatus = RazyncDirectory.accountingStatus(company);
+  const panelStatusText = accountingStatus?.label || statusFor(company);
   $("#panelStatus").textContent = panelStatusText;
   $("#panelStatus").hidden = !panelStatusText;
 
@@ -1031,7 +1039,9 @@ function openCompany(company) {
   });
 
   const matrixCode = Number(company.codigo) === 1199 ? 1130 : null;
-  $("#toolUnavailable").hidden = available || Boolean(matrixCode);
+  $("#toolUnavailable").hidden = available || Boolean(matrixCode) || Boolean(accountingStatus);
+  $("#companyAccountingNotice").hidden = !accountingStatus;
+  $("#companyAccountingNotice").textContent = accountingStatus?.description || '';
   $("#companyMatrixNotice").hidden = !matrixCode;
   const matrix = matrixCode && companies.find(item => Number(item.codigo) === matrixCode);
   const matrixButton = $("#openCompanyMatrix");

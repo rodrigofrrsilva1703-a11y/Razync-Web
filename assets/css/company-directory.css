@@ -155,3 +155,12 @@ html[data-theme=dark] #companiesView #companyGrid .company-row-action b {backgro
  #companiesView .company-row-action b,#companiesView .company-row::before,#companiesView .portfolio-back {transition:none}
  #companiesView #companyGrid .company-row:hover,#companiesView .company-row:hover .company-row-action b,#companiesView .portfolio-back:hover {translate:none}
 }
+
+#companiesView #companyGrid .company-accounting-status {
+  color: var(--text);
+  font-weight: 650;
+  text-align: end;
+}
+html[data-theme=dark] #companiesView #companyGrid .company-accounting-status {
+  color: var(--text)!important;
+}
