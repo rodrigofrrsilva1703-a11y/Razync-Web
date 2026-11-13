@@ -26,3 +26,17 @@ def test_razao_dominio_mapeia_contrapartida_pelo_lado_do_banco(monkeypatch):
     assert itens[1]["debito"] == "364"
     assert itens[1]["credito"] == "8"
     assert itens[1]["valor"] == -200
+
+
+def test_razao_com_contrapartida_e_historico_na_mesma_celula(monkeypatch):
+    bruto = pd.DataFrame([
+        ["Data", "Lote", "Contrapartida/Histórico", "Débito", "Crédito"],
+        ["Conta:", "507", "Bradesco", None, None],
+        [pd.Timestamp("2026-07-02"), "1", "364 - Fornecedor\r\nPagamento da nota\n123", None, 50],
+        [pd.Timestamp("2026-07-02"), "2", "\nPagamento sem conta", None, 60],
+    ])
+    monkeypatch.setattr(dominio_ledger, "_ler_bruto", lambda *_: bruto)
+    itens = dominio_ledger.ler_razao_dominio_base(b"xls", "Razão.xls", {"bradesco": "507"})
+    assert [(i["debito"], i["credito"], i["historico"]) for i in itens] == [
+        ("364", "507", "Pagamento da nota 123")
+    ]

@@ -277,7 +277,8 @@ def ler_razao_dominio_base(file_bytes: bytes, filename: str, contas_bancarias: d
     mapa = {}
     for indice, linha in bruto.iterrows():
         teste = {_normalizar(valor): coluna for coluna, valor in linha.items() if pd.notna(valor)}
-        if "data" in teste and "historico" in teste and "ctacpart" in teste:
+        separado = "historico" in teste and "ctacpart" in teste
+        if "data" in teste and (separado or "contrapartidahistorico" in teste):
             linha_cabecalho = indice
             mapa = teste
             break
@@ -285,8 +286,8 @@ def ler_razao_dominio_base(file_bytes: bytes, filename: str, contas_bancarias: d
         return []
 
     col_data = mapa["data"]
-    col_historico = mapa["historico"]
-    col_contrapartida = mapa["ctacpart"]
+    col_contrapartida = mapa.get("ctacpart")
+    col_historico = mapa["historico"] if col_contrapartida is not None else mapa["contrapartidahistorico"]
     col_debito = mapa.get("debito")
     col_credito = mapa.get("credito")
     if col_debito is None or col_credito is None:
@@ -310,11 +311,15 @@ def ler_razao_dominio_base(file_bytes: bytes, filename: str, contas_bancarias: d
 
         data = pd.to_datetime(linha.get(col_data), dayfirst=True, errors="coerce")
         historico_bruto = linha.get(col_historico)
+        contrapartida = _conta(linha.get(col_contrapartida))
+        if col_contrapartida is None and not pd.isna(historico_bruto):
+            conta_e_descricao, _, historico_bruto = str(historico_bruto).partition("\n")
+            match = re.fullmatch(r"\s*(\d+)\s*-\s*.+", conta_e_descricao.strip())
+            contrapartida = match[1] if match else ""
         historico = (
             "" if pd.isna(historico_bruto)
             else re.sub(r"\s+", " ", str(historico_bruto)).strip()
         )
-        contrapartida = _conta(linha.get(col_contrapartida))
         debito = abs(_numero(linha.get(col_debito)))
         credito = abs(_numero(linha.get(col_credito)))
         if pd.isna(data) or not historico or not contrapartida:
