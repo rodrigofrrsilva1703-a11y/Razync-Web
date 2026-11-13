@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    1050: {
+      intro:"Envie o PDF Extrato Mensal do Itaú (agência 0735, conta 14341-4) da empresa 1050; a conta contábil é 508.",
+      note:"O extrato mensal inclui saldos diários SALDO APLIC AUT MAIS e resgates internos. Esses itens não duplicam movimentações. O organizador registra boleto pago e rendimentos da conta corrente, verifica entradas e saídas do resumo e ignora quadros informativos de investimentos, LIS e notas explicativas.",
+      extrato:"Use o Modelo Domínio gerado e o PDF mensal Itaú da mesma competência, conta contábil 508. A conferência utiliza apenas movimentos reais da conta.",
+      base:"Ensine as contrapartidas com o Modelo Domínio revisado, mantendo a conta 508 e históricos de pagamento e rendimento."
+    },
     1303: {
       intro:"Envie os extratos mensais PDF da BMZ Moto Peças: Itaú (conta contábil 508) e/ou Banco do Brasil (conta 8). O Modelo Domínio será exportado em um único Excel com abas separadas por banco.",
       note:"No Itaú, preserve os PIX, IOF, tarifas, juros e rendimentos, inclusive históricos que ocupam mais de uma linha. No Banco do Brasil, mantenha os débitos e os estornos em lançamentos individuais. Confira os saldos antes da exportação e ignore somente os saldos informativos.",
