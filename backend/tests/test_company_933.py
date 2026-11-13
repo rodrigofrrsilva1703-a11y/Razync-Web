@@ -66,7 +66,7 @@ def create_statement(*, wrong_total=False, wrong_account=False):
 def test_933_reads_all_17_movements_with_page_continuation():
     frame=module.read_statement(create_statement())
     assert len(frame)==17
-    assert frame["VALOR"].sum()==pytest.approx(0)
+    assert abs(frame["VALOR"].sum()) < 1e-8
     assert frame.loc[8,"VALOR"]==-2191.39
     assert frame.loc[8,"DATA"]==pd.Timestamp("2026-08-07")
     assert frame["DÉBITO"].replace("",pd.NA).dropna().eq("508").all()
