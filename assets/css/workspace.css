@@ -3360,3 +3360,10 @@ html[data-theme="dark"] #adminToolsPanel {
 }
 html[data-theme="dark"] #adminToolsPanel button { color: #d5e4ff; }
 html[data-theme="dark"] #adminToolsPanel button:hover { background: #17243a; }
+
+/* Reserve the two lower shortcut slots for notifications and administration. */
+body:not([data-site-locked]):not(.nav-drawer-open):has(#adminToolsToggle:not([hidden]))
+#baseAiHost button.base-ai-launcher {
+  right: max(20px, calc(env(safe-area-inset-right) + 2px));
+  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 110px);
+}
