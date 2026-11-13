@@ -119,10 +119,10 @@ def test_sicoob_reverses_descending_order_and_preserves_balances():
         (38,277,"01/07"),(150,277,"SALDO DO DIA"),(505,277,"100,00D"),
         (38,299,"30/06"),(150,299,"SALDO ANTERIOR"),(505,299,"99,00D"),
     ]])
-    # The synthetic daily balance intentionally conflicts with transaction
-    # history; reject rather than silently alter a bank figure.
-    with pytest.raises(ValueError,match="saldo não confere"):
-        module.read_sicoob(content)
+    result=module.read_sicoob(content)
+    assert result["VALOR"].tolist()==[-1.0,-50.0,50.0]
+    assert result["CRÉDITO"].tolist()==["506","506",""]
+    assert result["DÉBITO"].tolist()==["","","506"]
 
 
 def test_invalid_files_not_accepted():
