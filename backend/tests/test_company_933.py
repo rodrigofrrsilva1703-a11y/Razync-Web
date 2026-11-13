@@ -9,11 +9,11 @@ from app import company_933 as module
 from app import migration_services as services
 
 
-def create_statement(*, wrong_total=False):
+def create_statement(*, wrong_total=False, wrong_account=False):
     pdf=fitz.open()
     pages=[pdf.new_page(width=595,height=842),pdf.new_page(width=595,height=842)]
     for i,page in enumerate(pages,1):
-        page.insert_text((28,42),f"extrato mensal ag 6255 cc 19059-4 ago 2026 {i:03}|002",fontsize=8)
+        page.insert_text((28,42),f"extrato mensal ag 6255 cc {'19059-5' if wrong_account else '19059-4'} ago 2026 {i:03}|002",fontsize=8)
         if i==1:
             page.insert_text((28,65),"CLJM CONSULTORIA E PARTICIPACO",fontsize=9)
             page.insert_text((330,100),"entradas (créditos)",fontsize=9)
@@ -79,20 +79,8 @@ def test_933_must_reject_wrong_bank_totals():
 
 
 def test_933_rejects_other_bank_account():
-    data=create_statement()
-    with fitz.open(stream=data,filetype="pdf") as source:
-        doc=fitz.open()
-        for page in source:
-            target=doc.new_page(width=page.rect.width,height=page.rect.height)
-            target.show_pdf_page(target.rect,source,page.number)
-        # Replace the header by a tiny overlay with another account for one test.
-        p=doc[0]
-        p.draw_rect(fitz.Rect(25,28,400,45),fill=(1,1,1),color=(1,1,1))
-        p.insert_text((28,42),"extrato mensal ag 6255 cc 19059-5 ago 2026 001|002",fontsize=8)
-        changed=doc.tobytes()
-        doc.close()
     with pytest.raises(ValueError,match="agência 6255"):
-        module.read_statement(changed)
+        module.read_statement(create_statement(wrong_account=True))
 
 
 def test_933_routes_to_statement_and_workflow():
