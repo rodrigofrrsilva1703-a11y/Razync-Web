@@ -42,6 +42,128 @@ def _numero(valor) -> float:
         return 0.0
 
 
+
+def _reparar_endereco_aba_ole(file_bytes: bytes):
+    """Repara apenas BOUNDSHEET incorreto em XLS OLE, sem alterar as células.
+
+    Alguns relatórios Domínio apontam BOUNDSHEET para um registro BLANK
+    (0x0201), mesmo tendo BOF válido da planilha mais adiante no stream.
+    Retorna uma cópia em memória do OLE original, ou None se ambíguo.
+    """
+    if not file_bytes.startswith(bytes.fromhex("d0cf11e0a1b11ae1")) or len(file_bytes) < 512:
+        return None
+    try:
+        def u16(offset):
+            return struct.unpack_from("<H", file_bytes, offset)[0]
+
+        def u32(offset):
+            return struct.unpack_from("<I", file_bytes, offset)[0]
+
+        tamanho_setor = 1 << u16(30)
+        total_fat = u32(44)
+        # Somente OLE com FAT inteiramente enumerada no cabeçalho.
+        if tamanho_setor != 512 or u32(68) != 0xFFFFFFFE or u32(72) != 0:
+            return None
+        setores_fat = [
+            u32(76 + 4 * n) for n in range(109)
+            if u32(76 + 4 * n) not in (0xFFFFFFFF, 0xFFFFFFFE)
+        ]
+        if total_fat != len(setores_fat):
+            return None
+        fat = []
+        for setor in setores_fat:
+            inicio = (setor + 1) * tamanho_setor
+            if inicio + tamanho_setor > len(file_bytes):
+                return None
+            fat.extend(struct.unpack_from("<128I", file_bytes, inicio))
+
+        def cadeia(primeiro):
+            ids, vistos = [], set()
+            atual = primeiro
+            while atual not in (0xFFFFFFFE, 0xFFFFFFFF):
+                if (atual in vistos or atual >= len(fat)
+                        or (atual + 1) * tamanho_setor >= len(file_bytes)
+                        or len(ids) > 65536):
+                    return None
+                vistos.add(atual)
+                ids.append(atual)
+                atual = fat[atual]
+            return ids
+
+        def bytes_da_cadeia(ids):
+            return b"".join(file_bytes[(s + 1) * tamanho_setor:
+                                       (s + 2) * tamanho_setor] for s in ids)
+
+        diretorio_ids = cadeia(u32(48))
+        if not diretorio_ids:
+            return None
+        diretorio = bytes_da_cadeia(diretorio_ids)
+        for posicao in range(0, len(diretorio), 128):
+            entrada = diretorio[posicao:posicao + 128]
+            if len(entrada) != 128:
+                continue
+            comprimento = struct.unpack_from("<H", entrada, 64)[0]
+            if not 2 <= comprimento <= 64:
+                continue
+            nome = entrada[:comprimento - 2].decode("utf-16le")
+            if nome not in ("Workbook", "Book"):
+                continue
+            inicio = struct.unpack_from("<I", entrada, 116)[0]
+            comprimento_fluxo = struct.unpack_from("<Q", entrada, 120)[0]
+            if not 4096 <= comprimento_fluxo <= 32 * 1024 * 1024:
+                return None
+            ids = cadeia(inicio)
+            if not ids or len(ids) * tamanho_setor < comprimento_fluxo:
+                return None
+            fluxo = bytes_da_cadeia(ids)[:comprimento_fluxo]
+            cabecalhos, cursor, fim_globais = [], 0, None
+            while cursor + 4 <= len(fluxo):
+                codigo, comprimento_registro = struct.unpack_from("<HH", fluxo, cursor)
+                if cursor + 4 + comprimento_registro > len(fluxo):
+                    return None
+                if codigo == 0x0085 and comprimento_registro >= 6:
+                    cabecalhos.append(cursor)
+                cursor += 4 + comprimento_registro
+                if codigo == 0x000A:
+                    fim_globais = cursor
+                    break
+            if not cabecalhos or fim_globais is None:
+                return None
+            inicios = []
+            for offset in range(fim_globais, len(fluxo) - 8):
+                if fluxo[offset:offset + 2] not in (
+                    b"\\x09\\x08", b"\\x09\\x04", b"\\x09\\x02", b"\\x09\\x00"
+                ):
+                    continue
+                tamanho = struct.unpack_from("<H", fluxo, offset + 2)[0]
+                if tamanho < 4 or offset + 4 + tamanho > len(fluxo):
+                    continue
+                versao, tipo = struct.unpack_from("<HH", fluxo, offset + 4)
+                if (versao in (0x0200, 0x0300, 0x0400, 0x0500, 0x0600)
+                        and tipo in (0x0010, 0x0020, 0x0040)):
+                    inicios.append(offset)
+            if len(inicios) != len(cabecalhos):
+                return None
+            reparado = bytearray(file_bytes)
+            alteracoes = 0
+            for cabecalho, destino in zip(cabecalhos, inicios):
+                anterior = struct.unpack_from("<I", fluxo, cabecalho + 4)[0]
+                if anterior == destino:
+                    continue
+                if anterior in inicios:
+                    return None
+                endereco_fluxo = cabecalho + 4
+                deslocamento = endereco_fluxo % tamanho_setor
+                if deslocamento > tamanho_setor - 4:
+                    return None
+                endereco_ole = (ids[endereco_fluxo // tamanho_setor] + 1) * tamanho_setor + deslocamento
+                struct.pack_into("<I", reparado, endereco_ole, destino)
+                alteracoes += 1
+            return bytes(reparado) if alteracoes else None
+    except (IndexError, ValueError, UnicodeError, struct.error):
+        return None
+    return None
+
 def _recuperar_xls_biff_irregular(file_bytes: bytes, *, workbook: bool = False):
     try:
         from xlrd.compdoc import CompDoc
@@ -126,6 +248,13 @@ def _ler_bruto(file_bytes: bytes, filename: str):
             try:
                 return pd.read_excel(io.BytesIO(file_bytes), header=None, dtype=object, engine="xlrd")
             except Exception:
+                reparado = _reparar_endereco_aba_ole(file_bytes)
+                if reparado is not None:
+                    try:
+                        return pd.read_excel(io.BytesIO(reparado), header=None,
+                                             dtype=object, engine="xlrd")
+                    except Exception:
+                        pass
                 try:
                     tabelas = pd.read_html(io.BytesIO(file_bytes), header=None)
                     if tabelas:
