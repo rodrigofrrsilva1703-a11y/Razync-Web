@@ -256,6 +256,12 @@
     "regime": "LUCRO PRESUMIDO"
   },
   {
+    "codigo": 1303,
+    "nome": "BMZ MOTO PEÇAS",
+    "regime": "Não informado",
+    "chave_sistema": "bmz_moto_1303"
+  },
+  {
     "codigo": 1320,
     "nome": "T. W. GUAIMBÊ – EXCLUSIVE SUÍTES HOTEL LTDA",
     "regime": "LUCRO PRESUMIDO"
