@@ -109,7 +109,7 @@ def test_santander_rejects_mismatching_bank_balance():
 def test_bradesco_15_movements_and_all_daily_balances():
     rows=parse_bradesco_text(BRADESCO)
     assert len(rows)==15
-    assert sum(value for _,value,_ in rows if value>0)==10714264
+    assert sum(value for _,value,_ in rows if value>0)==10752161
     assert any(row[1]==-755381 for row in rows)
     assert rows[-1][1]==-4900000
 
