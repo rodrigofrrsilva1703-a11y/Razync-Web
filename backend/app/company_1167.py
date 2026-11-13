@@ -92,7 +92,7 @@ def read_banco_brasil(content):
         first=doc[0].get_text()
         if not (re.search(r"Agência\s*8224-4",first,re.I) and
                 re.search(r"Conta corrente\s*363-8",first,re.I) and
-                "GUNG" in first.upper()):
+                re.search(r"IMPERIO\s+G\s+C\s+V\s+P\s+A",first,re.I) is not None):
             raise ValueError("BB 1167: titular, agência 8224-4 ou conta 363-8 divergente.")
         month_match=re.search(r"Período do extrato\s*(\d{2})\s*/\s*(20\d{2})",first,re.I)
         if not month_match:
@@ -150,7 +150,7 @@ def read_sicoob(content):
     with doc:
         header=doc[0].get_text()
         if not (re.search(r"4340-0\s*/\s*SICOOB",header,re.I) and
-                re.search(r"210\.034-7\s*/\s*GUNG",header,re.I)):
+                re.search(r"210\.033-9\s*/\s*IMPERIO",header,re.I)):
             raise ValueError("Sicoob 1167: cooperativa 4340 ou conta 210.033-9 divergente.")
         match=re.search(r"Periodo:\s*(\d{2}/\d{2}/20\d{2})\s*-\s*(\d{2}/\d{2}/20\d{2})",header,re.I)
         if not match:raise ValueError("Sicoob 1167: período não encontrado.")
@@ -222,7 +222,7 @@ def read_itau(content):
     with doc:
         first=doc[0].get_text()
         if not (re.search(r"Agência\s+7111\s+Conta\s+0099857-6",first,re.I)
-                and re.search(r"GUNG\s+WEN\s+COM",first,re.I)
+                and re.search(r"IMPERIO\s+GONG\s+COM",first,re.I)
                 and "40.248.477/0001-05" in first):
             raise ValueError("Itaú 1167: empresa, agência 7111 ou conta 0099857-6 divergente.")
         period=re.search(r"Lançamentos do período:\s*(\d{2}/\d{2}/20\d{2})\s+até\s+(\d{2}/\d{2}/20\d{2})",first)
