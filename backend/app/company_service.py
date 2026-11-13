@@ -3,6 +3,8 @@ from contextlib import closing
 from app import classification_service, persistence
 from razync.company_catalog import EMPRESAS
 
+REGIMES = {'Não informado', 'LUCRO REAL', 'LUCRO PRESUMIDO', 'SIMPLES NACIONAL'}
+
 def _db():
     path = classification_service.DB_PATH
     con = persistence.connect(path)
@@ -11,15 +13,20 @@ def _db():
     return con
 
 def catalog():
-    from app.company_access import archived_codes
+    from app.company_access import archived_codes, company_regimes
 
     with closing(_db()) as con, con:
         custom = [dict(row) for row in con.execute('SELECT codigo,nome,regime FROM custom_companies ORDER BY codigo')]
     original_codes = {int(row['codigo']) for row in EMPRESAS}
     removed = archived_codes()
-    return [dict(row) for row in EMPRESAS if int(row['codigo']) not in removed] + [
+    rows = [dict(row) for row in EMPRESAS if int(row['codigo']) not in removed] + [
         row for row in custom if row['codigo'] not in original_codes and row['codigo'] not in removed
     ]
+    regimes = company_regimes()
+    for row in rows:
+        if int(row['codigo']) in regimes:
+            row['regime'] = regimes[int(row['codigo'])]
+    return rows
 
 def create(code, name='', regime='Não informado'):
     if isinstance(code, bool) or not str(code).isdigit() or not 1 <= int(code) <= 999999999:
@@ -27,7 +34,7 @@ def create(code, name='', regime='Não informado'):
     code = int(code)
     name = str(name or '').strip() or f'Empresa {code}'
     regime = str(regime or '').strip() or 'Não informado'
-    if len(name) > 160 or regime not in {'Não informado','LUCRO REAL','LUCRO PRESUMIDO','SIMPLES NACIONAL'}:
+    if len(name) > 160 or regime not in REGIMES:
         raise ValueError('Nome ou regime inválido.')
     if any(int(row['codigo']) == code for row in EMPRESAS):
         raise FileExistsError('Já existe uma empresa com esse código.')

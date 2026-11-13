@@ -2835,3 +2835,54 @@ body[data-site-locked] #companyNotificationToast {display:none}
 #userAccessView .owner-table th:first-child {width:31%}
 #userAccessView .owner-table th:nth-child(3) {width:auto}
 #userAccessView .owner-table td:nth-child(4),#userAccessView .owner-table td:nth-child(5),#userAccessView .owner-table td:nth-child(6) {white-space:nowrap}
+
+/* Administrative directories share compact actions and responsive rows. */
+#companyOwnersView .owner-table, #userAccessView .owner-table {min-width: 0}
+#companyOwnersView .owner-table th, #userAccessView .owner-table th {width: auto}
+#companyOwnersView .owner-table td, #userAccessView .owner-table td {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.owner-directory td strong, .owner-directory td small {display: block}
+.owner-directory td small {color: var(--muted); margin-top: 4px}
+.owner-directory td details {margin-top: 6px; font-size: 12px}
+.owner-directory td summary {cursor: pointer}
+.owner-directory select {max-width: 100%}
+.owner-directory .owner-table button {
+  min-height: 36px;
+  margin: 2px;
+  font-weight: 650;
+  border-radius: 9px;
+}
+.owner-directory button.admin-edit, .owner-directory button.admin-restore {
+  background: color-mix(in srgb, #5085ed 14%, var(--surface));
+}
+.owner-directory .admin-edit::before {content: "✎"; margin-inline-end: 6px}
+.owner-directory .admin-restore::before {content: "↻"; margin-inline-end: 6px}
+.owner-directory .admin-remove::before {content: "⊖"; margin-inline-end: 6px}
+.owner-directory button:hover:not(:disabled) {border-color: #6696e6}
+.owner-directory :is(button, select, input, summary):focus-visible {outline: 2px solid #6696e6; outline-offset: 2px}
+.company-row-owner {display: block; flex-basis: 100%; color: var(--muted); font-size: 12px}
+@media (max-width: 760px) {
+  #companyOwnersView .owner-table, #userAccessView .owner-table,
+  #companyOwnersView tbody, #userAccessView tbody {display: block}
+  #companyOwnersView thead, #userAccessView thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .owner-directory tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+  }
+  .owner-directory tbody td {min-width: 0; padding: 5px; border: 0}
+  .owner-directory tbody td:first-child, .owner-directory tbody td:last-child {grid-column: 1 / -1}
+  #companyOwnersView tbody td:nth-child(2)::before {content: "Responsável"}
+  #companyOwnersView tbody td:nth-child(3)::before {content: "Regime tributário"}
+  #companyOwnersView tbody td::before {display: block; color: var(--muted); font-size: 12px}
+}

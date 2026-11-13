@@ -272,6 +272,15 @@ function render(items) {
     status.title = hasCompanyTools(company) ? statusFor(company) : 'Ferramenta ainda não cadastrada';
     heading.append(code, status);
     meta.append(regime);
+    if (globalThis.jaguarCompanyAccess?.admin && Object.hasOwn(company, "responsavel")) {
+      const owner = document.createElement("span");
+      owner.className = "company-row-owner";
+      const name = company.responsavel?.split("@")[0].split(/[._-]+/).filter(Boolean)
+        .map(part => part[0].toLocaleUpperCase("pt-BR") + part.slice(1)).join(" ");
+      owner.textContent = name ? `Responsável · ${name}` : "Sem responsável";
+      meta.append(owner);
+      row.setAttribute("aria-label", `${row.getAttribute("aria-label")}. ${owner.textContent}`);
+    }
     main.append(name, meta);
 
     const footer = document.createElement("span");

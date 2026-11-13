@@ -16,7 +16,7 @@ def test_company_reassignment_updates_access_without_limiting_admins(monkeypatch
     monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", str(tmp_path))
     monkeypatch.setenv("RAZYNC_LOGIN_REQUIRED", "1")
     monkeypatch.setitem(sys.modules, "app.classification_service", SimpleNamespace(DB_PATH=tmp_path / "base.sqlite"))
-    monkeypatch.setitem(sys.modules, "app.company_service", SimpleNamespace(catalog=lambda: [
+    monkeypatch.setitem(sys.modules, "app.company_service", SimpleNamespace(REGIMES={"LUCRO REAL"}, catalog=lambda: [
         {"codigo": 3, "nome": "Empresa A"}, {"codigo": 8, "nome": "Empresa B"},
     ]))
     app = FastAPI(dependencies=[Depends(company_access.require_company_access)])
@@ -53,6 +53,12 @@ def test_company_reassignment_updates_access_without_limiting_admins(monkeypatch
     assert client.get(endpoint, headers=regular).status_code == 403
     assert client.get(endpoint, headers=admin).json()["companies"][0]["email"] == users[0]
     assert client.put(endpoint + "/3", headers=regular, json={"email": users[2]}).status_code == 403
+    assert client.put(endpoint + "/3", headers=regular, json={"regime": "LUCRO REAL"}).status_code == 403
+    assert client.put(endpoint + "/3", headers=admin, json={"regime": "inválido"}).status_code == 422
+    update = client.put(endpoint + "/3", headers=admin, json={"regime": "LUCRO REAL"})
+    assert update.json()["email"] == users[0]
+    assert update.json()["changed"] is False
+    assert company_access.company_regimes() == {3: "LUCRO REAL"}
     assert client.put(endpoint + "/3", headers=admin, json={"email": "outside@example.test"}).status_code == 422
     assert client.put(endpoint + "/3", headers=admin, json={"email": users[2]}).status_code == 200
     assert client.get(company_path, headers=regular).status_code == 200

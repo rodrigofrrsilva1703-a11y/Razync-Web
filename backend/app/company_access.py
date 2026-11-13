@@ -43,6 +43,7 @@ def _db():
         "ON company_notifications(recipient, id DESC)"
     )
     db.execute("CREATE TABLE IF NOT EXISTS archived_companies (company INTEGER PRIMARY KEY)")
+    db.execute("CREATE TABLE IF NOT EXISTS company_regimes (company INTEGER PRIMARY KEY, regime TEXT NOT NULL)")
     db.execute("""CREATE TABLE IF NOT EXISTS monthly_task_messages (
         id INTEGER PRIMARY KEY, period TEXT NOT NULL, company INTEGER NOT NULL,
         owner TEXT NOT NULL, sender TEXT NOT NULL, kind TEXT NOT NULL,
@@ -67,6 +68,11 @@ def owners():
 def archived_codes():
     with closing(_db()) as db:
         return {row[0] for row in db.execute("SELECT company FROM archived_companies")}
+
+
+def company_regimes():
+    with closing(_db()) as db:
+        return dict(db.execute("SELECT company,regime FROM company_regimes"))
 
 
 def owner_for(code, assignments):
@@ -155,7 +161,7 @@ def list_assignments():
     return {
         "users": sorted(allowlist()),
         "companies": [
-            {"codigo": row["codigo"], "nome": row["nome"], "email": owner_for(row["codigo"], assignments)}
+            {"codigo": row["codigo"], "nome": row["nome"], "regime": row.get("regime", ""), "email": owner_for(row["codigo"], assignments)}
             for row in catalog()
         ],
     }
@@ -174,17 +180,22 @@ def archive_company(company_code: int):
 
 
 class Assignment(BaseModel):
-    email: str
+    email: str | None = None
+    regime: str | None = None
 
 
 @router.put("/assignments/{company_code}")
 def set_assignment(company_code: int, payload: Assignment):
     _require_admin()
-    from app.company_service import catalog
+    from app.company_service import REGIMES, catalog
 
-    email = payload.email.strip().casefold()
-    if email not in allowlist():
+    email = payload.email.strip().casefold() if payload.email is not None else None
+    if email is not None and email not in allowlist():
         raise HTTPException(422, "Selecione um usuário autorizado a acessar o site.")
+    if payload.regime is not None and payload.regime not in REGIMES:
+        raise HTTPException(422, "Selecione um regime tributário válido.")
+    if email is None and payload.regime is None:
+        raise HTTPException(422, "Informe o responsável ou o regime tributário.")
     company = next((row for row in catalog() if int(row["codigo"]) == company_code), None)
     if company is None:
         raise HTTPException(404, "Empresa não cadastrada.")
@@ -194,7 +205,12 @@ def set_assignment(company_code: int, payload: Assignment):
             raise HTTPException(404, "Empresa removida do catálogo.")
         row = db.execute("SELECT email FROM company_owners WHERE company=?", (company_code,)).fetchone()
         previous_email = owner_for(company_code, {company_code: row[0]} if row else {})
-        changed = previous_email != email
+        changed = email is not None and previous_email != email
+        if payload.regime is not None:
+            db.execute(
+                "INSERT INTO company_regimes VALUES(?,?) ON CONFLICT(company) DO UPDATE SET regime=excluded.regime",
+                (company_code, payload.regime),
+            )
         if changed:
             db.execute(
                 "INSERT INTO company_owners(company,email) VALUES(?,?) "
@@ -205,7 +221,8 @@ def set_assignment(company_code: int, payload: Assignment):
                 "INSERT INTO company_notifications(company,name,recipient,created_at) VALUES(?,?,?,?)",
                 (company_code, company["nome"], email, datetime.now(timezone.utc).isoformat()),
             )
-    return {"codigo": company_code, "email": email, "changed": changed}
+    return {"codigo": company_code, "email": email if changed else previous_email,
+            "regime": payload.regime or company.get("regime", ""), "changed": changed}
 
 
 def _notification_recipient():

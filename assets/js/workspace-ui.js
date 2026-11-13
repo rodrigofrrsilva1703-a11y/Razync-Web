@@ -215,7 +215,6 @@ function initializeCompanyOwners() {
       const response = await fetch(`${API()}/api/v1/company-access/companies/${codigo}`, {method:"DELETE"});
       if (!response.ok) throw new Error(await responseError(response));
       companies = companies.filter(row => row.codigo !== codigo);
-      drafts.delete(codigo);
       removalDialog.close();
       render();
       query.focus();
@@ -225,7 +224,6 @@ function initializeCompanyOwners() {
     finally { removeConfirm.disabled = cancelRemove.disabled = false; }
   };
   const pending = new Set();
-  const drafts = new Map();
 
   function render() {
     const term = query.value.trim().toLocaleLowerCase("pt-BR");
@@ -234,24 +232,60 @@ function initializeCompanyOwners() {
     rows.replaceChildren();
     for (const company of matching) {
       const row = rows.insertRow();
-      row.insertCell().textContent = company.codigo;
-      row.insertCell().textContent = company.nome;
-      const select = document.createElement("select");
-      select.setAttribute("aria-label", `Responsável pela empresa ${company.codigo}`);
-      select.append(new Option("Selecione um responsável", ""));
-      if (company.email && !users.includes(company.email)) {
-        select.append(new Option(company.email + " (sem acesso)", company.email));
-      }
-      for (const email of users) select.append(new Option(email, email));
-      select.value = drafts.get(company.codigo) ?? company.email ?? "";
-      select.disabled = pending.has(company.codigo);
-      row.insertCell().append(select);
+      const companyCell = row.insertCell();
+      const name = document.createElement("strong");
+      const code = document.createElement("small");
+      name.textContent = company.nome;
+      code.textContent = "#" + company.codigo;
+      companyCell.append(name, code);
+      const ownerCell = row.insertCell();
+      ownerCell.textContent = company.email || "Sem responsável";
+      const regimeCell = row.insertCell();
+      regimeCell.textContent = company.regime || "Não informado";
+      const actions = row.insertCell();
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "admin-action admin-edit";
+      edit.textContent = "Alterar";
+      edit.disabled = pending.has(company.codigo);
+      edit.setAttribute("aria-label", "Alterar empresa " + company.codigo);
       const button = document.createElement("button");
       button.type = "button";
       button.textContent = "Salvar";
-      button.setAttribute("aria-label", `Salvar responsável da empresa ${company.codigo}`);
       button.disabled = true;
-      const actions = row.insertCell();
+      button.hidden = true;
+      const select = document.createElement("select");
+      select.setAttribute("aria-label", "Responsável pela empresa " + company.codigo);
+      select.append(new Option("Sem responsável", ""));
+      if (company.email && !users.includes(company.email)) select.add(new Option(company.email, company.email));
+      for (const email of users) select.add(new Option(email, email));
+      select.value = company.email || "";
+      const regime = document.createElement("select");
+      regime.setAttribute("aria-label", "Regime tributário da empresa " + company.codigo);
+      const regimes = ["Não informado", "LUCRO REAL", "LUCRO PRESUMIDO", "SIMPLES NACIONAL"];
+      const currentRegime = company.regime || regimes[0];
+      for (const value of new Set([currentRegime, ...regimes])) regime.add(new Option(value, value));
+      regime.value = currentRegime;
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.textContent = "Cancelar";
+      cancel.hidden = true;
+      cancel.onclick = () => {
+        ownerCell.textContent = company.email || "Sem responsável";
+        regimeCell.textContent = currentRegime;
+        select.value = company.email || "";
+        regime.value = currentRegime;
+        button.disabled = button.hidden = cancel.hidden = true;
+        edit.hidden = false;
+        edit.focus();
+      };
+      edit.onclick = () => {
+        ownerCell.replaceChildren(select);
+        regimeCell.replaceChildren(regime);
+        edit.hidden = true;
+        button.hidden = cancel.hidden = false;
+        select.focus();
+      };
       const remove = document.createElement("button");
       remove.type = "button";
       remove.textContent = "Remover";
@@ -263,37 +297,42 @@ function initializeCompanyOwners() {
         removalMessage.textContent = "";
         removalDialog.showModal();
       };
-      actions.append(button, " ", remove);
-      const updateButton = () => { button.disabled = !users.includes(select.value) || select.value === company.email; };
-      select.addEventListener("change", () => {
-        if (select.value === company.email) drafts.delete(company.codigo);
-        else drafts.set(company.codigo, select.value);
-        updateButton();
-      });
-      if (!pending.has(company.codigo)) updateButton();
+      remove.className = "admin-action admin-remove";
+      actions.append(edit, button, cancel, remove);
+      const updateButton = () => {
+        button.disabled = (!users.includes(select.value) && select.value !== (company.email || "")) ||
+          (select.value === (company.email || "") && regime.value === currentRegime);
+      };
+      select.onchange = regime.onchange = updateButton;
       button.addEventListener("click", async () => {
-        const email = select.value;
+        const update = {};
+        if (select.value !== (company.email || "")) update.email = select.value;
+        if (regime.value !== currentRegime) update.regime = regime.value;
         pending.add(company.codigo);
-        select.disabled = button.disabled = remove.disabled = true;
+        let updated = false;
+        select.disabled = regime.disabled = button.disabled = cancel.disabled = remove.disabled = true;
         message.textContent = `Salvando empresa ${company.codigo}…`;
         try {
           const response = await fetch(`${endpoint()}/${company.codigo}`, {
-            method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email})
+            method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(update)
           });
           if (!response.ok) throw new Error(await responseError(response));
           const saved = await response.json();
-          company.email = saved.email;
-          drafts.delete(company.codigo);
-          message.textContent = saved.changed === false
-            ? `O responsável pela empresa ${company.codigo} já estava atualizado.`
-            : `Responsável da empresa ${company.codigo} atualizado${saved.changed ? " e notificado" : ""}.`;
-        } catch (error) { message.textContent = error.message; }
-        finally {
+          Object.assign(company, saved);
+          updated = true;
+          message.textContent = saved.changed ? "Empresa atualizada e responsável notificado." : "Regime tributário atualizado.";
+          await loadCompanies();
+        } catch (error) {
+          message.textContent = error.message;
+        } finally {
           pending.delete(company.codigo);
-          if (row.isConnected) {
-            select.disabled = remove.disabled = false;
+          if (updated || !row.isConnected) {
+            render();
+            rows.querySelector(`button[aria-label="Alterar empresa ${company.codigo}"]`)?.focus({preventScroll:true});
+          } else {
+            select.disabled = regime.disabled = cancel.disabled = remove.disabled = false;
             updateButton();
-          } else render();
+          }
         }
       });
     }
@@ -317,7 +356,6 @@ function initializeCompanyOwners() {
       if (!response.ok) throw new Error(await responseError(response));
       const data = await response.json();
       companies = data.companies;
-      drafts.clear();
       users = data.users;
       render();
       message.textContent = "";
@@ -561,8 +599,12 @@ function initializeUserAccess() {
     rows.replaceChildren();
     for (const user of matches) {
       const row = rows.insertRow();
-      row.insertCell().textContent = user.self ? `${user.email} (sua conta)` : user.email;
-      row.insertCell().textContent = user.admin ? "Administrador" : "Colaborador";
+      const account = row.insertCell();
+      const email = document.createElement("strong");
+      const role = document.createElement("small");
+      email.textContent = user.email;
+      role.textContent = (user.admin ? "Administrador" : "Colaborador") + (user.self ? " · Sua conta" : "");
+      account.append(email, role);
       const cell = row.insertCell();
       const badge = document.createElement("span");
       badge.className = "user-access-state";
@@ -572,8 +614,13 @@ function initializeUserAccess() {
       const presence = row.insertCell();
       presence.textContent = user.suspended || !user.connected ? "Desconectado"
         : user.active ? "Conectado · ativo" : "Conectado · inativo";
-      row.insertCell().textContent = formatTime(user.last_active);
-      row.insertCell().textContent = formatTime(user.inactive_since);
+      const activity = document.createElement("details");
+      const activityLabel = document.createElement("summary");
+      activityLabel.textContent = "Atividade";
+      const times = document.createElement("small");
+      times.textContent = "Última atividade · " + formatTime(user.last_active) + " | Inativo desde · " + formatTime(user.inactive_since);
+      activity.append(activityLabel, times);
+      presence.append(activity);
       const actions = row.insertCell();
       if (user.self) {
         actions.textContent = "—";
@@ -582,6 +629,7 @@ function initializeUserAccess() {
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.userEmail = user.email;
+      button.className = "admin-action " + (user.suspended ? "admin-restore" : "admin-remove");
       button.textContent = user.suspended ? "Reativar" : "Suspender";
       button.setAttribute("aria-label", `${button.textContent} acesso de ${user.email}`);
       button.disabled = pending.has(user.email);
@@ -615,7 +663,7 @@ function initializeUserAccess() {
     }
     if (!matches.length) {
       const cell = rows.insertRow().insertCell();
-      cell.colSpan = 7;
+      cell.colSpan = 4;
       cell.textContent = "Nenhuma conta encontrada.";
     }
   }

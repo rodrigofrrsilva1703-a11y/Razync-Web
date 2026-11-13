@@ -37,6 +37,7 @@ from app.tasks import dashboard as task_dashboard, set_company_status, create_ta
 from app.result_artifacts import router as result_router, workbook_response, reconciliation_response
 
 from app.company_access import allowed_codes, require_company_access, router as company_access_router
+from app import company_access
 
 app = FastAPI(title="Razync Web API", version="0.4.0", dependencies=[Depends(require_company_access)])
 app.include_router(company_access_router)
@@ -103,10 +104,13 @@ def health():
 def companies():
     result = []
     visible = allowed_codes()
+    assignments = company_access.owners() if company_access.is_admin() else None
     for item in company_catalog():
         if visible is not None and int(item["codigo"]) not in visible:
             continue
         row = dict(item)
+        if assignments is not None:
+            row["responsavel"] = company_access.owner_for(item["codigo"], assignments)
         cap = dict(CAPABILITIES.get(int(item["codigo"]), {"status": "catalog_only", "tools": []}))
         if cap.get("status") == "api_ready":
             cap.setdefault("tools", COMMON_TOOLS)
