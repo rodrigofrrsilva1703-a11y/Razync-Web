@@ -674,6 +674,7 @@ function initializeUserAccess() {
         pending.add(user.email);
         button.disabled = true;
         message.textContent = "Atualizando acesso…";
+        let updated = false;
         try {
           const response = await fetch(endpoint(), {
             method:"PUT", headers:{"Content-Type":"application/json"},
@@ -681,6 +682,7 @@ function initializeUserAccess() {
           });
           if (!response.ok) throw new Error(await responseError(response));
           const result = await response.json();
+          updated = true;
           user.suspended = result.suspended;
           if (result.suspended) user.connected = user.active = false;
           message.textContent = `Acesso ${result.suspended ? "suspenso" : "reativado"} para ${user.email}.`;
@@ -688,9 +690,14 @@ function initializeUserAccess() {
         finally {
           pending.delete(user.email);
           render();
-          void loadUserAccess(true);
-          if (document.querySelector("#userAccessView").classList.contains("active") && document.activeElement === document.body) {
-            rows.querySelector(`[data-user-email="${CSS.escape(user.email)}"]`)?.focus({preventScroll:true});
+          const actionSelector = `[data-user-email="${CSS.escape(user.email)}"]`;
+          const view = rows.closest(".global-view");
+          if (view?.classList.contains("active") && document.activeElement === document.body) {
+            (rows.querySelector(actionSelector) || filters.querySelector('[aria-pressed="true"]'))?.focus({preventScroll:true});
+          }
+          await loadUserAccess(true);
+          if (updated && view?.classList.contains("active")) {
+            rows.querySelector(actionSelector)?.closest(".access-account").classList.add("access-account-updated");
           }
         }
       };
@@ -707,6 +714,7 @@ function initializeUserAccess() {
   search.addEventListener("input", render);
   for (const button of filters.querySelectorAll("button")) {
     button.onclick = () => {
+      if (selectedFilter === button.dataset.accessFilter) return;
       selectedFilter = button.dataset.accessFilter;
       render();
       revealAccounts();

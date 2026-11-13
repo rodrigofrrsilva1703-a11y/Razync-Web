@@ -2888,136 +2888,249 @@ body[data-site-locked] #companyNotificationToast {display:none}
 }
 
 #userAccessView {
-  --access-blue: #6496ed;
-  --access-green: #50ad87;
-  --access-amber: #d48b50;
+  container-type: inline-size;
+  --access-bg: #fff;
+  --access-subtle: #f5f7fb;
+  --access-line: #dce3ee;
+  --access-text: #182436;
+  --access-muted: #526177;
+  --access-blue: #214fa6;
+  --access-green: #176449;
+  --access-red: #a63747;
+  --access-columns: minmax(0, 1.7fr) minmax(126px, 1fr) minmax(224px, 1.65fr) 108px;
 }
-.access-dashboard-heading {margin-bottom: 18px}
-.access-dashboard-filters:not([hidden]) {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 14px;
+html[data-theme="dark"] #userAccessView {
+  --access-bg: #0b0b0b;
+  --access-subtle: #151515;
+  --access-line: #313131;
+  --access-text: #f3f4f6;
+  --access-muted: #b0b6c0;
+  --access-blue: #9cbaff;
+  --access-green: #83d8b0;
+  --access-red: #ffa3ae;
 }
-.access-dashboard-filters button {
-  --indicator: var(--access-blue);
-  display: grid;
-  gap: 5px;
-  padding: clamp(8px, 2vw, 17px);
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--surface);
-  color: var(--text);
-  text-align: left;
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
+.access-dashboard-heading {margin-bottom: 16px}
+.access-directory {
+  color: var(--access-text);
+  background: var(--access-bg);
+  border: 1px solid var(--access-line);
+  border-radius: 16px;
+  overflow: clip;
 }
-.access-dashboard-filters button[data-access-filter=online] {--indicator: var(--access-green)}
-.access-dashboard-filters button[data-access-filter=suspended] {--indicator: var(--access-amber)}
-.access-dashboard-filters button[aria-pressed=true] {
-  border-color: var(--indicator);
-  background: color-mix(in srgb, var(--indicator) 13%, var(--surface));
-}
-.access-dashboard-filters button {
-  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
-}
-.access-dashboard-filters button[aria-pressed=true] {
-  box-shadow: inset 0 -2px var(--indicator);
-}
-@media (hover: hover) {
-  .access-dashboard-filters button:hover {border-color: var(--indicator); transform: translateY(-2px)}
-}
-.access-dashboard-filters button:active {transform: translateY(0) scale(.98)}
-.access-dashboard-filters strong {font-size: 25px; line-height: 1; font-variant-numeric: tabular-nums}
-.access-directory {border: 1px solid var(--border); border-radius: 15px; background: var(--surface)}
-.access-toolbar label {font-size: 13px}
-.access-toolbar input {min-width: 0; min-height: 42px; border-radius: 9px}
-.access-account-list {margin: 0; padding: 0; list-style: none}
-.access-account {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(120px, .65fr) minmax(0, 1.2fr) auto;
+.access-toolbar {
+  display: flex;
   align-items: center;
-  gap: 8px 16px;
-  padding: 13px 16px;
-  border-top: 1px solid var(--border);
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 20px 10px;
 }
-.access-account:hover, .access-account:focus-within {background: var(--surface-2)}
-.access-account {transition: background-color 160ms ease}
+.access-search {position: relative; flex: 1 1 230px; max-width: 380px}
+.access-search .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.access-search-icon {
+  position: absolute;
+  left: 14px;
+  top: calc(50% - 7px);
+  width: 12px;
+  height: 12px;
+  border: 1.6px solid currentColor;
+  border-radius: 50%;
+  color: var(--access-muted);
+  pointer-events: none;
+}
+.access-search-icon::after {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 1.6px;
+  background: currentColor;
+  left: 8px;
+  top: 8px;
+  transform: rotate(45deg);
+}
+#userAccessView #userAccessSearch {
+  width: 100%;
+  min-height: 42px;
+  padding-inline: 36px 12px;
+  border: 1px solid var(--access-line);
+  border-radius: 9px;
+  background: var(--access-subtle);
+  color: var(--access-text);
+}
+.access-dashboard-filters:not([hidden]) {
+  display: inline-flex;
+  padding: 3px;
+  gap: 3px;
+  border: 1px solid var(--access-line);
+  border-radius: 10px;
+  background: var(--access-subtle);
+}
+.access-dashboard-filters button {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--access-muted);
+  line-height: 1.2;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+.access-dashboard-filters button[aria-pressed=true] {
+  border-color: color-mix(in srgb, var(--access-blue) 30%, var(--access-line));
+  color: var(--access-blue);
+  background: color-mix(in srgb, var(--access-blue) 9%, var(--access-bg));
+}
+.access-dashboard-filters button:hover {color: var(--access-blue)}
+.access-dashboard-filters button:active {transform: scale(.96)}
+.access-dashboard-filters strong {
+  padding: 3px 5px;
+  border-radius: 5px;
+  background: color-mix(in srgb, currentColor 11%, transparent);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.access-directory-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 0 20px 12px;
+  color: var(--access-muted);
+  font-size: 12px;
+}
+#userAccessCount {font-weight: 650}
+#userAccessMessage {margin: 0; padding: 8px 20px; color: var(--access-blue); font-size: 13px}
+#userAccessMessage:empty {padding: 0}
+.access-columns, .access-account {
+  display: grid;
+  grid-template-columns: var(--access-columns);
+  align-items: center;
+  gap: 12px;
+  padding: 11px 20px;
+  border-top: 1px solid var(--access-line);
+}
+.access-columns {
+  display: none;
+}
+@container (min-width: 720px) {
+  .access-columns {display: grid; grid-template-columns: var(--access-columns)}
+  .access-columns > span:last-child {text-align: right}
+  .access-account-activity dt {position: absolute; clip-path: inset(50%)}
+}
+.access-columns {background: var(--access-subtle); color: var(--access-muted); font-size: 12px; font-weight: 700}
+.access-account-list {margin: 0; padding: 0; list-style: none}
+.access-account {min-height: 65px; transition: background-color 160ms ease}
+.access-account:hover, .access-account:focus-within {background: var(--access-subtle)}
 .access-account-identity {display: flex; align-items: center; gap: 10px; min-width: 0}
-.access-account-identity strong {font-size: 14px; overflow-wrap: anywhere}
-.access-account-identity small {display: block; margin-top: 3px; color: var(--muted)}
+.access-account-identity strong {font-size: 13px; overflow-wrap: anywhere}
+.access-account-identity small {display: block; margin-top: 3px; color: var(--access-muted)}
 .access-account-avatar {
-  flex: 0 0 36px;
+  flex: 0 0 34px;
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--access-blue) 18%, var(--surface));
-  color: var(--text);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--access-blue) 12%, var(--access-bg));
+  color: var(--access-blue);
+  font-size: 12px;
   font-weight: 750;
 }
-.access-account-status {display: flex; flex-wrap: wrap; align-items: center; gap: 6px}
-.access-account-status .user-access-state {font-size: 12px; border-radius: 99px}
-.access-presence {color: var(--muted); font-size: 12px}
-.access-presence::before {content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; margin-inline-end: 5px}
+.access-account-status {display: grid; justify-items: start; gap: 3px}
+#userAccessView .user-access-state {
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--access-green) 12%, var(--access-bg));
+  color: var(--access-green);
+  font-size: 11px;
+  font-weight: 750;
+}
+#userAccessView .user-access-state[data-suspended=true] {
+  background: color-mix(in srgb, var(--access-red) 12%, var(--access-bg));
+  color: var(--access-red);
+}
+.access-presence {color: var(--access-muted); font-size: 11px}
+.access-presence::before {content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-inline-end: 5px}
 .access-presence[data-connected=true]::before {background: var(--access-green)}
 .access-account-actions {text-align: right}
-.access-account-actions button {
+#userAccessView .access-account-actions button {
   min-height: 36px;
-  padding: 5px 10px;
-  border: 1px solid var(--border);
+  padding: 5px 9px;
+  border: 1px solid var(--access-line);
   border-radius: 8px;
-  background: var(--surface-2);
-  color: var(--text);
+  background: var(--access-bg);
+  color: var(--access-red);
   cursor: pointer;
   font: inherit;
-  font-weight: 650;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background-color 160ms ease, border-color 160ms ease;
 }
+#userAccessView .access-account-actions .admin-restore {color: var(--access-blue)}
 .access-account-actions .admin-remove::before {content: "⊖"; margin-inline-end: 5px}
 .access-account-actions .admin-restore::before {content: "↻"; margin-inline-end: 5px}
-.access-account-actions button:disabled {opacity: .55; cursor: wait}
-.access-account-actions button:not(:disabled):hover {
-  border-color: var(--access-blue);
-  background: color-mix(in srgb, var(--access-blue) 12%, var(--surface));
+#userAccessView .access-account-actions button:disabled {opacity: .55; cursor: wait}
+#userAccessView .access-account-actions button:not(:disabled):hover {
+  border-color: currentColor;
+  background: var(--access-subtle);
 }
-.access-account-activity {
+.access-column-dates, .access-account-activity {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 12px;
   margin: 0;
 }
-.access-account-activity dt {color: var(--muted); font-size: 12px}
-.access-account-activity dd {margin: 3px 0 0; font-size: 13px; font-variant-numeric: tabular-nums}
-.access-time-note {margin: 0; padding: 0 16px 12px; color: var(--muted); font-size: 12px}
-.access-empty {padding: 16px; border-top: 1px solid var(--border); color: var(--muted)}
-#userAccessView :is(button, input, summary):focus-visible {outline: 2px solid var(--access-blue); outline-offset: 2px}
+.access-account-activity dt {color: var(--access-muted); font-size: 11px}
+.access-account-activity dd {margin: 0; font-size: 12px; font-variant-numeric: tabular-nums}
+.access-empty {padding: 16px 20px; border-top: 1px solid var(--access-line); color: var(--access-muted)}
+#userAccessView :is(button, input):focus-visible {outline: 2px solid var(--access-blue); outline-offset: 2px}
 @media (prefers-reduced-motion: no-preference) {
-  #userAccessView.active .access-dashboard-heading {animation: access-reveal 260ms ease-out both}
-  #userAccessView.active .access-dashboard-filters:not([hidden]) {animation: access-reveal 280ms ease-out both}
-  #userAccessView.active .access-directory {animation: access-reveal 420ms cubic-bezier(.2,.7,.25,1) both}
-  #userAccessView .access-dashboard-filters button[aria-pressed=true] strong {animation: access-count 360ms ease-out}
+  #userAccessView.active .access-directory {animation: access-reveal 390ms cubic-bezier(.2,.7,.25,1)}
+  .access-dashboard-filters button[aria-pressed=true] strong {animation: access-count 320ms ease-out}
+  .access-account-updated {animation: access-update 900ms ease-out}
 }
 @keyframes access-reveal {
-  from {opacity: .45; transform: translateY(12px)}
+  from {opacity: .55; transform: translateY(10px)}
   to {opacity: 1; transform: translateY(0)}
 }
 @keyframes access-count {
-  from {transform: scale(.86)}
-  58% {transform: scale(1.13)}
-  to {transform: scale(1)}
+  55% {transform: scale(1.16)}
+}
+@keyframes access-update {
+  from {background-color: color-mix(in srgb, var(--access-green) 22%, var(--access-bg))}
 }
 @media (prefers-reduced-motion: reduce) {
   .access-account, .access-dashboard-filters button {transition: none}
-  .access-dashboard-filters button:is(:hover, :active) {transform: none}
+  .access-dashboard-filters button:active {transform: none}
+  .access-account-updated {box-shadow: inset 3px 0 var(--access-green)}
 }
-@media (max-width: 860px) {
-  .access-account {grid-template-columns: minmax(0, 1fr) auto; gap: 10px 6px}
+@container (width < 720px) {
+  .access-account {grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px}
   .access-account-identity, .access-account-activity {grid-column: 1 / -1}
-  .access-account-activity {
-    grid-row: 3;
-    padding-top: 8px;
-    border-top: 1px solid var(--border);
-  }
+  .access-account-activity {grid-row: 3; padding-top: 7px; border-top: 1px solid var(--access-line)}
+  .access-account-activity dd {margin-top: 3px}
   .access-account-actions {grid-column: 2; grid-row: 2}
+}
+@media (max-width: 560px) {
+  .access-toolbar, .access-directory-meta, .access-account {padding-inline: 12px}
+  .access-search {max-width: none}
+  .access-dashboard-filters:not([hidden]) {width: 100%}
+  .access-dashboard-filters button {flex: 1; padding-inline: 3px}
+  .access-account-list {padding: 0 8px 8px; display: grid; gap: 7px}
+  .access-account {border: 1px solid var(--access-line); border-radius: 10px}
 }
