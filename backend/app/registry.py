@@ -218,6 +218,16 @@ CAPABILITIES[1166] = {
     **CAPABILITIES[1165],
     "banks": {"itau": "508", "nubank": "506", "caixa": "1367"},
 }
+CAPABILITIES[1167] = {
+    "status":"api_ready","workflow":"advanced",
+    "banks":{"banco_brasil":"8","sicoob":"506","itau":"508","bradesco":"507"},
+    "roles":[
+        {"name":"banco_brasil","label":"Banco do Brasil 8 — extrato PDF","accept":".pdf","multiple":True,"optional":True},
+        {"name":"sicoob","label":"Sicoob 506 — extrato PDF","accept":".pdf","multiple":True,"optional":True},
+        {"name":"itau","label":"Itaú 508 — extrato PDF","accept":".pdf","multiple":True,"optional":True},
+        {"name":"bradesco","label":"Bradesco 507 — Ag. 538 / CC 0301794-0 (PDF)","accept":".pdf","multiple":True,"optional":True},
+    ],
+}
 CAPABILITIES[1160] = {
     "status":"api_ready","workflow":"advanced",
     "banks":{"banco_brasil":"8","sicoob":"506","itau":"508","bradesco":"515"},
