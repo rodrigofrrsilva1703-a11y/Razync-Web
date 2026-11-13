@@ -218,6 +218,17 @@ CAPABILITIES[1166] = {
     **CAPABILITIES[1165],
     "banks": {"itau": "508", "nubank": "506", "caixa": "1367"},
 }
+CAPABILITIES[1050] = {
+    "status": "api_ready",
+    "workflow": "advanced",
+    "banks": {"itau": "508"},
+    "roles": [
+        {"name": "itau", "label": "Extrato mensal Itaú 508 (PDF)",
+         "accept": ".pdf", "multiple": True},
+    ],
+    "tools": ["modelo_dominio", "conferencia_extrato", "base_inteligente"],
+}
+
 CAPABILITIES[1303] = {
     "status": "api_ready",
     "workflow": "advanced",
