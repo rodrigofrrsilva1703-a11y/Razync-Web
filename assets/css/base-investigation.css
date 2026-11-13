@@ -611,23 +611,23 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
 @media(max-width:760px){#baseAiHost #baseInvestigationWindow{inset:60px 6px 6px;width:calc(100vw - 12px)}#baseAiHost #baseInvestigationWindow .base-ai-window-body{padding:12px}#baseAiHost #baseInvestigationWindow .base-review-layout{grid-template-columns:minmax(0,1fr)}#baseAiHost #baseInvestigationWindow .base-review-sidebar{max-height:none;padding:0}#baseAiHost #baseInvestigationWindow .base-history-comparison>.base-review-decision{bottom:-12px}#baseAiHost #baseInvestigationWindow .base-ai-window-header{padding:10px 12px}}
 
 
-/* AI shortcut: a clean symbol with a generous, borderless hit area. */
-#baseAiHost button.base-ai-launcher {
-  display:flex;
-  align-items:center;
-  gap:9px;
-  width:max-content!important;
-  max-width:calc(100vw - 32px);
-  height:48px!important;
-  min-height:48px!important;
-  padding:5px 8px 5px 5px!important;
-  right:20px;
-  bottom:84px;
+/* Keep the launcher on the same axis as the other floating shortcuts. */
+body #baseAiHost button.base-ai-launcher {
+  display:grid;
+  place-items:center;
+  box-sizing:border-box;
+  width:var(--shortcut-size)!important;
+  height:var(--shortcut-size)!important;
+  min-height:var(--shortcut-size)!important;
+  padding:0!important;
+  right:var(--shortcut-right);
+  bottom:calc(var(--shortcut-bottom) + var(--notification-slot) + var(--admin-slot));
   border:1px solid var(--review-border)!important;
-  border-radius:999px!important;
+  border-radius:50%!important;
   background:var(--review-paper)!important;
   box-shadow:0 5px 20px #101b3233!important;
 }
+body.nav-drawer-open #baseAiHost button.base-ai-launcher,
 #baseAiHost button.base-ai-launcher[hidden]{display:none!important}
 #baseAiHost button.base-ai-launcher:hover,
 #baseAiHost button.base-ai-launcher:focus-visible {
@@ -637,9 +637,8 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
 #baseAiHost button.base-ai-launcher .base-launcher-ai {
   display:grid;
   place-items:center;
-  flex:none;
-  width:36px;
-  height:36px;
+  width:34px;
+  height:34px;
   border-radius:50%;
   background:linear-gradient(145deg,#163265,#3b5ca5);
   color:#eef9ff;
@@ -647,23 +646,19 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
 #baseAiHost .base-launcher-ai svg {width:24px;height:24px}
 #baseAiHost .base-ai-spark-main {fill:currentColor;transform-origin:15px 17px}
 #baseAiHost .base-ai-spark-accent {fill:#a8e9ff;transform-origin:26px 7px}
-#baseAiHost button.base-ai-launcher .base-launcher-copy {
-  display:block;
-  color:var(--review-ink);
-  font-size:13px;
-  font-weight:700;
-  white-space:nowrap;
-}
 #baseAiHost button.base-ai-launcher .base-ai-launcher-count {
-  position:static;
-  min-width:24px!important;
-  height:24px!important;
-  padding:0 6px;
-  border:0!important;
+  position:absolute;
+  inset:-5px -5px auto auto!important;
+  box-sizing:border-box;
+  width:max-content;
+  min-width:18px!important;
+  height:18px!important;
+  padding:0 4px;
+  border:1px solid var(--review-paper)!important;
   border-radius:999px!important;
-  background:var(--review-selected)!important;
-  color:var(--review-ink)!important;
-  font-size:11px!important;
+  background:#315fc5!important;
+  color:#fff!important;
+  font-size:9px!important;
   font-variant-numeric:tabular-nums;
 }
 @keyframes baseAiGlint {
@@ -678,7 +673,6 @@ html[data-theme=dark] #baseAiHost .base-ai-window .base-review-confirm:hover:not
   }
   #baseAiHost .base-ai-spark-main {transition:transform .24s ease}
 }
-@media(max-width:760px){#baseAiHost button.base-ai-launcher{right:16px;bottom:82px}}
 
 
 /* Compact comparison: retain decision evidence without oversized text or repeated labels. */

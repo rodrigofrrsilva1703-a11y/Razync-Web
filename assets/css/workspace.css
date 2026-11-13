@@ -3505,7 +3505,7 @@ body:not([data-site-locked]):not(.nav-drawer-open):has(#companiesView.active):ha
 body:not([data-site-locked]):not(.nav-drawer-open):has(#adminToolsToggle:not([hidden])) {
   --admin-slot: var(--shortcut-step);
 }
-body:has(#baseAiHost .base-ai-launcher:not([hidden])) {
+body:not(.nav-drawer-open):has(#baseAiHost .base-ai-launcher:not([hidden])) {
   --assistant-slot: var(--shortcut-step);
 }
 #companyNotificationsNav {
@@ -3515,14 +3515,6 @@ body:has(#baseAiHost .base-ai-launcher:not([hidden])) {
 #adminToolsToggle {
   right: var(--shortcut-right);
   bottom: calc(var(--shortcut-bottom) + var(--notification-slot));
-}
-body #baseAiHost button.base-ai-launcher {
-  box-sizing: border-box;
-  width: var(--shortcut-size) !important;
-  height: var(--shortcut-size) !important;
-  min-height: var(--shortcut-size) !important;
-  right: var(--shortcut-right);
-  bottom: calc(var(--shortcut-bottom) + var(--notification-slot) + var(--admin-slot));
 }
 #companyToolHelp,
 #companyToolHelpButton {

@@ -5,14 +5,14 @@ class Element {
  querySelectorAll(selector){return flatten(this).filter(e=>selector==='button'?e.tag==='button':['button','input'].includes(e.tag));}
 }
 function flatten(e){return e.children.flatMap(child=>typeof child==='object'?[child,...flatten(child)]:[]);}
-function setup({storage,bytes="synthetic",options={},company=242}={}){
+function setup({storage,bytes="synthetic",options={},company=242,pendingCount=1}={}){
  const nodes={'#classifyForm':new Element(),'#companyPanel':new Element(),'[data-pane="base"]':new Element(),'.app-shell':new Element()};nodes['[data-pane="base"]'].classes.add('active');
  const observers=[];let resolve;const pending=new Promise(r=>resolve=r);const requests=[],workflowStates=[];
  const ctx={sessionStorage:storage,TextEncoder,crypto:{subtle:{digest:async(_,value)=>require('node:crypto').createHash('sha256').update(Buffer.from(value)).digest()}},document:{createElement:t=>new Element(t),createTextNode:t=>t,querySelector:s=>nodes[s]},MutationObserver:class{constructor(fn){observers.push(fn);}observe(){}},AbortController,FormData,Blob,
  API:()=>'',fetch:(url,options)=>{requests.push({url,options});return pending;},responseError:async()=>'',bankName:b=>b};
  vm.createContext(ctx);vm.runInContext(fs.readFileSync('assets/js/base-investigation.js','utf8'),ctx);
  const host=nodes['.app-shell'].children[0],launcher=host.children[0],window=host.children[1],header=window.children[0],body=window.children[1];
- const mount=()=>ctx.RazyncBaseInvestigation.mount({company,prepared:{blob:async()=>new Blob([bytes])},options,summary:{cobertura:{pendentes:1}},onState:(state,message)=>workflowStates.push({state,message})});
+ const mount=()=>ctx.RazyncBaseInvestigation.mount({company,prepared:{blob:async()=>new Blob([bytes])},options,summary:{cobertura:{pendentes:pendingCount}},onState:(state,message)=>workflowStates.push({state,message})});
  return {ctx,nodes,observers,resolve,requests,launcher,window,header,body,mount,workflowStates};
 }
 const report={total_pendencias:1,grupos_investigados:1,ia:{},limitacoes:[],token:'synthetic',catalogo_contas:[{conta:'412',natureza:'pago',bancos:['itau_508'],periodos:['2026-07'],ocorrencias:2,exemplos:[{historico:'Pago fornecedor de teste',banco:'itau_508',periodos:['2026-07'],ocorrencias:2}]}],sugestoes:[{_aba:'Itaú',_linha:2,natureza:'pago','Histórico':'Teste',Valor:-1,Data:'15/10/2026',grupo:1,_banco:'itau_508',assinatura:'pago|teste',conta_sugerida:'412',situacao:'MODERADA',justificativa:'Evidência',evidencias:[]}]};
@@ -118,7 +118,12 @@ test('download externo inclui aprovações sem confirmação adicional e reutili
 test('ponto de conferência e números diferentes ficam visíveis sem abrir detalhes',async()=>{const data=JSON.parse(JSON.stringify(report));data.sugestoes[0]['Histórico']='Resgate CDB 2290094';data.sugestoes[0].evidencias=[{conta:'412',exata:true,mesmo_banco:true,banco:'itau_508',periodos:['2026-07'],ocorrencias:1,historicos:['Resgate CDB 2010094']}];const h=await populated(data);const focus=flatten(h.body).find(e=>e.className==='base-check-focus');assert.equal(focus.attrs.role,'note');assert.match(textOf(focus),/Números diferentes no histórico/);assert.match(textOf(focus),/Números diferentes/);const delta=flatten(h.body).find(e=>e.className==='base-comparison-delta');assert.match(textOf(delta),/No lançamento2290094/);assert.match(textOf(delta),/Na referência da base2010094/);assert.equal(delta.hidden,false);});
 
 
-test('o atalho de IA preserva o contador de pendências',()=>{const h=setup();h.mount();assert.equal(h.launcher.children[0].className,'base-launcher-ai');assert.equal(h.launcher.children[2].className,'base-ai-launcher-count');});
+test('o atalho mostra somente ícone e contador e mantém o total no nome acessível',()=>{
+ const h=setup({pendingCount:123});h.mount();
+ assert.deepEqual(h.launcher.children.map(child=>child.className),['base-launcher-ai','base-ai-launcher-count']);
+ assert.equal(h.launcher.children[1].textContent,'99+');
+ assert.match(h.launcher.attrs['aria-label'],/123 pendência/);
+});
 
 
 function configureExport(h,{previewPending=false,previewError=false}={}){

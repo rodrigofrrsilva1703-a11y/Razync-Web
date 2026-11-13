@@ -105,6 +105,12 @@
       extrato:"No campo Bradesco, selecione o PDF e o mesmo ZIP usado no Organizador. Para o Banco do Brasil, envie o PDF da competência.",
       base:"Use o Modelo Domínio revisado para ensinar as contrapartidas de cada conta."
     },
+    1092: {
+      intro:"Envie o extrato mensal Sicredi em PDF. Anexe os comprovantes de boletos, DDA e DARF para completar os históricos.",
+      note:"O sistema cruza data, valor e tipo de pagamento. Quando há dúvida, mantém o histórico do extrato.",
+      extrato:"Compare o Modelo Domínio com o extrato mensal Sicredi em PDF da mesma competência.",
+      base:"Use o Modelo Domínio revisado para ensinar as contrapartidas da conta Sicredi 505."
+    },
     818: {
       intro:"Envie o extrato Santander e o relatório de boletos liquidados em PDF para gerar o Modelo Domínio da conta 509.",
       note:"A identificação usa o valor cobrado e o dia útil seguinte à liquidação, considerando segunda a sexta. O histórico original é preservado se o cruzamento não for único.",

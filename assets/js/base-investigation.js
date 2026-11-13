@@ -43,7 +43,6 @@
     }
     context={prepared,company,options,onState,onReviewChange};subtitle.textContent=`Empresa ${company}`;
     onState?.('preparing',`${Number(summary.cobertura.pendentes).toLocaleString('pt-BR')} pendência(s) em preparação`);
-    const launcherCopy = node('span', 'Revisar', 'base-launcher-copy');
     const icon = node('span', null, 'base-launcher-ai');
     icon.setAttribute('aria-hidden', 'true');
     icon.innerHTML = `
@@ -51,9 +50,13 @@
         <path class="base-ai-spark-main" d="M15 5c1.9 7 5 10.1 12 12-7 1.9-10.1 5-12 12-1.9-7-5-10.1-12-12 7-1.9 10.1-5 12-12Z" />
         <path class="base-ai-spark-accent" d="M26 2c.8 3 2 4.2 5 5-3 .8-4.2 2-5 5-.8-3-2-4.2-5-5 3-.8 4.2-2 5-5Z" />
       </svg>`;
-    launcher.replaceChildren(icon, launcherCopy, node('b', String(summary.cobertura.pendentes), 'base-ai-launcher-count'));
-    launcher.title = `Revisar ${summary.cobertura.pendentes} pendências da empresa ${company}`;
-    launcher.hidden=false;
+    const pendingCount = Number(summary.cobertura.pendentes);
+    const count = node('b', pendingCount > 99 ? '99+' : String(pendingCount), 'base-ai-launcher-count');
+    count.setAttribute('aria-hidden', 'true');
+    launcher.replaceChildren(icon, count);
+    launcher.title = `Revisar ${pendingCount} pendência(s) da empresa ${company}`;
+    launcher.setAttribute('aria-label', launcher.title);
+    syncVisibility();
     investigate(); // Local-only preparation; never consumes an AI call.
   }
   async function investigate(){
