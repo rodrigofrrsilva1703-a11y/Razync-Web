@@ -32,6 +32,16 @@ Reaplique separadamente as variáveis das integrações que estiverem habilitada
 
 Faça uma cópia consistente do volume da API antes da troca. O volume pode conter o banco SQLite, o marcador de migração do Postgres, os responsáveis pelas empresas, notificações e outras configurações. Use um backup consistente dos bancos SQLite ou copie o volume com o serviço sem escritas. Se mantiver o Postgres atual, conecte a nova API ao mesmo banco com a configuração e o marcador correspondentes. Para migrar para outro banco, restaure um backup compatível e valide o estado antes de apontar a interface para o novo servidor.
 
+### Inventário da produção
+
+| Origem | O que preservar |
+| --- | --- |
+| Supabase, projeto **Razync Web** | Banco Postgres, esquema privado `razync`: `classification_records`, `classification_imports`, `patterns`, `manual_tasks`, `company_task_status`, `custom_companies` e `migration_state`. A estrutura está em `supabase/migrations/`. Ao manter o projeto atual, a nova API reutiliza esses dados. |
+| Provedor de autenticação | Mantenha o projeto de autenticação atual para reutilizar usuários e senhas. Reaplique as permissões definidas nas variáveis privadas da API. |
+| Railway, serviço **razync-api**, volume **razync-data** em `/data` | Copie o volume inteiro. Entre os arquivos previstos pelo código estão `razync.db` (inclui o marcador de migração quando ativo), `company-owners.sqlite3` (responsáveis, notificações e configurações de empresas) e `razync_sessions.sqlite3` (sessões e atividade). |
+
+Guarde os backups em armazenamento privado e mantenha as credenciais nas variáveis do novo ambiente. O ZIP contém as migrações e o código que cria as tabelas locais. Na validação da restauração, compare a lista de empresas, responsáveis, tarefas e períodos aprendidos com a instalação atual antes de trocar o DNS.
+
 ## 3. Publicar a interface
 
 1. Altere `apiBase` em `assets/js/config.js` para a URL HTTPS da nova API.
