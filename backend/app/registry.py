@@ -218,6 +218,17 @@ CAPABILITIES[1166] = {
     **CAPABILITIES[1165],
     "banks": {"itau": "508", "nubank": "506", "caixa": "1367"},
 }
+CAPABILITIES[1303] = {
+    "status": "api_ready",
+    "workflow": "advanced",
+    "banks": {"itau": "508", "banco_brasil": "8"},
+    "tools": ["modelo_dominio", "conferencia_extrato", "base_inteligente"],
+    "roles": [
+        {"name": "itau", "label": "Itaú — conta 508 (PDF)", "accept": ".pdf", "multiple": True, "optional": True},
+        {"name": "banco_brasil", "label": "Banco do Brasil — conta 8 (PDF)", "accept": ".pdf", "multiple": True, "optional": True},
+    ],
+}
+
 CAPABILITIES[1167] = {
     "status":"api_ready","workflow":"advanced",
     "banks":{"banco_brasil":"8","sicoob":"506","itau":"508","bradesco":"507"},
