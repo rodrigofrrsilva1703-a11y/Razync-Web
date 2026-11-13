@@ -1,0 +1,340 @@
+import ast
+import io
+import json
+import hashlib
+import builtins
+import symtable
+from pathlib import Path
+from types import SimpleNamespace
+
+import pandas as pd
+import pytest
+from fastapi.testclient import TestClient
+from openpyxl import Workbook, load_workbook
+from app import engine
+from app import classification_service as base
+from app.main import app
+from app.migration_services import workflow, slug, accounts, reconcile, normalize_selected_banks
+from app.registry import CAPABILITIES
+from app.classification_service import resolve_classification_options
+
+ROOT = Path(__file__).resolve().parents[1]
+client = TestClient(app)
+
+def xlsx(rows, title='Itaú'):
+    wb = Workbook(); ws = wb.active; ws.title = title
+    for row in rows:
+        ws.append(row)
+    out = io.BytesIO(); wb.save(out)
+    return out.getvalue()
+
+def model(history='Pago: Empresa: ACME INDUSTRIAL', debit='', credit='508', value=-100, date='01/10/2026', title='Itaú'):
+    return xlsx([['DESCRIÇÃO','DATA','VALOR','DÉBITO','CRÉDITO','HISTÓRICO'], ['BANCO ITAÚ',date,value,debit,credit,history]], title)
+
+def workbook_signature(content):
+    wb = load_workbook(io.BytesIO(content))
+    return [(ws.title, [(c.coordinate, c.value, c.number_format, str(c.font), str(c.fill), str(c.border), str(c.alignment)) for row in ws for c in row],
+             ws.freeze_panes, ws.auto_filter.ref, [(k,v.width) for k,v in ws.column_dimensions.items()]) for ws in wb]
+
+def reference_engine():
+    namespace = {k: v for k,v in vars(engine).items() if not k.startswith('__')}
+    namespace['st'] = SimpleNamespace(session_state={}, warning=lambda value: None)
+    manifest = json.loads((ROOT/'resources/engine_manifest.json').read_text())
+    for filename in ('app_legacy.py','app.py'):
+        source = (ROOT/'tests/reference'/f'{filename}.txt').read_text(encoding='utf-8')
+        if filename == 'app.py':
+            namespace['_identificar_chave_banco_legado'] = namespace['identificar_chave_banco_empresa']
+            namespace['_nome_banco_por_chave_legado'] = namespace['nome_banco_por_chave']
+            namespace['_processar_extrato_conferencia_legado'] = namespace['processar_extrato_conferencia_empresa']
+        names = {item['name'] for item in manifest['functions'] if item['source'] == filename}
+        definitions = []
+        for node in ast.parse(source).body:
+            if isinstance(node, ast.FunctionDef) and node.name in names:
+                node.decorator_list = []
+                definitions.append(node)
+        exec(compile(ast.Module(body=definitions, type_ignores=[]), filename, 'exec'), namespace)
+    return SimpleNamespace(**namespace)
+
+
+def test_empresa_242_campos_iguais_ao_streamlit():
+    capability = CAPABILITIES[242]
+    assert [role["name"] for role in capability["roles"]] == [
+        "despesas", "fornecedores", "recebidos", "francesinhas"
+    ]
+    assert [option["name"] for option in capability["options"]] == [
+        "data_inicial", "data_final"
+    ]
+    assert all(role.get("optional") is True for role in capability["roles"])
+
+
+def test_empresa_1408_campos_iguais_ao_streamlit():
+    capability = CAPABILITIES[1408]
+    assert [role["name"] for role in capability["roles"]] == [
+        "extrato", "recebidos", "francesinhas"
+    ]
+    assert capability["roles"][0].get("optional") is not True
+    assert capability["roles"][1].get("optional") is not True
+    assert capability["roles"][2].get("optional") is True
+    assert capability["options"] == []
+    assert capability["banks"] == {"itau": "512"}
+
+
+def test_empresa_1408_base_inteligente_usa_apenas_consolidado():
+    options = resolve_classification_options(1408, {
+        "modo_consolidado": False,
+        "coluna_substituir": "credito",
+        "valores_substituiveis": ["166"],
+    })
+    assert options["modo_consolidado"] is True
+    assert options["coluna_substituir"] == ""
+    assert options["valores_substituiveis"] == []
+
+
+def _frame_1408(rows):
+    return pd.DataFrame(rows, columns=["DESCRIÇÃO","DATA","VALOR","DÉBITO","CRÉDITO","HISTÓRICO"])
+
+
+def test_1408_reconhece_boletos_recebidos_no_plural():
+    from razync.eletro_forte_filial_1408 import montar_modelo_1408
+    extrato = _frame_1408([
+        ["BANCO ITAÚ","10/09/2026",3231.81,"512","","BOLETOS RECEBIDOS 10/09S"],
+    ])
+    francesinhas = pd.DataFrame([
+        ["BANCO ITAÚ","10/09/2026",1000.00,"512","","Recebido: CLIENTE A","FRANC 09.09 FILIAL.pdf","98796-6"],
+        ["BANCO ITAÚ","10/09/2026",2231.81,"512","","Recebido: CLIENTE B","FRANC 09.09 FILIAL.pdf","98796-6"],
+    ], columns=["DESCRIÇÃO","DATA","VALOR","DÉBITO","CRÉDITO","HISTÓRICO","ARQUIVO","CONTA_ITAU"])
+    result, summary = montar_modelo_1408(extrato.to_dict("records"), None, 2026, francesinhas)
+    assert sorted(result["VALOR"].tolist()) == [1000.0, 2231.81]
+    assert "BOLETOS RECEBIDOS" not in " ".join(result["HISTÓRICO"].astype(str))
+    assert summary["boletos_recebidos"] == 1
+    assert summary["boletos_desmembrados"] == 1
+    assert summary["boletos_sem_correspondencia"] == 0
+
+
+def test_1408_francesinhas_substituem_boleto_recebido():
+    from razync.eletro_forte_filial_1408 import montar_modelo_1408
+    extrato = _frame_1408([
+        ["BANCO ITAÚ","03/08/2026",300.00,"512","","BOLETO RECEBIDO"],
+        ["BANCO ITAÚ","03/08/2026",75.00,"512","","REDE VISA"],
+    ])
+    francesinhas = pd.DataFrame([
+        ["BANCO ITAÚ","03/08/2026",100.00,"512","","Recebido: CLIENTE A","f1.pdf","1234-5"],
+        ["BANCO ITAÚ","03/08/2026",200.00,"512","","Recebido: CLIENTE B","f1.pdf","1234-5"],
+    ], columns=["DESCRIÇÃO","DATA","VALOR","DÉBITO","CRÉDITO","HISTÓRICO","ARQUIVO","CONTA_ITAU"])
+    result, summary = montar_modelo_1408(extrato.to_dict("records"), None, 2026, francesinhas)
+    assert "BOLETO RECEBIDO" not in " ".join(result["HISTÓRICO"].astype(str))
+    assert sorted(result["VALOR"].tolist()) == [75.0, 100.0, 200.0]
+    assert result.loc[result["VALOR"].isin([100.0,200.0]), "DÉBITO"].astype(str).eq("512").all()
+    assert result.loc[result["VALOR"] == 75.0, "HISTÓRICO"].iloc[0].endswith("REDE VISA")
+    assert summary["boletos_desmembrados"] == 1
+    assert summary["boletos_sem_correspondencia"] == 0
+
+
+def test_1408_francesinhas_mesmo_valor_nao_ficam_ambiguas():
+    from razync.eletro_forte_filial_1408 import montar_modelo_1408
+    extrato = _frame_1408([
+        ["BANCO ITAÚ","03/08/2026",150.00,"512","","BOLETO RECEBIDO"],
+        ["BANCO ITAÚ","03/08/2026",150.00,"512","","BOLETO RECEBIDO"],
+    ])
+    francesinhas = pd.DataFrame([
+        ["BANCO ITAÚ","03/08/2026",150.00,"512","","Recebido: A","a.pdf","1234-5"],
+        ["BANCO ITAÚ","03/08/2026",150.00,"512","","Recebido: B","b.pdf","1234-5"],
+    ], columns=["DESCRIÇÃO","DATA","VALOR","DÉBITO","CRÉDITO","HISTÓRICO","ARQUIVO","CONTA_ITAU"])
+    result, summary = montar_modelo_1408(extrato.to_dict("records"), None, 2026, francesinhas)
+    assert len(result) == 2
+    assert "BOLETO RECEBIDO" not in " ".join(result["HISTÓRICO"].astype(str))
+    assert summary["boletos_desmembrados"] == 2
+    assert summary["francesinhas_nao_usadas"] == 0
+
+
+def test_1408_francesinhas_nao_substituem_quando_total_nao_fecha():
+    from razync.eletro_forte_filial_1408 import montar_modelo_1408
+    extrato = _frame_1408([
+        ["BANCO ITAÚ","03/08/2026",300.00,"512","","BOLETO RECEBIDO"],
+    ])
+    francesinhas = pd.DataFrame([
+        ["BANCO ITAÚ","03/08/2026",299.99,"512","","Recebido: CLIENTE A","f1.pdf","1234-5"],
+    ], columns=["DESCRIÇÃO","DATA","VALOR","DÉBITO","CRÉDITO","HISTÓRICO","ARQUIVO","CONTA_ITAU"])
+    result, summary = montar_modelo_1408(extrato.to_dict("records"), None, 2026, francesinhas)
+    assert len(result) == 1
+    assert result.iloc[0]["VALOR"] == 300.0
+    assert "BOLETO RECEBIDO" in result.iloc[0]["HISTÓRICO"]
+    assert summary["boletos_desmembrados"] == 0
+    assert summary["boletos_sem_correspondencia"] == 1
+    assert summary["francesinhas_nao_usadas"] == 1
+    assert summary["avisos_francesinhas"]
+
+
+def test_1408_francesinhas_separam_dois_boletos_no_mesmo_dia():
+    from razync.eletro_forte_filial_1408 import montar_modelo_1408
+    extrato = _frame_1408([
+        ["BANCO ITAÚ","03/08/2026",300.00,"512","","BOLETO RECEBIDO"],
+        ["BANCO ITAÚ","03/08/2026",150.00,"512","","BOLETO RECEBIDO"],
+    ])
+    francesinhas = pd.DataFrame([
+        ["BANCO ITAÚ","03/08/2026",100.00,"512","","Recebido: A","grupo1.pdf","1234-5"],
+        ["BANCO ITAÚ","03/08/2026",200.00,"512","","Recebido: B","grupo1.pdf","1234-5"],
+        ["BANCO ITAÚ","03/08/2026",150.00,"512","","Recebido: C","grupo2.pdf","1234-5"],
+    ], columns=["DESCRIÇÃO","DATA","VALOR","DÉBITO","CRÉDITO","HISTÓRICO","ARQUIVO","CONTA_ITAU"])
+    result, summary = montar_modelo_1408(extrato.to_dict("records"), None, 2026, francesinhas)
+    assert sorted(result["VALOR"].tolist()) == [100.0, 150.0, 200.0]
+    assert summary["boletos_desmembrados"] == 2
+    assert summary["francesinhas_nao_usadas"] == 0
+
+
+def test_empresa_242_perfis_base_inteligente_iguais_ao_streamlit():
+    expected = {
+        "consolidada": (True, "", []),
+        "despesa": (False, "debito", ["0", ""]),
+        "fornecedor": (False, "debito", ["166", "0", ""]),
+        "recebido": (False, "credito", ["166", "0", "14", "16", ""]),
+        "francesinhas": (False, "credito", [""]),
+    }
+    for origem, (modo, coluna, valores) in expected.items():
+        options = resolve_classification_options(242, {"origem_242": origem})
+        assert options["modo_consolidado"] is modo
+        assert options["coluna_substituir"] == coluna
+        assert options["valores_substituiveis"] == valores
+
+
+def test_bank_selection_aliases_used_by_company_tools():
+    assert normalize_selected_banks(['Itaú', 'Daycoval']) == ['Itaú', 'Daycoval']
+    assert normalize_selected_banks(['Itaú', 'Bradesco', 'Banco Fibra']) == ['Itaú', 'Bradesco', 'Fibra']
+    assert normalize_selected_banks(['itau', 'bradesco', 'fibra']) == ['Itaú', 'Bradesco', 'Fibra']
+
+
+def test_extracted_rules_match_reference_ast_and_hashes():
+    manifest = json.loads((ROOT/'resources/engine_manifest.json').read_text())
+    migrated_source = (ROOT/'app/engine.py').read_text(encoding='utf-8')
+    migrated_functions = [n for n in ast.parse(migrated_source).body if isinstance(n, ast.FunctionDef)]
+    for filename in ('app_legacy.py','app.py'):
+        source = (ROOT/'tests/reference'/f'{filename}.txt').read_text(encoding='utf-8')
+        assert hashlib.sha256(source.encode()).hexdigest() == manifest['sources'][filename]
+        originals = {n.name:n for n in ast.parse(source).body if isinstance(n,ast.FunctionDef)}
+        for item in (r for r in manifest['functions'] if r['source'] == filename):
+            node = originals[item['name']]
+            text = '\n'.join(source.splitlines()[node.lineno-1:node.end_lineno])
+            assert hashlib.sha256(text.encode()).hexdigest() == item['source_sha256']
+            expected = text.replace('st.session_state','request_state.get()').replace('st.warning(', 'record_warning(')
+            expected = expected.replace("'Modelo dominio.xlsx'", 'str(TEMPLATE)').replace('"Modelo dominio.xlsx"','str(TEMPLATE)')
+            expected_ast = ast.dump(ast.parse(expected).body[0], include_attributes=False)
+            assert any(ast.dump(n,include_attributes=False) == expected_ast for n in migrated_functions), item['name']
+
+def test_extracted_engine_has_no_unresolved_globals():
+    table = symtable.symtable((ROOT/'app/engine.py').read_text(encoding='utf-8'), 'engine.py', 'exec')
+    def scan(scope):
+        for symbol in scope.get_symbols():
+            if symbol.is_global() and symbol.is_referenced():
+                assert symbol.get_name() in vars(engine) or hasattr(builtins,symbol.get_name()), (scope.get_name(),symbol.get_name())
+        for child in scope.get_children():
+            scan(child)
+    for child in table.get_children():
+        scan(child)
+
+@pytest.mark.parametrize('code',[3,178,343])
+def test_autokraft_workbook_matches_original(code):
+    data = xlsx([['','','','','',''],['','','01/10/2026','','',''],['ITAU','','Cliente',100,'Fornecedor',40],['','','TOTAL DE CREDITOS',100,'TOTAL DE DEBITOS',40]], '01-10')
+    reference = reference_engine()
+    groups, _ = reference.processar_mapa_autokraft(data,'MAPA_2026.xlsx')
+    expected = reference.gerar_excel_nova_geracao(groups)
+    actual, _ = workflow(code, {'mapa':[('MAPA_2026.xlsx',data)]}, {})
+    assert workbook_signature(actual) == workbook_signature(expected)
+
+@pytest.mark.parametrize('code',[1000,1001])
+def test_accede_detailed_groups_match_original(code):
+    data = xlsx([['Data','D/C','Complemento','Conf','Entrada','Saida'],['01/10/2026','D','SISPAG','',None,300],[None,'DOC1',100,'SALARIO MARIA',None,None],[None,'DOC2',200,'SALARIO JOAO',None,None]])
+    reference = reference_engine()
+    expected_frame = reference.processar_planilha_accede_sig(data,'itau',slug(code))
+    assert len(expected_frame) == 2
+    assert expected_frame['VALOR'].sum() == -300
+    expected = reference.gerar_excel_nova_geracao({'Itau':{'principal':expected_frame,'retirados':pd.DataFrame()}},engine.TEMPLATE.read_bytes())
+    actual,_ = workflow(code, {'itau':[('SIG.xlsx',data)]},{})
+    assert workbook_signature(actual) == workbook_signature(expected)
+
+
+def test_tech_control_1064_sig_sicredi_matches_original():
+    data = xlsx([
+        ['Data','D/C','Complemento','Conf','Entrada','Saida'],
+        ['03/07/2026','PAGTO TITULO','PAGAMENTO CONTAS DIV.','X',None,300],
+        [None,'DOC1',100,'FORNECEDOR A',None,None],
+        [None,'DOC2',200,'FORNECEDOR B',None,None],
+        ['03/07/2026','(S) TRANSFERENCIA','EMPRESTIMO','',500,None],
+    ])
+    reference = reference_engine()
+    expected_frame = reference.processar_planilha_accede_sig(data,'sicredi',slug(1064))
+    assert len(expected_frame) == 3
+    assert expected_frame['VALOR'].tolist() == [-100.0, -200.0, 500.0]
+    assert expected_frame['DESCRIÇÃO'].eq('SICREDI').all()
+    expected = reference.gerar_excel_nova_geracao(
+        {'Sicredi':{'principal':expected_frame,'retirados':pd.DataFrame()}},
+        engine.TEMPLATE.read_bytes()
+    )
+    actual, filename = workflow(1064, {'sicredi':[('SIG_SICREDI.xlsx',data)]},{})
+    assert filename == 'TECH_CONTROL_1064_SICREDI_505_MODELO_DOMINIO.xlsx'
+    assert workbook_signature(actual) == workbook_signature(expected)
+
+def test_classification_preserves_full_original_rules_and_backup():
+    history = 'Pago: Empresa: ACME INDUSTRIAL'
+    for month in (7,8,9):
+        content = model(history,'166','508',date=f'01/{month:02d}/2026')
+        assert base.learn(3,content,f'REVISADO_{month}.xlsx') == 1
+        assert base.learn(3,content,f'REVISADO_{month}.xlsx') == 0
+    source = model(history)
+    actual, summary = base.classify(3,source,'modelo.xlsx')
+    expected, expected_summary = reference_engine().classificar_planilha_final(source,'modelo.xlsx',base.records(3),accounts(3),empresa_classificacao=slug(3))
+    assert summary == expected_summary
+    assert summary['automaticos'] == 1
+    assert workbook_signature(actual) == workbook_signature(expected)
+    assert base.status(178)['patterns'] == 0
+
+def test_name_based_classification_in_two_periods_and_conflict():
+    for month in (7,8):
+        base.learn(3,model('Pago: Empresa: ACME INDUSTRIAL OBS: NF','166',date=f'01/{month:02d}/2026'),f'M{month}.xlsx')
+    result, summary = base.classify(3,model('Pago: Empresa: ACME INDUSTRIAL OBS: DOCUMENTO'),'modelo.xlsx')
+    assert summary['por_nome_empresa'] == 1
+    base.learn(3,model('Pago: Empresa: ACME INDUSTRIAL OBS: NF','200',date='01/09/2026'),'conflict.xlsx')
+    result, summary = base.classify(3,model('Pago: Empresa: ACME INDUSTRIAL'),'modelo.xlsx')
+    assert summary['automaticos'] == 0
+
+def test_eletro_principal_is_preserved_and_placeholder_is_replaced():
+    wb = load_workbook(io.BytesIO(model('Pago: Fornecedor','166','508',title='Despesa - Itau 508')))
+    principal = wb.copy_worksheet(wb.active); principal.title='Principal'
+    source = io.BytesIO(); wb.save(source)
+    actual, summary = base.classify(242,source.getvalue(),'modelo.xlsx')
+    original = load_workbook(io.BytesIO(source.getvalue()))
+    result = load_workbook(io.BytesIO(actual))
+    assert list(result['Principal'].values) == list(original['Principal'].values)
+    assert result['Despesa - Itau 508']['D2'].value is None
+    assert result['Despesa - Itau 508']['E2'].value == '508'
+
+def test_api_health_catalog_cors_and_safe_error():
+    assert client.get('/health').status_code == 200
+    companies = client.get('/api/v1/companies').json()
+    assert len(companies) == 58
+    assert next(c for c in companies if str(c['codigo']) == '626')['capabilities']['banks']['sicredi'] == '1155'
+    response = client.get('/health',headers={'Origin':'https://rodrigofrrsilva1703-a11y.github.io'})
+    assert 'X-Razync-Summary' in response.headers['access-control-expose-headers']
+    response = client.post('/api/v1/workflow/242',data={'roles_json':'["despesas"]'},files=[('files',('invalid.xlsx',b'invalid'))])
+    assert response.status_code == 422
+    assert 'detail' in response.json()
+
+def test_review_does_not_accept_client_coordinates():
+    source = model()
+    pending = base.pending(3,source)
+    assert len(pending) == 1
+    pending[0]['_col_destino'] = 6
+    pending[0]['Conta da contrapartida'] = '166'
+    book, summary = base.review(3,source,'modelo.xlsx',pending,True)
+    wb = load_workbook(io.BytesIO(book))
+    assert wb.active['D2'].value == 166
+    assert wb.active['F2'].value == 'Pago: Empresa: ACME INDUSTRIAL'
+    assert summary['aplicadas'] == 1
+
+
+def test_sensitive_operations_require_configured_auth(monkeypatch):
+    monkeypatch.delenv('RAZYNC_ACCESS_TOKEN',raising=False)
+    monkeypatch.delenv('CLASSIFICATION_ADMIN_PASSWORD',raising=False)
+    assert client.post('/api/v1/companies',json={}).status_code == 503
+    monkeypatch.setenv('RAZYNC_ACCESS_TOKEN','test-access')
+    assert client.post('/api/v1/companies',json={}).status_code == 401
+    assert client.post('/api/v1/companies',json={},headers={'Authorization':'Bearer test-access'}).status_code == 422

@@ -1,0 +1,36 @@
+# Migração Razync → Razync-Web
+
+O original em Streamlit permanece intacto. FastAPI no Railway e JavaScript no GitHub Pages publicam pela `main`.
+
+## Implementação
+
+- Módulos originais em `backend/legacy/razync/`; motor com 65 funções extraídas e comparação automática dos corpos.
+- Fluxos completos: Autokraft 3/178/343; Eletro Forte 242/1408; Nova Geração 266/1396; L. Carlos 285; Radani 968; Accede 1000/1001; UP PACK 1096; GZ 1211; RGR 1248; VGV 1402; Dias Pereira/Nibo 1529; adaptadores 47/88/154/625/626/841/912/964/969/1208/1530/1532.
+- Arquivos auxiliares, múltiplos PDFs, XLS/XLSX, ZIP, francesinhas, períodos, bancos, lançamentos retirados e relatórios usam as regras originais.
+- Base Inteligente persistente: importação de modelos classificados/Razão/ZIP, classificação, revisão, aprendizado e backup JSON; preservação de assinaturas, ocorrências, períodos, conflitos e contas.
+- Conferência com Extrato; Conferência de Impostos por upload; conversor de extratos; conciliação com Razão; Central de Tarefas; Excel final para TXT Domínio. A Conferência Fiscal permanece apenas no backend legado e não é exibida nas empresas enquanto estiver incompleta.
+- Conferência de impostos mantida por upload: balancete + relatório DCTFWeb/Receita, sem automação de eCAC, certificado ou Conector Windows no frontend.
+- Chaves administrativas no Railway. Volume `/data` mantém a base entre deploys. Nunca incluir classificações reais, certificados ou chaves no Git.
+
+## Validação
+
+Os testes comparam os resultados com funções originais: lançamentos, entradas/saídas, datas, históricos, débito/crédito, remoção de saldos, abas, valores, estilos e Excel final. Também cobrem APIs, múltiplos bancos, classificação, relatórios e TXT.
+Validação local: 102 testes aprovados, um `xfail` herdado. A prévia web foi conferida no navegador com arquivo sintético.
+
+As conclusões automáticas de L. Carlos e Nova Geração seguem os mesmos códigos/competência do original. A importação protegida de status mantém timestamps originais e não sobrescreve status mais novos no destino.
+Os oito status existentes no original foram importados. A API publicada passou pela comparação do Excel VGV, prévia RGR e verificação do pacote Windows; os 12.634 registros foram reconferidos após o deploy.
+
+Um teste `xfail` registra comportamento que também falha no original Valean 626: saldo impresso divergente. A regra original permanece preservada.
+
+Base Inteligente copiada em leitura do Supabase original para o volume do Railway: 12.634 registros, 21 empresas, todos os campos idênticos ao snapshot (inclusive períodos e ocorrências). Hash MD5 dos IDs ordenados: `2501922f8f42dd20b76571773a6396e5`. Dados privados ficam fora do repositório.
+
+**Homologação com documentos reais pendente:** o usuário não possui mais os PDFs/planilhas e Excel finais usados anteriormente. Comparação de código e testes não substituem essa homologação. Adaptadores expõem `validation_status: pending_real_files`.
+
+**eCAC removido do fluxo ativo:** a interface não depende mais de certificado, pareamento ou automação do portal. A conferência de impostos usa somente arquivos enviados pelo usuário.
+
+## Publicação
+
+- Frontend: https://rodrigofrrsilva1703-a11y.github.io/Razync-Web/
+- Backend: https://razync-api-production.up.railway.app
+- Saúde `/health`; catálogo `/api/v1/companies`; status `/api/v1/migration-status`.
+- GitHub Actions verifica JavaScript, Python e runtime Docker. Railway reconectado à `main` após identificar que servia um commit antigo.

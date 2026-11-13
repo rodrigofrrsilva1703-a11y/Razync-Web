@@ -1,0 +1,351 @@
+.monthly-tasks-controls, .monthly-tasks-controls form {
+  display:flex;align-items:end;flex-wrap:wrap;gap:12px;
+}
+.monthly-tasks-controls form {margin-inline-start:auto}
+.monthly-tasks-controls form[hidden], .monthly-tasks-team[hidden] {display:none}
+.monthly-tasks-controls label {display:grid;gap:5px;color:var(--muted);font-size:12px}
+.monthly-tasks-controls input, .monthly-tasks-controls select {
+  background:var(--surface);color:var(--text);border:1px solid var(--border);
+  min-height:36px;border-radius:7px;padding:7px 9px;font:inherit;
+}
+.monthly-tasks-team {margin:20px 0}
+.monthly-tasks-team h2 {font-size:15px;margin:0 0 10px}
+#monthlyTasksPeople span, #monthlyTasksStatus, #monthlyTasksImportMessage {color:var(--muted);font-size:12px}
+.monthly-tasks-table {overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.monthly-tasks-table table {width:100%;min-width:710px;border-collapse:collapse;text-align:left}
+.monthly-tasks-table th,.monthly-tasks-table td {padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px}
+.monthly-tasks-table th {background:var(--surface-2)}
+.monthly-tasks-table small {display:block;color:var(--muted);margin-top:4px}
+.monthly-task-status {white-space:nowrap}
+.monthly-task-status[data-status=done] {font-weight:700}
+.monthly-tasks-metrics {display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin:16px 0}
+.monthly-tasks-metrics:empty {display:none}
+.monthly-tasks-metrics button {text-align:left;padding:11px 13px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);cursor:pointer;font:inherit;font-size:12px}
+.monthly-tasks-metrics strong {display:block;font-size:22px;margin-bottom:4px}
+.monthly-tasks-metrics button:hover,.monthly-tasks-metrics button[aria-pressed=true] {border-color:#6696e6;background:var(--surface-2)}
+#tasksView progress {display:block;width:100%;min-width:74px;height:6px;margin-top:6px;accent-color:#5685dd}
+#tasksView tbody tr:hover {background:var(--surface-2)}
+
+.monthly-tasks-heading {display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
+.monthly-tasks-heading label {display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:650}
+.monthly-tasks-heading input {font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px}
+.monthly-tasks-metrics button {min-height:79px;padding:12px 15px}
+.monthly-tasks-team,.monthly-tasks-worklist {background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.monthly-tasks-team {margin:0 0 16px;padding:12px 15px}
+#monthlyTasksImportPanel summary {font-size:13px;font-weight:650;cursor:pointer}
+.monthly-tasks-worklist {padding:15px;border-radius:12px 12px 0 0}
+.monthly-tasks-worklist h2 {font-size:16px;margin:0 0 12px}
+.monthly-tasks-worklist #monthlyTasksStatus {margin:10px 0 0}
+.monthly-tasks-table {border-top:0;border-radius:0 0 12px 12px;max-height:65vh}
+.monthly-tasks-table th {position:sticky;top:0;z-index:1}
+.monthly-task-status {display:inline-block;padding:4px 7px;border:1px solid var(--border);border-radius:6px;background:var(--surface-2)}
+.monthly-task-status[data-status=progress] {border-color:#6696e6}
+.monthly-task-status[data-status=done] {border-color:#52947b}
+.monthly-tasks-table td[data-issue=open] {font-weight:700}
+#monthlyTasksImportPanel {margin-inline-start:auto}
+#monthlyTasksImportPanel form {margin-top:8px}
+@media(max-width:600px) {
+  .monthly-tasks-controls > label {flex:1 1 135px;min-width:0}
+  #monthlyTasksImportPanel {margin-inline-start:0}
+  .monthly-tasks-table {max-height:unset}
+}
+
+.monthly-tasks-table table {min-width:1010px}
+.monthly-tasks-table th,.monthly-tasks-table td {padding:9px 8px}
+.monthly-tasks-table th:first-child {width:24%}
+.monthly-tasks-table th:nth-last-child(2) {min-width:105px}
+.monthly-tasks-table select,.monthly-tasks-table textarea {
+  background:var(--surface);color:var(--text);border:1px solid var(--border);
+  border-radius:6px;padding:6px;font:inherit;min-height:32px;
+}
+.monthly-tasks-table select[data-value=done] {border-color:#52947b;font-weight:700}
+.monthly-tasks-table select[data-value=na] {color:var(--muted)}
+.monthly-tasks-table details summary {cursor:pointer;white-space:nowrap}
+.monthly-tasks-table details form {display:grid;gap:7px;min-width:155px;margin-top:8px}
+.monthly-tasks-table details label {display:grid;gap:4px;color:var(--muted)}
+#monthlyTaskFeedback {margin:8px 0;color:var(--muted);font-size:12px}
+#monthlyTaskFeedback:empty {display:none}
+
+#monthlyTasksStages {display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+#monthlyTasksStages button {border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);padding:6px 8px;cursor:pointer}
+#monthlyTasksStages button[aria-pressed=true] {border-color:#6696e6;background:var(--surface-2)}
+.monthly-tasks-table details + details {margin-top:6px;color:var(--muted)}
+.monthly-tasks-table details ul {max-height:180px;overflow:auto;min-width:160px;margin:7px 0;padding-left:16px}
+
+.monthly-issue-editor > button {min-height:32px}
+.monthly-issue-editor form:not([hidden]) {display:grid;gap:7px;min-width:155px;margin-top:8px}
+.monthly-issue-editor label {display:grid;gap:4px;color:var(--muted)}
+.monthly-issue-editor + details {margin-top:6px;color:var(--muted)}
+.monthly-tasks-table tr[aria-busy=true] .monthly-task-progress {opacity:.8}
+
+.monthly-issue-dialog {
+  width:min(510px,calc(100vw - 28px));max-height:calc(100dvh - 28px);
+  overflow:auto;box-sizing:border-box;padding:20px;
+  border:1px solid var(--border);border-radius:14px;
+  background:var(--surface);color:var(--text);box-shadow:0 18px 55px #0004;
+}
+.monthly-issue-dialog::backdrop {background:#101927a6}
+.monthly-issue-dialog h2 {margin:0;font-size:19px}
+.monthly-issue-dialog header p,.monthly-issue-feedback {margin:5px 0;color:var(--muted);font-size:12px}
+.monthly-issue-dialog textarea {min-height:66px;resize:vertical}
+.monthly-issue-dialog footer {display:flex;justify-content:flex-end;gap:8px;margin:4px 0 0;padding:0}
+.monthly-issue-feedback:empty {display:none}
+
+.monthly-message-trigger {margin-top: 6px}
+.monthly-message-dialog > p {color: var(--muted); font-size: 13px}
+.monthly-message-dialog > p:empty {display: none}
+.monthly-message-dialog ol {list-style: none; margin: 12px 0; padding: 0}
+.monthly-message-dialog ol:empty {display: none}
+.monthly-message-dialog li {padding: 10px 0; border-top: 1px solid var(--border)}
+.monthly-message-dialog li p {margin: 5px 0; white-space: pre-wrap; overflow-wrap: anywhere}
+.monthly-message-dialog li time {color: var(--muted); font-size: 12px}
+.monthly-message-dialog li button {margin-inline-start: 8px}
+.monthly-message-dialog form:not([hidden]) {display: flex; gap: 8px; flex-wrap: wrap}
+.monthly-message-dialog label {display: grid; flex-basis: 100%; gap: 6px}
+.monthly-message-dialog textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+}
+.monthly-message-dialog > button {margin-top: 10px}
+
+.monthly-history {margin-top:6px}
+.monthly-history-dialog ul {list-style:none;padding:0;margin:10px 0}
+.monthly-history-dialog li {border-top:1px solid var(--border);padding:10px 0;line-height:1.5}
+.monthly-history-dialog p[role=status]:empty,.monthly-history-dialog ul:empty {display:none}
+
+.monthly-tasks-metrics [data-metric=issue],.monthly-tasks-metrics [data-metric=ready] {border-inline-start:3px solid #6696e6}
+#monthlyTasksActiveFilters {margin:8px 0 0;font-size:12px;color:var(--muted)}
+.monthly-tasks-table thead th:first-child {left:0;z-index:3}
+.monthly-tasks-table tbody td:first-child {
+  position:sticky;left:0;z-index:2;background:var(--surface);
+  border-inline-end:1px solid var(--border);
+}
+.monthly-tasks-table tbody tr:hover td:first-child {background:var(--surface-2)}
+.monthly-tasks-table select[data-step] {min-height:29px;padding:4px 5px}
+.monthly-tasks-table select[data-value=done] {border-color:var(--border);font-weight:500;color:var(--muted)}
+.monthly-tasks-table select[data-value=pending] {border-color:#6696e6;font-weight:650}
+.monthly-row-save:empty {display:none}
+.monthly-tasks-table .monthly-row-save[data-state=saved] {font-weight:650;color:var(--text)}
+.monthly-tasks-table .monthly-row-save[data-state=error] {font-weight:700;color:var(--text);text-decoration:underline}
+.monthly-history-dialog time {display:block;color:var(--muted);font-size:11px}
+.monthly-history-dialog li p {margin:4px 0 0;overflow-wrap:anywhere}
+@media(max-width:600px) {
+  .monthly-tasks-table th:first-child {width:132px}
+  .monthly-tasks-table tbody td:first-child strong {display:block;max-width:132px;overflow-wrap:anywhere}
+}
+
+#tasksView {
+  --task-accent: #6696e6;
+  --task-tint: color-mix(in srgb, var(--task-accent) 11%, var(--surface));
+}
+.monthly-tasks-heading {
+  padding: clamp(16px, 2.5vw, 28px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: linear-gradient(115deg, var(--task-tint), var(--surface) 62%);
+  align-items: center;
+}
+.monthly-tasks-heading h1 {margin: 0}
+.monthly-tasks-heading p {margin: 6px 0 0}
+.monthly-tasks-heading input {min-height: 40px; border-radius: 10px}
+.monthly-tasks-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: 10px;
+}
+.monthly-tasks-metrics button {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-height: 84px;
+  border-radius: 13px;
+  line-height: 1.3;
+}
+.monthly-tasks-metrics strong {
+  margin: 0;
+  font-size: 25px;
+  font-variant-numeric: tabular-nums;
+}
+.monthly-tasks-metrics button[aria-pressed=true] {background: var(--task-tint)}
+.monthly-tasks-metrics [data-metric=issue] {border-inline-start-color: #d78c50}
+.monthly-tasks-worklist {padding: 16px; border-radius: 14px 14px 0 0}
+.monthly-tasks-controls > label:first-child {flex: 1 1 220px; min-width: 0}
+.monthly-tasks-controls input, .monthly-tasks-controls select {min-height: 40px; border-radius: 9px}
+.monthly-tasks-table {border-radius: 0 0 14px 14px}
+.monthly-tasks-table th, .monthly-tasks-table td {padding: 11px 10px}
+.monthly-tasks-table th {font-weight: 700}
+.monthly-tasks-table td:first-child strong {line-height: 1.35}
+.monthly-tasks-table tbody tr:focus-within,
+.monthly-tasks-table tbody tr:focus-within td:first-child {background: var(--task-tint)}
+.monthly-tasks-table select[data-step] {min-height: 34px; border-radius: 8px}
+.monthly-tasks-table select[data-value=done] {border-color: #52947b}
+.monthly-tasks-team {margin: 12px 0 0; padding: 12px; border-radius: 14px}
+#monthlyTasksPeople {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 6px 8px;
+}
+#monthlyTasksStages button[aria-pressed=true] {background: var(--task-tint)}
+#monthlyTasksStages button {border-radius: 999px; padding: 7px 11px}
+#tasksView :is(button, input, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--task-accent);
+  outline-offset: 2px;
+}
+@media (max-width: 600px) {
+  .monthly-tasks-metrics {grid-template-columns: repeat(2, minmax(0, 1fr))}
+  .monthly-tasks-metrics button {min-height: 72px; padding: 10px 12px}
+  .monthly-tasks-controls > label:first-child {flex-basis: 100%}
+  .monthly-tasks-table th, .monthly-tasks-table td {padding: 9px 8px}
+}
+
+.monthly-tasks-heading {
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  padding: 4px 0 18px;
+}
+.monthly-tasks-scope {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+}
+.monthly-tasks-scope label[hidden] {display: none}
+.monthly-tasks-scope select {
+  min-height: 40px;
+  max-width: min(245px, 100%);
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.monthly-tasks-metrics button {position: relative; border-inline-start-width: 1px}
+.monthly-tasks-metrics button[aria-pressed=true] {box-shadow: inset 0 -3px var(--task-accent)}
+.monthly-tasks-metrics [data-metric=issue] strong {color: var(--text)}
+.monthly-tasks-table th {background: var(--task-tint)}
+.monthly-tasks-table tbody tr:nth-child(even) {background: color-mix(in srgb, var(--surface-2) 48%, var(--surface))}
+.monthly-tasks-metrics button span {color: var(--muted)}
+.monthly-team-percent, .monthly-owner-count {font-variant-numeric: tabular-nums}
+.monthly-team-percent {
+  min-width: 3.4em;
+  padding: 2px 5px;
+  border-radius: 6px;
+  background: var(--task-tint);
+  text-align: center;
+  font-size: 12px;
+}
+#monthlyTasksPeople article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px 9px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+#monthlyTasksPeople .monthly-owner-issues {grid-column: 1 / -1}
+
+#tasksView .monthly-tasks-heading {
+  border: 0;
+  padding: 4px 0 12px;
+  gap: 10px 20px;
+}
+.monthly-tasks-scope {min-width: 0}
+.monthly-tasks-scope label, .monthly-tasks-controls label {font-size: 14px}
+.monthly-tasks-scope :is(input, select), .monthly-tasks-controls :is(input, select) {
+  min-width: 0;
+  min-height: 42px;
+}
+.monthly-tasks-worklist {padding: 12px 14px}
+.monthly-tasks-controls {gap: 8px 12px}
+.monthly-tasks-controls > label:first-child {flex-basis: 180px}
+.monthly-tasks-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 135px), 1fr));
+  gap: 4px;
+  margin: 12px 0 8px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+.monthly-tasks-metrics button {
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  min-height: 42px;
+  padding: 5px 8px;
+  border-color: transparent;
+  border-radius: 7px;
+}
+.monthly-tasks-metrics strong {font-size: 17px}
+.monthly-tasks-metrics button[aria-pressed=true] {box-shadow: none}
+.monthly-tasks-metrics button span {font-size: 11px}
+.monthly-tasks-team {
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+.monthly-tasks-team summary {padding: 6px 0; font-size: 13px; font-weight: 650; cursor: pointer}
+#monthlyTasksPeople {column-gap: 16px; row-gap: 0}
+#monthlyTasksPeople article {
+  padding-inline: 2px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+#monthlyTasksPeople .monthly-owner-count {color: var(--text)}
+
+@media (max-width: 680px) {
+  .monthly-tasks-metrics {margin: 10px 0 6px}
+  .monthly-tasks-table {overflow: visible; max-height: none; border: 0; background: none}
+  .monthly-tasks-table table, .monthly-tasks-table tbody {display: block; min-width: 0}
+  .monthly-tasks-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .monthly-tasks-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 12px;
+    margin-top: 10px;
+    padding: 4px 12px 10px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+  }
+  .monthly-tasks-table tbody td {min-width: 0; padding: 8px 0; border: 0}
+  .monthly-tasks-table tbody td:first-child {
+    position: static;
+    grid-column: 1 / -1;
+    padding: 11px 0;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    background: transparent;
+  }
+  .monthly-tasks-table tbody td:first-child strong {max-width: none}
+  .monthly-tasks-table tbody td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-weight: 650;
+  }
+  .monthly-tasks-table select[data-step] {width: 100%; min-height: 38px}
+}

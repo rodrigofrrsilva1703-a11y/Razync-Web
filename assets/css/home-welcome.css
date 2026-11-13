@@ -1,0 +1,632 @@
+/* Razync welcome: an editorial entrance and an interactive product illustration. */
+#companiesView #portfolioPicker {--home-ink:#1c3048;--home-muted:#6a7c90;--home-blue:#3067c7;--home-line:#dde6ef;--home-paper:#fff;--home-soft:#f0f5fc;max-width:1180px;display:grid;grid-template-columns:1fr;gap:24px;margin:24px auto 28px;padding:0;background:none;border:0;box-shadow:none}
+#companiesView #portfolioPicker[hidden] {display:none!important}
+#companiesView #portfolioPicker::before,#companiesView #portfolioPicker::after {display:none}
+#companiesView #portfolioPicker .portfolio-home-topline {display:flex;justify-content:space-between;align-items:center;gap:20px}
+#companiesView #portfolioPicker .portfolio-brand {display:flex;align-items:center;gap:11px;color:var(--home-ink)}
+#companiesView #portfolioPicker .brand-mark {display:grid;place-items:center;width:38px;height:38px}
+#companiesView #portfolioPicker .brand-mark img {width:36px;height:36px;border-radius:10px}
+#companiesView #portfolioPicker .brand-wordmark {display:block;font-size:22px;line-height:1.1;letter-spacing:-.7px;font-weight:650}
+#companiesView #portfolioPicker .brand-name {display:block}
+#companiesView #portfolioPicker .brand-wordmark small {display:block;margin-top:5px;font-size:7px;letter-spacing:1.5px;font-weight:500;color:var(--home-muted)}
+#companiesView #portfolioPicker .portfolio-date {font-size:11px;color:var(--home-muted);text-transform:capitalize}
+#companiesView #portfolioPicker .portfolio-heading {position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);align-items:center;gap:70px;min-height:0;margin:0;padding:16px 0 0;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible;color:var(--home-ink)}
+#companiesView #portfolioPicker .portfolio-heading::before,#companiesView #portfolioPicker .portfolio-heading::after {display:none}
+#companiesView #portfolioPicker .home-intro-copy {min-width:0;position:relative;z-index:1;padding:8px 0}
+#companiesView #portfolioPicker .portfolio-eyebrow {display:flex;align-items:center;gap:8px;margin:0 0 20px;font-size:11px;font-weight:500;color:var(--home-muted)}
+#companiesView #portfolioPicker .portfolio-eyebrow::before {content:"";width:5px;height:5px;border-radius:50%;background:#6f99db;box-shadow:0 0 0 4px #6f99db10}
+#companiesView #portfolioPicker h1 {margin:0 0 22px;font-size:clamp(44px,4.7vw,64px);font-weight:600;line-height:1.05;letter-spacing:-.055em;color:var(--home-ink)}
+#companiesView #portfolioPicker h1 em {display:inline-block;font-style:normal;font-weight:500;color:var(--home-blue)}
+#companiesView #portfolioPicker h1 em::after {display:none}
+#companiesView #portfolioPicker .portfolio-heading .home-intro-copy > p {max-width:36ch;margin:0;font-size:14px;line-height:1.8;color:var(--home-muted)}
+#companiesView #portfolioPicker .portfolio-access {display:block;max-width:420px;margin-top:30px;padding:0;border:0;background:none;box-shadow:none}
+#companiesView #portfolioPicker .portfolio-access::before {display:none}
+#companiesView #portfolioPicker .portfolio-access-heading {display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px!important;padding:0}
+#companiesView #portfolioPicker .portfolio-access-kicker {font-size:7px;letter-spacing:1.4px;font-weight:600;color:var(--home-muted);margin:0}
+#companiesView #portfolioPicker .portfolio-section-title {margin:0;font-size:12px;letter-spacing:-.1px;line-height:1.4;font-weight:550;color:var(--home-ink)}
+#companiesView #portfolioPicker .portfolio-list {display:grid;gap:12px}
+#companiesView #portfolioPicker .portfolio-entry {display:grid;position:relative;isolation:isolate;overflow:hidden;grid-template-columns:44px minmax(0,1fr) 76px;grid-template-rows:auto auto;align-items:center;gap:6px 13px;width:100%;min-height:94px;margin:0;padding:17px 19px;border:1px solid #355c89;border-radius:12px;background:linear-gradient(110deg,#1c3858,#2c5687);box-shadow:0 8px 22px #1c38580a;text-align:left;cursor:pointer;transform:none;transition:border-color .25s,box-shadow .25s}
+#companiesView #portfolioPicker .portfolio-entry::before {content:"";display:block;position:absolute;inset:0;z-index:-1;border-radius:inherit;background:radial-gradient(200px circle at var(--pointer-x,80%) var(--pointer-y,50%),#bddbff24,transparent 80%);opacity:.4;pointer-events:none;transition:opacity .25s}
+#companiesView #portfolioPicker .portfolio-entry::after {content:"";position:absolute;inset:-20% auto -20% -40%;width:25%;background:linear-gradient(100deg,transparent,#cce3ff16,transparent);transform:skewX(-15deg) translateX(-150%);pointer-events:none}
+#companiesView #portfolioPicker .portfolio-entry:hover {transform:none;border-color:#6993c2;box-shadow:0 12px 30px #1c385818}
+#companiesView #portfolioPicker .portfolio-entry:hover::before {opacity:1}
+#companiesView #portfolioPicker .portfolio-entry-label {grid-column:2;grid-row:1;font-size:7px;letter-spacing:1.25px;color:#b3c9e1}
+#companiesView #portfolioPicker .portfolio-avatar {grid-column:1;grid-row:1/3;display:grid;place-items:center;width:44px;height:44px;border:1px solid #c4ddff1a;border-radius:10px;background:#c4ddff0b;animation:none;transform:none}
+#companiesView #portfolioPicker .wallet-folder {width:34px;height:34px;overflow:visible}
+#companiesView #portfolioPicker .wallet-back {fill:#6698d0;stroke:#aacdf7;stroke-width:.8}
+#companiesView #portfolioPicker .wallet-sheet {fill:#e4f0ff;stroke:#fff;stroke-width:.6}
+#companiesView #portfolioPicker .wallet-lines {stroke:#80a5d1;stroke-width:1.1;stroke-linecap:round}
+#companiesView #portfolioPicker .wallet-front {fill:#83afe4;stroke:#c2ddff;stroke-width:.8}
+#companiesView #portfolioPicker .portfolio-entry-info {grid-column:2;grid-row:2;display:flex;flex-direction:column;gap:3px;min-width:0}
+#companiesView #portfolioPicker .portfolio-entry-info strong {font-size:18px;letter-spacing:-.35px;font-weight:600;line-height:1.3;color:#fff}
+#companiesView #portfolioPicker .portfolio-entry-quantity {font-size:11px;color:#b8cee5}
+#companiesView #portfolioPicker .portfolio-entry-preview {display:none}
+#companiesView #portfolioPicker .portfolio-entry-action {grid-column:3;grid-row:1/3;display:flex;align-items:center;justify-content:flex-end;gap:7px;border:0;padding:0;background:transparent;color:#edf5ff}
+#companiesView #portfolioPicker .portfolio-entry-action > span:first-child {display:block;font-size:11px;font-weight:550}
+#companiesView #portfolioPicker .portfolio-entry-arrow {display:grid;place-items:center;width:28px;height:30px;border:1px solid #b9d7ff20;border-radius:8px;background:#c4ddff0a;color:#fff;font-size:18px;animation:none;transition:translate .25s}
+#companiesView #portfolioPicker .portfolio-entry:hover .portfolio-entry-arrow {translate:3px 0}
+#companiesView #portfolioPicker .portfolio-entry:focus-visible {outline:2px solid #6e9ee4;outline-offset:4px}
+/* The preview is an illustration with explicit, keyboard-accessible stage controls. */
+#companiesView #portfolioPicker .showcase-wrap {position:relative;min-width:0;perspective:1200px}
+#companiesView #portfolioPicker .showcase-aura {position:absolute;z-index:-1;inset:-40px -25px 30px;overflow:hidden;pointer-events:none;border-radius:40%}
+#companiesView #portfolioPicker .showcase-aura i {position:absolute;inset:10% 0 10% 0;border-radius:40% 60% 55% 45%;background:radial-gradient(ellipse,#b9d3fa45,transparent 70%)}
+#companiesView #portfolioPicker .showcase-aura i+i {inset:30% 0 0 30%;background:radial-gradient(ellipse,#cddff866,transparent 70%)}
+#companiesView #portfolioPicker .home-showcase {position:relative;min-width:0;overflow:hidden;border:1px solid #d8e3f0;border-radius:19px;background:var(--home-paper);box-shadow:0 22px 65px #254c7c0c,0 3px 8px #254c7c04;transform:rotate(-1deg);transition:transform .4s cubic-bezier(.16,1,.3,1)}
+#companiesView #portfolioPicker .showcase-top {display:flex;align-items:center;justify-content:space-between;gap:12px;height:42px;padding:0 20px;border-bottom:1px solid var(--home-line);background:#f9fbfe;color:#7e90a5;font-size:7px;letter-spacing:1.35px}
+#companiesView #portfolioPicker .showcase-window-dots {display:flex;gap:4px}
+#companiesView #portfolioPicker .showcase-window-dots i {display:block;width:4px;height:4px;border-radius:50%;background:#cbd7e5}
+#companiesView #portfolioPicker .showcase-mark {font-size:8px;letter-spacing:-.4px;color:#9aacc0}
+#companiesView #portfolioPicker .showcase-panels {padding:15px 24px 20px}
+#companiesView #portfolioPicker .showcase-panel[hidden] {display:none!important}
+#companiesView #portfolioPicker .showcase-art {position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;gap:18px;height:190px}
+#companiesView #portfolioPicker .showcase-art::before {content:"";position:absolute;z-index:-1;width:220px;height:150px;background:radial-gradient(ellipse,#d8e7fd55,transparent 70%);border-radius:50%}
+#companiesView #portfolioPicker .scene-paper {position:relative;display:flex;flex-direction:column;gap:8px;box-sizing:border-box;width:108px;height:138px;padding:13px 12px;border:1px solid #d2e0f1;border-radius:10px;background:#fff;box-shadow:0 8px 22px #355c8d0a}
+#companiesView #portfolioPicker .scene-source {transform:rotate(-8deg)}
+#companiesView #portfolioPicker .scene-model {background:linear-gradient(145deg,#fff,#edf5ff);transform:rotate(6deg)}
+#companiesView #portfolioPicker .paper-format {font-size:7px;letter-spacing:1px;color:#7e98b9;font-weight:600}
+#companiesView #portfolioPicker .scene-paper > svg {width:22px;height:22px;fill:none;stroke:#6e96c7;stroke-width:1.4}
+#companiesView #portfolioPicker .scene-paper > i {width:90%;height:2px;border-radius:2px;background:#d7e2ef}
+#companiesView #portfolioPicker .scene-paper > i:nth-last-of-type(1) {width:60%}
+#companiesView #portfolioPicker .scene-paper small {margin-top:auto;font-size:8px;color:#6883a4}
+#companiesView #portfolioPicker .paper-mini-grid {display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px}
+#companiesView #portfolioPicker .paper-mini-grid i {height:11px;border-radius:2px;background:#d5e6fc}
+#companiesView #portfolioPicker .paper-mini-grid i:nth-child(even) {background:#e6eef8}
+#companiesView #portfolioPicker .paper-check {position:absolute;right:-9px;bottom:24px;display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#e8f4ef;border:3px solid var(--home-paper)}
+#companiesView #portfolioPicker .paper-check svg {width:15px;height:15px;stroke:#548b75;stroke-width:1.8}
+#companiesView #portfolioPicker .scene-transfer {width:48px}
+#companiesView #portfolioPicker .scene-transfer svg {width:100%;height:24px;fill:none;stroke:#a1bce1;stroke-width:1.3}
+#companiesView #portfolioPicker .scene-spark {position:absolute;right:12%;top:14%;color:#94b4df;font-size:14px}
+#companiesView #portfolioPicker .spark-two {left:8%;top:auto;bottom:15%;right:auto;font-size:9px;opacity:.5}
+#companiesView #portfolioPicker .showcase-copy {min-height:82px;text-align:left}
+#companiesView #portfolioPicker .scene-index {display:block;font-size:7px;font-weight:600;letter-spacing:1.35px;color:#7f99b8;margin-bottom:8px}
+#companiesView #portfolioPicker .showcase-copy h2 {margin:0 0 7px;font-size:21px;letter-spacing:-.55px;font-weight:550;line-height:1.3;color:var(--home-ink)}
+#companiesView #portfolioPicker .showcase-copy p {max-width:40ch;margin:0;font-size:12px;line-height:1.7;color:var(--home-muted)}
+#companiesView #portfolioPicker .showcase-steps {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-top:1px solid var(--home-line)}
+#companiesView #portfolioPicker .home-showcase .showcase-step {position:relative;display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:48px;padding:12px 5px;border:0;border-radius:0;background:transparent;color:#7b8da2;font-size:10px;font-weight:500;cursor:pointer;box-shadow:none}
+#companiesView #portfolioPicker .home-showcase .showcase-step > span {font-size:8px;color:#9bafc6}
+#companiesView #portfolioPicker .home-showcase .showcase-step[aria-pressed=true] {background:#f3f7fd;color:var(--home-blue)}
+#companiesView #portfolioPicker .showcase-step > i {position:absolute;bottom:0;left:12px;right:12px;height:2px;overflow:hidden;border-radius:3px}
+#companiesView #portfolioPicker .showcase-step > i::after {content:"";display:block;width:100%;height:100%;background:#80a7e0;transform-origin:left;transform:scaleX(0)}
+#companiesView #portfolioPicker .showcase-step[aria-pressed=true] > i::after {transform:scaleX(1)}
+#companiesView #portfolioPicker .showcase-playback {display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 15px;border-top:1px solid var(--home-line);color:#8596aa;font-size:8px}
+#companiesView #portfolioPicker .home-showcase .showcase-pause {min-height:24px;padding:3px 5px;border:0;border-radius:5px;background:transparent;color:#6f89aa;box-shadow:none;font-size:9px;cursor:pointer}
+#companiesView #portfolioPicker .home-showcase button:focus-visible {outline:2px solid #749fe0;outline-offset:-3px}
+#companiesView #portfolioPicker .portfolio-home-summary {display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:18px 8px 0;padding:0;border:0;background:none}
+#companiesView #portfolioPicker .portfolio-home-summary > span {display:flex;align-items:center;gap:8px;min-width:0;margin:0;padding:0;background:none;border:0}
+#companiesView #portfolioPicker .portfolio-home-summary > span+span {justify-content:flex-end}
+#companiesView #portfolioPicker .portfolio-home-summary strong {font-size:20px;line-height:1.2;font-weight:550;letter-spacing:-.7px;color:var(--home-ink)}
+#companiesView #portfolioPicker .portfolio-home-summary :is(.home-stat-label,#portfolioWalletLabel) {font-size:10px;line-height:1.5;letter-spacing:0;color:var(--home-muted)}
+/* The two other scenes are diagrams, not customer data or completed checks. */
+#companiesView #portfolioPicker .scene-ledger {display:flex;flex-direction:column;gap:11px;width:94px;height:126px;padding:14px 12px;border:1px solid #d2e0f1;border-radius:10px;background:#fff;box-shadow:0 8px 20px #355c8d08}
+#companiesView #portfolioPicker .scene-ledger b {font-size:7px;letter-spacing:1px;color:#7e98b9;margin-bottom:4px}
+#companiesView #portfolioPicker .scene-ledger i {height:4px;border-radius:2px;background:linear-gradient(90deg,#c6daf4 65%,#edf3fa 65%);transform-origin:left}
+#companiesView #portfolioPicker .ledger-left {transform:rotate(-7deg)}
+#companiesView #portfolioPicker .ledger-right {transform:rotate(7deg)}
+#companiesView #portfolioPicker .scene-balance {position:relative;z-index:1;display:grid;place-items:center;width:44px;height:44px;flex:none;border:1px solid #cee4d9;border-radius:50%;background:#edf7f1;box-shadow:0 0 0 8px #edf7f144}
+#companiesView #portfolioPicker .scene-balance svg {width:24px;height:24px;stroke:#5c8f78;stroke-width:1.7}
+#companiesView #portfolioPicker .scene-connector {position:absolute;z-index:-1;width:180px;height:1px;left:50%;top:50%;translate:-50% 0;background:#b7cce7}
+#companiesView #portfolioPicker .scene-classify {display:block}
+#companiesView #portfolioPicker .scene-label {position:absolute;display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid #d4e1f1;border-radius:8px;background:#fff;box-shadow:0 6px 15px #355c8d08;color:#7490b3;font-size:9px}
+#companiesView #portfolioPicker .scene-label svg {width:15px;height:15px;stroke:#7c9fc9;stroke-width:1.4}
+#companiesView #portfolioPicker .label-one {left:8%;top:25px;transform:rotate(-8deg)}
+#companiesView #portfolioPicker .label-two {right:8%;top:20px;transform:rotate(8deg)}
+#companiesView #portfolioPicker .label-three {left:50%;top:5px;transform:translateX(-50%)}
+#companiesView #portfolioPicker .scene-folder {position:absolute;z-index:1;left:50%;bottom:20px;translate:-50% 0;display:flex;align-items:end;justify-content:space-between;width:164px;height:90px;padding:17px;border:1px solid #a8c8ee;border-radius:4px 12px 12px 12px;background:linear-gradient(145deg,#c4dcfa,#e1edfd);box-shadow:0 10px 23px #355c8d0d}
+#companiesView #portfolioPicker .scene-folder > i {position:absolute;left:-1px;top:-12px;width:60px;height:15px;border:1px solid #a8c8ee;border-bottom:0;border-radius:7px 7px 0 0;background:#c4dcfa}
+#companiesView #portfolioPicker .scene-folder b {font-size:10px;color:#5e85b6;font-weight:550}
+#companiesView #portfolioPicker .scene-folder svg {width:20px;height:20px;stroke:#618cbd;stroke-width:1.7}
+/* Deliberate motion, with one active scene at a time. */
+@keyframes entrance {from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:none}}
+@keyframes auraDrift {0%,100%{transform:translate(-10px,0) rotate(-12deg);opacity:.65}50%{transform:translate(15px,12px) rotate(15deg);opacity:1}}
+@keyframes sceneFloat {0%,100%{translate:0 0}50%{translate:0 -11px}}
+@keyframes sourceFloat {0%,100%{transform:rotate(-8deg) translateY(0)}50%{transform:rotate(-11deg) translateY(-9px)}}
+@keyframes modelFloat {0%,100%{transform:rotate(6deg) translateY(0)}50%{transform:rotate(9deg) translateY(-11px)}}
+@keyframes flowSignal {0%,100%{stroke-dashoffset:80;opacity:.35}50%{stroke-dashoffset:0;opacity:1}}
+@keyframes checkDraw {0%,10%{stroke-dashoffset:25;opacity:.4}55%,100%{stroke-dashoffset:0;opacity:1}}
+@keyframes rowReveal {from{scale:.65 1;opacity:.4}to{scale:1 1;opacity:1}}
+@keyframes stepProgress {from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes walletLight {0%,60%{transform:skewX(-15deg) translateX(-150%)}100%{transform:skewX(-15deg) translateX(700%)}}
+@keyframes folderPaper {0%,100%{translate:0 0}50%{translate:0 -4px}}
+@media(prefers-reduced-motion:no-preference) {
+ #companiesView #portfolioPicker .portfolio-home-topline {animation:entrance .7s .05s cubic-bezier(.16,1,.3,1) both}
+ #companiesView #portfolioPicker .home-intro-copy {animation:entrance .9s .12s cubic-bezier(.16,1,.3,1) both}
+ #companiesView #portfolioPicker .showcase-wrap {animation:entrance 1s .22s cubic-bezier(.16,1,.3,1) both}
+ #companiesView #portfolioPicker .showcase-aura i {animation:auraDrift 16s ease-in-out infinite}
+ #companiesView #portfolioPicker .showcase-aura i+i {animation-delay:-8s}
+ #companiesView #portfolioPicker .showcase-panel:not([hidden]) .showcase-copy {animation:entrance .55s ease-out both}
+ #companiesView #portfolioPicker .showcase-panel:not([hidden]) .scene-source {animation:sourceFloat 5s ease-in-out infinite}
+ #companiesView #portfolioPicker .showcase-panel:not([hidden]) .scene-model {animation:modelFloat 5s -1s ease-in-out infinite}
+ #companiesView #portfolioPicker .scene-transfer svg path {stroke-dasharray:25 70;animation:flowSignal 2.8s linear infinite}
+ #companiesView #portfolioPicker .paper-check path,#companiesView #portfolioPicker .scene-balance path,#companiesView #portfolioPicker .scene-folder path {stroke-dasharray:25;animation:checkDraw 2.6s ease-out both}
+ #companiesView #portfolioPicker .scene-spark {animation:sceneFloat 6s ease-in-out infinite}
+ #companiesView #portfolioPicker .spark-two {animation-delay:-3s}
+ #companiesView #portfolioPicker .scene-ledger i {animation:rowReveal .7s .15s ease-out both}
+ #companiesView #portfolioPicker .scene-ledger i:nth-of-type(2) {animation-delay:.3s}
+ #companiesView #portfolioPicker .scene-ledger i:nth-of-type(3) {animation-delay:.45s}
+ #companiesView #portfolioPicker .scene-ledger i:nth-of-type(4) {animation-delay:.6s}
+ #companiesView #portfolioPicker .scene-label {animation:sceneFloat 5s ease-in-out infinite}
+ #companiesView #portfolioPicker .label-two {animation-delay:-2s}
+ #companiesView #portfolioPicker .label-three {animation-delay:-3.5s}
+ #companiesView #portfolioPicker .showcase-step[aria-pressed=true] > i::after {animation:stepProgress 5.6s linear both}
+ #companiesView #portfolioPicker .portfolio-entry::after {animation:walletLight 10s ease-in-out infinite}
+ #companiesView #portfolioPicker .wallet-sheet,#companiesView #portfolioPicker .wallet-lines {animation:folderPaper 6s ease-in-out infinite}
+}
+#companiesView #portfolioPicker .home-showcase[data-playing=false] .showcase-step > i::after {animation-play-state:paused}
+#companiesView #portfolioPicker .home-showcase[data-art-motion=paused] .showcase-panels *,#companiesView #portfolioPicker .home-showcase[data-playing=false] .showcase-panels *::after {animation-play-state:paused}
+#companiesView #portfolioPicker[data-motion=paused] *,#companiesView #portfolioPicker[data-motion=paused] *::before,#companiesView #portfolioPicker[data-motion=paused] *::after {animation-play-state:paused!important}
+/* Dark mode stays neutral, with blue reserved for the illustration and actions. */
+html[data-theme=dark] #companiesView #portfolioPicker {--home-ink:#edf0f5;--home-muted:#9da9b9;--home-blue:#a0c4ff;--home-line:var(--border);--home-paper:var(--surface);--home-soft:var(--surface-2)}
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-heading {background:none!important;border:0!important;box-shadow:none}
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-heading h1 {color:#edf0f5!important}
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-heading p {color:var(--home-muted)!important}
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-entry {background:linear-gradient(110deg,#1c2b40,#263e5e)!important;border-color:#425e82!important;box-shadow:none}
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-entry:hover {background:linear-gradient(110deg,#22334b,#2d486e)!important}
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-entry-label {color:#b3c9e1!important}
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-entry-info strong {color:#fff!important}
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-entry-quantity {color:#b8cee5!important}
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-avatar {background:#c4ddff0b!important;border-color:#c4ddff1a!important}
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-entry-action {background:transparent!important;box-shadow:none!important}
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-entry-arrow {background:#c4ddff0a!important;color:#fff!important}
+html[data-theme=dark] #companiesView #portfolioPicker .home-showcase {background:var(--home-paper);border-color:#343e4b;box-shadow:0 22px 65px #0002}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-top {background:#1c2129}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-art::before {background:radial-gradient(ellipse,#38629722,transparent 70%)}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-paper,html[data-theme=dark] #companiesView #portfolioPicker .scene-ledger,html[data-theme=dark] #companiesView #portfolioPicker .scene-label {background:#202c3d;border-color:#405572}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-model {background:linear-gradient(145deg,#25364d,#1f2e42)}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-paper > i {background:#3f5572}
+html[data-theme=dark] #companiesView #portfolioPicker .paper-mini-grid i {background:#45648e}
+html[data-theme=dark] #companiesView #portfolioPicker .paper-mini-grid i:nth-child(even) {background:#334b6c}
+html[data-theme=dark] #companiesView #portfolioPicker .paper-check,html[data-theme=dark] #companiesView #portfolioPicker .scene-balance {background:#243c34;border-color:var(--home-paper)}
+html[data-theme=dark] #companiesView #portfolioPicker .paper-check path,html[data-theme=dark] #companiesView #portfolioPicker .scene-balance path {stroke:#91bca7}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-ledger i {background:linear-gradient(90deg,#45648e 65%,#293c56 65%)}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-folder {background:linear-gradient(145deg,#304d72,#263f5e);border-color:#597a9e}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-folder > i {background:#304d72;border-color:#597a9e}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-folder b {color:#b5cdeb}
+html[data-theme=dark] #companiesView #portfolioPicker .home-showcase .showcase-step,html[data-theme=dark] #companiesView #portfolioPicker .home-showcase .showcase-pause {background:transparent!important;border:0!important;color:#a7b7cd!important;box-shadow:none!important}
+html[data-theme=dark] #companiesView #portfolioPicker .home-showcase .showcase-step[aria-pressed=true] {background:#23334b!important;color:#c3d9fa!important}
+html[data-theme=dark] #companiesView #portfolioPicker .home-showcase .showcase-step:hover,html[data-theme=dark] #companiesView #portfolioPicker .home-showcase .showcase-pause:hover {background:#263449!important}
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
+ #companiesView #portfolioPicker .home-showcase:hover {transform:rotate(0deg)}
+}
+/* Keep the working entrance within normal laptop heights. */
+@media(min-width:1000px) and (max-height:760px) {
+ #companiesView #portfolioPicker {margin:12px auto 18px;gap:16px}
+ #companiesView #portfolioPicker .portfolio-heading {gap:48px;padding-top:5px}
+ #companiesView #portfolioPicker h1 {font-size:50px;margin-bottom:18px}
+ #companiesView #portfolioPicker .portfolio-eyebrow {margin-bottom:16px}
+ #companiesView #portfolioPicker .portfolio-heading .home-intro-copy > p {font-size:13px}
+ #companiesView #portfolioPicker .portfolio-access {margin-top:23px}
+ #companiesView #portfolioPicker .portfolio-access-heading {margin-bottom:10px!important}
+ #companiesView #portfolioPicker .portfolio-entry {min-height:86px;padding:14px 17px}
+ #companiesView #portfolioPicker .showcase-top {height:34px;padding-inline:17px}
+ #companiesView #portfolioPicker .showcase-panels {padding:12px 20px 15px}
+ #companiesView #portfolioPicker .showcase-art {height:130px;gap:17px}
+ #companiesView #portfolioPicker .scene-paper {width:88px;height:112px;padding:10px;gap:6px}
+ #companiesView #portfolioPicker .scene-paper > svg {width:18px;height:18px}
+ #companiesView #portfolioPicker .paper-mini-grid {gap:4px;margin-top:5px}
+ #companiesView #portfolioPicker .paper-mini-grid i {height:8px}
+ #companiesView #portfolioPicker .showcase-copy {min-height:70px}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:18px}
+ #companiesView #portfolioPicker .showcase-copy p {font-size:11px;line-height:1.6}
+ #companiesView #portfolioPicker .scene-index {margin-bottom:6px;font-size:7px}
+ #companiesView #portfolioPicker .home-showcase .showcase-step {min-height:42px;padding-block:10px}
+ #companiesView #portfolioPicker .showcase-playback {padding-block:4px}
+ #companiesView #portfolioPicker .portfolio-home-summary {margin-top:13px}
+ #companiesView #portfolioPicker .scene-ledger {height:108px;width:84px;padding:10px;gap:8px}
+ #companiesView #portfolioPicker .scene-folder {height:72px;width:144px;bottom:8px;padding:13px}
+ #companiesView #portfolioPicker .scene-label {padding:6px 9px}
+ #companiesView #portfolioPicker .label-one {top:12px}
+ #companiesView #portfolioPicker .label-two {top:10px}
+ #companiesView #portfolioPicker .label-three {top:-4px}
+}
+@media(min-width:1000px) and (max-height:600px) {
+ #companiesView #portfolioPicker {margin-block:8px;gap:12px}
+ #companiesView #portfolioPicker .portfolio-heading {gap:40px}
+ #companiesView #portfolioPicker h1 {font-size:44px;margin-bottom:15px}
+ #companiesView #portfolioPicker .portfolio-eyebrow {margin-bottom:12px;font-size:10px}
+ #companiesView #portfolioPicker .portfolio-access {margin-top:18px}
+ #companiesView #portfolioPicker .portfolio-entry {min-height:80px;padding-block:11px}
+ #companiesView #portfolioPicker .showcase-art {height:104px}
+ #companiesView #portfolioPicker .scene-paper {height:96px;width:80px;padding:9px;gap:4px}
+ #companiesView #portfolioPicker .scene-paper small {font-size:7px}
+ #companiesView #portfolioPicker .showcase-copy {min-height:65px}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:17px}
+ #companiesView #portfolioPicker .showcase-playback {font-size:7px}
+ #companiesView #portfolioPicker .scene-ledger {height:94px;padding:9px;gap:6px}
+ #companiesView #portfolioPicker .scene-folder {height:58px;width:132px;bottom:0}
+ #companiesView #portfolioPicker .scene-folder b {font-size:9px}
+ #companiesView #portfolioPicker .scene-label {padding:5px 7px;font-size:8px}
+}
+@media(max-width:999px) {
+ #companiesView #portfolioPicker .portfolio-heading {gap:32px;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr)}
+ #companiesView #portfolioPicker h1 {font-size:45px}
+ #companiesView #portfolioPicker .scene-paper {width:92px;height:124px}
+ #companiesView #portfolioPicker .showcase-art {gap:12px}
+ #companiesView #portfolioPicker .scene-transfer {width:30px}
+ #companiesView #portfolioPicker .showcase-panels {padding-inline:16px}
+}
+@media(max-width:760px) {
+ #companiesView #portfolioPicker {gap:24px;margin:18px auto 26px}
+ #companiesView #portfolioPicker .portfolio-heading {grid-template-columns:1fr;gap:32px;padding:0}
+ #companiesView #portfolioPicker .home-intro-copy {padding:0}
+ #companiesView #portfolioPicker h1 {font-size:clamp(43px,11vw,58px)}
+ #companiesView #portfolioPicker .portfolio-heading .home-intro-copy > p {font-size:13px}
+ #companiesView #portfolioPicker .portfolio-date {max-width:125px;text-align:right;font-size:9px;line-height:1.5}
+ #companiesView #portfolioPicker .portfolio-access {margin-top:24px;max-width:none}
+ #companiesView #portfolioPicker .portfolio-entry {padding:16px;min-height:90px;grid-template-columns:40px minmax(0,1fr) 70px;gap:6px 10px}
+ #companiesView #portfolioPicker .portfolio-avatar {width:40px;height:40px}
+ #companiesView #portfolioPicker .portfolio-entry-info strong {font-size:17px}
+ #companiesView #portfolioPicker .home-showcase {transform:none;border-radius:16px}
+ #companiesView #portfolioPicker .showcase-art {height:170px}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:19px}
+ #companiesView #portfolioPicker .showcase-top {padding-inline:15px}
+ #companiesView #portfolioPicker .portfolio-home-summary {margin-top:14px}
+ #companiesView #portfolioPicker .showcase-aura {inset:-15px 0 0}
+}
+@media(prefers-reduced-motion:reduce) {
+ #companiesView #portfolioPicker *,#companiesView #portfolioPicker *::before,#companiesView #portfolioPicker *::after {animation:none!important;transition:none!important}
+ #companiesView #portfolioPicker .home-showcase {transform:none}
+ #companiesView #portfolioPicker .showcase-pause {display:none}
+ #companiesView #portfolioPicker .portfolio-entry::after {display:none}
+ #companiesView #portfolioPicker .showcase-step[aria-pressed=true] > i::after {transform:scaleX(1)}
+ #companiesView #portfolioPicker .paper-check path,#companiesView #portfolioPicker .scene-balance path,#companiesView #portfolioPicker .scene-folder path {stroke-dasharray:none}
+}
+
+/* A clearer, level showcase with readable headings and compact stage controls. */
+#companiesView #portfolioPicker .home-showcase,#companiesView #portfolioPicker .home-showcase:hover {transform:none}
+#companiesView #portfolioPicker .showcase-top {height:48px;padding-inline:22px;gap:10px;background:transparent}
+#companiesView #portfolioPicker .showcase-window-dots {display:none}
+#companiesView #portfolioPicker .showcase-title {font-size:12px;line-height:1.4;font-weight:550;letter-spacing:-.1px;color:var(--home-ink)}
+#companiesView #portfolioPicker .showcase-mark {font-size:9px;letter-spacing:0;color:var(--home-muted);padding:4px 7px;border:1px solid var(--home-line);border-radius:6px}
+#companiesView #portfolioPicker .showcase-panels {padding:12px 24px 10px}
+#companiesView #portfolioPicker .showcase-art {height:175px}
+#companiesView #portfolioPicker .showcase-copy {min-height:96px}
+#companiesView #portfolioPicker .scene-index {font-size:8px;letter-spacing:1.2px;margin-bottom:7px}
+#companiesView #portfolioPicker .showcase-copy h2 {font-size:20px;margin-bottom:8px;line-height:1.3}
+#companiesView #portfolioPicker .showcase-copy p {font-size:12px;line-height:1.75;max-width:42ch}
+#companiesView #portfolioPicker .showcase-steps {gap:3px;margin:0 14px 10px;padding:4px;border:0;border-radius:11px;background:var(--home-soft)}
+#companiesView #portfolioPicker .home-showcase .showcase-step {min-height:40px;padding:10px 6px;gap:5px;font-size:11px;border-radius:8px;transition:background-color .2s,color .2s,box-shadow .2s}
+#companiesView #portfolioPicker .home-showcase .showcase-step[aria-pressed=true] {background:var(--home-paper);color:var(--home-blue);box-shadow:0 2px 7px #2d4d760a}
+#companiesView #portfolioPicker .showcase-step > i {bottom:3px;left:13px;right:13px;height:1.5px}
+#companiesView #portfolioPicker .showcase-playback {padding:5px 17px;border-top:1px solid var(--home-line);font-size:9px;line-height:1.5;color:var(--home-muted)}
+#companiesView #portfolioPicker .home-showcase .showcase-pause {min-height:30px;padding:5px 7px;font-size:10px}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-top {background:transparent}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-steps {background:#11161e}
+html[data-theme=dark] #companiesView #portfolioPicker .home-showcase .showcase-step[aria-pressed=true] {background:#27364c!important;box-shadow:none!important}
+@media(min-width:1000px) and (max-height:760px) {
+ #companiesView #portfolioPicker .showcase-top {height:40px;padding-inline:20px}
+ #companiesView #portfolioPicker .showcase-panels {padding:9px 20px 5px}
+ #companiesView #portfolioPicker .showcase-art {height:126px}
+ #companiesView #portfolioPicker .showcase-copy {min-height:82px}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:18px;margin-bottom:6px}
+ #companiesView #portfolioPicker .showcase-copy p {font-size:11px;line-height:1.65}
+ #companiesView #portfolioPicker .showcase-steps {margin:0 11px 8px}
+ #companiesView #portfolioPicker .home-showcase .showcase-step {min-height:36px;padding-block:8px;font-size:10px}
+ #companiesView #portfolioPicker .showcase-playback {padding-block:3px;font-size:8px}
+ #companiesView #portfolioPicker .home-showcase .showcase-pause {min-height:26px;font-size:9px}
+}
+@media(min-width:1000px) and (max-height:600px) {
+ #companiesView #portfolioPicker .showcase-top {height:36px}
+ #companiesView #portfolioPicker .showcase-art {height:102px}
+ #companiesView #portfolioPicker .showcase-copy {min-height:77px}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:17px}
+ #companiesView #portfolioPicker .showcase-playback {font-size:7px}
+}
+@media(max-width:760px) {
+ #companiesView #portfolioPicker .showcase-top {padding-inline:17px;height:44px}
+ #companiesView #portfolioPicker .showcase-panels {padding-inline:18px}
+ #companiesView #portfolioPicker .showcase-art {height:164px}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:19px}
+ #companiesView #portfolioPicker .showcase-playback {padding-inline:12px;font-size:8px}
+}
+
+/* Keep the whole welcome alive, including a scene held for reading. */
+#companiesView #portfolioPicker .showcase-aura::before {content:"";position:absolute;inset:15% 8% 8%;border:1px solid #8eb4eb35;border-radius:42% 58% 61% 39% / 54% 43% 57% 46%;pointer-events:none}
+#companiesView #portfolioPicker .showcase-aura i {background:radial-gradient(ellipse,#b1cff959,transparent 70%)}
+#companiesView #portfolioPicker .showcase-aura i+i {background:radial-gradient(ellipse,#c0daf975,transparent 70%)}
+#companiesView #portfolioPicker .scene-ledger {position:relative;overflow:hidden}
+#companiesView #portfolioPicker .scene-ledger::after {content:"";position:absolute;left:12px;right:12px;top:34px;height:1px;background:#7ba8e8;box-shadow:0 0 6px #7ba8e840;opacity:0;pointer-events:none}
+#companiesView #portfolioPicker .portfolio-avatar {position:relative}
+#companiesView #portfolioPicker .portfolio-avatar::after {content:"";position:absolute;inset:-3px;border:1px solid #c8e0ff24;border-radius:12px;opacity:0;pointer-events:none}
+@keyframes welcomeAmbientMove {0%,100%{background-position:0% 0%,100% 100%}50%{background-position:100% 60%,0% 40%}}
+@keyframes welcomeContour {0%,100%{transform:rotate(-14deg) scale(.96);opacity:.45}50%{transform:rotate(16deg) scale(1.04);opacity:.9}}
+@keyframes welcomeTitleLight {0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes welcomeBrandFloat {0%,100%{translate:0 0;rotate:0deg}50%{translate:0 -2px;rotate:-3deg}}
+@keyframes welcomeGridCell {0%,100%{opacity:.45;scale:.94}45%,65%{opacity:1;scale:1}}
+@keyframes welcomeLedgerRows {0%,100%{scale:.86 1;opacity:.6}45%,65%{scale:1 1;opacity:1}}
+@keyframes welcomeLedgerScan {0%,8%{opacity:0;translate:0 0}20%{opacity:.7}75%{opacity:.5;translate:0 52px}90%,100%{opacity:0;translate:0 52px}}
+@keyframes welcomeBalancePulse {0%,100%{box-shadow:0 0 0 6px #9ac6af0b;scale:1}50%{box-shadow:0 0 0 12px #9ac6af00;scale:1.04}}
+@keyframes welcomeCheckLoop {0%,8%{stroke-dashoffset:25;opacity:.4}42%,80%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:.45}}
+@keyframes welcomeFolderBob {0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes welcomeAvatarHalo {0%,100%{opacity:0;scale:.97}50%{opacity:.6;scale:1.04}}
+@media(prefers-reduced-motion:no-preference) {
+  #companiesView #portfolioPicker .showcase-aura::before {animation:welcomeContour 14s ease-in-out infinite}
+ #companiesView #portfolioPicker .brand-mark img {animation:welcomeBrandFloat 5s ease-in-out infinite}
+ #companiesView #portfolioPicker h1 em {color:transparent;background:linear-gradient(110deg,var(--home-blue) 15%,#759ce0 50%,var(--home-blue) 85%);background-size:220% 100%;background-clip:text;-webkit-background-clip:text;animation:welcomeTitleLight 7s ease-in-out infinite}
+ #companiesView #portfolioPicker .paper-mini-grid i {animation:welcomeGridCell 3.4s ease-in-out infinite}
+ #companiesView #portfolioPicker .paper-mini-grid i:nth-child(2) {animation-delay:.25s}
+ #companiesView #portfolioPicker .paper-mini-grid i:nth-child(3) {animation-delay:.5s}
+ #companiesView #portfolioPicker .paper-mini-grid i:nth-child(4) {animation-delay:.75s}
+ #companiesView #portfolioPicker .paper-mini-grid i:nth-child(5) {animation-delay:1s}
+ #companiesView #portfolioPicker .paper-mini-grid i:nth-child(6) {animation-delay:1.25s}
+ #companiesView #portfolioPicker .scene-ledger i {animation:welcomeLedgerRows 3.6s ease-in-out infinite}
+ #companiesView #portfolioPicker .scene-ledger i:nth-of-type(2) {animation-delay:.25s}
+ #companiesView #portfolioPicker .scene-ledger i:nth-of-type(3) {animation-delay:.5s}
+ #companiesView #portfolioPicker .scene-ledger i:nth-of-type(4) {animation-delay:.75s}
+ #companiesView #portfolioPicker .scene-ledger::after {animation:welcomeLedgerScan 3.6s ease-in-out infinite}
+ #companiesView #portfolioPicker .ledger-right::after {animation-delay:.45s}
+ #companiesView #portfolioPicker .scene-balance {animation:welcomeBalancePulse 3.6s ease-in-out infinite}
+ #companiesView #portfolioPicker .paper-check path,#companiesView #portfolioPicker .scene-balance path,#companiesView #portfolioPicker .scene-folder path {animation:welcomeCheckLoop 3.8s ease-in-out infinite}
+ #companiesView #portfolioPicker .scene-folder {animation:welcomeFolderBob 4.6s ease-in-out infinite}
+ #companiesView #portfolioPicker .portfolio-avatar::after {animation:welcomeAvatarHalo 5s ease-in-out infinite}
+}
+#companiesView #portfolioPicker .showcase-wrap:has(.home-showcase[data-art-motion=paused]) .showcase-aura,
+#companiesView #portfolioPicker .showcase-wrap:has(.home-showcase[data-art-motion=paused]) .showcase-aura *,
+#companiesView #portfolioPicker .showcase-wrap:has(.home-showcase[data-art-motion=paused]) .showcase-aura::before {animation-play-state:paused}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-aura::before {border-color:#7399d024!important}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-aura i {background:radial-gradient(ellipse,#4c74ae2b,transparent 70%)}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-aura i+i {background:radial-gradient(ellipse,#36557933,transparent 70%)}
+@media(prefers-reduced-motion:reduce) {
+ #companiesView #portfolioPicker .scene-ledger::after,#companiesView #portfolioPicker .portfolio-avatar::after {display:none}
+ #companiesView #portfolioPicker .paper-check path,#companiesView #portfolioPicker .scene-balance path,#companiesView #portfolioPicker .scene-folder path {stroke-dasharray:none}
+}
+
+/* Clean backdrop: the page itself is the background, with no large painted halo. */
+#companiesView #portfolioPicker .portfolio-heading,
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-heading {background:transparent!important;background-image:none!important;box-shadow:none!important;border:0!important}
+#companiesView #portfolioPicker .portfolio-heading::before,
+#companiesView #portfolioPicker .portfolio-heading::after,
+#companiesView #portfolioPicker .showcase-aura,
+#companiesView #portfolioPicker .showcase-wrap::before,
+#companiesView #portfolioPicker .showcase-wrap::after,
+#companiesView #portfolioPicker .showcase-art::before {display:none!important}
+#companiesView #portfolioPicker .showcase-panel .showcase-copy {animation:none!important;opacity:1!important;transform:none!important}
+#companiesView #portfolioPicker .portfolio-avatar::after {display:none}
+html[data-theme=dark] #companiesView #portfolioPicker {--home-ink:#e9edf4;--home-muted:#a1abb9;--home-blue:#91b5ee;--home-line:var(--border);--home-paper:var(--surface);--home-soft:var(--surface-2)}
+html[data-theme=dark] #companiesView #portfolioPicker .home-showcase {background:#111316;border-color:#2b313b;box-shadow:0 8px 24px #00000018}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-top {background:#111316}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-copy h2 {color:#e9edf4}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-copy p {color:#a1abb9!important}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-index {color:#91a8c8}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-paper,
+html[data-theme=dark] #companiesView #portfolioPicker .scene-ledger,
+html[data-theme=dark] #companiesView #portfolioPicker .scene-label {background:#1b2431;border-color:#35465d;box-shadow:0 7px 16px #0000000d}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-model {background:linear-gradient(145deg,#202e42,#192330)}
+html[data-theme=dark] #companiesView #portfolioPicker .paper-format,
+html[data-theme=dark] #companiesView #portfolioPicker .scene-ledger b {color:#9aafcb}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-paper small {color:#9caec7!important}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-label {color:#a0b6d4}
+html[data-theme=dark] #companiesView #portfolioPicker .paper-mini-grid i {background:#345273}
+html[data-theme=dark] #companiesView #portfolioPicker .paper-mini-grid i:nth-child(even) {background:#293f5b}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-ledger i {background:linear-gradient(90deg,#3b577b 65%,#25354c 65%)}
+html[data-theme=dark] #companiesView #portfolioPicker .paper-check,
+html[data-theme=dark] #companiesView #portfolioPicker .scene-balance {background:#1d3028;border-color:#111316}
+html[data-theme=dark] #companiesView #portfolioPicker .paper-check path,
+html[data-theme=dark] #companiesView #portfolioPicker .scene-balance path {stroke:#a0c5b0}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-folder {background:linear-gradient(145deg,#29415e,#1d3048);border-color:#435f80}
+html[data-theme=dark] #companiesView #portfolioPicker .scene-folder > i {background:#29415e;border-color:#435f80}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-steps {background:#0b0d10}
+html[data-theme=dark] #companiesView #portfolioPicker .home-showcase .showcase-step[aria-pressed=true] {background:#1e2b3e!important;color:#bdd2f0!important}
+html[data-theme=dark] #companiesView #portfolioPicker .home-showcase .showcase-step:hover,
+html[data-theme=dark] #companiesView #portfolioPicker .home-showcase .showcase-pause:hover {background:#1a2330!important}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-playback {background:#101215;color:#9ba6b6}
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-entry {background:linear-gradient(110deg,#151d29,#1d2c41)!important;border-color:#334964!important;box-shadow:0 5px 16px #0000000d}
+html[data-theme=dark] #companiesView #portfolioPicker .portfolio-entry:hover {background:linear-gradient(110deg,#1a2534,#22344d)!important;border-color:#4b688e!important}
+@keyframes showcaseArtArrive {from{transform:translateY(7px) scale(.985)}to{transform:none}}
+@keyframes showcasePaperSway {0%,100%{transform:rotate(-8deg) translateY(0)}50%{transform:rotate(-10deg) translateY(-7px)}}
+@keyframes showcaseModelSway {0%,100%{transform:rotate(6deg) translateY(0)}50%{transform:rotate(8deg) translateY(-8px)}}
+@media(prefers-reduced-motion:no-preference) {
+ #companiesView #portfolioPicker .showcase-panel:not([hidden]) .showcase-art {animation:showcaseArtArrive .45s cubic-bezier(.16,1,.3,1) both}
+ #companiesView #portfolioPicker .showcase-panel:not([hidden]) .scene-source {animation:showcasePaperSway 4.8s ease-in-out infinite}
+ #companiesView #portfolioPicker .showcase-panel:not([hidden]) .scene-model {animation:showcaseModelSway 4.8s -.8s ease-in-out infinite}
+}
+
+/* An open composition: no frame, painted panels or boxed stage navigation. */
+#companiesView #portfolioPicker .home-showcase,
+html[data-theme=dark] #companiesView #portfolioPicker .home-showcase {overflow:visible;border:0!important;border-radius:0;background:transparent!important;background-image:none!important;box-shadow:none!important;transform:none}
+#companiesView #portfolioPicker .showcase-top,
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-top {height:38px;padding:0;border:0!important;background:transparent!important}
+#companiesView #portfolioPicker .showcase-title {font-size:13px;font-weight:550;letter-spacing:-.15px}
+#companiesView #portfolioPicker .showcase-mark {padding:0;border:0!important;border-radius:0;background:transparent;color:var(--home-muted);font-size:9px}
+#companiesView #portfolioPicker .showcase-panels {padding:7px 0 5px}
+#companiesView #portfolioPicker .showcase-copy {min-height:92px}
+#companiesView #portfolioPicker .showcase-copy h2 {font-size:21px;line-height:1.35}
+#companiesView #portfolioPicker .showcase-copy p {max-width:39ch}
+#companiesView #portfolioPicker .showcase-steps,
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-steps {gap:14px;margin:0;padding:0;border:0!important;border-radius:0;background:transparent!important;box-shadow:none}
+#companiesView #portfolioPicker .home-showcase .showcase-step {min-height:40px;padding:9px 0 11px;border-radius:0;font-size:11px;gap:6px;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--home-muted)}
+#companiesView #portfolioPicker .home-showcase .showcase-step[aria-pressed=true] {background:transparent!important;box-shadow:none!important;color:var(--home-blue);font-weight:600}
+#companiesView #portfolioPicker .home-showcase .showcase-step[aria-pressed=true] > span {color:var(--home-blue)}
+#companiesView #portfolioPicker .showcase-step > i {bottom:0;left:0;right:0;height:2px;border-radius:2px;background:#c6d4e52e}
+#companiesView #portfolioPicker .showcase-step > i::after {background:#739bd7}
+#companiesView #portfolioPicker .showcase-playback,
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-playback {padding:9px 0 0;border:0!important;background:transparent!important;font-size:9px}
+#companiesView #portfolioPicker .home-showcase .showcase-pause {padding-inline:0;background:transparent!important;border:0!important;box-shadow:none!important;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;transition:text-decoration-color .2s}
+#companiesView #portfolioPicker .home-showcase .showcase-pause:hover {text-decoration-color:currentColor;background:transparent!important}
+#companiesView #portfolioPicker .portfolio-home-summary {margin:17px 0 0;padding:0;border:0;background:transparent}
+html[data-theme=dark] .app-shell #companiesView #portfolioPicker .home-showcase .showcase-step,
+html[data-theme=dark] .app-shell #companiesView #portfolioPicker .home-showcase .showcase-step[aria-pressed=true],
+html[data-theme=dark] .app-shell #companiesView #portfolioPicker .home-showcase .showcase-step:hover,
+html[data-theme=dark] .app-shell #companiesView #portfolioPicker .home-showcase .showcase-pause:hover {background:transparent!important;border:0!important;box-shadow:none!important}
+html[data-theme=dark] .app-shell #companiesView #portfolioPicker .home-showcase .showcase-step {color:#92a1b6!important}
+html[data-theme=dark] .app-shell #companiesView #portfolioPicker .home-showcase .showcase-step[aria-pressed=true] {color:#b7cef0!important}
+html[data-theme=dark] #companiesView #portfolioPicker .showcase-step > i {background:#51678324}
+@media(hover:hover) and (pointer:fine) {
+ #companiesView #portfolioPicker .home-showcase .showcase-step:hover {color:var(--home-blue)}
+ html[data-theme=dark] .app-shell #companiesView #portfolioPicker .home-showcase .showcase-step:hover {color:#c0d4ef!important}
+}
+@media(min-width:1000px) and (max-height:760px) {
+ #companiesView #portfolioPicker .showcase-top {height:32px}
+ #companiesView #portfolioPicker .showcase-panels {padding:4px 0 3px}
+ #companiesView #portfolioPicker .showcase-copy {min-height:80px}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:19px}
+ #companiesView #portfolioPicker .showcase-steps {gap:12px;margin:0;padding:0}
+ #companiesView #portfolioPicker .home-showcase .showcase-step {min-height:36px;padding:8px 0 10px;font-size:10px}
+ #companiesView #portfolioPicker .showcase-playback {padding:6px 0 0}
+ #companiesView #portfolioPicker .portfolio-home-summary {margin-top:12px}
+}
+@media(min-width:1000px) and (max-height:600px) {
+ #companiesView #portfolioPicker .showcase-copy {min-height:75px}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:18px}
+}
+@media(max-width:760px) {
+ #companiesView #portfolioPicker .showcase-top {padding:0}
+ #companiesView #portfolioPicker .showcase-panels {padding-inline:0}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:20px}
+ #companiesView #portfolioPicker .showcase-steps {gap:10px}
+ #companiesView #portfolioPicker .showcase-playback {padding-inline:0}
+}
+
+/* Keep the wallet and its totals together; readable controls on an open canvas. */
+#companiesView #portfolioPicker {--home-muted:#586b80}
+html[data-theme=dark] #companiesView #portfolioPicker {--home-muted:#a1abb9}
+#companiesView #portfolioPicker .portfolio-access-heading {flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:5px}
+#companiesView #portfolioPicker .portfolio-access-kicker {font-size:9px;letter-spacing:1.15px}
+#companiesView #portfolioPicker .portfolio-section-title {font-size:14px}
+#companiesView #portfolioPicker .portfolio-access .portfolio-home-summary {display:flex;flex-wrap:wrap;justify-content:flex-start;gap:10px 24px;margin:14px 0 0}
+#companiesView #portfolioPicker .portfolio-home-summary > span+span {justify-content:flex-start}
+#companiesView #portfolioPicker .portfolio-home-summary strong {font-size:16px}
+#companiesView #portfolioPicker .portfolio-home-summary :is(.home-stat-label,#portfolioWalletLabel) {font-size:11px}
+#companiesView #portfolioPicker .showcase-mark {font-size:11px}
+#companiesView #portfolioPicker .scene-index {font-size:10px;letter-spacing:1.1px;color:var(--home-muted)}
+#companiesView #portfolioPicker .showcase-copy p {font-size:13px;line-height:1.7}
+#companiesView #portfolioPicker .home-showcase .showcase-step {font-size:12px}
+#companiesView #portfolioPicker .home-showcase .showcase-step > span {font-size:10px;opacity:1}
+#companiesView #portfolioPicker .showcase-playback {font-size:11px}
+#companiesView #portfolioPicker .home-showcase .showcase-pause {font-size:11px;min-height:30px;color:var(--home-muted)}
+#companiesView #portfolioPicker .home-showcase .showcase-step:focus-visible,
+#companiesView #portfolioPicker .home-showcase .showcase-pause:focus-visible {outline:2px solid var(--home-blue);outline-offset:4px}
+@media(min-width:1000px) and (min-height:761px) {
+ #companiesView #portfolioPicker .portfolio-heading {min-height:clamp(440px,calc(100svh - 260px),640px);padding-top:0}
+}
+@media(min-width:1000px) and (max-height:760px) {
+ #companiesView #portfolioPicker .portfolio-access {margin-top:22px}
+ #companiesView #portfolioPicker .portfolio-access-heading {gap:3px;margin-bottom:9px!important}
+ #companiesView #portfolioPicker .portfolio-access .portfolio-home-summary {margin-top:10px}
+ #companiesView #portfolioPicker .showcase-copy p {font-size:12px}
+ #companiesView #portfolioPicker .home-showcase .showcase-step {font-size:11px}
+ #companiesView #portfolioPicker .showcase-playback,
+ #companiesView #portfolioPicker .home-showcase .showcase-pause {font-size:10px}
+}
+@media(max-width:760px) {
+ #companiesView #portfolioPicker .portfolio-access {max-width:100%}
+ #companiesView #portfolioPicker .showcase-copy {min-height:100px}
+}
+
+
+/* One calm, centered composition: illustration, outcome, then navigation. */
+#companiesView #portfolioPicker .home-showcase {max-width:470px;margin-inline:auto}
+#companiesView #portfolioPicker .showcase-top {justify-content:center;height:auto;min-height:30px;margin-bottom:0}
+#companiesView #portfolioPicker .showcase-title {font-size:17px;font-weight:550;letter-spacing:-.25px;color:var(--home-ink)}
+#companiesView #portfolioPicker .showcase-panels {padding:0}
+#companiesView #portfolioPicker .showcase-art {height:155px;gap:22px}
+#companiesView #portfolioPicker .showcase-copy {min-height:84px;padding:0;text-align:center}
+#companiesView #portfolioPicker .scene-index {display:none}
+#companiesView #portfolioPicker .showcase-copy h2 {font-size:23px;line-height:1.3;letter-spacing:-.5px;margin:0 0 9px}
+#companiesView #portfolioPicker .showcase-copy p {font-size:13px;line-height:1.7;max-width:40ch;margin:0 auto}
+#companiesView #portfolioPicker .showcase-steps {gap:0;margin:6px 0 0}
+#companiesView #portfolioPicker .home-showcase .showcase-step {justify-content:center;min-height:46px;padding:10px 3px 14px;font-size:13px;gap:7px}
+#companiesView #portfolioPicker .home-showcase .showcase-step > span {font-size:11px;color:var(--home-muted)}
+#companiesView #portfolioPicker .showcase-step > i {height:2px;left:10px;right:10px;background:var(--home-line)}
+#companiesView #portfolioPicker .showcase-playback {padding:7px 10px 0;font-size:11px}
+#companiesView #portfolioPicker .scene-transfer {position:relative;width:50px}
+#companiesView #portfolioPicker .scene-transfer svg path {animation:none;stroke-dasharray:none;stroke:#7c9ec8;opacity:.8}
+#companiesView #portfolioPicker .scene-transfer::after {content:"";position:absolute;left:0;top:50%;width:4px;height:4px;margin-top:-2px;border-radius:50%;background:var(--home-blue)}
+#companiesView #portfolioPicker .scene-balance path,
+#companiesView #portfolioPicker .paper-check path {stroke-dasharray:none;animation:none}
+#companiesView #portfolioPicker .scene-paper {border-color:#c0d0e3}
+#companiesView #portfolioPicker .scene-paper small {color:#536e91}
+#companiesView #portfolioPicker .scene-ledger b {color:#59789f}
+@keyframes workflowSignal {0%{translate:0 0;opacity:0}15%,75%{opacity:1}100%{translate:43px 0;opacity:0}}
+@media(prefers-reduced-motion:no-preference) {
+ #companiesView #portfolioPicker .scene-transfer::after {animation:workflowSignal 2.6s ease-in-out infinite}
+}
+#companiesView #portfolioPicker .home-showcase[data-art-motion=paused] .scene-transfer::after {animation-play-state:paused}
+@media(prefers-reduced-motion:reduce) {
+ #companiesView #portfolioPicker .scene-transfer::after {display:none}
+}
+@media(min-width:1000px) and (max-height:760px) {
+ #companiesView #portfolioPicker .showcase-top {min-height:26px;margin-bottom:3px}
+ #companiesView #portfolioPicker .showcase-art {height:135px}
+ #companiesView #portfolioPicker .showcase-copy {min-height:80px;padding-top:3px}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:20px}
+ #companiesView #portfolioPicker .showcase-copy p {font-size:12px}
+ #companiesView #portfolioPicker .showcase-steps {margin-top:4px}
+ #companiesView #portfolioPicker .showcase-playback {padding-top:7px}
+}
+@media(min-width:1000px) and (max-height:600px) {
+ #companiesView #portfolioPicker .showcase-art {height:104px}
+ #companiesView #portfolioPicker .showcase-copy {min-height:88px}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:18px}
+}
+@media(max-width:760px) {
+ #companiesView #portfolioPicker .home-showcase {width:100%}
+ #companiesView #portfolioPicker .showcase-art {height:155px;gap:16px}
+ #companiesView #portfolioPicker .showcase-copy {min-height:96px}
+ #companiesView #portfolioPicker .showcase-copy h2 {font-size:20px}
+ #companiesView #portfolioPicker .home-showcase .showcase-step {font-size:12px;gap:5px}
+}
+
+/* Balance the headline with the compact product walkthrough. */
+#companiesView #portfolioPicker h1 {font-size:clamp(42px,4.2vw,56px);line-height:1.08}
+@media(min-width:1000px) and (max-height:760px) {
+ #companiesView #portfolioPicker h1 {font-size:48px}
+}
+@media(min-width:1000px) and (max-height:600px) {
+ #companiesView #portfolioPicker h1 {font-size:42px}
+}
+@media(max-width:760px) {
+ #companiesView #portfolioPicker h1 {font-size:clamp(36px,8.5vw,48px)}
+}
+
+/* One header and a balanced working entrance, scoped to the home only. */
+.home-header-brand,.home-header-date {display:none}
+.app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) .home-header-brand {display:flex;align-items:center;gap:9px;margin-right:auto;min-width:0;color:var(--text,#1c3048)}
+.home-header-brand img {display:block;object-fit:contain;border-radius:9px;flex:none;transition:transform .25s}
+.home-header-brand strong {display:block;font-size:20px;letter-spacing:-.6px;line-height:1.2}
+.home-header-brand small {display:block;font-size:8px;line-height:1.4;letter-spacing:.6px;color:var(--muted,#586b80)}
+.app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) .topbar-title {display:none}
+.app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) .home-header-date {display:block;margin-right:12px;font-size:11px;text-transform:capitalize;color:var(--muted,#586b80)}
+#companiesView #portfolioPicker {margin:0 auto;gap:0}
+#companiesView #portfolioPicker .portfolio-heading {min-height:0;padding:24px 0;gap:clamp(32px,4vw,56px);grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+#companiesView #portfolioPicker .home-intro-copy {padding:0}
+#companiesView #portfolioPicker .portfolio-access {max-width:460px;margin-top:26px}
+#companiesView #portfolioPicker .portfolio-entry {min-height:100px;padding:19px 21px;grid-template-columns:48px minmax(0,1fr) 92px;gap:6px 15px;border-color:#587eaa;box-shadow:0 8px 28px #18324d12}
+#companiesView #portfolioPicker .portfolio-avatar {width:48px;height:48px}
+#companiesView #portfolioPicker .portfolio-entry-info strong {font-size:20px}
+#companiesView #portfolioPicker .portfolio-entry-action {font-size:12px}
+#companiesView #portfolioPicker .portfolio-entry-action > span:first-child {font-size:12px}
+#companiesView #portfolioPicker:has(#portfolioList > .portfolio-entry:only-child) .portfolio-home-summary {display:none}
+#companiesView #portfolioPicker .home-showcase {max-width:500px;width:100%}
+#companiesView #portfolioPicker .showcase-art {height:180px;gap:24px}
+#companiesView #portfolioPicker .scene-paper {width:102px;height:132px;padding:12px;gap:8px}
+#companiesView #portfolioPicker .scene-ledger {width:98px;height:128px;padding:13px;gap:10px}
+#companiesView #portfolioPicker .showcase-copy {min-height:88px}
+#companiesView #portfolioPicker .showcase-copy p {font-size:13px;max-width:36ch}
+html[data-theme=dark] #companiesView #portfolioPicker {--home-muted:#b2bdcc}
+@media(min-width:1000px) {
+ .app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) main #companiesView.active {min-height:calc(100svh - 104px);display:grid;align-items:center}
+ #companiesView #portfolioPicker .portfolio-heading {padding:24px 0 48px}
+}
+@media(min-width:1000px) and (max-height:640px) {
+ .app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) main #companiesView.active {min-height:calc(100svh - 90px)}
+ #companiesView #portfolioPicker .portfolio-heading {padding:18px 0 28px}
+ #companiesView #portfolioPicker .showcase-art {height:135px}
+ #companiesView #portfolioPicker .scene-paper {width:88px;height:112px;padding:10px;gap:6px}
+ #companiesView #portfolioPicker .scene-ledger {width:84px;height:108px;padding:10px;gap:8px}
+ #companiesView #portfolioPicker .portfolio-entry {min-height:90px;padding:14px 18px}
+}
+@media(max-width:760px) {
+ .app-shell:has(#companiesView.active #portfolioPicker:not([hidden])) .home-header-date {display:none}
+ .home-header-brand small {display:none}
+ .home-header-brand strong {font-size:clamp(13px,3.7vw,18px)}
+ .home-header-brand img {width:28px;height:28px}
+ #companiesView #portfolioPicker .portfolio-heading {grid-template-columns:minmax(0,1fr);gap:38px;padding:24px 0 32px}
+ #companiesView #portfolioPicker .portfolio-access {max-width:none}
+ #companiesView #portfolioPicker .portfolio-entry {grid-template-columns:40px minmax(0,1fr) 70px;padding:16px;gap:6px 10px}
+ #companiesView #portfolioPicker .portfolio-avatar {width:40px;height:40px}
+ #companiesView #portfolioPicker .portfolio-entry-info strong {font-size:18px}
+ #companiesView #portfolioPicker .showcase-art {height:160px;gap:16px}
+}
+@media(hover:hover) and (prefers-reduced-motion:no-preference) {
+ .home-header-brand:hover img {transform:rotate(-6deg)}
+}

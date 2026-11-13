@@ -1,0 +1,51 @@
+/* The same frame and actions for workbooks, daily balances and fiscal results. */
+.app-shell .standard-preview {
+  display:grid; grid-template-columns:minmax(0,1fr); gap:14px;
+  width:100%; max-width:100%; min-width:0; margin:18px 0 0;
+}
+.app-shell .standard-preview[hidden], .app-shell .standard-preview:empty { display:none; }
+.app-shell :is(#companyPanel,#converterView,#ledgerView) .standard-preview,
+.app-shell .preview-dialog .standard-preview:not(.fiscal-results-card) {
+  margin:18px 0 0; padding:0; border:0; background:transparent; box-shadow:none;
+}
+.app-shell #fiscalView #fiscal242ResultsCard.standard-preview { display:grid; gap:14px; }
+.app-shell .standard-preview > .preview-commandbar {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+  gap:12px 18px; min-width:0; padding:12px 14px;
+  border:1px solid var(--border,#dfe6ee); border-radius:12px;
+  background:var(--surface,#fff); box-shadow:none;
+}
+.app-shell .standard-preview .preview-command-info strong {
+  font-size:14px; line-height:1.35; color:var(--text,#233750);
+}
+.app-shell .standard-preview .preview-command-info small {
+  margin-top:3px; font-size:12px; line-height:1.35; color:var(--muted,#53677f);
+}
+.app-shell .standard-preview .preview-primary-actions { flex:0 1 auto; flex-wrap:wrap; min-width:0; }
+.app-shell .standard-preview .preview-primary-actions button {
+  min-height:42px; margin:0; padding:9px 12px; border-radius:9px;
+  font-size:12px; font-weight:650;
+}
+.app-shell .standard-preview .preview-primary-actions .preview-download {
+  border:1px solid #315fc5; color:#fff; background:#315fc5;
+}
+.app-shell .standard-preview .preview-primary-actions .preview-download:hover { background:#244da7; }
+.app-shell .standard-preview :is(.preview-summary-grid,.daily-summary) { gap:10px; }
+.app-shell .standard-preview :is(.preview-summary-item,.daily-summary > div) {
+  min-width:0; padding:12px 14px; border-radius:11px;
+}
+.app-shell .standard-preview :is(.preview-summary-item,.daily-summary > div) small { font-size:11px; }
+.app-shell .standard-preview :is(.preview-summary-item,.daily-summary > div) strong { font-size:17px; }
+.app-shell .standard-preview :is(.preview-sheet,.preview-table-scroll,.daily-table-scroll,.fiscal-table-scroll) { min-width:0; }
+.app-shell .preview-dialog .fiscal-table-scroll { max-height:68dvh; overflow:auto; }
+html[data-theme="dark"] .app-shell :is(#companyPanel,#converterView,#ledgerView,.preview-dialog) .standard-preview:not(.fiscal-results-card) {
+  background:transparent!important; box-shadow:none!important;
+}
+@media (max-width:760px) {
+  .app-shell .standard-preview,
+  .app-shell :is(#companyPanel,#converterView,#ledgerView) .standard-preview { gap:11px; margin-top:14px; }
+  .app-shell .standard-preview > .preview-commandbar { align-items:stretch; flex-direction:column; }
+  .app-shell .standard-preview .preview-primary-actions button { flex:1 1 auto; min-height:44px; }
+  .app-shell .standard-preview .preview-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .app-shell .standard-preview :is(.preview-summary-item,.daily-summary > div) { padding:10px; }
+}

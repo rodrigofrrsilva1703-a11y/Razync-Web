@@ -1,0 +1,341 @@
+CAPABILITIES = {
+    3: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [{"name": "mapa", "label": "Mapa bancário", "accept": ".xls,.xlsx", "multiple": False}],
+        "banks": {"itau": "508", "daycoval": "2283"},
+    },
+    47: {"status": "api_ready", "workflow": "standard", "banks": {"banco_brasil": "8"}},
+    88: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
+    154: {"status": "api_ready", "workflow": "standard_multi_bank", "banks": {"bradesco": "9", "itau": "508"}},
+    178: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [{"name": "mapa", "label": "Mapa bancário", "accept": ".xls,.xlsx", "multiple": False}],
+        "banks": {"itau": "508", "daycoval": "505"},
+    },
+    242: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [
+            {"name": "despesas", "label": "Despesas", "accept": ".xls,.xlsx", "multiple": False, "optional": True},
+            {"name": "fornecedores", "label": "Fornecedores", "accept": ".xls,.xlsx", "multiple": False, "optional": True},
+            {"name": "recebidos", "label": "Recebidos", "accept": ".xls,.xlsx", "multiple": False, "optional": True},
+            {"name": "francesinhas", "label": "Francesinhas ZIP", "accept": ".zip", "multiple": False, "optional": True},
+        ],
+        "banks": {"itau_508": "508", "itau_509": "509", "banco_brasil": "8"},
+    },
+    266: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [{"name": "consolidada", "label": "Planilha consolidada", "accept": ".xls,.xlsx", "multiple": False}],
+        "banks": {"itau": "", "bradesco": "", "fibra": "", "banco_brasil": "8"},
+    },
+    285: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [
+            {"name": "jaguar", "label": "Planilha Jaguar", "accept": ".xls,.xlsx", "multiple": False},
+            {"name": "entradas", "label": "Entradas detalhadas", "accept": ".xls,.xlsx", "multiple": False},
+        ],
+        "banks": {"santander": "513"},
+    },
+    343: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [{"name": "mapa", "label": "Mapa bancário", "accept": ".xls,.xlsx", "multiple": False}],
+        "banks": {"itau": "508", "daycoval": "506"},
+    },
+    625: {"status": "api_ready", "workflow": "standard_multi_bank", "banks": {"banco_brasil": "8", "caixa": "508", "sicredi": "3999"}},
+    626: {"status": "api_ready", "workflow": "standard_multi_bank", "banks": {"banco_brasil": "", "sicredi": ""}},
+    734: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [
+            {"name": "btg", "label": "Extrato BTG", "accept": ".pdf", "multiple": True},
+        ],
+        "banks": {"btg": "510"},
+        "options": [
+            {"name": "data_inicial", "label": "Data inicial (opcional)", "type": "date"},
+            {"name": "data_final", "label": "Data final (opcional)", "type": "date"},
+        ],
+    },
+    841: {"status": "api_ready", "workflow": "standard", "banks": {"inter": "506"}},
+    912: {"status": "api_ready", "workflow": "standard", "banks": {"sicredi": "515"}},
+    964: {"status": "api_ready", "workflow": "standard", "banks": {"bradesco": "9"}},
+    968: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [
+            {"name": "itau", "label": "Extrato Itaú", "accept": ".pdf", "multiple": True, "optional": True},
+            {"name": "bradesco", "label": "Extrato Bradesco", "accept": ".pdf", "multiple": True, "optional": True},
+            {"name": "sispag", "label": "Comprovantes SISPAG", "accept": ".pdf", "multiple": True, "optional": True},
+        ],
+        "banks": {"itau": "508", "bradesco": "9"},
+    },
+    969: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
+    1000: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [
+            {"name": "itau", "label": "SIG Itaú", "accept": ".xls,.xlsx", "multiple": True, "optional": True},
+            {"name": "sicredi", "label": "Sicredi 505 (SIG ou PDF)", "accept": ".xls,.xlsx,.pdf", "multiple": True, "optional": True},
+        ],
+        "banks": {"itau": "508", "sicredi": "505"},
+    },
+    1001: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [
+            {"name": "itau", "label": "SIG Itaú", "accept": ".xls,.xlsx", "multiple": True, "optional": True},
+            {"name": "sicredi", "label": "Sicredi 505 (SIG ou PDF)", "accept": ".xls,.xlsx,.pdf", "multiple": True, "optional": True},
+            {"name": "santander", "label": "Extrato Santander (PDF)", "accept": ".pdf", "multiple": True, "optional": True},
+        ],
+        "banks": {"itau": "508", "sicredi": "505", "santander": "513"},
+    },
+    1064: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [
+            {"name": "sicredi", "label": "Sicredi 505 (SIG ou PDF)", "accept": ".xls,.xlsx,.pdf", "multiple": True},
+        ],
+        "banks": {"sicredi": "505"},
+    },
+    1096: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [
+            {"name": "santander", "label": "SIG Santander", "accept": ".xls,.xlsx", "multiple": True, "optional": True},
+            {"name": "sicredi", "label": "Sicredi 510 (SIG ou PDF)", "accept": ".xls,.xlsx,.pdf", "multiple": True, "optional": True},
+        ],
+        "banks": {"santander": "513", "sicredi": "510"},
+    },
+    1208: {"status": "api_ready", "workflow": "standard_multi_bank", "banks": {"itau": "508", "safra": "512", "bradesco": "9"}},
+    1211: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [
+            {"name": "extrato", "label": "Extrato Itaú", "accept": ".pdf", "multiple": False},
+            {"name": "boletos", "label": "Boletos liquidados", "accept": ".xls,.xlsx,.pdf", "multiple": False},
+        ],
+        "banks": {"itau": ""},
+    },
+    1396: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [{"name": "consolidada", "label": "Planilha consolidada", "accept": ".xls,.xlsx", "multiple": False}],
+        "banks": {"itau": "", "bradesco": ""},
+    },
+    1402: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [
+            {"name": "planilha", "label": "Planilha de caixa", "accept": ".xls,.xlsx", "multiple": False},
+            {"name": "extrato", "label": "Extrato BTG", "accept": ".pdf", "multiple": False},
+        ],
+        "banks": {"btg": "510"},
+    },
+    1408: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [
+            {"name": "extrato", "label": "Extrato Itaú", "accept": ".pdf", "multiple": True},
+            {"name": "recebidos", "label": "Planilha de recebidos", "accept": ".xls,.xlsx", "multiple": False},
+            {"name": "francesinhas", "label": "Francesinhas ZIP", "accept": ".zip", "multiple": False, "optional": True},
+        ],
+        "options": [],
+        "banks": {"itau": "512"},
+    },
+    1522: {
+        "status": "api_ready", "workflow": "advanced",
+        "roles": [{"name":"santander", "label":"Extrato Santander consolidado (PDF)", "accept":".pdf", "multiple":True}],
+        "banks": {"santander":"513"},
+        "options": [
+            {"name":"data_inicial", "label":"Data inicial (opcional)", "type":"date"},
+            {"name":"data_final", "label":"Data final (opcional)", "type":"date"},
+        ],
+    },
+    1529: {
+        "status": "api_ready",
+        "workflow": "advanced",
+        "roles": [
+            {"name": "itau", "label": "Nibo Itaú", "accept": ".pdf", "multiple": True, "optional": True},
+            {"name": "banco_brasil", "label": "Nibo Banco do Brasil", "accept": ".pdf", "multiple": True, "optional": True},
+        ],
+        "banks": {"itau": "508", "banco_brasil": "8"},
+    },
+    1530: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
+    1532: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
+    1130: {
+        "status": "api_ready", "workflow": "advanced", "detects_banks": True,
+        "banks": {"itau": "508", "banco_brasil": "8", "bb_filial": "1138"},
+        "roles": [
+            {"name": "itau", "label": "Extrato Itaú da matriz", "accept": ".pdf", "multiple": True, "optional": True},
+            {"name": "bb", "label": "Extratos Banco do Brasil (240-2 e 563-0)", "accept": ".pdf", "multiple": True, "optional": True},
+        ],
+    },
+    1535: {"status": "api_ready", "workflow": "standard", "banks": {"banco_brasil": "8"}},
+    1536: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
+    1537: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
+}
+
+CAPABILITIES[977] = {
+    "status": "api_ready", "workflow": "advanced",
+    "banks": {"bradesco": "510", "banco_brasil": "8"},
+    "tools": ["modelo_dominio", "conferencia_extrato", "base_inteligente"],
+    "roles": [
+        {"name": "bradesco", "label": "Extrato Mensal Bradesco", "accept": ".pdf", "optional": True},
+        {"name": "banco_brasil", "label": "Extrato Banco do Brasil", "accept": ".pdf", "optional": True},
+        {"name": "francesinhas", "label": "Francesinhas Bradesco", "accept": ".zip", "optional": True},
+    ],
+}
+CAPABILITIES[818] = {
+    "status": "api_ready", "workflow": "advanced", "banks": {"santander": "509"},
+    "roles": [
+        {"name": "extrato", "label": "Extrato Santander", "accept": ".pdf"},
+        {"name": "boletos", "label": "Relatório Santander de boletos liquidados", "accept": ".pdf"},
+    ],
+}
+CAPABILITIES[803] = {
+    "status": "api_ready", "workflow": "advanced", "banks": {"bradesco": "9"},
+    "roles": [{"name": "extrato", "label": "Extrato Mensal Bradesco", "accept": ".pdf", "multiple": True}],
+}
+CAPABILITIES[745] = {
+    "status": "api_ready", "workflow": "advanced", "banks": {"itau": "508"},
+    "roles": [{"name": "extrato", "label": "Extrato Mensal Itaú Empresas", "accept": ".pdf", "multiple": True}],
+}
+CAPABILITIES[521] = {
+    "status": "api_ready", "workflow": "advanced", "banks": {"caixa": "5"},
+    "roles": [{"name": "pagamentos", "label": "Movimento Mensal por Categoria (aba Caixa)", "accept": ".xlsx", "multiple": True}],
+}
+CAPABILITIES[1165] = {
+    "status": "api_ready", "workflow": "advanced", "requires_competence": True,
+    "banks": {"itau": "508", "nubank": "506", "caixa": "504"},
+    "base_accounts": {"cartao_credito": "581"},
+    "roles": [{"name": "movimento", "label": "Planilha de Movimento Mensal da Otom", "accept": ".xlsx"}],
+}
+CAPABILITIES[1166] = {
+    **CAPABILITIES[1165],
+    "banks": {"itau": "508", "nubank": "506", "caixa": "1367"},
+}
+CAPABILITIES[1160] = {
+    "status":"api_ready","workflow":"advanced",
+    "banks":{"banco_brasil":"8","sicoob":"506","itau":"508","bradesco":"515"},
+    "roles":[
+        {"name":"banco_brasil","label":"Banco do Brasil 8 — extrato PDF","accept":".pdf","multiple":True,"optional":True},
+        {"name":"sicoob","label":"Sicoob 506 — extrato PDF","accept":".pdf","multiple":True,"optional":True},
+        {"name":"itau","label":"Itaú 508 — extrato PDF","accept":".pdf","multiple":True,"optional":True},
+        {"name":"bradesco","label":"Bradesco 515 — Ag. 538 / CC 0301811-3 (PDF)","accept":".pdf","multiple":True,"optional":True},
+    ],
+}
+CAPABILITIES[933] = {
+    "status":"api_ready", "workflow":"advanced",
+    "banks":{"itau":"508"},
+    "roles":[
+        {"name":"extrato","label":"Itaú 508 — extrato mensal PDF","accept":".pdf","multiple":True},
+    ],
+}
+CAPABILITIES[799] = {
+    "status":"api_ready","workflow":"advanced",
+    "banks":{"bradesco":"9","santander":"513"},
+    "roles":[
+        {"name":"bradesco","label":"Bradesco 9 — extrato mensal digitalizado (PDF)","accept":".pdf","multiple":True,"optional":True},
+        {"name":"santander","label":"Santander 513 — extrato Empresas (PDF)","accept":".pdf","multiple":True,"optional":True},
+    ],
+}
+CAPABILITIES[1399] = {
+    "status": "api_ready", "workflow": "advanced",
+    "banks": {"itau": "508", "bradesco": "9"},
+    "roles": [
+        {"name":"itau","label":"Extrato Itaú 508 — PDF","accept":".pdf","multiple":True,"optional":True},
+        {"name":"bradesco","label":"Extrato Bradesco 9 — PDF","accept":".pdf","multiple":True,"optional":True},
+    ],
+}
+CAPABILITIES[1187] = {
+    "status":"api_ready","workflow":"advanced",
+    "banks":{"inter":"505"},
+    "roles":[
+        {"name":"extrato","label":"Extrato Banco Inter (PDF)","accept":".pdf","multiple":False},
+        {"name":"planilha","label":"Planilha auxiliar de históricos (XLSX)","accept":".xlsx","multiple":False},
+    ],
+}
+CAPABILITIES[1151] = {
+    "status":"api_ready","workflow":"advanced",
+    "banks":{"itau":"508","nubank":"506"},
+    "roles":[
+        {"name":"itau","label":"Itaú 508 — extrato mensal PDF","accept":".pdf","multiple":False,"optional":True},
+        {"name":"nubank","label":"Nubank 506 — extrato PDF","accept":".pdf","multiple":False,"optional":True},
+    ],
+    "options":[
+        {"name":"data_inicial","label":"Data inicial (opcional)","type":"date"},
+        {"name":"data_final","label":"Data final (opcional)","type":"date"},
+    ],
+}
+CAPABILITIES[1131] = {
+    "status":"api_ready","workflow":"advanced","banks":{"itau":"508"},
+    "roles":[
+        {"name":"extrato","label":"Extrato Itaú 508 (PDF)","accept":".pdf","multiple":False},
+        {"name":"auxiliar","label":"Documento auxiliar de históricos (PDF)","accept":".pdf","multiple":False},
+    ],
+}
+CAPABILITIES[1058] = {
+    "status": "api_ready", "workflow": "advanced",
+    "banks": {"itau": "514", "caixa": "504"},
+    "roles": [
+        {"name": "itau", "label": "Itaú 514 — extrato mensal bancário", "accept": ".pdf", "multiple": True, "optional": True},
+        {"name": "planilha_itau", "label": "Itaú 514 — planilha auxiliar de identificação", "accept": ".xlsx", "multiple": True, "optional": True},
+        {"name": "caixa", "label": "Caixa 504 — extrato por período", "accept": ".pdf", "multiple": True, "optional": True},
+    ],
+}
+CAPABILITIES[1033] = {
+    "status": "api_ready", "workflow": "advanced",
+    "banks": {"bradesco": "9"},
+    "roles": [{"name": "extrato", "label": "Extrato mensal Bradesco (PDF)", "accept": ".pdf", "multiple": True}],
+}
+CAPABILITIES[1024] = {
+    "status": "api_ready", "workflow": "advanced",
+    "banks": {"banco_brasil": "8"},
+    "roles": [
+        {"name": "extrato", "label": "Extrato Banco do Brasil (PDF)", "accept": ".pdf", "multiple": False},
+        {"name": "planilha", "label": "Entradas e Saídas (XLSX)", "accept": ".xlsx", "multiple": False},
+    ],
+}
+COMMON_TOOLS = ["modelo_dominio", "base_inteligente", "conferencia_extrato"]
+CAPABILITIES[1248] = {'status':'api_ready','workflow':'advanced','banks':{'itau':'508'},
+    'roles':[{'name':'extrato','label':'Extrato Itaú RGR','accept':'.pdf','multiple':False},
+             {'name':'movimentos','label':'Entradas e Saídas RGR','accept':'.xls,.xlsx','multiple':False}]}
+
+# Accounts confirmed in the original modules/pages; never infer unknown accounts.
+CAPABILITIES[626]['banks'] = {'banco_brasil': '8', 'sicredi': '1155'}
+CAPABILITIES[625]['banks']['caixa'] = '504'
+CAPABILITIES[266]['banks'] = {'itau': '508', 'bradesco': '9', 'fibra': '506', 'banco_brasil': '8'}
+CAPABILITIES[1396]['banks'] = {'itau': '515', 'bradesco': '514'}
+CAPABILITIES[1211]['banks'] = {'itau': '508'}
+# A matriz 242 usa os três relatórios bancários e período opcional.
+# A filial 1408 tem fluxo próprio: Extrato Itaú + Recebidos + Francesinhas opcional.
+existing = CAPABILITIES[242]['roles']
+for role in existing:
+    role['optional'] = True
+for name, label in (('despesas', 'Relatório Despesa'), ('fornecedores', 'Relatório Fornecedor'), ('recebidos', 'Relatório Recebido')):
+    if not any(role['name'] == name for role in existing):
+        existing.append({'name': name, 'label': label, 'accept': '.xls,.xlsx', 'multiple': False, 'optional': True})
+CAPABILITIES[242]['options'] = [
+    {'name': 'data_inicial', 'label': 'Data inicial (opcional)', 'type': 'date'},
+    {'name': 'data_final', 'label': 'Data final (opcional)', 'type': 'date'},
+]
+for code in (3, 178, 343, 266, 1396, 1000, 1001, 1064):
+    CAPABILITIES[code]['options'] = [
+        {'name': 'data_inicial', 'label': 'Data inicial (opcional)', 'type': 'date'},
+        {'name': 'data_final', 'label': 'Data final (opcional)', 'type': 'date'},
+    ]
+# GZ's original boleto parser consumes PDF, not Excel.
+next(r for r in CAPABILITIES[1211]['roles'] if r['name'] == 'boletos')['accept'] = '.pdf'
+next(r for r in CAPABILITIES[1402]['roles'] if r['name'] == 'extrato')['optional'] = True
+for capability in CAPABILITIES.values():
+    capability['validation_status'] = 'pending_real_files'
+COMMON_TOOLS.extend(['revisao_inteligente'])
+
+# These processors already combine each upload independently before aggregation.
+for _code in (3, 178, 242, 343, 266, 1396):
+    for _role in CAPABILITIES.get(_code, {}).get("roles", []):
+        _role["multiple"] = True

@@ -1,0 +1,399 @@
+{
+  "reference_repository": "rodrigofrrsilva1703-a11y/Razync",
+  "sources": {
+    "app_legacy.py": "68993daf09d4686380021b8127d473bc978f8bbc1b4ce873e7a7e70af39c4a70",
+    "app.py": "d63dbb992562c2e07bf5d9e090eb7c682e9533d78352c2fac1c98f5e624106c8"
+  },
+  "functions": [
+    {
+      "source": "app_legacy.py",
+      "name": "_radani_cache_extrato_pdf",
+      "line": 222,
+      "source_sha256": "9f08967f1ee20e8d37c1924e88e0bfd340b194a705041994b9b10e174154b008"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "_radani_cache_bradesco_pdf",
+      "line": 235,
+      "source_sha256": "61461d7341efdfbbd15e5e934400a8fc53fd81d4aaf67d5043dcfd14c604ffbe"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "_radani_cache_comprovantes",
+      "line": 240,
+      "source_sha256": "9a97639c853c8c3cd97e76e9f94507071dbedc037fbd3df9d432877266c35dc5"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "limpar_caracteres_ilegais",
+      "line": 1566,
+      "source_sha256": "5e2304895879872682a6d9a03cf56a90fd96acfef036517bc9e3578e7c677fad"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "normalizar_texto",
+      "line": 1570,
+      "source_sha256": "b182e5b19d0e46b612836db1737d596881cb1872f2114c092c295f7cd1b31543"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "formatar_moeda",
+      "line": 1574,
+      "source_sha256": "28fc45b625ffa134ca45076b0c3ac9e24b52b7c78526a4aba811b8ead85160c2"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "formatar_dataframe_moeda_br",
+      "line": 1578,
+      "source_sha256": "439d9bd58ebf8933eefd69de9c96e58199e4f96a7f30642f9e7727d12eeb9982"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "sanitizar_dataframe",
+      "line": 1593,
+      "source_sha256": "cf7396bb67d784091d5d3b5e629fe3851d2eadee79d53b5e4ef0a04155668cce"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "interpretar_sinal_inteligente",
+      "line": 1597,
+      "source_sha256": "fff296965b4eaee58c9995e66e2e48145b67290e585e9d16395070e51e02dae3"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "limpar_valor_monetario",
+      "line": 1651,
+      "source_sha256": "5c13069753de4c9170baf30f90454fd5798c5633661a117ea5ea1c6d7eff312d"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "identificar_banco_inteligente",
+      "line": 1675,
+      "source_sha256": "1ce2bb74bc39f2086540a4fd26a8f91143e16455446ff1fd8371a59e8b954290"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_ofx",
+      "line": 1766,
+      "source_sha256": "e0ecece1e1dba253132cb0525977bbcba68c975f437be7e8260195bfff047286"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_planilha_universal",
+      "line": 1806,
+      "source_sha256": "c04a109cb12f552152cd6083ebbbbb627e93f0e4cc715fbcbf498bc5c492ed30"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "extrair_periodo_extrato",
+      "line": 1883,
+      "source_sha256": "6025d98ecb39138723c90d2cbf97add1c66e0e6f24aa3af84ad71886fa6c273d"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_pdf_layout_universal",
+      "line": 1892,
+      "source_sha256": "a607805902982a43f309a3fb7db31b9225a427f20292c26d031542016bb60bbe"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "extrair_valor_lancamento_pdf",
+      "line": 2112,
+      "source_sha256": "43d2b1b28a5325d364f4102c47fa5c5d632328a111bef82f963c1db4bc8d39e8"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_pdf_itau_detalhado",
+      "line": 2155,
+      "source_sha256": "b01cf140a2c31ec4c3f8151ac6cfe57676a5caf093ceb6effa51f6d7f8a30e7b"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_pdf_daycoval_detalhado",
+      "line": 2337,
+      "source_sha256": "83ea666d8f6f6e24d3769a7a5f43948471d4115471252ade49093bd77ddc043e"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_pdf_fibra_extrato",
+      "line": 2540,
+      "source_sha256": "cebbcd3829e9306a82795b2dd97f565fbbda79a96c9283f6c943d75b39b18109"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_arquivo_pdf",
+      "line": 2637,
+      "source_sha256": "82616ec3222f0756b1b1993bb9f5f1288273e301d89f287037f9119dfd7aaf12"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_extrato_unificado",
+      "line": 2754,
+      "source_sha256": "0a7291c42884295d58e57baa1518eff348a1011652ef24346a38391071b3c885"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "gerar_excel_modelo_dominio",
+      "line": 2778,
+      "source_sha256": "2feec46e38648de53d59ae86d9e488892b2f5e707fb7953f0558db09ec00e859"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "carregar_modelo_dominio_base",
+      "line": 2865,
+      "source_sha256": "b6b0b290c35907553ad01cd914e1962649b51963e98f8f9643f36a8a0619b47d"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "gerar_txt_dominio",
+      "line": 2880,
+      "source_sha256": "9d986c7a41d8a781e5e691961ba8b1bb058e028dede60943df63c880e8b4c600"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "recuperar_xls_biff_irregular",
+      "line": 2888,
+      "source_sha256": "d8df4023188d01d984afce2bc79eb02fa2ebd8ead90af2d2682c55202cff823c"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_razao_dominio",
+      "line": 2960,
+      "source_sha256": "00badb1fc02248ab466575ae454373e8c29f1ee8ed7423891e5b74c4fd39e25b"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "texto_celula_seguro",
+      "line": 3478,
+      "source_sha256": "c5674be47fb8b851145d7362f0198da22878acfd7eeed090d1b7493e7653cd67"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "identificar_estorno_de_baixa",
+      "line": 3483,
+      "source_sha256": "91f1453edfad113abae99f6b6a678c19f7cf3912a3385317861f8ca8ead81a42"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "criar_assinatura_classificacao",
+      "line": 3491,
+      "source_sha256": "378d6828d782c45175788bf926115b398cd33819c785627a91a9f58660f71cde"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "decompor_assinatura_classificacao",
+      "line": 3527,
+      "source_sha256": "514af846162920fb7f3014a756d4a1ac863fe35d5919ec91b75c107afe40f226"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "extrair_nome_empresa_classificacao",
+      "line": 3534,
+      "source_sha256": "3e52ce7214d3aad7dafde15de3794f53fc0b9e13f204d40b54d5686994439a57"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "normalizar_nome_empresa_classificacao",
+      "line": 3579,
+      "source_sha256": "8284387eeab97bc656634f1ed3b08294b4b243749ee793eb8e72b1e3f35587cf"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "calcular_similaridade_nome_empresa",
+      "line": 3584,
+      "source_sha256": "e6b06c7eb0ddd4c8befb1f2f4d6061296e9c79c411c6fea4f0aa84a61b70f9e5"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "encontrar_conta_por_nome_historico",
+      "line": 3644,
+      "source_sha256": "262b5a0167308c62a4801bfec0646ebc4f34d07f879968e9da7b13eaf609db34"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "identificar_banco_classificacao_eletro_forte",
+      "line": 3954,
+      "source_sha256": "591e3e0cb9fc09d9a7c35c9afea9ee490b6943014eafd7a638d9c60be2558485"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "ler_planilha_classificada",
+      "line": 3981,
+      "source_sha256": "5243087ded69943144b9db140b42c823ab4cb709dc084c48c3d1f1f168c66fcc"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "importar_arquivos_classificados",
+      "line": 4068,
+      "source_sha256": "0e25556849ee2f6b08578af2ab0ed460b9aa20b69d52085aa239e5356d1d2488"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "aplicar_classificacoes_automaticas",
+      "line": 4139,
+      "source_sha256": "c444e8e89bc0a83200fb2d66e2d741ff3fa03f6737bd98a05b30f1b1952572cf"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "classificar_planilha_final",
+      "line": 4177,
+      "source_sha256": "2c2cdfbfc8bcca0880fed8e89ca476512a80dcbeed47a2d1c309edac1d4e5c92"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "extrair_pendencias_revisao_inteligente",
+      "line": 4511,
+      "source_sha256": "8c5f8c0aed304ddbfc053588ddba157768184baafb610e5dd5915bb6278bb3ce"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "aplicar_revisoes_inteligentes",
+      "line": 4620,
+      "source_sha256": "84694a6322c9f2c387fa3754d2f959407b3941f32d8910a3eaff4de620aa7263"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_nova_geracao_banco",
+      "line": 4845,
+      "source_sha256": "853f65358bc9978654e93f26597c25dbb94cc4a8c7f4593f6c198212bd2c975f"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_nova_geracao_itau",
+      "line": 4969,
+      "source_sha256": "dc339f769e78b15c6d58f6eb3510c10c1bbdf020c2b5a7a15e126685abb79fe0"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_nova_geracao_bradesco",
+      "line": 4974,
+      "source_sha256": "6ac187dd524e23d36de6794701053fce0dad76f6b50a741e6717b739dc2953c5"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_nova_geracao_fibra",
+      "line": 4979,
+      "source_sha256": "cb90960093ad6dfd11f2bd764a6ad4ec44fecb8739c57658d92e5ad80f806914"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_nova_geracao_filial_itau",
+      "line": 4984,
+      "source_sha256": "0ec024eed4432873aedd6752472ce2cdd4ddee9b0b1c7ad7a6ab3a8ca8670f1e"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_nova_geracao_filial_bradesco",
+      "line": 4989,
+      "source_sha256": "90fcf7a0926ec2466450b1657c8c46f707b18f8fb54938c9eb272840216d7720"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_mapa_autokraft",
+      "line": 4995,
+      "source_sha256": "242833a28f440bb93f1274c1b5b7d149be089442bb36e72744113ee99b508459"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_planilha_accede_sig",
+      "line": 5109,
+      "source_sha256": "1a66e31306bc6ae932893c942d88c7166ba8951be9d6521e6ea082de31435750"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "filtrar_dataframe_periodo",
+      "line": 5231,
+      "source_sha256": "47564fc94460d5601858077f53f5a5e5a0e34e7659179a6caffdaaac4ae81c5d"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "identificar_chave_banco_empresa",
+      "line": 5243,
+      "source_sha256": "ca9624756742508e47f87435f0be6099d8d97e9229cb95823eb9e33b05bc407d"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "nome_banco_por_chave",
+      "line": 5265,
+      "source_sha256": "a22d3943e17d10b1dd28242a2c524fca48efaa6c5162a7b6dfc7a7e968eb43a0"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "ler_planilha_organizada_conferencia",
+      "line": 5274,
+      "source_sha256": "dca8b4ada764a0117aa0be7bee4f1d00ef4b82cabb2512b0ef58c31dc3d35871"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "gerar_excel_nova_geracao",
+      "line": 5401,
+      "source_sha256": "353172cd7aaa42c280b4583175e305384db791290b796fbc89b1c45f05761174"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_pdf_bradesco_mensal",
+      "line": 5477,
+      "source_sha256": "0f39cfa7085e5b86a6e39104cdf003920b3ca9c8e1bc5c53e4338f88db937741"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "processar_extrato_conferencia_empresa",
+      "line": 5669,
+      "source_sha256": "0c720cbd938b54917017c91823beb0817174e19cc120b136b39c7d64a4a55556"
+    },
+    {
+      "source": "app_legacy.py",
+      "name": "conciliar_empresa_com_extrato",
+      "line": 5712,
+      "source_sha256": "71128b9fe9f5f120f2f0165ebfd74eab1c228de4fbe6b3a7c7fe72a0c750fbac"
+    },
+    {
+      "source": "app.py",
+      "name": "identificar_chave_banco_empresa",
+      "line": 47,
+      "source_sha256": "0f10f7dae0a428023f00b8f9338eef7a1c2df2e66db7c33d1607da010ce67466"
+    },
+    {
+      "source": "app.py",
+      "name": "nome_banco_por_chave",
+      "line": 58,
+      "source_sha256": "db8c091be56fe16cb3f721165acb4d0c6083cfad50b1f978e5d3bbf8b851ffeb"
+    },
+    {
+      "source": "app.py",
+      "name": "processar_extrato_conferencia_empresa",
+      "line": 69,
+      "source_sha256": "1355ff0c97a5b525862a466685c320833cae9a0a93f103d8da06920dc0a0aca1"
+    },
+    {
+      "source": "app.py",
+      "name": "_processar_bradesco_154",
+      "line": 1039,
+      "source_sha256": "aa8ae83ebba37206f3ec28923860bff8c9133206b20f9e9c6a5c5db91bd935a7"
+    },
+    {
+      "source": "app.py",
+      "name": "_processar_itau_154",
+      "line": 1105,
+      "source_sha256": "2a25ced32685bd1c330f6f16045ebfebde0982379446da823fe192ac6db6b259"
+    },
+    {
+      "source": "app.py",
+      "name": "_processar_sicredi_912",
+      "line": 1295,
+      "source_sha256": "e5e70dee578eff21b239dc482878c7cd372e23f22ba4f83aada424d57acfa56a"
+    },
+    {
+      "source": "app.py",
+      "name": "_processar_bb_crj_47",
+      "line": 1463,
+      "source_sha256": "d94d64ab50fbb8d1bb0e228a59ecd91a3df58d67aba6f01633c1dda82928153e"
+    },
+    {
+      "source": "app.py",
+      "name": "_processar_bradesco_964",
+      "line": 1718,
+      "source_sha256": "45b72cfc72416318603ee4fed8a065fe6e03bee8919e696399f3c7c072bc29b0"
+    }
+  ]
+}

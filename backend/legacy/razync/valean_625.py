@@ -1,0 +1,600 @@
+"""Leitores bancários da empresa 625 - Valean.
+
+Converte extratos PDF do Banco do Brasil, Caixa e Sicredi para o padrão
+do Modelo Domínio. Caixa e Sicredi usam OCR quando o PDF não possui texto.
+"""
+
+from __future__ import annotations
+
+import io
+import re
+import unicodedata
+
+import pandas as pd
+from pypdf import PdfReader
+
+COLUNAS_MODELO = ["DESCRIÇÃO", "DATA", "VALOR", "DÉBITO", "CRÉDITO", "HISTÓRICO"]
+CONTAS_VALEAN_625 = {"banco_brasil": "8", "caixa": "504", "sicredi": "3999"}
+NOMES_BANCOS = {"banco_brasil": "BANCO DO BRASIL", "caixa": "CAIXA ECONÔMICA FEDERAL", "sicredi": "SICREDI"}
+
+
+def _normalizar(valor) -> str:
+    texto = unicodedata.normalize("NFKD", str(valor or ""))
+    texto = texto.encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"\s+", " ", texto).strip().casefold()
+
+
+def _valor_br(token: str, natureza: str = "") -> float:
+    texto = str(token or "").replace("R$", "").replace(" ", "").strip()
+    sinal = -1 if texto.startswith("-") or str(natureza).upper() == "D" else 1
+    texto = texto.lstrip("+-").replace(".", "").replace(",", ".")
+    return round(sinal * float(texto), 2)
+
+
+def _limpar_cpf_cnpj_historico(texto: str) -> str:
+    texto = str(texto or "")
+    doc = r"(?:\d{3}\.?\d{3}\.?\d{3}-?\d{2}|\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}|\d{11}|\d{14})"
+    texto = re.sub(rf"(?<!\d)\d{{3}}\s+\d{{4}}\s+(?={doc}(?!\d))", " ", texto, flags=re.I)
+    texto = re.sub(rf"(?<!\d)\d{{2}}/\d{{2}}\s+\d{{2}}:\d{{2}}\s+(?={doc}(?!\d))", " ", texto, flags=re.I)
+    texto = re.sub(rf"\b(?:CPF|CNPJ)\b\s*[:\-]?\s*(?={doc}(?!\d))", " ", texto, flags=re.I)
+    texto = re.sub(rf"(?<!\d){doc}(?!\d)", " ", texto, flags=re.I)
+    texto = re.sub(r"\b(?:CPF|CNPJ)\b\s*[:\-]?", " ", texto, flags=re.I)
+    return re.sub(r"\s+", " ", texto).strip(" -|;,:.")
+
+
+def _limpar_rodape_url_bb_historico(texto: str) -> str:
+    """Remove qualquer resíduo de URL/cabeçalho/rodapé do BB do histórico."""
+    texto = re.sub(r"\s+", " ", str(texto or "")).strip()
+    if not texto:
+        return ""
+
+    # Se qualquer marcador de rodapé aparecer colado ao lançamento, tudo a partir
+    # dele é descartado. Isso é mais seguro do que tentar remover só o token da URL,
+    # pois o PDF pode concatenar contador de página e outros textos depois dela.
+    marcadores = [
+        r"https?\s*:\s*//",
+        r"\bwww\.",
+        r"\bautoatendimento2\.bb\.com\.br",
+        r"\b\d{2}/\d{2}/\d{4},\s*\d{2}:\d{2}\s+banco\s+do\s+brasil\b",
+    ]
+    cortes = []
+    for padrao in marcadores:
+        achado = re.search(padrao, texto, flags=re.I)
+        if achado:
+            cortes.append(achado.start())
+    if cortes:
+        texto = texto[:min(cortes)]
+
+    # Remove contador de página se ainda tiver sido concatenado ao final.
+    texto = re.sub(r"\s+\d+\s*/\s*\d+\s*$", " ", texto)
+    return re.sub(r"\s+", " ", texto).strip(" -|;,:.")
+
+
+def _registro(banco: str, data, valor: float, historico: str) -> dict:
+    conta = CONTAS_VALEAN_625[banco]
+    historico = re.sub(r"\s+", " ", str(historico or "MOVIMENTO BANCÁRIO")).strip()
+    historico = re.sub(r"^(?:recebido|pago):\s*", "", historico, flags=re.I)
+    if banco == "banco_brasil":
+        historico = _limpar_rodape_url_bb_historico(historico)
+    historico = _limpar_cpf_cnpj_historico(historico) or "MOVIMENTO BANCÁRIO"
+    if banco == "banco_brasil":
+        historico = _limpar_rodape_url_bb_historico(historico) or "MOVIMENTO BANCÁRIO"
+    historico = ("Recebido: " if valor > 0 else "Pago: ") + historico
+    return {"DESCRIÇÃO": NOMES_BANCOS[banco], "DATA": pd.Timestamp(data).normalize(), "VALOR": round(float(valor), 2), "DÉBITO": conta if valor > 0 else "", "CRÉDITO": conta if valor < 0 else "", "HISTÓRICO": historico}
+
+
+def _texto_pdf(conteudo: bytes) -> str:
+    leitor = PdfReader(io.BytesIO(conteudo), strict=False)
+    textos = []
+    for pagina in leitor.pages:
+        try:
+            textos.append(pagina.extract_text(extraction_mode="layout") or "")
+        except TypeError:
+            textos.append(pagina.extract_text() or "")
+    return "\n".join(textos)
+
+
+def _texto_ocr_caixa(conteudo: bytes) -> str:
+    try:
+        import fitz
+        import pytesseract
+        from PIL import Image, ImageOps
+    except ImportError as erro:
+        raise ValueError("O leitor OCR necessário para o extrato Caixa não está instalado.") from erro
+    documento = fitz.open(stream=conteudo, filetype="pdf")
+    paginas = []
+    try:
+        for pagina in documento:
+            pix = pagina.get_pixmap(matrix=fitz.Matrix(3.2, 3.2), alpha=False)
+            imagem = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            imagem = ImageOps.autocontrast(ImageOps.grayscale(imagem))
+            try:
+                texto = pytesseract.image_to_string(imagem, lang="por", config="--psm 6 -c preserve_interword_spaces=1")
+            except pytesseract.TesseractError:
+                texto = pytesseract.image_to_string(imagem, config="--psm 6 -c preserve_interword_spaces=1")
+            paginas.append(texto or "")
+    finally:
+        documento.close()
+    return "\n".join(paginas)
+
+
+def _eh_rodape_bb(linha: str) -> bool:
+    """Impede que cabeçalho/rodapé do Internet Banking seja anexado ao movimento."""
+    norm = _normalizar(linha)
+    return (
+        norm.startswith(("http://", "https://", "pagina ", "banco do brasil", "consultas - extrato"))
+        or "autoatendimento2.bb.com.br" in norm
+        or re.match(r"^\d{2}/\d{2}/\d{4},\s*\d{2}:\d{2}\b", norm) is not None
+        or re.fullmatch(r"\d+/\d+", norm) is not None
+    )
+
+
+def processar_bb_625(conteudo: bytes) -> pd.DataFrame:
+    texto = _texto_pdf(conteudo)
+    blocos = []
+    atual = []
+    for linha in texto.splitlines():
+        linha = re.sub(r"\s+", " ", linha).strip()
+        if not linha:
+            continue
+        if _eh_rodape_bb(linha):
+            continue
+        if re.match(r"^\d{2}/\d{2}/\d{4}\b", linha):
+            if atual:
+                blocos.append(atual)
+            atual = [linha]
+        elif atual:
+            atual.append(linha)
+    if atual:
+        blocos.append(atual)
+
+    registros = []
+    moeda = re.compile(r"(\d{1,3}(?:\.\d{3})*,\d{2})\s*([CD])", re.I)
+    for bloco in blocos:
+        primeira = bloco[0]
+        data = pd.to_datetime(primeira[:10], dayfirst=True, errors="coerce")
+        valores = list(moeda.finditer(primeira))
+        if pd.isna(data) or not valores:
+            continue
+        movimento = valores[0]
+        valor = _valor_br(movimento.group(1), movimento.group(2))
+        antes_bruto = primeira[10:movimento.start()]
+        antes_bruto_norm = _normalizar(antes_bruto)
+        if re.search(r"\bsaldo anterior\b", antes_bruto_norm):
+            continue
+        if re.search(r"(?:^|\s)s\s*a\s*l\s*d\s*o\s*$", antes_bruto_norm):
+            continue
+        antes = re.sub(r"^\s*\d{4}\s+\d{5,8}\s*", "", antes_bruto)
+        antes = re.sub(r"\s+(?:\d[\d./-]{2,})\s*$", "", antes).strip()
+        antes = _limpar_rodape_url_bb_historico(antes)
+
+        complementos = []
+        for comp in bloco[1:]:
+            if _eh_rodape_bb(comp):
+                continue
+            norm = _normalizar(comp)
+            if norm.startswith(("cliente", "agencia", "conta corrente", "periodo", "lancamentos", "dt.")):
+                continue
+            comp_limpo = _limpar_rodape_url_bb_historico(comp)
+            comp_limpo = _limpar_cpf_cnpj_historico(comp_limpo)
+            comp_limpo = re.sub(r"^\d{2}/\d{2}\s+\d{2}:\d{2}\s*", "", comp_limpo).strip()
+            comp_limpo = _limpar_rodape_url_bb_historico(comp_limpo)
+            if comp_limpo:
+                complementos.append(comp_limpo)
+        historico = " ".join([antes] + complementos).strip()
+        historico = _limpar_rodape_url_bb_historico(historico)
+        registros.append(_registro("banco_brasil", data, valor, historico))
+    return _finalizar(registros, "Banco do Brasil")
+
+
+def _texto_ocr_sicredi(conteudo: bytes, *, dpi: int = 400) -> str:
+    import csv
+    import os
+    import subprocess
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
+
+    import fitz
+    import numpy as np
+    from PIL import Image
+
+    def ocr(imagem, destino, *opcoes):
+        dados = io.BytesIO()
+        imagem.save(dados, format="PNG")
+        try:
+            return subprocess.run(
+                ["tesseract", "stdin", str(destino), "-l", "eng", "--psm", "6", *opcoes],
+                input=dados.getvalue(), capture_output=True, check=True, timeout=25,
+                env={**os.environ, "OMP_THREAD_LIMIT": "1"},
+            ).stdout.decode("utf-8", errors="replace")
+        except (OSError, subprocess.SubprocessError) as erro:
+            raise ValueError("Não foi possível executar a leitura OCR do Sicredi.") from erro
+
+    data = re.compile(r"\d{2}/\d{2}/\d{4}")
+    inicio_linha = re.compile(r"(?m)^\s*(?=\S)(" + data.pattern + r")(?=\s)")
+    paginas = []
+    with fitz.open(stream=conteudo, filetype="pdf") as documento, TemporaryDirectory() as pasta:
+        if len(documento) > 12:
+            raise ValueError("Divida o extrato Sicredi sem texto em arquivos de até 12 páginas.")
+        saida = Path(pasta) / "sicredi"
+        for pagina in documento:
+            if pagina.rect.width * pagina.rect.height > 1_000_000:
+                raise ValueError("Página grande demais para leitura OCR do Sicredi.")
+            pix = pagina.get_pixmap(dpi=dpi, colorspace=fitz.csRGB, alpha=False, annots=False)
+            rgb = np.frombuffer(pix.samples_mv, dtype=np.uint8).reshape(pix.height, pix.width, 3)
+            imagem = Image.new("L", (pix.width, pix.height))
+            # Limpa as marcas azuis em faixas para evitar cópias da página inteira.
+            for topo in range(0, pix.height, 128):
+                faixa = rgb[topo:topo + 128]
+                vermelho, verde, azul = faixa.transpose(2, 0, 1).astype(np.int16)
+                cinza = np.array(Image.fromarray(faixa).convert("L"))
+                cinza[(azul - vermelho > 35) & (azul - verde > 20)] = 255
+                imagem.paste(Image.fromarray(cinza), (0, topo))
+            del faixa, rgb, pix
+            ocr(imagem, saida, "-c", "preserve_interword_spaces=1", "txt", "tsv")
+            texto = saida.with_suffix(".txt").read_text(encoding="utf-8")
+            total_datas = len(inicio_linha.findall(texto))
+            if total_datas:
+                with saida.with_suffix(".tsv").open(encoding="utf-8") as arquivo:
+                    caixas = [
+                        tuple(int(item[chave]) for chave in ("left", "top", "width", "height"))
+                        for item in csv.DictReader(arquivo, delimiter="\t")
+                        if data.fullmatch(item["text"] or "")
+                    ]
+                if not caixas:
+                    raise ValueError("Não foi possível localizar a coluna de datas do Sicredi.")
+                # As datas dos lançamentos ocupam a coluna alinhada mais à esquerda.
+                esquerda = min(caixa[0] for caixa in caixas)
+                coluna = [caixa for caixa in caixas if caixa[0] - esquerda < 18]
+                if len(coluna) != total_datas:
+                    raise ValueError("Não foi possível confirmar a coluna de datas do Sicredi.")
+                area = (
+                    max(0, esquerda - 8), max(0, min(y for _, y, _, _ in coluna) - 8),
+                    max(x + largura for x, _, largura, _ in coluna) + 8,
+                    max(y + altura for _, y, _, altura in coluna) + 8,
+                )
+                datas = ocr(imagem.crop(area), "stdout", "-c", "tessedit_char_whitelist=0123456789/").split()
+                if len(datas) != total_datas or not all(data.fullmatch(valor) for valor in datas):
+                    raise ValueError("Não foi possível confirmar todas as datas do Sicredi.")
+                valores = iter(datas)
+                texto = inicio_linha.sub(lambda match: match.group().replace(match[1], next(valores), 1), texto)
+            paginas.append(texto)
+    return "\n".join(paginas)
+
+
+def _sicredi_ocr_registros(texto: str) -> pd.DataFrame:
+    moeda = re.compile(r"(?<![\d.,])-?\d+(?:[.,]\d{3})*,\d{2}(?![\d.,])")
+    data_linha = re.compile(r"^(\d{2}/\d{2}/\d{4})\b")
+    movimento_inicio = re.compile(
+        r"^(?:DEBITO|PAGAMENTO|RECEBIMENTO|LIBERACAO|TRANSF|TED|PIX|APLIC|RESG)\b"
+    )
+
+    def centavos(valor):
+        return int(valor.replace(".", "").replace(",", ""))
+
+    registros = []
+    saldo = saldo_inicial = None
+    prefixo = ""
+    ultima_data = None
+    periodo = re.search(r"periodo\s+(\d{2}/\d{2}/\d{4})\s+a\s+(\d{2}/\d{2}/\d{4})",
+                        _normalizar(texto))
+    if not periodo:
+        raise ValueError("Não foi possível confirmar o período do extrato Sicredi.")
+    inicio, fim = pd.to_datetime(list(periodo.groups()), format="%d/%m/%Y", errors="coerce")
+    if pd.isna(inicio) or pd.isna(fim) or inicio > fim:
+        raise ValueError("Período inválido na leitura do extrato Sicredi.")
+    for original in texto.splitlines():
+        linha = original.strip()
+        valores = list(moeda.finditer(linha))
+        if re.match(r"^SALDO(?: ANTERIOR)?\s+-?\d", linha, re.I) and len(valores) == 1:
+            saldo_lido = centavos(valores[0].group())
+            if saldo is not None and saldo != saldo_lido:
+                raise ValueError("A sequência dos saldos do Sicredi não fecha entre páginas.")
+            if saldo_inicial is None:
+                saldo_inicial = saldo_lido
+            saldo = saldo_lido
+            prefixo = ""
+            continue
+        data_match = data_linha.match(linha)
+        if not data_match:
+            prefixo = linha if movimento_inicio.match(_normalizar(linha).upper()) else ""
+            continue
+        data = pd.to_datetime(data_match.group(), format="%d/%m/%Y", errors="coerce")
+        if pd.isna(data) or not inicio <= data <= fim or (ultima_data is not None and data < ultima_data):
+            raise ValueError("Data inválida ou fora do período no extrato Sicredi.")
+        if saldo is None or len(valores) < 2:
+            raise ValueError("Não foi possível confirmar todos os valores e saldos do Sicredi.")
+        movimento, saldo_final = valores[-2:]
+        novo_saldo = centavos(saldo_final.group())
+        diferenca = novo_saldo - saldo
+        # O sinal pode desaparecer no OCR. O saldo confirma o sinal e o módulo.
+        if not diferenca or abs(diferenca) != abs(centavos(movimento.group())):
+            raise ValueError(f"A leitura do Sicredi não fecha com o saldo em {data_match.group()}.")
+        detalhe = linha[data_match.end():movimento.start()].strip()
+        historico = re.split(r"\s{2,}", detalhe, maxsplit=1)[0]
+        if prefixo and not movimento_inicio.match(_normalizar(historico).upper()):
+            historico = f"{prefixo} {historico}".strip()
+        prefixo = ""
+        registros.append(_registro("sicredi", data, diferenca / 100, historico))
+        saldo, ultima_data = novo_saldo, data
+    frame = _finalizar(registros, "Sicredi")
+    frame.attrs.update(
+        saldo_inicial_extrato=saldo_inicial / 100,
+        data_saldo_inicial_extrato=frame["DATA"].min() - pd.Timedelta(days=1),
+        saldo_extrato=saldo / 100,
+        data_saldo_extrato=ultima_data,
+        diferenca_validacao_saldo=0.0,
+    )
+    return frame
+
+
+def ler_sicredi_sem_texto(conteudo: bytes, *, titular: str | None = None, opcional=False):
+    def ler(dpi: int):
+        texto = _texto_ocr_sicredi(conteudo, dpi=dpi)
+        cabecalho = _normalizar(texto.split("SALDO", 1)[0])
+        if not all(termo in cabecalho for termo in ("sicredi", "associado:", "cooperativa:")):
+            return None
+        return texto
+
+    texto = ler(400)
+    if texto is None:
+        if opcional:
+            return None
+        raise ValueError("O PDF sem texto não foi identificado como extrato Sicredi.")
+    _validar_titular_sicredi(texto, titular)
+    try:
+        return _sicredi_ocr_registros(texto)
+    except ValueError as primeira_falha:
+        # Alguns escaneamentos confundem dígitos e separadores a 400 DPI.
+        try:
+            nova_leitura = ler(350)
+            if nova_leitura is None:
+                raise primeira_falha
+            _validar_titular_sicredi(nova_leitura, titular)
+            return _sicredi_ocr_registros(nova_leitura)
+        except ValueError as segunda_falha:
+            if segunda_falha is primeira_falha:
+                raise
+            raise primeira_falha from segunda_falha
+
+
+def _validar_titular_sicredi(texto, titular):
+    if titular and _normalizar(titular) not in _normalizar(texto):
+        raise ValueError("Sicredi: o titular do extrato não corresponde à empresa selecionada.")
+
+
+def processar_sicredi_625(conteudo: bytes, *, titular: str | None = None) -> pd.DataFrame:
+    texto = _texto_pdf(conteudo)
+    if not texto.strip():
+        return ler_sicredi_sem_texto(conteudo, titular=titular)
+    _validar_titular_sicredi(texto, titular)
+    moeda = re.compile(r"-?\d{1,3}(?:\.\d{3})*,\d{2}")
+    registros = []
+    for linha in texto.splitlines():
+        linha = re.sub(r"\s+", " ", linha).strip()
+        data_match = re.match(r"^(\d{2}/\d{2}/\d{4})", linha)
+        valores = list(moeda.finditer(linha))
+        if not data_match or len(valores) < 2:
+            continue
+        data = pd.to_datetime(data_match.group(1), dayfirst=True, errors="coerce")
+        movimento = valores[-2]
+        historico = linha[10:movimento.start()].strip()
+        historico = re.sub(r"\s+[A-Za-z][A-Za-z0-9._-]{2,}\s*$", "", historico)
+        valor = _valor_br(movimento.group())
+        if pd.isna(data) or abs(valor) < 0.005 or "saldo" in _normalizar(historico):
+            continue
+        registros.append(_registro("sicredi", data, valor, historico))
+    return _finalizar(registros, "Sicredi")
+
+
+def _processar_caixa_historico(texto: str) -> pd.DataFrame:
+    """Layout Histórico da Conta: Data Mov., Data/Hora, Nr.Doc., Valor, Saldo."""
+    moeda = r"\d+(?:\.\d{3})*,\d{2}"
+    movimento = re.compile(
+        rf"^\s*(\d{{2}}/\d{{2}}/\d{{4}})\s+\d{{2}}/\d{{2}}\s*"
+        rf"\d{{2}}:\d{{2}}(?::\d{{2}})?\s+\d{{6,}}\s+(.+?)\s+"
+        rf"({moeda})\s*([CD])\s+({moeda})\s*([CD])\s*[|]?\s*$", re.I)
+    saldo_inicial = re.compile(rf"SALDO\s+ANTERIOR\s+({moeda})\s*([CD])", re.I)
+    registros = []
+    saldo_anterior = None
+    atual = None
+    em_limites = False
+    for original in texto.splitlines():
+        linha = re.sub(r"\s+", " ", original).strip()
+        norm = _normalizar(linha)
+        if "limite rotativo" in norm or norm.startswith(("sublimite", "limite disponibilizado", "custo efetivo")):
+            em_limites = True
+            atual = None
+            continue
+        inicio = saldo_inicial.search(linha)
+        if inicio:
+            if saldo_anterior is None:
+                saldo_anterior = round(_valor_br(*inicio.groups()) * 100)
+            atual = None
+            em_limites = False
+            continue
+        achado = movimento.match(linha)
+        if achado:
+            em_limites = False
+            data_txt, historico, valor_txt, natureza, saldo_txt, saldo_natureza = achado.groups()
+            data = pd.to_datetime(data_txt, format="%d/%m/%Y", errors="coerce")
+            if pd.isna(data):
+                raise ValueError("Data inválida na leitura do extrato Histórico da Caixa.")
+            valor = _valor_br(valor_txt, natureza)
+            saldo = round(_valor_br(saldo_txt, saldo_natureza) * 100)
+            if saldo_anterior is None:
+                raise ValueError("Não foi possível confirmar o saldo anterior do extrato Caixa. Envie um PDF mais legível.")
+            if saldo_anterior + round(valor * 100) != saldo:
+                raise ValueError(f"A leitura do extrato Caixa não fecha com o saldo em {data_txt}. Confira a qualidade do PDF antes de importar.")
+            saldo_anterior = saldo
+            atual = {"data": data, "valor": valor, "historico": [historico]}
+            registros.append(atual)
+            continue
+        if re.match(r"^\d{2}/\d{2}/\d{4}\b", linha) and not re.match(r"^\d{2}/\d{2}/\d{4}\s*[-a]\s*\d{2}/\d{2}/\d{4}\b", linha, re.I):
+            raise ValueError("Uma linha de movimento do extrato Caixa não foi reconhecida. Envie um PDF mais legível.")
+        if em_limites or not atual or not linha:
+            continue
+        if norm.startswith(("consulta realizada", "pagina", "data mov", "data e hora", "extrato", "periodo", "unidade", "titular", "conta", "cpf/", "nome d")):
+            atual = None
+            continue
+        complemento = re.sub(r"\bE\d{20,}\b", " ", linha, flags=re.I)
+        complemento = _limpar_cpf_cnpj_historico(complemento)
+        if complemento and not re.fullmatch(r"[\d\s|]+", complemento):
+            atual["historico"].append(complemento)
+    return _finalizar([_registro("caixa", r["data"], r["valor"], " ".join(r["historico"])) for r in registros], "Caixa")
+
+
+def processar_caixa_625(conteudo: bytes) -> pd.DataFrame:
+    """Lê os layouts SIATR, PESSOAL e Histórico da Conta da Caixa.
+
+    Suporta o SIATR antigo, com o lançamento em uma única linha, e o layout
+    ``Extrato #PESSOAL``, no qual data, hora e detalhamento podem ocupar linhas
+    diferentes, e o Histórico da Conta com Data Mov. + Data e Hora.
+    Saldo, SALDO DIA, número do documento e identificadores
+    técnicos não viram histórico.
+    """
+    texto = _texto_pdf(conteudo)
+    if not texto.strip():
+        texto = _texto_ocr_caixa(conteudo)
+
+    if re.search(r"extrato hist\S* da conta", _normalizar(texto)):
+        return _processar_caixa_historico(texto)
+
+    # Layout novo da Caixa (#PESSOAL). O extract_text(layout) preserva as
+    # colunas, permitindo distinguir VALOR do movimento e SALDO da conta.
+    if 'Descrição/Detalhamento' in texto or 'Descricao/Detalhamento' in texto or '#PESSOAL' in texto:
+        valor_pat = r"\d{1,3}(?:\.\d{3})*,\d{2}"
+        linha_mov = re.compile(
+            rf"^\s*(\d{{2}}/\d{{2}}/\d{{4}})\s+(\d+)\s+(.*?)\s+"
+            rf"({valor_pat})\s*([CD])\s+({valor_pat})\s*([CD])\s*$",
+            flags=re.I,
+        )
+        linhas = texto.splitlines()
+        registros = []
+        vistos = set()
+
+        def _util_descricao_caixa(linha: str) -> str:
+            original = str(linha or '').strip()
+            if not original:
+                return ''
+            norm = _normalizar(original)
+            if (
+                'saldo dia' in norm
+                or norm.startswith(('extrato', '#pessoal', 'cliente:', 'conta:', 'data:', 'saldo proprio',
+                                    'saldo bloqueado', 'limite contratado', 'saldo:', '*650',
+                                    'movimentacoes desde', 'data/hora', 'nr. doc.'))
+                or re.match(r'^\d{1,2} de [a-z]+ de \d{4}', norm)
+            ):
+                return ''
+            # Hora sozinha ou hora antes de um complemento.
+            original = re.sub(r'^\d{2}:\d{2}:\d{2}\s*', '', original).strip()
+            if not original:
+                return ''
+            # Identificador EndToEnd do PIX e outros códigos técnicos longos.
+            original = re.sub(r'\bE\d{20,}\b', ' ', original, flags=re.I)
+            original = re.sub(r'\s+', ' ', original).strip()
+            if not original or re.fullmatch(r'\d+', original):
+                return ''
+            return original
+
+        for i, linha in enumerate(linhas):
+            achado = linha_mov.match(linha)
+            if not achado:
+                continue
+            data_txt, _documento, descricao, mov_txt, natureza = achado.group(1, 2, 3, 4, 5)
+            data = pd.to_datetime(data_txt, dayfirst=True, errors='coerce')
+            valor = _valor_br(mov_txt, natureza)
+            if pd.isna(data) or abs(valor) < 0.005:
+                continue
+
+            partes = []
+            # Alguns lançamentos (PIX) trazem o tipo da operação na linha
+            # imediatamente anterior à linha que contém data/valor.
+            if i > 0:
+                prefixo = _util_descricao_caixa(linhas[i - 1])
+                if prefixo and not linha_mov.match(linhas[i - 1]):
+                    partes.append(prefixo)
+
+            partes.append(descricao.strip())
+
+            # Captura complementos úteis posteriores até o próximo lançamento,
+            # SALDO DIA ou cabeçalho de uma nova seção/página.
+            j = i + 1
+            while j < len(linhas):
+                prox = linhas[j]
+                if linha_mov.match(prox):
+                    break
+                prox_norm = _normalizar(prox)
+                if 'saldo dia' in prox_norm:
+                    break
+                if (
+                    re.match(r'^\d{1,2} de [a-z]+ de \d{4}', prox_norm)
+                    or prox_norm.startswith(('data/hora', 'extrato', '#pessoal', 'cliente:', 'conta:',
+                                             'saldo proprio', 'saldo bloqueado', 'limite contratado',
+                                             'movimentacoes desde'))
+                ):
+                    break
+                util = _util_descricao_caixa(prox)
+                if util:
+                    partes.append(util)
+                j += 1
+
+            historico = ' '.join(p for p in partes if p).strip()
+            historico = re.sub(r'\bE\d{20,}\b', ' ', historico, flags=re.I)
+            historico = _limpar_cpf_cnpj_historico(historico)
+            historico = re.sub(r'\s+', ' ', historico).strip()
+            if not historico or 'saldo dia' in _normalizar(historico):
+                continue
+
+            chave = (data_txt, round(valor, 2), _normalizar(historico))
+            if chave in vistos:
+                continue
+            vistos.add(chave)
+            registros.append(_registro('caixa', data, valor, historico))
+
+        if registros:
+            return _finalizar(registros, 'Caixa')
+
+    # Layout SIATR antigo: uma linha contém data, documento, descrição,
+    # valor do movimento e saldo. O segundo valor continua sendo ignorado.
+    padrao = re.compile(
+        r"^_?\s*(\d{2}/\d{2}/(?:\d{2}|\d{4}))\s+"
+        r"(\d{6,})\s+(.+?)\s+"
+        r"(\d{1,3}(?:\.\d{3})*,\d{2})\s*([CD])"
+        r"(?:\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s*([CD]))?\s*$",
+        flags=re.I,
+    )
+    registros = []
+    vistos = set()
+    for linha in texto.splitlines():
+        linha = re.sub(r"\s+", " ", linha).strip()
+        achado = padrao.match(linha)
+        if not achado:
+            continue
+        data_txt, _documento, historico, mov_txt, natureza = achado.group(1, 2, 3, 4, 5)
+        hist_norm = _normalizar(historico)
+        chave = (data_txt, _documento, hist_norm, mov_txt, natureza.upper())
+        if chave in vistos:
+            continue
+        vistos.add(chave)
+        if 'saldo dia' in hist_norm or re.fullmatch(r'saldo(?: do)? dia', hist_norm):
+            continue
+        data = pd.to_datetime(data_txt, dayfirst=True, errors='coerce')
+        valor = _valor_br(mov_txt, natureza)
+        if pd.isna(data) or abs(valor) < 0.005:
+            continue
+        registros.append(_registro('caixa', data, valor, historico))
+    return _finalizar(registros, 'Caixa')
+
+
+def _finalizar(registros: list[dict], banco: str) -> pd.DataFrame:
+    if not registros:
+        raise ValueError(f"Nenhum lançamento válido foi encontrado no extrato {banco}.")
+    return pd.DataFrame(registros, columns=COLUNAS_MODELO).sort_values("DATA", kind="stable").reset_index(drop=True)
+
+
+def processar_extrato_625(conteudo: bytes, banco: str) -> pd.DataFrame:
+    leitores = {"banco_brasil": processar_bb_625, "caixa": processar_caixa_625, "sicredi": processar_sicredi_625}
+    if banco not in leitores:
+        raise ValueError(f"Banco não configurado para a empresa 625: {banco}")
+    return leitores[banco](conteudo)

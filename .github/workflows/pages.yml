@@ -1,0 +1,111 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "index.html"
+      - "indisponivel.html"
+      - "assets/**"
+      - "tools/build_frontend.py"
+      - "tests/frontend/**"
+      - "tests/frontend_build_smoke.py"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Validate frontend JavaScript
+        run: |
+          for script in assets/js/*.js; do
+            node --check "$script"
+          done
+
+      - name: Test reconciliation preview lifecycle
+        run: node --test tests/frontend/*.test.cjs
+
+      - name: Verify bundled CSS and production schedule
+        run: python3 tests/frontend_build_smoke.py
+
+      - name: Prepare static site
+        run: |
+          python3 tools/build_frontend.py --output _site --private-catalog
+
+      - name: Smoke test frontend runtime
+        run: |
+          rm -rf _smoke
+          cp -R _site _smoke
+          cp assets/data/companies.json _smoke/assets/data/companies.json
+          printf 'window.RAZYNC_CONFIG={apiBase:""};' > _smoke/assets/js/config.js
+          cp tests/frontend/help-drag-smoke.js _smoke/assets/js/help-drag-smoke.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          page = Path("_smoke/index.html")
+          html = page.read_text(encoding="utf-8")
+          # Only the disposable offline fixture; published artifact remains _site.
+          html = re.sub(r'<script[^>]+src="\./assets/js/operating-hours\.js[^"]*"[^>]*></script>', "", html)
+          assert html.count("</body>") == 1
+          page.write_text(html.replace("</body>", '<script src="./assets/js/help-drag-smoke.js"></script>\n</body>'), encoding="utf-8")
+          PY
+          python3 -m http.server 4173 --directory _smoke >/tmp/razync-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 1
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          timeout 90s "$CHROME" --headless=new --no-sandbox --disable-gpu --enable-logging=stderr --v=1             --virtual-time-budget=8000 --dump-dom http://127.0.0.1:4173/             > /tmp/razync-dom.html 2> /tmp/razync-chrome.log || true
+          echo "=== Chrome stderr ==="
+          grep -E 'Uncaught|TypeError|ReferenceError|SyntaxError|CONSOLE' /tmp/razync-chrome.log || true
+          echo "=== Rendered page checks ==="
+          if ! grep -q 'company-row' /tmp/razync-dom.html; then
+            echo "Company rows were not rendered. DOM excerpt:"
+            grep -n -A8 -B4 'companyGrid' /tmp/razync-dom.html || true
+            exit 1
+          fi
+          grep -q 'id="companyGrid"' /tmp/razync-dom.html
+          grep -q 'Jaguar Conecta' /tmp/razync-dom.html
+          grep -q 'razync-api-production.up.railway.app' _site/assets/js/config.js
+          echo "=== Ajuda flutuante - teste visual ==="
+          if ! grep -q 'data-company-help-smoke="ok"' /tmp/razync-dom.html; then
+            grep -o 'data-company-help-smoke[^>]*' /tmp/razync-dom.html | head -3 || true
+            grep -E 'Uncaught|TypeError|ReferenceError|CONSOLE' /tmp/razync-chrome.log | head -20 || true
+            echo "Arraste real no Chromium (layout) não foi confirmado."
+            exit 1
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
