@@ -168,6 +168,12 @@
     "regime": "Não informado"
   },
   {
+    "codigo": 1050,
+    "nome": "F2R EXCELENCIA E P C C E L",
+    "regime": "Não informado",
+    "chave_sistema": "f2r_excelencia_1050"
+  },
+  {
     "codigo": 1058,
     "nome": "QUARTETO DE OBRAS LTDA",
     "regime": "Não informado"
