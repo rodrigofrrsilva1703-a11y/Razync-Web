@@ -291,11 +291,18 @@ def read_bradesco(content):
     doc=_open(content,"Bradesco")
     with doc:
         first=doc[0].get_text()
-        if not (re.search(r"Extrato de:\s*Ag:\s*538\s*\|\s*CC:\s*0301794-0",first,re.I)
+        # Nesta versão do PDF as palavras de agência, conta e intervalo
+        # aparecem em ordem diferente no texto extraído. Reconstituir a
+        # linha visual por coordenadas, sem depender da sequência do PDF.
+        heading_words=doc[0].get_text("words")
+        line_words=[w for w in heading_words
+                    if 170< _center(w)<195 and 38<w[0]<330]
+        heading=" ".join(w[4] for w in sorted(line_words,key=lambda w:w[0]))
+        if not (re.search(r"Ag:\s*538\s*\|\s*CC:\s*0301794-0",heading,re.I)
                 and ("IMPERIO GONG" in first.upper() or
                      "0301794-0" in first)):
             raise ValueError("Bradesco 1167: agência 538 ou conta 0301794-0 divergente.")
-        period=re.search(r"Entre\s*(\d{2}/\d{2}/20\d{2})\s*e\s*(\d{2}/\d{2}/20\d{2})",first)
+        period=re.search(r"Entre\s*(\d{2}/\d{2}/20\d{2})\s*e\s*(\d{2}/\d{2}/20\d{2})",heading)
         if not period:
             raise ValueError("Bradesco 1167: período não reconhecido.")
         start,end=(datetime.strptime(x,"%d/%m/%Y").date() for x in period.groups())
