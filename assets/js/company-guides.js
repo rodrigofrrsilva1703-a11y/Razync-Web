@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    1130: {
+      intro:"Anexe os PDFs do Itaú e do Banco do Brasil para escriturar o movimento da matriz e da filial na empresa 1130.",
+      note:"A conta corrente 240-2 é exportada na conta contábil 8 e a 563-0 na 1138. O Itaú sai na conta 508.",
+      extrato:"Selecione cada conta a conferir e anexe o PDF no campo correspondente.",
+      base:"Use o Modelo Domínio revisado para ensinar as contrapartidas das três contas."
+    },
     1399: {
       intro:"Envie o extrato Itaú 508 e/ou o Bradesco 9 em PDF. O Modelo Domínio reúne os movimentos em um arquivo Excel, com abas separadas por banco.",
       note:"O Itaú é conferido pelos saldos diários; o Bradesco pelos saldos de cada transação. Saldo anterior, saldos informativos, Últimos Lançamentos e Invest Fácil não entram como movimentos. Históricos usam razão social sem CPF/CNPJ.",

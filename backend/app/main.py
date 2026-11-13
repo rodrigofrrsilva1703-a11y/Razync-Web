@@ -390,7 +390,7 @@ def _reconcile_multi(company_code: int, banks: list[str], model: bytes, files: l
     display_names = {
         "itau": "Itaú", "itau_508": "Itaú", "itau_509": "Itaú",
         "bradesco": "Bradesco", "fibra": "Banco Fibra", "sicredi": "Sicredi",
-        "banco_brasil": "Banco do Brasil", "caixa": "Caixa", "nubank": "Nubank", "inter": "Banco Inter",
+        "banco_brasil": "Banco do Brasil", "bb_filial": "BB Filial", "caixa": "Caixa", "nubank": "Nubank", "inter": "Banco Inter",
         "safra": "Safra", "btg": "BTG", "santander": "Santander",
         "daycoval": "Daycoval",
     }
@@ -399,7 +399,7 @@ def _reconcile_multi(company_code: int, banks: list[str], model: bytes, files: l
     for bank in requested:
         statements = grouped.get(bank, [])
         account = str(CAPABILITIES.get(company_code, {}).get("banks", {}).get(bank) or "").strip()
-        base_label = display_names.get(bank, bank)
+        base_label = "BB Matriz" if company_code == 1130 and bank == "banco_brasil" else display_names.get(bank, bank)
         label = f"{base_label} {account}".strip() if account else base_label
         if not statements:
             errors.append({"bank": bank, "label": label, "error": "Nenhum extrato enviado para este banco."})

@@ -45,7 +45,7 @@ def _cents(value, nature):
     return cents if nature.upper() == 'C' else -cents
 
 
-def ler_extrato_bb_consultas(content: bytes, *, preserve_columns: bool = False) -> list[dict]:
+def ler_extrato_bb_consultas(content: bytes, *, preserve_columns: bool = False, skip_blocked_deposits: bool = False) -> list[dict]:
     if not content.startswith(b'%PDF') or len(content) > 25 * 1024 * 1024:
         raise ValueError('Banco do Brasil: envie um PDF válido de até 25 MB.')
     try:
@@ -95,6 +95,10 @@ def ler_extrato_bb_consultas(content: bytes, *, preserve_columns: bool = False) 
                     raise ValueError('Banco do Brasil: saldo final não reconhecido.')
                 closing = _cents(match['valor'], match['natureza'])
                 break
+            if skip_blocked_deposits and re.search(
+                rf"\b911\s+Depósito bloquead[^ ]*.*\s{_MONEY}\s*\*$", line, re.I
+            ):
+                continue
             match = _ROW.fullmatch(line) or _ROW_NO_DOCUMENT.fullmatch(line)
             if match is None:
                 raise ValueError('Banco do Brasil: movimento de ' + line[:10] + ' não reconhecido. Confira o layout e a integridade deste PDF.')

@@ -199,7 +199,7 @@ function statusFor(company) {
 function bankLabel(bank, account) {
   const names = {
     itau: "Itaú", itau_508: "Itaú", itau_509: "Itaú",
-    bradesco: "Bradesco", sicredi: "Sicredi", banco_brasil: "Banco do Brasil",
+    bradesco: "Bradesco", sicredi: "Sicredi", banco_brasil: "Banco do Brasil", bb_filial: "Banco do Brasil · Filial",
     caixa: "Caixa", inter: "Banco Inter", safra: "Safra", btg: "BTG",
     santander: "Santander", daycoval: "Daycoval", fibra: "Banco Fibra"
   };
@@ -336,7 +336,7 @@ function fillBankSelect(select, banks) {
 function bankName(bank) {
   const names = {
     itau:"Itaú", itau_508:"Itaú", itau_509:"Itaú",
-    bradesco:"Bradesco", sicredi:"Sicredi", banco_brasil:"Banco do Brasil",
+    bradesco:"Bradesco", sicredi:"Sicredi", banco_brasil:"Banco do Brasil", bb_filial:"Banco do Brasil · Filial",
     caixa:"Caixa", nubank:"Nubank", inter:"Banco Inter", safra:"Safra", btg:"BTG",
     santander:"Santander", daycoval:"Daycoval", fibra:"Banco Fibra"
   };
@@ -912,15 +912,15 @@ function renderWorkflow(company) {
     const roleBanks = Object.keys(banks).filter(bank => (cap.roles || []).some(role => role.name === bank));
     if (filterByBanks) {
       renderBankSelector(organizerPicker,banks,{mode:"multi",sendSelectedBanks:true});
-    } else if (roleBanks.length) {
+    } else if (roleBanks.length && !cap.detects_banks) {
       const roleBankMap = Object.fromEntries(roleBanks.map(bank=>[bank,banks[bank]]));
       renderBankSelector(organizerPicker,roleBankMap,{mode:"multi",controlRoleFields:true});
     }
 
-    if (!filterByBanks && !roleBanks.length && Object.keys(banks).length) {
+    if (!filterByBanks && (!roleBanks.length || cap.detects_banks) && Object.keys(banks).length) {
       const bankInfo = document.createElement("p");
       bankInfo.className = "helper";
-      bankInfo.textContent = "Banco disponível: " + Object.entries(banks).map(([bank, account]) => bankLabel(bank, account)).join(", ");
+      bankInfo.textContent = "Contas disponíveis: " + Object.entries(banks).map(([bank, account]) => bankLabel(bank, account)).join(", ");
       organizerPicker.append(bankInfo);
       organizerPicker.hidden = false;
     }
@@ -1017,7 +1017,13 @@ function openCompany(company) {
     quickInfo.appendChild(badge);
   });
 
-  $("#toolUnavailable").hidden = available;
+  const matrixCode = Number(company.codigo) === 1199 ? 1130 : null;
+  $("#toolUnavailable").hidden = available || Boolean(matrixCode);
+  $("#companyMatrixNotice").hidden = !matrixCode;
+  const matrix = matrixCode && companies.find(item => Number(item.codigo) === matrixCode);
+  const matrixButton = $("#openCompanyMatrix");
+  matrixButton.hidden = !matrix;
+  matrixButton.onclick = matrix ? () => openCompany(matrix) : null;
   $(".tool-tabs").hidden = !available;
   const adminAccess = $(".admin-access");
   if (adminAccess) adminAccess.hidden = !available;

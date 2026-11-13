@@ -108,6 +108,9 @@ def _sicredi_pdf_empresa(code, content):
 def statement(code, bank, content, filename):
     """Use specialized original readers; never mask a validation failure."""
     bank = str(bank).strip().casefold()
+    if code == 1130:
+        from app.rt_moto_1130 import statement as read_rt_statement
+        return read_rt_statement(bank, content, filename)
     if code in {1165, 1166}:
         from app.otom_1165 import statement as otom_statement
         return otom_statement(bank, content, filename, company=code)
@@ -293,7 +296,7 @@ def reconcile(code, bank, model, statements, options=None):
     options = options or {}
     with engine.processing_context(slug(code)):
         real_bank = 'itau' if bank.startswith('itau') else bank
-        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 977, 1408, 1058, 1151, 1165, 1166, 1187, 1399, 1535, 1536, 1537} else None
+        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 977, 1408, 1058, 1130, 1151, 1165, 1166, 1187, 1399, 1535, 1536, 1537} else None
         main, excluded, _ = engine.ler_planilha_organizada_conferencia(model, real_bank, account)
         main, excluded = filter_frame(main, options), filter_frame(excluded, options)
         if code == 521:
@@ -440,6 +443,9 @@ def _workflow_1408(roles):
 def _workflow(code, roles, options):
     from app.advanced import workflow_modelo
     with engine.processing_context(slug(code)):
+        if code == 1130:
+            from app.rt_moto_1130 import workflow as rt_workflow
+            return rt_workflow(roles, options)
         if code in {1165, 1166}:
             from app.otom_1165 import workflow as otom_workflow
             return otom_workflow(roles, options, company=code)

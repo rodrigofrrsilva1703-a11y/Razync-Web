@@ -166,6 +166,14 @@ CAPABILITIES = {
     },
     1530: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
     1532: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
+    1130: {
+        "status": "api_ready", "workflow": "advanced", "detects_banks": True,
+        "banks": {"itau": "508", "banco_brasil": "8", "bb_filial": "1138"},
+        "roles": [
+            {"name": "itau", "label": "Extrato Itaú da matriz", "accept": ".pdf", "multiple": True, "optional": True},
+            {"name": "bb", "label": "Extratos Banco do Brasil (240-2 e 563-0)", "accept": ".pdf", "multiple": True, "optional": True},
+        ],
+    },
     1535: {"status": "api_ready", "workflow": "standard", "banks": {"banco_brasil": "8"}},
     1536: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},
     1537: {"status": "api_ready", "workflow": "standard", "banks": {"itau": "508"}},

@@ -10,6 +10,7 @@
     if (!Object.hasOwn(company?.capabilities?.banks || {}, bank)) return '';
     if (code === 1165 || code === 1166) return '.pdf';
     if (code === 1058) return bank === 'itau' ? '.pdf,.ofx,.xls,.xlsx,.csv' : '.pdf';
+    if (code === 1130) return '.pdf';
     if (code === 977) return bank === 'bradesco' ? '.pdf,.zip' : '.pdf';
     if (pdfOnly.has(code)) return '.pdf';
     if (code === 1530) return '.xls,.xlsx';

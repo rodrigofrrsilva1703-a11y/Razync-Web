@@ -50,7 +50,7 @@ def _ocr_page(page, *, clip=None):
 
 def read_statement(content, *, holder=r"JETMAQ\s+COMERCIAL\s+DE\s+MAQUINAS",
                    tax_id="27.514.567/0001-32", agency="7111", account="0097478-3",
-                   accounting_account="508", salary_names=(), allow_ocr=False):
+                   accounting_account="508", salary_names=(), allow_ocr=False, include_blocked_balance=False):
     if not content.startswith(b"%PDF") or len(content)>35*1024*1024:
         raise ValueError("Envie o extrato Itaú PDF válido de até 35 MB.")
     try:
@@ -111,10 +111,14 @@ def read_statement(content, *, holder=r"JETMAQ\s+COMERCIAL\s+DE\s+MAQUINAS",
                         raise ValueError("Saldo inicial Itaú inválido ou repetido.")
                     opening=cents(balances[0])
                     continue
-                if label.startswith("SALDO TOTAL DISPON"):
+                if include_blocked_balance and label == "SALDO BLOQUEADO":
+                    continue
+                if label.startswith("SALDO TOTAL DISPON") or (include_blocked_balance and label == "SALDO TOTAL"):
                     if len(balances)!=1 or not transactions:
                         raise ValueError("Saldo diário Itaú não reconhecido.")
-                    checks.append((day,cents(balances[0]),len(transactions)))
+                    if not (include_blocked_balance and checks and
+                            checks[-1][0] == day and checks[-1][2] == len(transactions)):
+                        checks.append((day,cents(balances[0]),len(transactions)))
                     continue
                 if not start<=day<=end:
                     continue
