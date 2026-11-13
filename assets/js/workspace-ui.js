@@ -601,7 +601,6 @@ function initializeUserAccess() {
       button.firstElementChild.textContent = subsets[button.dataset.accessFilter].length;
       button.setAttribute("aria-pressed", String(button.dataset.accessFilter === selectedFilter));
     }
-    const expanded = new Set([...rows.querySelectorAll("details[open]")].map(details => details.dataset.account));
     const matches = subsets[selectedFilter].filter(user => user.email.includes(term));
     count.textContent = `${matches.length} de ${users.length} contas`;
     rows.replaceChildren();
@@ -632,17 +631,20 @@ function initializeUserAccess() {
       presence.dataset.connected = String(Boolean(online(user)));
       presence.textContent = !online(user) ? "Desconectado" : user.active ? "Conectado · ativo" : "Conectado · inativo";
       state.append(badge, presence);
-      const activity = document.createElement("details");
-      const activityLabel = document.createElement("summary");
-      activityLabel.textContent = "Ver atividade";
-      activity.dataset.account = user.email;
-      activity.open = expanded.has(user.email);
-      const times = document.createElement("small");
-      times.textContent = "Última atividade · " + formatTime(user.last_active) + "\nInativo desde · " + formatTime(user.inactive_since) + "\nHorário de Brasília";
-      activity.append(activityLabel, times);
+      const activity = document.createElement("dl");
+      activity.className = "access-account-activity";
+      for (const [label, seconds] of [["Última atividade", user.last_active], ["Inativo desde", user.inactive_since]]) {
+        const entry = document.createElement("div");
+        const term = document.createElement("dt");
+        const value = document.createElement("dd");
+        term.textContent = label;
+        value.textContent = seconds == null ? "Sem registro" : formatTime(seconds);
+        entry.append(term, value);
+        activity.append(entry);
+      }
       const actions = document.createElement("div");
       actions.className = "access-account-actions";
-      row.append(account, state, actions, activity);
+      row.append(account, state, activity, actions);
       rows.append(row);
       if (user.self) continue;
       const button = document.createElement("button");
