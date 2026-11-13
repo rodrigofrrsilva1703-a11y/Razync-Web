@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    933: {
+      intro:"Envie o extrato mensal Itaú PDF da CLJM, conta contábil 508. O sistema processa a movimentação da conta corrente e exporta o Modelo Domínio.",
+      note:"Confere os totais de créditos e débitos e o saldo final do resumo mensal. Inclui aplicações e resgates automáticos registrados na conta corrente, mas ignora saldos informativos, tabelas de CDB e resumos de investimentos. Reconhece operações que continuam na página seguinte.",
+      extrato:"Compare o Modelo Domínio da conta Itaú 508 com o extrato mensal PDF da mesma competência.",
+      base:"Utilize os lançamentos do Itaú 508 para classificação, sem duplicar aplicações ou rendimentos do resumo."
+    },
     799: {
       intro:"Organize os extratos Bradesco 9 e Santander 513 da Urocabral em PDF. O arquivo final possui uma aba por banco.",
       note:"O Bradesco é digitalizado e exige OCR com conferência de saldos por dia; o Santander é digital e lista os movimentos em ordem decrescente. Saldos, investimentos informativos e limites não são lançamentos. Não ajuste valores para fazer o saldo bater.",
