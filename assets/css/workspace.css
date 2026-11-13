@@ -2886,3 +2886,92 @@ body[data-site-locked] #companyNotificationToast {display:none}
   #companyOwnersView tbody td:nth-child(3)::before {content: "Regime tributário"}
   #companyOwnersView tbody td::before {display: block; color: var(--muted); font-size: 12px}
 }
+
+#userAccessView {
+  --access-blue: #6496ed;
+  --access-green: #50ad87;
+  --access-amber: #d48b50;
+}
+.access-dashboard-heading {margin-bottom: 18px}
+.access-dashboard-filters:not([hidden]) {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.access-dashboard-filters button {
+  --indicator: var(--access-blue);
+  display: grid;
+  gap: 5px;
+  padding: clamp(8px, 2vw, 17px);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.access-dashboard-filters button[data-access-filter=online] {--indicator: var(--access-green)}
+.access-dashboard-filters button[data-access-filter=suspended] {--indicator: var(--access-amber)}
+.access-dashboard-filters button[aria-pressed=true] {
+  border-color: var(--indicator);
+  background: color-mix(in srgb, var(--indicator) 13%, var(--surface));
+}
+.access-dashboard-filters strong {font-size: 25px; line-height: 1; font-variant-numeric: tabular-nums}
+.access-directory {border: 1px solid var(--border); border-radius: 15px; background: var(--surface)}
+.access-toolbar label {font-size: 13px}
+.access-toolbar input {min-width: 0; min-height: 42px; border-radius: 9px}
+.access-account-list {margin: 0; padding: 0; list-style: none}
+.access-account {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(155px, auto) 112px;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 13px 16px;
+  border-top: 1px solid var(--border);
+}
+.access-account-identity {display: flex; align-items: center; gap: 10px; min-width: 0}
+.access-account-identity strong {font-size: 14px; overflow-wrap: anywhere}
+.access-account-identity small {display: block; margin-top: 3px; color: var(--muted)}
+.access-account-avatar {
+  flex: 0 0 36px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--access-blue) 18%, var(--surface));
+  color: var(--text);
+  font-weight: 750;
+}
+.access-account-status {display: flex; flex-wrap: wrap; align-items: center; gap: 6px}
+.access-account-status .user-access-state {font-size: 12px; border-radius: 99px}
+.access-presence {color: var(--muted); font-size: 12px}
+.access-presence::before {content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; margin-inline-end: 5px}
+.access-presence[data-connected=true]::before {background: var(--access-green)}
+.access-account-actions {text-align: right}
+.access-account-actions button {
+  min-height: 36px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+}
+.access-account-actions .admin-remove::before {content: "⊖"; margin-inline-end: 5px}
+.access-account-actions .admin-restore::before {content: "↻"; margin-inline-end: 5px}
+.access-account-actions button:disabled {opacity: .55; cursor: wait}
+.access-account details {grid-column: 1 / -1; margin-inline-start: 46px; font-size: 12px; color: var(--muted)}
+.access-account summary {cursor: pointer; width: fit-content}
+.access-account details small {display: block; white-space: pre-line; margin-top: 7px; line-height: 1.55}
+.access-empty {padding: 16px; border-top: 1px solid var(--border); color: var(--muted)}
+#userAccessView :is(button, input, summary):focus-visible {outline: 2px solid var(--access-blue); outline-offset: 2px}
+@media (max-width: 640px) {
+  .access-account {grid-template-columns: minmax(0, 1fr) auto; gap: 9px 6px}
+  .access-account-identity {grid-column: 1 / -1}
+  .access-account details {margin-inline-start: 0}
+}

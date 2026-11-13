@@ -586,46 +586,65 @@ function initializeUserAccess() {
   const rows = document.querySelector("#userAccessRows");
   const count = document.querySelector("#userAccessCount");
   const message = document.querySelector("#userAccessMessage");
+  const filters = document.querySelector("#userAccessFilters");
   const endpoint = () => `${API()}/api/v1/company-access/users`;
   const pending = new Set();
-  let users = [], loading = false;
+  let users = [], loading = false, selectedFilter = "all";
   const clock = new Intl.DateTimeFormat("pt-BR", {timeZone:"America/Sao_Paulo", dateStyle:"short", timeStyle:"short"});
   const formatTime = seconds => seconds == null ? "—" : clock.format(new Date(seconds * 1000));
 
   function render() {
     const term = search.value.trim().toLowerCase();
-    const matches = users.filter(user => user.email.includes(term));
+    const online = user => !user.suspended && user.connected;
+    const subsets = {all:users, online:users.filter(online), suspended:users.filter(user => user.suspended)};
+    for (const button of filters.querySelectorAll("button")) {
+      button.firstElementChild.textContent = subsets[button.dataset.accessFilter].length;
+      button.setAttribute("aria-pressed", String(button.dataset.accessFilter === selectedFilter));
+    }
+    const expanded = new Set([...rows.querySelectorAll("details[open]")].map(details => details.dataset.account));
+    const matches = subsets[selectedFilter].filter(user => user.email.includes(term));
     count.textContent = `${matches.length} de ${users.length} contas`;
     rows.replaceChildren();
     for (const user of matches) {
-      const row = rows.insertRow();
-      const account = row.insertCell();
+      const row = document.createElement("li");
+      row.className = "access-account";
+      const account = document.createElement("div");
+      account.className = "access-account-identity";
+      const avatar = document.createElement("span");
+      avatar.className = "access-account-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      avatar.textContent = user.email.split("@")[0].split(/[._-]+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase();
+      const identity = document.createElement("div");
       const email = document.createElement("strong");
       const role = document.createElement("small");
       email.textContent = user.email;
       role.textContent = (user.admin ? "Administrador" : "Colaborador") + (user.self ? " · Sua conta" : "");
-      account.append(email, role);
-      const cell = row.insertCell();
+      identity.append(email, role);
+      account.append(avatar, identity);
+      const state = document.createElement("div");
+      state.className = "access-account-status";
       const badge = document.createElement("span");
       badge.className = "user-access-state";
       badge.dataset.suspended = String(user.suspended);
       badge.textContent = user.suspended ? "Suspenso" : "Ativo";
-      cell.append(badge);
-      const presence = row.insertCell();
-      presence.textContent = user.suspended || !user.connected ? "Desconectado"
-        : user.active ? "Conectado · ativo" : "Conectado · inativo";
+      const presence = document.createElement("span");
+      presence.className = "access-presence";
+      presence.dataset.connected = String(Boolean(online(user)));
+      presence.textContent = !online(user) ? "Desconectado" : user.active ? "Conectado · ativo" : "Conectado · inativo";
+      state.append(badge, presence);
       const activity = document.createElement("details");
       const activityLabel = document.createElement("summary");
-      activityLabel.textContent = "Atividade";
+      activityLabel.textContent = "Ver atividade";
+      activity.dataset.account = user.email;
+      activity.open = expanded.has(user.email);
       const times = document.createElement("small");
-      times.textContent = "Última atividade · " + formatTime(user.last_active) + " | Inativo desde · " + formatTime(user.inactive_since);
+      times.textContent = "Última atividade · " + formatTime(user.last_active) + "\nInativo desde · " + formatTime(user.inactive_since) + "\nHorário de Brasília";
       activity.append(activityLabel, times);
-      presence.append(activity);
-      const actions = row.insertCell();
-      if (user.self) {
-        actions.textContent = "—";
-        continue;
-      }
+      const actions = document.createElement("div");
+      actions.className = "access-account-actions";
+      row.append(account, state, actions, activity);
+      rows.append(row);
+      if (user.self) continue;
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.userEmail = user.email;
@@ -662,13 +681,20 @@ function initializeUserAccess() {
       actions.append(button);
     }
     if (!matches.length) {
-      const cell = rows.insertRow().insertCell();
-      cell.colSpan = 4;
-      cell.textContent = "Nenhuma conta encontrada.";
+      const empty = document.createElement("li");
+      empty.className = "access-empty";
+      empty.textContent = "Nenhuma conta encontrada.";
+      rows.append(empty);
     }
   }
 
   search.addEventListener("input", render);
+  for (const button of filters.querySelectorAll("button")) {
+    button.onclick = () => {
+      selectedFilter = button.dataset.accessFilter;
+      render();
+    };
+  }
   loadUserAccess = async (silent = false) => {
     if (loading || pending.size) return;
     loading = true;
@@ -677,6 +703,7 @@ function initializeUserAccess() {
       const response = await fetch(endpoint());
       if (!response.ok) throw new Error(await responseError(response));
       const data = (await response.json()).users;
+      filters.hidden = false;
       if (!silent) message.textContent = "";
       if (JSON.stringify(users) === JSON.stringify(data) && rows.childElementCount) return;
       const focused = document.activeElement?.dataset.userEmail;
