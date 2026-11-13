@@ -2995,11 +2995,17 @@ body[data-site-locked] #companyNotificationToast {display:none}
 @media (prefers-reduced-motion: no-preference) {
   #userAccessView.active .access-dashboard-heading {animation: access-reveal 260ms ease-out both}
   #userAccessView.active .access-dashboard-filters:not([hidden]) {animation: access-reveal 280ms ease-out both}
-  .access-account-enter {animation: access-reveal 250ms ease-out var(--access-delay, 0ms) backwards}
+  #userAccessView.active .access-directory {animation: access-reveal 420ms cubic-bezier(.2,.7,.25,1) both}
+  #userAccessView .access-dashboard-filters button[aria-pressed=true] strong {animation: access-count 360ms ease-out}
 }
 @keyframes access-reveal {
-  from {opacity: 0; transform: translateY(7px)}
+  from {opacity: .45; transform: translateY(12px)}
   to {opacity: 1; transform: translateY(0)}
+}
+@keyframes access-count {
+  from {transform: scale(.86)}
+  58% {transform: scale(1.13)}
+  to {transform: scale(1)}
 }
 @media (prefers-reduced-motion: reduce) {
   .access-account, .access-dashboard-filters button {transition: none}

@@ -593,7 +593,21 @@ function initializeUserAccess() {
   const clock = new Intl.DateTimeFormat("pt-BR", {timeZone:"America/Sao_Paulo", dateStyle:"short", timeStyle:"short"});
   const formatTime = seconds => seconds == null ? "—" : clock.format(new Date(seconds * 1000));
 
-  function render(animate = false) {
+  const rowMotion = new WeakMap();
+  function revealAccounts() {
+    if (!rows.closest(".global-view")?.classList.contains("active") ||
+        !window.matchMedia("(prefers-reduced-motion: no-preference)").matches) return;
+    Array.from(rows.children).slice(0, 8).forEach((row, index) => {
+      rowMotion.get(row)?.cancel();
+      if (!row.animate) return;
+      rowMotion.set(row, row.animate([
+        {opacity: .35, transform: "translateY(12px)"},
+        {opacity: 1, transform: "translateY(0)"}
+      ], {duration: 380, delay: index * 44, easing: "cubic-bezier(.2,.7,.25,1)", fill: "backwards"}));
+    });
+  }
+
+  function render() {
     const term = search.value.trim().toLowerCase();
     const online = user => !user.suspended && user.connected;
     const subsets = {all:users, online:users.filter(online), suspended:users.filter(user => user.suspended)};
@@ -607,10 +621,6 @@ function initializeUserAccess() {
     for (const user of matches) {
       const row = document.createElement("li");
       row.className = "access-account";
-      if (animate && rows.childElementCount < 8) {
-        row.classList.add("access-account-enter");
-        row.style.setProperty("--access-delay", `${rows.childElementCount * 35}ms`);
-      }
       const account = document.createElement("div");
       account.className = "access-account-identity";
       const avatar = document.createElement("span");
@@ -698,10 +708,12 @@ function initializeUserAccess() {
   for (const button of filters.querySelectorAll("button")) {
     button.onclick = () => {
       selectedFilter = button.dataset.accessFilter;
-      render(true);
+      render();
+      revealAccounts();
     };
   }
   loadUserAccess = async (silent = false) => {
+    if (!silent) revealAccounts();
     if (loading || pending.size) return;
     loading = true;
     if (!silent) message.textContent = "Carregando contas…";
@@ -714,7 +726,8 @@ function initializeUserAccess() {
       if (JSON.stringify(users) === JSON.stringify(data) && rows.childElementCount) return;
       const focused = document.activeElement?.dataset.userEmail;
       users = data;
-      render(!silent);
+      render();
+      if (!silent) revealAccounts();
       if (focused) rows.querySelector(`[data-user-email="${CSS.escape(focused)}"]`)?.focus({preventScroll:true});
     } catch (error) { if (!silent) message.textContent = error.message; }
     finally { loading = false; }
