@@ -267,10 +267,8 @@ function render(items) {
     const status = document.createElement("span");
     status.className = "mini-status";
     const accountingStatus = RazyncDirectory.accountingStatus(company);
-    status.textContent = accountingStatus?.label || (hasCompanyTools(company)
-      ? (company.capabilities?.status === 'api_ready' ? 'Em validação' : statusFor(company))
-      : 'Sem ferramenta');
-    status.title = accountingStatus?.description || (hasCompanyTools(company) ? statusFor(company) : 'Ferramenta ainda não cadastrada');
+    status.textContent = accountingStatus?.label || (hasCompanyTools(company) ? 'Com ferramentas' : 'Sem ferramenta');
+    status.title = accountingStatus?.description || status.textContent;
     if (accountingStatus) {
       status.classList.add('company-accounting-status');
       row.setAttribute('aria-label', `${row.getAttribute('aria-label')}. ${accountingStatus.label}`);
