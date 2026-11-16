@@ -190,3 +190,56 @@ def test_leravi_bradesco_separate_table_headers_and_month_boundary():
     assert set(result["DATA"].dt.strftime("%Y-%m").tolist())=={"2026-08"}
     assert result["DÉBITO"].tolist()==["9",""]
     assert result["CRÉDITO"].tolist()==["","9"]
+
+
+def test_leravi_bradesco_second_pdf_engine_recovers_missing_primary_structure(monkeypatch):
+    """O parser alternativo deve entregar planilha íntegra, nunca dados parciais."""
+    import fitz
+    from app import company_113_bradesco as bradesco
+
+    document=fitz.open()
+    page=document.new_page(width=624,height=964)
+    rows=(
+        (45,80,"Extrato de: Ag: | CC:"),
+        (45,100,"01154 | 0165499-3"),
+        (40,228,"31/07/2026"),(102,228,"SALDO ANTERIOR"),(537,228,"1.000,00"),
+        (40,240,"03/08/2026"),(102,240,"PIX RECEBIDO"),(365,240,"100,00"),
+        (537,240,"1.100,00"),
+        (41,280,"Total"),(355,280,"100,00"),(440,280,"0,00"),(537,280,"1.100,00"),
+    )
+    for x,y,value in rows:
+        page.insert_text((x,y),value,fontsize=8)
+    pdf=document.tobytes()
+    document.close()
+
+    original=bradesco._parse_pages
+    calls=[]
+    def interrupted_extractor(pages,verify):
+        calls.append(len(pages))
+        if len(calls)==1:
+            raise ValueError("Leravi Bradesco: movimentos não localizado no PDF.")
+        return original(pages,verify)
+
+    monkeypatch.setattr(bradesco,"_parse_pages",interrupted_extractor)
+    result=bradesco.read_statement(pdf,leravi.verify_bradesco_account)
+    assert calls==[1,1]
+    assert result["VALOR"].tolist()==[100.0]
+    assert result["DÉBITO"].tolist()==["9"]
+    assert result["CRÉDITO"].tolist()==[""]
+    assert result["DATA"].dt.strftime("%Y-%m-%d").tolist()==["2026-08-03"]
+
+
+def test_leravi_bradesco_does_not_hide_inconsistent_balance(monkeypatch):
+    """Fallback só é permitido para falha estrutural, jamais para saldo divergente."""
+    from app import company_113_bradesco as bradesco
+    monkeypatch.setattr(bradesco,"_parse_pages",
+                        lambda *args: (_ for _ in ()).throw(
+                            ValueError("Leravi Bradesco: saldo divergente em 03/08/2026.")))
+    import fitz
+    doc=fitz.open()
+    page=doc.new_page()
+    page.insert_text((40,80),"Extrato de: Ag: | CC: 1154 0165499-3 | Entre",fontsize=9)
+    data=doc.tobytes()
+    doc.close()
+    with pytest.raises(ValueError,match="saldo divergente"):
+        bradesco.read_statement(data,leravi.verify_bradesco_account)
