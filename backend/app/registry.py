@@ -227,6 +227,27 @@ CAPABILITIES[1166] = {
     **CAPABILITIES[1165],
     "banks": {"itau": "508", "nubank": "506", "caixa": "1367"},
 }
+CAPABILITIES[113] = {
+    "status": "api_ready", "workflow": "advanced",
+    "banks": {"bradesco": "9", "santander": "513"},
+    "tools": ["modelo_dominio", "conferencia_extrato", "base_inteligente"],
+    "roles": [
+        {"name":"bradesco","label":"Bradesco 9 — extrato PDF","accept":".pdf","multiple":False,"optional":True},
+        {"name":"santander","label":"Santander 513 — extrato mensal PDF","accept":".pdf","multiple":False,"optional":True},
+        {"name":"financeiro","label":"Controle financeiro com NF e Nome Fantasia (XLSX)","accept":".xlsx","multiple":False,"optional":True}
+    ]
+}
+CAPABILITIES[1274] = {
+    "status": "api_ready", "workflow": "advanced",
+    "banks": {"banco_brasil": "8", "itau": "508", "santander": "513"},
+    "tools": ["modelo_dominio", "conferencia_extrato", "base_inteligente"],
+    "roles": [
+        {"name":"banco_brasil","label":"Banco do Brasil 8 (PDF)","accept":".pdf","multiple":False,"optional":True},
+        {"name":"itau","label":"Itaú 508 (PDF)","accept":".pdf","multiple":False,"optional":True},
+        {"name":"santander","label":"Santander 513 (PDF)","accept":".pdf","multiple":False,"optional":True}
+    ]
+}
+
 CAPABILITIES[1050] = {
     "status": "api_ready",
     "workflow": "advanced",
