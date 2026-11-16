@@ -150,7 +150,7 @@ def test_leravi_bradesco_header_extracted_from_original_pdf_layout():
         header.replace("0165499-3", "0165499-4")
     )
     assert not leravi.verify_bradesco_account(
-        header.replace("01154", "01155").replace("1154\\n", "1155\\n")
+        header.replace("01154", "01155").replace("1154", "1155")
     )
     assert not leravi.verify_bradesco_account(
         "Documento diverso, agência 1154 e conta 0165499-3"
