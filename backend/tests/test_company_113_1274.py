@@ -39,6 +39,12 @@ def test_financial_enrichment_only_unique_date_value_nature():
     with patch("pandas.read_excel",return_value=finance):
         result=leravi.enrich_financial(sample("BANCO BRADESCO","9"),b"fake")
     assert "NF:" not in result.iloc[0]["HISTÓRICO"]
+    # Uma mesma movimentação bancária repetida não pode absorver a NF
+    # apenas na primeira ocorrência de data e valor iguais.
+    with patch("pandas.read_excel",return_value=finance.iloc[:2]):
+        doubled=pd.concat([sample("BANCO BRADESCO","9").iloc[[0]]]*2,ignore_index=True)
+        result=leravi.enrich_financial(doubled,b"fake")
+    assert all("NF:" not in text for text in result["HISTÓRICO"])
 
 def test_113_workflow_isolates_banks():
     with patch.dict(leravi.READERS,{"bradesco":lambda _:sample("BANCO BRADESCO","9")}),\
