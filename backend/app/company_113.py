@@ -110,49 +110,117 @@ def read_santander(content):
     return read_statement(content)
 
 
+def _bank_label(value):
+    """Vincula registros financeiros ao banco do lançamento, nunca a outro."""
+    name=normalize(value)
+    if "BRADESCO" in name:
+        return "bradesco"
+    if "SANTANDER" in name:
+        return "santander"
+    return None
+
+
+def _financial_description(value):
+    """Preserva a descrição livre, sem repetir a nota já exibida como NF."""
+    if pd.isna(value):
+        return ""
+    return clean(str(value)).strip()
+
+
+def _invoice(value):
+    if pd.isna(value):
+        return ""
+    # Excel frequentemente armazena a NF como 12345.0.
+    if isinstance(value,(int,float)) and float(value).is_integer():
+        return str(int(value))
+    return clean(str(value)).strip()
+
+
 def enrich_financial(frame_data,excel_bytes):
-    if not excel_bytes:return frame_data
+    """Extrato define data/valor/sinal; financeiro complementa o histórico.
+
+    Banco, data exata, valor e natureza devem coincidir de modo unívoco.
+    Casos ambíguos permanecem com histórico bancário intacto.
+    """
+    if not excel_bytes:
+        return frame_data
     try:
         finance=pd.read_excel(BytesIO(excel_bytes),sheet_name=0)
     except Exception as exc:
         raise ValueError("Leravi: planilha financeira ilegível.") from exc
-    required={"Tipo","Nome Fantasia","Nota Fiscal","Valor Pago","Data Pagto."}
+    required={"Tipo","Nome Fantasia","Descrição","Nota Fiscal",
+              "Valor Pago","Data Pagto.","Banco"}
     if not required.issubset(finance.columns):
-        raise ValueError("Leravi: faltam colunas Tipo, Nome Fantasia, Nota Fiscal, Valor Pago ou Data Pagto.")
+        missing=", ".join(sorted(required.difference(finance.columns)))
+        raise ValueError(f"Leravi: colunas ausentes na planilha financeira: {missing}.")
     lookups=defaultdict(list)
-    for _,row in finance.iterrows():
-        paid=pd.to_numeric(row.get("Valor Pago"),errors="coerce")
-        day=pd.to_datetime(row.get("Data Pagto."),errors="coerce",origin="1899-12-30",unit="D") if isinstance(row.get("Data Pagto."),(float,int)) else pd.to_datetime(row.get("Data Pagto."),dayfirst=True,errors="coerce")
-        if pd.isna(paid) or pd.isna(day) or not paid or not pd.notna(row.get("Nome Fantasia")):continue
-        kind=normalize(row.get("Tipo"))
-        sign=-1 if "PAGAR" in kind else 1 if "RECEBER" in kind else 0
-        if not sign:continue
-        amount=round(abs(float(paid))*100)*sign
-        key=(day.date(),amount)
-        lookups[key].append((clean(row.get("Nome Fantasia")),str(row.get("Nota Fiscal") or "").strip()))
-    result=frame_data.copy()
+    for _,item in finance.iterrows():
+        bank=_bank_label(item.get("Banco"))
+        if bank is None:
+            continue
+        paid=pd.to_numeric(item.get("Valor Pago"),errors="coerce")
+        date_value=item.get("Data Pagto.")
+        if isinstance(date_value,(int,float)) and not isinstance(date_value,bool):
+            day=pd.to_datetime(date_value,errors="coerce",
+                               origin="1899-12-30",unit="D")
+        else:
+            day=pd.to_datetime(date_value,dayfirst=True,errors="coerce")
+        if pd.isna(paid) or pd.isna(day) or not paid:
+            continue
+        kind=normalize(item.get("Tipo"))
+        sign=-1 if kind=="PAGAR" else 1 if kind=="RECEBER" else 0
+        if not sign:
+            continue
+        value=int(round(abs(float(paid))*100))*sign
+        key=(bank,day.date(),value)
+        lookups[key].append({
+            "name":clean(item.get("Nome Fantasia")) if pd.notna(item.get("Nome Fantasia")) else "",
+            "description":_financial_description(item.get("Descrição")),
+            "invoice":_invoice(item.get("Nota Fiscal")),
+            "document":clean(item.get("Documento")) if pd.notna(item.get("Documento")) else "",
+        })
+
+    output=frame_data.copy()
+    keys=[]
+    for _,record in output.iterrows():
+        keys.append((_bank_label(record["DESCRIÇÃO"]),
+                     pd.Timestamp(record["DATA"]).date(),
+                     int(round(float(record["VALOR"])*100))))
     bank_counts=defaultdict(int)
-    for _,row in result.iterrows():
-        bank_key=(pd.Timestamp(row["DATA"]).date(),round(float(row["VALOR"])*100))
-        bank_counts[bank_key]+=1
-    for idx,record in result.iterrows():
-        key=(pd.Timestamp(record["DATA"]).date(),round(float(record["VALOR"])*100))
-        if bank_counts[key]!=1:
-            continue
+    for key in keys:
+        bank_counts[key]+=1
+    for (idx,record),key in zip(output.iterrows(),keys):
+        # Não atribuir automaticamente uma NF a pagamentos iguais repetidos.
         matches=lookups.get(key,[])
-        unique=set(matches)
-        if len(matches)!=1 or len(unique)!=1:
+        if bank_counts[key]!=1 or len(matches)!=1:
             continue
-        name,nf=matches[0]
-        existing=str(record["HISTÓRICO"])
-        # Não repetir o nome se já constar do extrato.
-        suffix=(f" | {name}" if name and normalize(name) not in normalize(existing) else "")
-        if nf and nf.lower()!="nan":suffix+=f" | NF: {nf}"
-        result.at[idx,"HISTÓRICO"]=existing+suffix
-        # Consumo um único registro para não relacionar uma NF a outro
-        # lançamento bancário repetido de mesmo valor e data.
-        lookups[key]=[]
-    return result
+        match=matches[0]
+        if not (match["name"] or match["description"]):
+            continue
+        original=str(record["HISTÓRICO"])
+        base=("Recebido: " if key[2]>0 else "Pago: ")
+        parts=[]
+        if match["name"]:
+            parts.append(match["name"])
+        description=match["description"]
+        invoice=match["invoice"]
+        # Descrições geradas automaticamente, como 'Título gerado sobre
+        # a NF: 2396', não acrescentam informação ao campo NF.
+        if description and not re.fullmatch(
+            r"T[íi]tulo gerado sobre a NF:\s*[\w./-]+",
+            description,flags=re.IGNORECASE):
+            if normalize(description) not in {normalize(x) for x in parts}:
+                parts.append(description)
+        if invoice:
+            parts.append(f"NF: {invoice}")
+        if not parts:
+            continue
+        # Histórico bancário permanece disponível para rastreabilidade,
+        # seguido dos dados efetivamente fornecidos pelo financeiro.
+        existing=original[len(base):] if original.startswith(base) else original
+        extra=" | ".join(parts)
+        output.at[idx,"HISTÓRICO"]=base + existing + " | " + extra
+    return output
 
 READERS={"bradesco":read_bradesco,"santander":read_santander}
 
