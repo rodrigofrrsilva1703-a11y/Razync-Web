@@ -155,3 +155,38 @@ def test_leravi_bradesco_header_extracted_from_original_pdf_layout():
     assert not leravi.verify_bradesco_account(
         "Documento diverso, agência 1154 e conta 0165499-3"
     )
+
+
+def test_leravi_bradesco_separate_table_headers_and_month_boundary():
+    """Bradesco não imprime Data/Lançamento/Saldo no mesmo trecho de texto."""
+    import fitz
+
+    pdf = fitz.open()
+    page = pdf.new_page(width=624, height=964)
+    for x, y, value in (
+        (45,80,"Extrato de: Ag: | CC:"),
+        (45,100,"01154 | 0165499-3"),
+        (42,200,"Data"),(105,200,"Lancamento"),(527,200,"Saldo (R$)"),
+        (40,228,"31/07/2026"),(102,228,"SALDO ANTERIOR"),
+        (537,228,"1.000,00"),
+        (40,240,"03/08/2026"),(102,240,"PIX RECEBIDO"),
+        (365,240,"100,00"),(537,240,"1.100,00"),
+        (102,260,"PAGTO ELETRON COBRANCA"),
+        (450,264,"-30,00"),(537,264,"1.070,00"),
+    ):
+        page.insert_text((x,y),value,fontsize=8)
+    second = pdf.new_page(width=624, height=964)
+    for x, y, value in (
+        (40,130,"01/09/2026"),(102,130,"TARIFA BANCARIA"),
+        (450,130,"-5,00"),(537,130,"1.065,00"),
+        (41,160,"Total"),(355,160,"100,00"),
+        (440,160,"-35,00"),(537,160,"1.065,00"),
+    ):
+        second.insert_text((x,y),value,fontsize=8)
+    content=pdf.tobytes()
+    pdf.close()
+    result=leravi.read_bradesco(content)
+    assert result["VALOR"].tolist()==[100.0,-30.0]
+    assert set(result["DATA"].dt.strftime("%Y-%m").tolist())=={"2026-08"}
+    assert result["DÉBITO"].tolist()==["9",""]
+    assert result["CRÉDITO"].tolist()==["","9"]
