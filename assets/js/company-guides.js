@@ -3,6 +3,18 @@
 (function () {
   "use strict";
   const DETAILS = {
+    113: {
+      intro:"A Leravi utiliza Bradesco 9 e Santander 513. Envie os PDFs bancários e, para enriquecer os históricos, a planilha financeira XLSX.",
+      note:"A planilha traz Nome Fantasia e Nota Fiscal. Os complementos só são acrescentados quando Data Pagto., Valor Pago e natureza geram correspondência única. O PDF Santander deste pacote é de julho/2026, embora o nome diga agosto; não pode ser tratado como agosto.",
+      extrato:"Confronte o modelo da mesma competência e banco: Bradesco 9 ou Santander 513. Revise diferenças de lançamentos individualmente.",
+      base:"Aprenda classificações das contas Bradesco 9 e Santander 513 usando arquivos revisados; não misture competências."
+    },
+    1274: {
+      intro:"A Auguri tem movimento no Banco do Brasil 8, Itaú 508 e Santander 513. Envie um ou mais PDFs bancários.",
+      note:"Os arquivos Itaú e Santander abrangem mais de um mês; o organizador utiliza agosto/2026 e preserva estornos, rendimentos e BB Rende Fácil como movimentos individuais, sem importar linhas de saldo.",
+      extrato:"Compare cada aba do Modelo Domínio com o PDF original do mesmo banco e agosto/2026.",
+      base:"Classifique separadamente os movimentos Banco do Brasil 8, Itaú 508 e Santander 513."
+    },
     1050: {
       intro:"Envie o PDF Extrato Mensal do Itaú (agência 0735, conta 14341-4) da empresa 1050; a conta contábil é 508.",
       note:"O extrato mensal inclui saldos diários SALDO APLIC AUT MAIS e resgates internos. Esses itens não duplicam movimentações. O organizador registra boleto pago e rendimentos da conta corrente, verifica entradas e saídas do resumo e ignora quadros informativos de investimentos, LIS e notas explicativas.",
