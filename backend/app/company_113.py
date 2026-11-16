@@ -67,8 +67,8 @@ def read_bradesco(content):
         rows=[];current_day=None;opening=None;last_balance=None;history_pending=""
         # Extrato Bradesco inclui movimentos de 01/09; mantemos agosto e
         # verificamos todos os movimentos até o corte de competência.
+        active=False
         for page in doc:
-            active=False
             for words in _lines(page):
                 line=" ".join(w[4] for w in words)
                 norm=normalize(line)
