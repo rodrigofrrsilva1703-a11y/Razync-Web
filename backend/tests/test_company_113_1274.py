@@ -25,26 +25,50 @@ def test_configuration_and_three_tools():
 
 def test_financial_enrichment_only_unique_date_value_nature():
     finance=pd.DataFrame([
-        {"Tipo":"Pagar","Nome Fantasia":"SANDRE SOLDA","Nota Fiscal":18729,
-         "Valor Pago":286.60,"Data Pagto.":pd.Timestamp("2026-08-03")},
-        {"Tipo":"Receber","Nome Fantasia":"IND. E COM. DE COS.","Nota Fiscal":2396,
-         "Valor Pago":949.88,"Data Pagto.":pd.Timestamp("2026-08-05")},
+        {"Tipo":"Pagar","Banco":"BRADESCO INDUSTRIAL",
+         "Nome Fantasia":"SANDRE SOLDA","Descrição":"COMPRA DE GASES",
+         "Nota Fiscal":18729,"Documento":"18729","Valor Pago":286.60,
+         "Data Pagto.":pd.Timestamp("2026-08-03")},
+        {"Tipo":"Receber","Banco":"BRADESCO INDUSTRIAL",
+         "Nome Fantasia":"IND. E COM. DE COS.","Descrição":"Titulo gerado sobre a NF: 2396",
+         "Nota Fiscal":2396,"Documento":"00002396-A","Valor Pago":949.88,
+         "Data Pagto.":pd.Timestamp("2026-08-05")},
     ])
     with patch("pandas.read_excel",return_value=finance):
         result=leravi.enrich_financial(sample("BANCO BRADESCO","9"),b"fake")
+    assert "COMPRA DE GASES" in result.iloc[0]["HISTÓRICO"]
+    assert "SANDRE SOLDA" in result.iloc[0]["HISTÓRICO"]
     assert "NF: 18729" in result.iloc[0]["HISTÓRICO"]
+    assert result.iloc[0]["HISTÓRICO"].startswith("Pago: ")
     assert "NF: 2396" in result.iloc[1]["HISTÓRICO"]
+    assert result.iloc[1]["HISTÓRICO"].count("2396")==1
     assert result["VALOR"].tolist()==[-286.60,949.88]
-    finance.loc[2]=dict(finance.iloc[0])
-    with patch("pandas.read_excel",return_value=finance):
+    assert result["DATA"].tolist()==sample("BANCO BRADESCO","9")["DATA"].tolist()
+
+    # Duas notas com data, banco e valor iguais não permitem identificação.
+    duplicate=pd.concat([finance,finance.iloc[[0]]],ignore_index=True)
+    with patch("pandas.read_excel",return_value=duplicate):
         result=leravi.enrich_financial(sample("BANCO BRADESCO","9"),b"fake")
     assert "NF:" not in result.iloc[0]["HISTÓRICO"]
-    # Uma mesma movimentação bancária repetida não pode absorver a NF
-    # apenas na primeira ocorrência de data e valor iguais.
-    with patch("pandas.read_excel",return_value=finance.iloc[:2]):
+
+    # Dois lançamentos bancários iguais nunca podem consumir a mesma nota.
+    with patch("pandas.read_excel",return_value=finance):
         doubled=pd.concat([sample("BANCO BRADESCO","9").iloc[[0]]]*2,ignore_index=True)
         result=leravi.enrich_financial(doubled,b"fake")
     assert all("NF:" not in text for text in result["HISTÓRICO"])
+
+    # Santander não deve cruzar lançamento usando financeiro do Bradesco.
+    with patch("pandas.read_excel",return_value=finance):
+        result=leravi.enrich_financial(sample("BANCO SANTANDER","513"),b"fake")
+    assert all("NF:" not in text for text in result["HISTÓRICO"])
+
+    # Mesmo banco e valor, mas data diferente: manter histórico bancário.
+    with patch("pandas.read_excel",return_value=finance):
+        shifted=sample("BANCO BRADESCO","9")
+        shifted["DATA"]=pd.Timestamp("2026-08-08")
+        result=leravi.enrich_financial(shifted,b"fake")
+    assert all("NF:" not in text for text in result["HISTÓRICO"])
+
 
 def test_113_workflow_isolates_banks():
     with patch.dict(leravi.READERS,{"bradesco":lambda _:sample("BANCO BRADESCO","9")}),\
