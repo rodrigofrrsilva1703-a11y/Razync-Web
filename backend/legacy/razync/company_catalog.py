@@ -8,6 +8,7 @@ EMPRESAS = [
     {"codigo": 3, "nome": "AUTOKRAFT INDUSTRIAL DO NORDESTE LTDA", "regime": "LUCRO REAL", "chave_sistema": "autokraft_industrial"},
     {"codigo": 47, "nome": "CRJ CORRETORA DE SEGUROS LTDA", "regime": "SIMPLES NACIONAL"},
     {"codigo": 88, "nome": "H & W SERVICOS MEDICOS S S LTDA", "regime": "LUCRO PRESUMIDO", "chave_sistema": "hw_88"},
+    {"codigo": 113, "nome": "LERAVI INDUSTRIAL LTDA EPP", "regime": "Não informado", "chave_sistema": "leravi_industrial_113"},
     {"codigo": 154, "nome": "R.M. SERVICOS POSTAIS LTDA. - EPP", "regime": "SIMPLES NACIONAL"},
     {"codigo": 178, "nome": "AUTOKRAFT PROJETOS E SERVICOS LTDA – ME", "regime": "LUCRO PRESUMIDO", "chave_sistema": "autokraft_projetos"},
     {"codigo": 257, "nome": "F. CHAUVIN INDÚSTRIA, COMÉRCIO, IMPORTAÇÃO E EXPORTAÇÃO DE COSMÉTICOS LTDA", "regime": "LUCRO PRESUMIDO"},
