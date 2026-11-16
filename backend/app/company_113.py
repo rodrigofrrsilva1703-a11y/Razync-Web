@@ -57,6 +57,18 @@ def _lines(page):
             groups.append([y,[word]])
     return [sorted(words,key=lambda w:w[0]) for _,words in groups]
 
+BANK_HISTORY_PREFIXES = (
+    "PAGTO ", "PAGAMENTO ", "PIX ", "RENTAB.", "TRANSF ", "TRANSF.",
+    "TED", "DOC ", "DOC/TED", "TARIFA ", "IOF ",
+    "CONTA DE TELEFONE", "TITULO DE CAPITALIZACAO",
+)
+
+
+def is_bank_history_heading(text):
+    """Reconhece títulos efetivamente impressos no extrato Bradesco da Leravi."""
+    return normalize(text).startswith(BANK_HISTORY_PREFIXES)
+
+
 def read_bradesco(content):
     with _pdf(content,"Bradesco") as doc:
         header=doc[0].get_text()
@@ -111,7 +123,7 @@ def read_bradesco(content):
                 elif not sums:
                     detail=" ".join(w[4] for w in words if 95<=w[0]<320)
                     if detail and not any(term in norm for term in ("EXTRATO DE:","AGENCIA","DATA DA OPERACAO","NOME DO USUARIO")):
-                        if detail.upper().startswith(("PAGTO ","PAGAMENTO ","PIX ","RENTAB.","TRANSF ","TRANSF.","TED","DOC ","DOC/TED","TARIFA ","IOF ","CONTA DE TELEFONE","TITULO DE CAPITALIZACAO")):
+                        if is_bank_history_heading(detail):
                             history_pending=detail
                         elif rows and not history_pending:
                             rows[-1]["history"]+=" "+detail
