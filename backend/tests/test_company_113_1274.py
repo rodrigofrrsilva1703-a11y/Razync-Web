@@ -72,3 +72,24 @@ def test_invalid_file_type_rejected():
         services.statement(113,"bradesco",b"hi","falso.xlsx")
     with pytest.raises(ValueError,match="PDF"):
         services.statement(1274,"itau",b"hi","falso.xlsx")
+
+
+@pytest.mark.parametrize("heading", [
+    "DOC/TED INTERNET",
+    "CONTA DE TELEFONE",
+    "TITULO DE CAPITALIZACAO",
+    "TRANSF.AUTORIZ.ENTRE C/C",
+    "PAGTO ELETRON COBRANCA",
+    "RENTAB.INVEST FACILCRED*",
+])
+def test_leravi_bradesco_bank_headings(heading):
+    assert leravi.is_bank_history_heading(heading)
+
+
+@pytest.mark.parametrize("description", [
+    "SANDRE SOLDA GASES INDUSTRIAIS",
+    "CLARO S/A - MOVEL-163817823",
+    "CAPITALIZACAO 1236 0050039329-7",
+])
+def test_leravi_beneficiaries_are_not_transaction_headings(description):
+    assert not leravi.is_bank_history_heading(description)
