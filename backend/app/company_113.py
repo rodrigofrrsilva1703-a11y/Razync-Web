@@ -195,29 +195,10 @@ def read_bradesco(content):
         return frame(august, "BANCO BRADESCO", "9")
 
 def read_santander(content):
-    # PDF Santander consolidado de julho/2026, digitalizado sem camada de texto.
-    # A data é confirmada no resumo antes de ler movimentos. Nenhum documento
-    # de julho pode ser rotulado agosto só por causa do nome do arquivo.
-    from PIL import Image
-    import pytesseract
-    with _pdf(content,"Santander") as doc:
-        if len(doc)<2:raise ValueError("Leravi Santander: PDF incompleto.")
-        previews=[]
-        for page in doc[:2]:
-            pix=page.get_pixmap(dpi=150,colorspace=fitz.csGRAY,alpha=False)
-            previews.append(pytesseract.image_to_string(
-                Image.frombytes("L",(pix.width,pix.height),pix.samples),
-                lang="eng",config="--psm 6",timeout=30))
-        header=normalize(" ".join(previews))
-        if "LERAVI" not in header or not re.search(r"JULHO\s*/?\s*2026",header):
-            raise ValueError("Leravi Santander: titular ou competência julho/2026 não identificados com segurança.")
-    # Segurança: OCR de números não é considerado confiável sem confirmação
-    # transacional e do resumo inteiro. Não gravar lançamentos parcialmente.
-    raise ValueError(
-        "Leravi Santander: o PDF enviado é digitalizado e corresponde a julho/2026. "
-        "Para importar, envie o extrato Santander de agosto/2026 em PDF pesquisável "
-        "ou o arquivo OFX do banco. Nenhum lançamento foi importado."
-    )
+    """Extrato consolidado Santander 513, competência identificada pelo PDF."""
+    from app.company_113_santander import read_statement
+    return read_statement(content)
+
 
 def enrich_financial(frame_data,excel_bytes):
     if not excel_bytes:return frame_data
