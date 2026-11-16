@@ -5,7 +5,7 @@
   const DETAILS = {
     113: {
       intro:"A Leravi utiliza Bradesco 9 e Santander 513. Envie os PDFs bancários e, para enriquecer os históricos, a planilha financeira XLSX.",
-      note:"A planilha traz Nome Fantasia e Nota Fiscal. Os complementos só são acrescentados quando Data Pagto., Valor Pago e natureza geram correspondência única. O PDF Santander deste pacote é de julho/2026, embora o nome diga agosto; não pode ser tratado como agosto.",
+      note:"A planilha traz Nome Fantasia e Nota Fiscal. Os complementos só são acrescentados quando Data Pagto., Valor Pago e natureza geram correspondência única. O Santander usa o Extrato Consolidado Inteligente digitalizado: o leitor identifica a competência no próprio PDF, faz OCR e só gera o Modelo Domínio quando os créditos, débitos e saldos conferem. Setembro/2026 já foi validado. Não misture competências.",
       extrato:"Confronte o modelo da mesma competência e banco: Bradesco 9 ou Santander 513. Revise diferenças de lançamentos individualmente.",
       base:"Aprenda classificações das contas Bradesco 9 e Santander 513 usando arquivos revisados; não misture competências."
     },
