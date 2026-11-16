@@ -41,7 +41,7 @@ def _parse_pages(pages, verify_account):
         for balance in balance_words:
             y=_mid(balance)
             near=sorted(
-                (w for w in words if 39<=w[0]<260 and abs(_mid(w)-y)<=7.2),
+                (w for w in words if 30<=w[0]<260 and abs(_mid(w)-y)<=7.2),
                 key=lambda w:(round(_mid(w)/3),w[0]))
             history=" ".join(w[4] for w in near if w[0]>=99)
             dates=[w for w in date_words if abs(_mid(w)-y)<=6.4]
@@ -101,6 +101,43 @@ def _parse_pages(pages, verify_account):
                   for day,value,history in august],"BANCO BRADESCO","9")
 
 
+def _align_table_columns(pages):
+    """Derive the table scale from its headings and carry it to continuation pages."""
+    aligned = []
+    scale, origin = 1.0, 0.0
+    for text, words in pages:
+        dates = [word for word in words if word[4].casefold() == "data"]
+        balances = [word for word in words if word[4].casefold() == "saldo"]
+        for date in dates:
+            balance = next((word for word in balances
+                            if word[0] > date[0] + 100 and abs(_mid(word) - _mid(date)) <= 5), None)
+            has_history = any(
+                word[4].casefold() in {"lançamento", "lancamento"}
+                and date[0] < word[0] < (balance[0] if balance else date[0])
+                and abs(_mid(word) - _mid(date)) <= 5 for word in words
+            )
+            if balance and has_history:
+                scale = (balance[0] - date[0]) / (528 - 44)
+                origin = date[0] - 44 * scale
+                break
+        aligned.append((text, [((x0 - origin) / scale, y0 / scale,
+                                (x1 - origin) / scale, y1 / scale, word)
+                               for x0, y0, x1, y1, word in words]))
+    return aligned
+
+
+def _parse_with_alignment(pages, verify_account):
+    try:
+        return _parse_pages(pages, verify_account)
+    except ValueError as error:
+        if "não localizado no PDF" not in str(error):
+            raise
+        aligned = _align_table_columns(pages)
+        if aligned == pages:
+            raise
+        return _parse_pages(aligned, verify_account)
+
+
 def read_statement(content, verify_account):
     if not isinstance(content,bytes) or not content.startswith(b"%PDF") or len(content)>35*1024*1024:
         raise ValueError("Leravi Bradesco: envie PDF válido de até 35 MB.")
@@ -115,7 +152,7 @@ def read_statement(content, verify_account):
             for page in document.pages
         ]
     try:
-        return _parse_pages(pages,verify_account)
+        return _parse_with_alignment(pages,verify_account)
     except ValueError as first_error:
         # Repetir somente quando faltou estrutura no extrator primário.
         # Não mascarar divergência de saldo/valor/identidade bancária.
@@ -129,7 +166,7 @@ def read_statement(content, verify_account):
             for page in document
         ]
     try:
-        return _parse_pages(alternative,verify_account)
+        return _parse_with_alignment(alternative,verify_account)
     except ValueError as second_error:
         raise ValueError(
             f"{second_error} O arquivo foi conferido com dois leitores PDF; "

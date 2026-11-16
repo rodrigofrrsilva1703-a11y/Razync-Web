@@ -181,12 +181,13 @@ def test_leravi_bradesco_header_extracted_from_original_pdf_layout():
     )
 
 
-def test_leravi_bradesco_separate_table_headers_and_month_boundary():
+@pytest.mark.parametrize("scale", [1, 0.8])
+def test_leravi_bradesco_separate_table_headers_and_month_boundary(scale):
     """Bradesco não imprime Data/Lançamento/Saldo no mesmo trecho de texto."""
     import fitz
 
     pdf = fitz.open()
-    page = pdf.new_page(width=624, height=964)
+    page = pdf.new_page(width=624*scale, height=964*scale)
     for x, y, value in (
         (45,80,"Extrato de: Ag: | CC:"),
         (45,100,"01154 | 0165499-3"),
@@ -198,15 +199,15 @@ def test_leravi_bradesco_separate_table_headers_and_month_boundary():
         (102,260,"PAGTO ELETRON COBRANCA"),
         (450,264,"-30,00"),(537,264,"1.070,00"),
     ):
-        page.insert_text((x,y),value,fontsize=8)
-    second = pdf.new_page(width=624, height=964)
+        page.insert_text((x*scale,y*scale),value,fontsize=8*scale)
+    second = pdf.new_page(width=624*scale, height=964*scale)
     for x, y, value in (
         (40,130,"01/09/2026"),(102,130,"TARIFA BANCARIA"),
         (450,130,"-5,00"),(537,130,"1.065,00"),
         (41,160,"Total"),(355,160,"100,00"),
         (440,160,"-35,00"),(537,160,"1.065,00"),
     ):
-        second.insert_text((x,y),value,fontsize=8)
+        second.insert_text((x*scale,y*scale),value,fontsize=8*scale)
     content=pdf.tobytes()
     pdf.close()
     result=leravi.read_bradesco(content)
