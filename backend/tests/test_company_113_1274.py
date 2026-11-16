@@ -1,0 +1,68 @@
+"""Regressões para empresas 113 (Leravi) e 1274 (Auguri)."""
+from unittest.mock import patch
+import pandas as pd
+import pytest
+from app.registry import CAPABILITIES
+from app import migration_services as services
+from app import company_113 as leravi
+from app import company_1274 as auguri
+
+def sample(bank,account):
+    return pd.DataFrame([
+        {"DESCRIÇÃO":bank,"DATA":pd.Timestamp("2026-08-03"),"VALOR":-286.60,
+         "DÉBITO":"","CRÉDITO":account,"HISTÓRICO":"Pago: SANDRE SOLDA"},
+        {"DESCRIÇÃO":bank,"DATA":pd.Timestamp("2026-08-05"),"VALOR":949.88,
+         "DÉBITO":account,"CRÉDITO":"","HISTÓRICO":"Recebido: TRANSFERENCIA"},
+    ],columns=leravi.COLS)
+
+def test_configuration_and_three_tools():
+    assert CAPABILITIES[113]["banks"]=={"bradesco":"9","santander":"513"}
+    assert CAPABILITIES[1274]["banks"]=={"banco_brasil":"8","itau":"508","santander":"513"}
+    assert set(CAPABILITIES[113]["tools"])==set(CAPABILITIES[1274]["tools"])=={
+        "modelo_dominio","conferencia_extrato","base_inteligente"}
+    assert services.accounts(113)["bradesco"]=="9"
+    assert services.accounts(1274)["banco_brasil"]=="8"
+
+def test_financial_enrichment_only_unique_date_value_nature():
+    finance=pd.DataFrame([
+        {"Tipo":"Pagar","Nome Fantasia":"SANDRE SOLDA","Nota Fiscal":18729,
+         "Valor Pago":286.60,"Data Pagto.":pd.Timestamp("2026-08-03")},
+        {"Tipo":"Receber","Nome Fantasia":"IND. E COM. DE COS.","Nota Fiscal":2396,
+         "Valor Pago":949.88,"Data Pagto.":pd.Timestamp("2026-08-05")},
+    ])
+    with patch("pandas.read_excel",return_value=finance):
+        result=leravi.enrich_financial(sample("BANCO BRADESCO","9"),b"fake")
+    assert "NF: 18729" in result.iloc[0]["HISTÓRICO"]
+    assert "NF: 2396" in result.iloc[1]["HISTÓRICO"]
+    assert result["VALOR"].tolist()==[-286.60,949.88]
+    finance.loc[2]=dict(finance.iloc[0])
+    with patch("pandas.read_excel",return_value=finance):
+        result=leravi.enrich_financial(sample("BANCO BRADESCO","9"),b"fake")
+    assert "NF:" not in result.iloc[0]["HISTÓRICO"]
+
+def test_113_workflow_isolates_banks():
+    with patch.dict(leravi.READERS,{"bradesco":lambda _:sample("BANCO BRADESCO","9")}),\
+         patch("app.excel.gerar_modelo_abas",return_value=b"book") as exporter:
+        out,name=leravi.workflow_113({"bradesco":[("aug.pdf",b"%PDF")]},{})
+    assert out==b"book" and "113" in name
+    assert list(exporter.call_args.args[0])==["Bradesco"]
+
+def test_1274_workflow_preserves_each_bank():
+    with patch.dict(auguri.READERS,{
+        "banco_brasil":lambda _:sample("BANCO DO BRASIL","8"),
+        "itau":lambda _:sample("BANCO ITAÚ","508"),
+        "santander":lambda _:sample("BANCO SANTANDER","513")}),\
+        patch("app.excel.gerar_modelo_abas",return_value=b"book") as exporter:
+        files={key:[("ago.pdf",b"%PDF")] for key in auguri.READERS}
+        out,name=auguri.workflow_1274(files,{})
+    assert out==b"book" and "1274" in name
+    sheets=exporter.call_args.args[0]
+    assert list(sheets)==["Banco do Brasil","Itaú","Santander"]
+    assert sheets["Itaú"]["CRÉDITO"].iloc[0]=="508"
+    assert sheets["Santander"]["DÉBITO"].iloc[1]=="513"
+
+def test_invalid_file_type_rejected():
+    with pytest.raises(ValueError,match="PDF"):
+        services.statement(113,"bradesco",b"hi","falso.xlsx")
+    with pytest.raises(ValueError,match="PDF"):
+        services.statement(1274,"itau",b"hi","falso.xlsx")
