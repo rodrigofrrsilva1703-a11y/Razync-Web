@@ -268,6 +268,12 @@
     "regime": "LUCRO PRESUMIDO"
   },
   {
+    "codigo": 1274,
+    "nome": "AUGURI SOLUCOES EM SAUDE LTDA",
+    "regime": "Não informado",
+    "chave_sistema": "auguri_saude_1274"
+  },
+  {
     "codigo": 1303,
     "nome": "BMZ MOTO PEÇAS",
     "regime": "Não informado",
