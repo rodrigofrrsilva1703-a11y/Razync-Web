@@ -1,5 +1,8 @@
 """Fila temporária do organizador: uma execução pesada por vez, sem uploads em disco."""
 import contextvars
+import logging
+import traceback
+from pathlib import PurePath
 import secrets
 import threading
 import time
@@ -10,6 +13,7 @@ from fastapi.responses import JSONResponse, Response
 from app.document_privacy import mask_identifiers
 from app.site_access import current_owner
 
+_log = logging.getLogger('organizador.jobs')
 router = APIRouter(prefix='/api/v1/organizador')
 _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='organizador')
 _guard = threading.RLock()
@@ -89,6 +93,17 @@ def _run(job, work):
         with _guard:
             job['state'] = 'cancelled'
     except Exception as exc:
+        # Registrar apenas a origem técnica do erro. NÃO registrar arquivos,
+        # valores, titulares, histórias, nomes de arquivos ou dados enviados.
+        frames = traceback.extract_tb(exc.__traceback__)
+        app_frames = [frame for frame in frames if '/app/' in frame.filename.replace('\\', '/')]
+        origin = app_frames[-1] if app_frames else (frames[-1] if frames else None)
+        source = PurePath(origin.filename.replace('\\', '/')).name if origin else 'unknown'
+        line = origin.lineno if origin else 0
+        _log.error(
+            'Falha ao executar Organizador: tipo=%s origem=%s linha=%d',
+            type(exc).__name__, source, line,
+        )
         with _guard:
             job.update(state='error', error=mask_identifiers(str(exc))[:500])
     finally:
