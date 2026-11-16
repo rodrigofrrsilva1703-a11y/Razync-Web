@@ -93,3 +93,42 @@ def test_leravi_bradesco_bank_headings(heading):
 ])
 def test_leravi_beneficiaries_are_not_transaction_headings(description):
     assert not leravi.is_bank_history_heading(description)
+
+
+def test_bb_auguri_pix_at_page_break_is_not_discarded():
+    """Regressão do PDF de agosto: PIX de 100 mil no fim da página 1."""
+    import fitz
+
+    heading = (
+        "Extrato de Conta Corrente",
+        "Cliente AUGURI S SAUDE LTDA",
+        "Agência: 3131-3    Conta: 24073-7",
+        "Lançamentos", "Dia", "Lote", "Documento", "Histórico", "Valor",
+    )
+    pages = (
+        (
+            "0,00 (+)", "31/07/2026", "Saldo Anterior",
+            "100.000,00 (-)", "06/08/2026", "13105", "80602",
+            "Pix - Enviado", "06/08 08:42 Auguri Solucoes Em Saude",
+        ),
+        (
+            "100.000,00 (+)", "06/08/2026", "9903",
+            "BB Rende Fácil", "Rende Facil",
+            "0,00 (+)", "00/00/0000", "13105", "Saldo do dia",
+            "0,00 (+)", "31/08/2026", "S A L D O",
+        ),
+    )
+    document = fitz.open()
+    for body in pages:
+        page = document.new_page()
+        page.insert_text((55, 55), "\n".join(heading + body), fontsize=9)
+    pdf = document.tobytes()
+    document.close()
+
+    records = auguri.read_banco_brasil(pdf)
+    assert len(records) == 2
+    assert records["VALOR"].tolist() == [-100000.0, 100000.0]
+    assert "Pix - Enviado" in records.iloc[0]["HISTÓRICO"]
+    assert "BB Rende Fácil" in records.iloc[1]["HISTÓRICO"]
+    assert records["CRÉDITO"].tolist() == ["8", ""]
+    assert records["DÉBITO"].tolist() == ["", "8"]
