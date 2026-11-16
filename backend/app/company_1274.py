@@ -65,7 +65,20 @@ def read_banco_brasil(content):
                    (r"Cliente AUGURI S SAUDE LTDA",r"Agência:\s*3131-3\s+Conta:\s*24073-7")):
             raise ValueError("BB 1274: agência, conta ou titular divergente.")
         lines=[]
-        for page in doc: lines.extend(s.strip() for s in page.get_text().splitlines() if s.strip())
+        for number, page in enumerate(doc, start=1):
+            page_lines=[s.strip() for s in page.get_text().splitlines() if s.strip()]
+            # O cabeçalho reaparece em todas as páginas. Se mantido, pode
+            # ser anexado ao último Pix da página anterior e fazê-lo sumir
+            # da conferência diária (ex.: R$ 100.000,00 em 06/08/2026).
+            marker=next((i for i, text in enumerate(page_lines)
+                         if text=="Lançamentos"), None)
+            if marker is None or page_lines[marker+1:marker+6]!=[
+                "Dia","Lote","Documento","Histórico","Valor"
+            ]:
+                raise ValueError(
+                    f"BB 1274: cabeçalho do extrato inválido na página {number}."
+                )
+            lines.extend(page_lines[marker+6:])
     amount_re=re.compile(r"^([\d.]+,\d{2})\s*\(([+-])\)$")
     date_re=re.compile(r"^\d{2}/\d{2}/20\d{2}$")
     rows=[];opening=None;running=None;closing=False;checkpoints=0
@@ -95,7 +108,7 @@ def read_banco_brasil(content):
             if running!=amount:raise ValueError("BB 1274: saldo final divergente.")
             closing=True
             break
-        elif date_re.fullmatch(date_str) and "Lançamentos" not in desc:
+        elif date_re.fullmatch(date_str):
             if running is None:raise ValueError("BB 1274: movimentos sem saldo inicial.")
             day=datetime.strptime(date_str,"%d/%m/%Y").date()
             hist_index=next((k for k,v in enumerate(parts) if re.search(
