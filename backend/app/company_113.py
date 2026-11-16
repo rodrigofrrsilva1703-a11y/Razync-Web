@@ -68,7 +68,9 @@ def read_bradesco(content):
         # Extrato Bradesco inclui movimentos de 01/09; mantemos agosto e
         # verificamos todos os movimentos até o corte de competência.
         active=False
+        finished=False
         for page in doc:
+            if finished:break
             for words in _lines(page):
                 line=" ".join(w[4] for w in words)
                 norm=normalize(line)
@@ -76,14 +78,14 @@ def read_bradesco(content):
                     active=True
                     continue
                 if norm.startswith(("ULTIMOS LANCAMENTOS","SALDOS INVEST")):
-                    active=False;continue
+                    active=False;finished=True;break
                 if "SALDO ANTERIOR" in norm:
                     amounts=[w[4] for w in words if w[0]>490 and MONEY.fullmatch(w[4])]
                     if len(amounts)==1 and opening is None:
                         opening=last_balance=cents(amounts[0])
                     continue
                 if norm.startswith("TOTAL "):
-                    active=False;continue
+                    active=False;finished=True;break
                 if not active:continue
                 date=next((w[4] for w in words if w[0]<110 and DATE.fullmatch(w[4])),None)
                 if date:current_day=datetime.strptime(date,"%d/%m/%Y").date()
