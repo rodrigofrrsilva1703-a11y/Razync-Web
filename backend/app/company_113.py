@@ -99,100 +99,10 @@ def _word_y(word):
 
 
 def read_bradesco(content):
-    """Lê linhas por valor+saldo, não pelo cabeçalho quebrado em colunas.
+    """Bradesco 113: usar extração estável em colunas do extrato."""
+    from app.company_113_bradesco import read_statement
+    return read_statement(content, verify_bradesco_account)
 
-    O extrato da Leravi continua na página seguinte sem repetir a data e
-    inclui operações de 01/09 após agosto. Todos os movimentos do quadro
-    principal são conferidos com saldo acumulado e totalizador; somente
-    agosto é exportado.
-    """
-    with _pdf(content, "Bradesco") as doc:
-        if not verify_bradesco_account(doc[0].get_text()):
-            raise ValueError(
-                "Leravi Bradesco: agência/conta não correspondem ao extrato "
-                "cadastrado ou cabeçalho bancário ilegível."
-            )
-        rows = []
-        opening = running = totals = current_day = None
-        for page in doc:
-            words = page.get_text("words", sort=True)
-            amount_words = sorted(
-                (w for w in words if 335 <= w[0] < 520 and MONEY.fullmatch(w[4])),
-                key=_word_y,
-            )
-            balance_words = sorted(
-                (w for w in words if w[0] >= 525 and MONEY.fullmatch(w[4])),
-                key=_word_y,
-            )
-            date_words = sorted(
-                (w for w in words if w[0] < 86 and DATE.fullmatch(w[4])),
-                key=_word_y,
-            )
-            for balance in balance_words:
-                y = _word_y(balance)
-                near_words = sorted(
-                    (w for w in words if 39 <= w[0] < 260
-                     and abs(_word_y(w) - y) <= 7.2),
-                    key=lambda w: (round(_word_y(w) / 3), w[0]),
-                )
-                history = " ".join(w[4] for w in near_words if w[0] >= 99)
-                day_matches = [w for w in date_words if abs(_word_y(w)-y) <= 6.4]
-                if len(day_matches) > 1:
-                    raise ValueError("Leravi Bradesco: datas ambíguas no extrato.")
-                if day_matches:
-                    current_day = datetime.strptime(day_matches[0][4], "%d/%m/%Y").date()
-                value_words = [w for w in amount_words if abs(_word_y(w)-y) <= 2.8]
-                if (len(value_words) == 2 and any(
-                    w[4].casefold() == "total" for w in near_words
-                )):
-                    totals = (
-                        cents(value_words[0][4]),
-                        cents(value_words[1][4]),
-                        cents(balance[4]),
-                    )
-                    break
-                if not value_words:
-                    if "SALDO ANTERIOR" in history.upper():
-                        if opening is not None or rows:
-                            raise ValueError("Leravi Bradesco: saldo anterior repetido.")
-                        opening = running = cents(balance[4])
-                    continue
-                if len(value_words) != 1:
-                    raise ValueError("Leravi Bradesco: lançamento com valor ambíguo.")
-                if running is None or current_day is None:
-                    raise ValueError("Leravi Bradesco: saldo inicial ou data ausente.")
-                value = cents(value_words[0][4])
-                if value == 0 or not history:
-                    raise ValueError("Leravi Bradesco: valor ou histórico incompleto.")
-                running += value
-                if running != cents(balance[4]):
-                    raise ValueError(
-                        f"Leravi Bradesco: saldo divergente em "
-                        f"{current_day:%d/%m/%Y}."
-                    )
-                rows.append({
-                    "date": current_day,
-                    "value": value,
-                    "history": history,
-                })
-            if totals is not None:
-                break
-        if opening is None or not rows or totals is None:
-            raise ValueError(
-                "Leravi Bradesco: saldo inicial, lançamentos ou totais ausentes."
-            )
-        credits = sum(max(row["value"], 0) for row in rows)
-        debits = sum(min(row["value"], 0) for row in rows)
-        if (credits, debits, running) != totals:
-            raise ValueError(
-                "Leravi Bradesco: total de créditos, débitos ou saldo final "
-                "divergente do PDF."
-            )
-        august = [row for row in rows
-                  if row["date"].year == 2026 and row["date"].month == 8]
-        if not august:
-            raise ValueError("Leravi Bradesco: nenhum lançamento em agosto/2026.")
-        return frame(august, "BANCO BRADESCO", "9")
 
 def read_santander(content):
     """Extrato consolidado Santander 513, competência identificada pelo PDF."""
