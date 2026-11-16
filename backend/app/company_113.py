@@ -167,8 +167,14 @@ def enrich_financial(frame_data,excel_bytes):
         key=(day.date(),amount)
         lookups[key].append((clean(row.get("Nome Fantasia")),str(row.get("Nota Fiscal") or "").strip()))
     result=frame_data.copy()
+    bank_counts=defaultdict(int)
+    for _,row in result.iterrows():
+        bank_key=(pd.Timestamp(row["DATA"]).date(),round(float(row["VALOR"])*100))
+        bank_counts[bank_key]+=1
     for idx,record in result.iterrows():
         key=(pd.Timestamp(record["DATA"]).date(),round(float(record["VALOR"])*100))
+        if bank_counts[key]!=1:
+            continue
         matches=lookups.get(key,[])
         unique=set(matches)
         if len(matches)!=1 or len(unique)!=1:
