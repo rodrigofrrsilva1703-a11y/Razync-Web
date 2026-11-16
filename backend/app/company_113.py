@@ -96,7 +96,7 @@ def read_bradesco(content):
                         raise ValueError("Leravi Bradesco: movimento sem data.")
                     value=credits[0] if credits else -abs(debits[0])
                     if not value:raise ValueError("Leravi Bradesco: valor zero.")
-                    description=" ".join(w[4] for w in words if 100<=w[0]<320)
+                    description=" ".join(w[4] for w in words if 100<=w[0]<260)
                     hist=" ".join(x for x in (history_pending,description) if x)
                     if not hist:raise ValueError("Leravi Bradesco: histórico incompleto.")
                     if last_balance is None:
