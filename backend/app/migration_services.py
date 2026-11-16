@@ -146,6 +146,16 @@ def statement(code, bank, content, filename):
         return read_statement(content, holder=r"RODRIGUEZ\s+GONCALES\s+SOCIEDADE\s+DE\s+ADVOGADOS",
                               tax_id=None, agency="0644", account="0007377-7",
                               accounting_account=accounts(code)[bank], salary_names=names)
+    if code in (113, 1274):
+        if not filename.lower().endswith(".pdf"):
+            raise ValueError("Envie extrato bancário em PDF.")
+        if code == 113:
+            from app.company_113 import READERS
+        else:
+            from app.company_1274 import READERS
+        if bank not in READERS:
+            raise ValueError("Banco não configurado para esta empresa.")
+        return READERS[bank](content)
     if code == 1050:
         if bank != "itau" or not filename.lower().endswith(".pdf"):
             raise ValueError("Empresa 1050: envie o extrato mensal Itaú PDF.")
@@ -341,7 +351,7 @@ def reconcile(code, bank, model, statements, options=None):
     options = options or {}
     with engine.processing_context(slug(code)):
         real_bank = 'itau' if bank.startswith('itau') else bank
-        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 799, 933, 977, 1050, 1092, 1160, 1167, 1303, 1408, 1058, 1130, 1151, 1165, 1166, 1187, 1399, 1535, 1536, 1537} else None
+        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 799, 933, 977, 1050, 113, 1274, 1092, 1160, 1167, 1303, 1408, 1058, 1130, 1151, 1165, 1166, 1187, 1399, 1535, 1536, 1537} else None
         main, excluded, _ = engine.ler_planilha_organizada_conferencia(model, real_bank, account)
         main, excluded = filter_frame(main, options), filter_frame(excluded, options)
         if code == 521:
@@ -494,6 +504,12 @@ def _workflow(code, roles, options):
         if code in {1165, 1166}:
             from app.otom_1165 import workflow as otom_workflow
             return otom_workflow(roles, options, company=code)
+        if code == 113:
+            from app.company_113 import workflow_113
+            return workflow_113(roles, options)
+        if code == 1274:
+            from app.company_1274 import workflow_1274
+            return workflow_1274(roles, options)
         if code == 1050:
             from app.company_1050 import workflow_1050
             return workflow_1050(roles, options)
