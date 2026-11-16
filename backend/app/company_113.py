@@ -69,13 +69,39 @@ def is_bank_history_heading(text):
     return normalize(text).startswith(BANK_HISTORY_PREFIXES)
 
 
+def verify_bradesco_account(header):
+    """Confirma agência/conta como par, independentemente das quebras do PDF.
+
+    Este extrato coloca 'Ag: | CC:' numa linha, '1154' e '0165499-3'
+    na linha seguinte e repete '01154 | 0165499-3' no resumo.
+    Exigir ambos juntos impede aceitar números encontrados isoladamente.
+    """
+    normalized = " ".join(str(header or "").split())
+    if not re.search(r"Extrato\s+de:\s*Ag:", normalized, re.I):
+        return False
+    expected_account = r"0*165499\s*-\s*3"
+    expected_agency = r"0*1154"
+    # Resumo 'Agência | Conta': extratos com linha em ordem normal.
+    summary = re.search(
+        rf"(?<!\d){expected_agency}\s*\|\s*{expected_account}(?!\d)",
+        normalized, re.I,
+    )
+    # Cabeçalho do extrato com campos dispostos em mais de uma linha.
+    header_pair = re.search(
+        rf"(?<!\d){expected_agency}\s+{expected_account}\s*\|\s*Entre",
+        normalized, re.I,
+    )
+    return bool(summary or header_pair)
+
+
 def read_bradesco(content):
     with _pdf(content,"Bradesco") as doc:
         header=doc[0].get_text()
-        if not (re.search(r"Ag:\s*\|?\s*CC:",header,re.I)
-                and re.search(r"1154",header)
-                and re.search(r"0165499-3",header)):
-            raise ValueError("Leravi Bradesco: agência 1154 ou conta 0165499-3 divergente.")
+        if not verify_bradesco_account(header):
+            raise ValueError(
+                "Leravi Bradesco: agência/conta não correspondem ao extrato "
+                "cadastrado ou cabeçalho bancário ilegível."
+            )
         rows=[];current_day=None;opening=None;last_balance=None;history_pending=""
         # Extrato Bradesco inclui movimentos de 01/09; mantemos agosto e
         # verificamos todos os movimentos até o corte de competência.
