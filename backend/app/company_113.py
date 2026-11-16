@@ -111,7 +111,7 @@ def read_bradesco(content):
                 elif not sums:
                     detail=" ".join(w[4] for w in words if 95<=w[0]<320)
                     if detail and not any(term in norm for term in ("EXTRATO DE:","AGENCIA","DATA DA OPERACAO","NOME DO USUARIO")):
-                        if detail.upper().startswith(("PAGTO ","PAGAMENTO ","PIX ","RENTAB.","TRANSF ","TED","DOC ","TARIFA ","IOF ")):
+                        if detail.upper().startswith(("PAGTO ","PAGAMENTO ","PIX ","RENTAB.","TRANSF ","TRANSF.","TED","DOC ","DOC/TED","TARIFA ","IOF ","CONTA DE TELEFONE","TITULO DE CAPITALIZACAO")):
                             history_pending=detail
                         elif rows and not history_pending:
                             rows[-1]["history"]+=" "+detail
