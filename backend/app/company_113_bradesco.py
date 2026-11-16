@@ -93,12 +93,9 @@ def _parse_pages(pages, verify_account):
     debits=sum(min(value,0) for _,value,_ in records)
     if (credits,debits,running)!=totals:
         raise ValueError("Leravi Bradesco: totais ou saldo final não conferem com o PDF.")
-    august=[r for r in records if r[0].year==2026 and r[0].month==8]
-    if not august:
-        raise ValueError("Leravi Bradesco: extrato sem lançamentos de agosto/2026.")
     from app.company_113 import frame
     return frame([dict(date=day,value=value,history=history)
-                  for day,value,history in august],"BANCO BRADESCO","9")
+                  for day,value,history in records],"BANCO BRADESCO","9")
 
 
 def _align_table_columns(pages):
