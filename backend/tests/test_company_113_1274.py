@@ -132,3 +132,26 @@ def test_bb_auguri_pix_at_page_break_is_not_discarded():
     assert "BB Rende Fácil" in records.iloc[1]["HISTÓRICO"]
     assert records["CRÉDITO"].tolist() == ["8", ""]
     assert records["DÉBITO"].tolist() == ["", "8"]
+
+
+def test_leravi_bradesco_header_extracted_from_original_pdf_layout():
+    """O PDF Bradesco separa os rótulos dos valores e repete o par no resumo."""
+    header = (
+        "Extrato de: Ag: \n | CC: \n"
+        "01/08/2026 01/09/2026\n1154\n0165499-3 | Entre\ne\n"
+        "Agência | Conta\n01154 | 0165499-3\n"
+        "Data Lançamento Dcto. Crédito (R$) Débito (R$) Saldo (R$)"
+    )
+    assert leravi.verify_bradesco_account(header)
+    assert leravi.verify_bradesco_account(
+        "Extrato de: Ag: | CC: 1154 0165499-3 | Entre agosto"
+    )
+    assert not leravi.verify_bradesco_account(
+        header.replace("0165499-3", "0165499-4")
+    )
+    assert not leravi.verify_bradesco_account(
+        header.replace("01154", "01155").replace("1154\\n", "1155\\n")
+    )
+    assert not leravi.verify_bradesco_account(
+        "Documento diverso, agência 1154 e conta 0165499-3"
+    )
