@@ -356,7 +356,7 @@ def reconcile(code, bank, model, statements, options=None):
     options = options or {}
     with engine.processing_context(slug(code)):
         real_bank = 'itau' if bank.startswith('itau') else bank
-        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 799, 933, 977, 1050, 113, 1274, 1092, 1160, 1167, 1303, 1408, 1058, 1130, 1151, 1165, 1166, 1187, 1399, 1535, 1536, 1537} else None
+        account = CAPABILITIES.get(code, {}).get('banks', {}).get(bank) if code in {242, 799, 933, 977, 1050, 113, 1274, 1328, 1092, 1160, 1167, 1303, 1408, 1058, 1130, 1151, 1165, 1166, 1187, 1399, 1535, 1536, 1537} else None
         main, excluded, _ = engine.ler_planilha_organizada_conferencia(model, real_bank, account)
         main, excluded = filter_frame(main, options), filter_frame(excluded, options)
         if code == 521:
