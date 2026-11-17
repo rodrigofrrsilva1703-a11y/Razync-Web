@@ -58,6 +58,7 @@ EMPRESAS = [
     {"codigo": 1274, "nome": "AUGURI SOLUCOES EM SAUDE LTDA", "regime": "Não informado", "chave_sistema": "auguri_saude_1274"},
     {"codigo": 1303, "nome": "BMZ MOTO PEÇAS", "regime": "Não informado", "chave_sistema": "bmz_moto_1303"},
     {"codigo": 1320, "nome": "T. W. GUAIMBÊ – EXCLUSIVE SUÍTES HOTEL LTDA", "regime": "LUCRO PRESUMIDO"},
+    {"codigo": 1328, "nome": "A&Z INDUSTRIA, COMERCIO E SERVICOS LTDA", "regime": "Não informado", "chave_sistema": "az_industria_1328"},
     {"codigo": 1396, "nome": "NOVA GERAÇÃO COMERCIAL ELETRICA LTDA (FILIAL)", "regime": "LUCRO PRESUMIDO", "chave_sistema": "nova_geracao", "estabelecimento": "filial"},
     {"codigo": 1399, "nome": "JETMAQ COMERCIAL DE MAQUINAS", "regime": "Não informado"},
     {"codigo": 1402, "nome": "VGV EMPREENDIMENTOS LTDA - ME", "regime": "LUCRO PRESUMIDO", "chave_sistema": "vgv_1402"},
