@@ -135,18 +135,44 @@ def read_statement(content):
         for i in range(header_row + 1, len(data)):
             line = data.iloc[i].tolist()
             source_line = i + 1
+
+            # O relatório A&Z tem "Saldo Anterior :" na coluna CRÉDITO,
+            # mas SEM data nem lançamento (linha 10 do arquivo original).
+            # Reconhecer cabeçalhos/saldos antes de interpretar moeda.
+            day_cell = line[columns["date"]]
+            explicit_history = _document(line[columns["history"]])
+            # Neste formato "Histórico" está no cabeçalho da coluna B,
+            # enquanto o nome efetivo do lançamento aparece na coluna D,
+            # imediatamente antes da coluna "Nº Documento" (E).
+            detail_column = columns["document"] - 1
+            detail_history = (
+                _document(line[detail_column])
+                if detail_column != columns["history"] and detail_column >= 0
+                else ""
+            )
+            history = detail_history or explicit_history
+            if pd.isna(day_cell) or str(day_cell).strip() == "":
+                # Linhas sem data podem ser apenas saldo anterior / total.
+                if not history or _norm(history).startswith(
+                    ("saldo", "total", "resumo")
+                ):
+                    continue
+                raise ValueError(
+                    f"Empresa 1328: lançamento sem data na linha {source_line}."
+                )
+            day = _date(day_cell, source_line)
+            if not history or _norm(history).startswith(("saldoanterior", "saldofinal")):
+                raise ValueError(
+                    f"Empresa 1328: histórico do lançamento ausente na linha {source_line}."
+                )
             deb = _money(line[columns["debit"]], source_line)
             cred = _money(line[columns["credit"]], source_line)
             if not deb and not cred:
-                continue  # Saldo anterior/final, totalizador ou linha em branco
+                continue  # Linha informativa, sem movimentação bancária
             if deb and cred:
                 raise ValueError(
                     f"Empresa 1328: Débito e Crédito preenchidos na linha {source_line}."
                 )
-            day = _date(line[columns["date"]], source_line)
-            history = _document(line[columns["history"]])
-            if not history:
-                raise ValueError(f"Empresa 1328: histórico ausente na linha {source_line}.")
             document = _document(line[columns["document"]])
             value = cred if cred else -deb
             description = history if not document else f"{history} | Doc: {document}"
