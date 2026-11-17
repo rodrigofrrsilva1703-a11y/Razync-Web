@@ -6,6 +6,7 @@ import os
 import re
 import zipfile
 from datetime import datetime
+from decimal import Decimal
 
 import pandas as pd
 from app import engine
@@ -373,8 +374,20 @@ def reconcile(code, bank, model, statements, options=None):
                 raise ValueError("Envie o extrato em PDF e, para o Bradesco, o ZIP das francesinhas se utilizado.")
             movements = filter_frame(bank_frames(bank, pdfs, zips), options)
         else:
+            if code == 1328 and len(statements) != 1:
+                raise ValueError("Empresa 1328: envie um PDF Itaú mensal por conferência.")
             frames = [statement(code, bank, content, filename) for filename, content in statements]
             movements = filter_frame(pd.concat(frames, ignore_index=True), options)
+            if code == 1328:
+                # O Modelo Domínio pode conter outros meses; a competência
+                # a conferir sempre é determinada pelo PDF bancário.
+                months = set(pd.to_datetime(movements["DATA"]).dt.to_period("M"))
+                main = main.loc[pd.to_datetime(main["DATA"]).dt.to_period("M").isin(months)].copy()
+                excluded = excluded.loc[
+                    pd.to_datetime(excluded["DATA"]).dt.to_period("M").isin(months)
+                ].copy()
+                if main.empty:
+                    raise ValueError("Empresa 1328: o Modelo Domínio não tem lançamentos no mês do PDF Itaú.")
             if code in {1165, 1166} and not dates(options)[0]:
                 months = set(pd.to_datetime(main["DATA"]).dt.to_period("M"))
                 movements = movements.loc[pd.to_datetime(movements["DATA"]).dt.to_period("M").isin(months)]
@@ -398,9 +411,72 @@ def reconcile(code, bank, model, statements, options=None):
         for side, suffix in [('planilha', 'PLANILHA'), ('extrato', 'EXTRATO')]:
             for name, label in [('entradas', 'ENTRADAS'), ('saidas', 'SAÍDAS')]:
                 summary[f'{name}_{side}'] = round(float(daily[f'{label} {suffix}'].sum()), 2)
+        special = {}
+        if code == 1328:
+            # A planilha financeira pode agrupar salários ou boletos: comparar
+            # valores agregados por DIA além da comparação estrita por item.
+            # Mesmos saldos não significam mesmos lançamentos individuais.
+            def per_day(frame):
+                result = {}
+                for _, transaction in frame.iterrows():
+                    day = pd.Timestamp(transaction["DATA"]).normalize()
+                    cents = int((Decimal(str(transaction["VALOR"])) * 100).quantize(Decimal("1")))
+                    item = result.setdefault(day, {"entradas": 0, "saidas": 0, "quantidade": 0})
+                    item["quantidade"] += 1
+                    if cents >= 0:
+                        item["entradas"] += cents
+                    else:
+                        item["saidas"] -= cents
+                return result
+
+            data_model = per_day(main)
+            data_pdf = per_day(movements)
+            balances = {
+                pd.Timestamp(item["DATA"]).normalize(): item["SALDO BANCO"]
+                for item in frames[0].attrs.get("daily_balances", [])
+            }
+            comparisons = []
+            for day in sorted(set(data_model) | set(data_pdf)):
+                model_day = data_model.get(day, {})
+                bank_day = data_pdf.get(day, {})
+                mod_in, mod_out = model_day.get("entradas", 0), model_day.get("saidas", 0)
+                pdf_in, pdf_out = bank_day.get("entradas", 0), bank_day.get("saidas", 0)
+                comparisons.append({
+                    "DATA": day,
+                    "MODELO QTDE": model_day.get("quantidade", 0),
+                    "PDF QTDE": bank_day.get("quantidade", 0),
+                    "ENTRADAS MODELO": mod_in / 100,
+                    "ENTRADAS PDF": pdf_in / 100,
+                    "SAÍDAS MODELO": mod_out / 100,
+                    "SAÍDAS PDF": pdf_out / 100,
+                    "DIFERENÇA ENTRADAS": (mod_in - pdf_in) / 100,
+                    "DIFERENÇA SAÍDAS": (mod_out - pdf_out) / 100,
+                    "SALDO IMPRESSO PDF": balances.get(day),
+                    "SITUAÇÃO": "OK" if (mod_in, mod_out) == (pdf_in, pdf_out) else "DIVERGÊNCIA",
+                })
+            comparison_frame = pd.DataFrame(comparisons)
+            same_daily = bool(comparisons) and all(
+                item["SITUAÇÃO"] == "OK" for item in comparisons
+            )
+            summary["conferencia_valores_por_dia"] = same_daily
+            summary["dias_pdf_validados"] = len(balances)
+            summary["dias_com_divergencia"] = sum(
+                item["SITUAÇÃO"] != "OK" for item in comparisons
+            )
+            summary["movimentos_agrupados_ou_distintos"] = (
+                same_daily and len(main) != len(movements)
+            )
+            if summary["movimentos_agrupados_ou_distintos"]:
+                summary["observacao"] = (
+                    "Entradas e saídas conferem por dia, mas o PDF e o Modelo "
+                    "Domínio têm quantidades diferentes de lançamentos. "
+                    "Revise possíveis agrupamentos antes de aprovar item a item."
+                )
+            special["Valores por dia Itaú"] = comparison_frame
         return summary, {'Resumo': pd.DataFrame([summary]), 'Conferência diária': daily,
                          'Faltando na planilha': missing, 'A mais na planilha': extra,
-                         'Estornos ignorados': ignored, 'Modelo analisado': main, 'Extrato analisado': movements}
+                         'Estornos ignorados': ignored, 'Modelo analisado': main,
+                         'Extrato analisado': movements, **special}
 
 
 def eletro_reports(code, roles, options):
