@@ -14,10 +14,11 @@ def _sheet():
         ["ICROI - Extrato Financeiro", None, None, None, None, None, None],
         ["A&Z INDUSTRIA, COMERCIO E SERVICOS LTDA",None,None,None,None,None,None],
         ["Periodo de 01/10/2026 ate 31/10/2026 - Banco 341 - BANCO ITAU",None,None,None,None,None,None],
-        ["Data","Histórico","N Documento","CNPJ","Débito","Crédito","Saldo"],
-        ["01/10/2026","PAGAMENTO FORNECEDOR","00001234-1","", "1.234,56",None, "10.000,00"],
-        ["02/10/2026","RECEBIMENTO CLIENTE","0000789","",None,"2.000,12","12.000,12"],
-        [None,"Saldo Bancario",None,None,None,None,"12.000,12"],
+        ["Data","Histórico",None,None,"Nº Documento","CNPJ",None,"Débito","Crédito","Saldo"],
+        [None,None,None,None,None,None,None,None,"Saldo Anterior :",490357.64],
+        [46296.0,None,52.0,"PAGAMENTO FORNECEDOR","00001234-1","",None,1234.56,0,489123.08],
+        [46297.0,None,73.0,"RECEBIMENTO CLIENTE","0000789","",None,0,2000.12,491123.20],
+        [None,None,None,None,None,None,None,None,None,"491123,20"],
     ])
 
 
@@ -52,7 +53,7 @@ def test_excel_com_extension_xlsx_mas_formato_xls():
 
 def test_debit_credit_same_row_invalid():
     sheet=_sheet()
-    sheet.iloc[4,5]="2,00"
+    sheet.iloc[5,8]="2,00"
     with patch("pandas.read_excel",return_value={"Extrato":sheet}):
         with pytest.raises(ValueError,match="Débito e Crédito"):
             read_statement(OLE_MAGIC+b"fixture")
@@ -60,7 +61,7 @@ def test_debit_credit_same_row_invalid():
 
 def test_real_dates_and_multiple_competences():
     sheet=_sheet()
-    sheet.iloc[4,0]=46300  # Excel serial
+    sheet.iloc[5,0]=46300  # Excel serial
     with patch("pandas.read_excel",return_value={"Extrato":sheet}):
         df=read_statement(OLE_MAGIC+b"fixture")
     assert df.iloc[0]["DATA"]==pd.Timestamp("1899-12-30")+pd.Timedelta(days=46300)
@@ -77,3 +78,13 @@ def test_workflow_exports_one_sheet_and_prevents_duplicate_month():
         with pytest.raises(ValueError,match="competência repetida"):
             workflow_1328({"itau":[("a.xls",OLE_MAGIC+b"fixture"),
                                    ("b.xlsx",OLE_MAGIC+b"fixture")]},{})
+
+
+def test_original_file_has_saldo_anterior_in_credit_column():
+    """A linha 10 não é crédito; o nome do lançamento está em D, não em B."""
+    with patch("pandas.read_excel",return_value={"Extrato":_sheet()}):
+        result=read_statement(OLE_MAGIC+b"fixture")
+    assert len(result)==2
+    assert "Saldo Anterior" not in " ".join(result["HISTÓRICO"])
+    assert result.iloc[0]["HISTÓRICO"]=="Pago: PAGAMENTO FORNECEDOR | Doc: 00001234-1"
+    assert result.iloc[1]["HISTÓRICO"]=="Recebido: RECEBIMENTO CLIENTE | Doc: 0000789"
