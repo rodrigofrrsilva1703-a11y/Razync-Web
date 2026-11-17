@@ -3,6 +3,12 @@
 (function () {
   "use strict";
   const DETAILS = {
+    1328: {
+      intro:"A empresa 1328 envia a planilha Extrato Financeiro do Itaú 508. Aceita XLS e XLSX, inclusive arquivos de Excel antigo renomeados como .xlsx.",
+      note:"A data vem da coluna Data. Débito vira pagamento negativo e Crédito vira recebimento positivo. O histórico combina a coluna Histórico com N Documento. Linhas de saldo e totais não viram lançamentos; competência é identificada pelas datas.",
+      extrato:"Compare o Modelo Domínio gerado com a planilha financeira original do mesmo período, conta Itaú 508.",
+      base:"Use o Modelo Domínio revisado para ensinar as contrapartidas da conta 508 sem modificar os históricos e documentos."
+    },
     113: {
       intro:"A Leravi utiliza Bradesco 9 e Santander 513. Envie os PDFs bancários e, para enriquecer os históricos, a planilha financeira XLSX.",
       note:"A planilha traz Nome Fantasia e Nota Fiscal. Os complementos só são acrescentados quando Data Pagto., Valor Pago e natureza geram correspondência única. O Santander usa o Extrato Consolidado Inteligente digitalizado: o leitor identifica a competência no próprio PDF, faz OCR e só gera o Modelo Domínio quando os créditos, débitos e saldos conferem. Setembro/2026 já foi validado. Não misture competências.",
