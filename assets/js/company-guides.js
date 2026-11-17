@@ -6,7 +6,7 @@
     1328: {
       intro:"A empresa 1328 envia a planilha Extrato Financeiro do Itaú 508. Aceita XLS e XLSX, inclusive arquivos de Excel antigo renomeados como .xlsx.",
       note:"A data vem da coluna Data. Débito vira pagamento negativo e Crédito vira recebimento positivo. O histórico combina a coluna Histórico com N Documento. Linhas de saldo e totais não viram lançamentos; competência é identificada pelas datas.",
-      extrato:"Compare o Modelo Domínio gerado com a planilha financeira original do mesmo período, conta Itaú 508.",
+      extrato:"Para conferir, envie o Modelo Domínio gerado pelo Organizador e o PDF original do banco Itaú da mesma competência (conta 508). O PDF digitalizado é lido por OCR e os saldos diários são conferidos; pagamentos agrupados podem ter quantidades diferentes das linhas financeiras.",
       base:"Use o Modelo Domínio revisado para ensinar as contrapartidas da conta 508 sem modificar os históricos e documentos."
     },
     113: {
