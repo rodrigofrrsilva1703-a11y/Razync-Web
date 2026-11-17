@@ -190,6 +190,15 @@ def read_statement(content):
                 raise ValueError(
                     f"Empresa 1328: lançamento sem data na linha {source_line}."
                 )
+            # Rodapé real do ERP (linha 326): a coluna Data recebe
+            # "Financeiro\\Extrato Financeiro (102)" e as colunas
+            # Débito/Crédito não contêm movimentação. Não interpretar
+            # metadados do relatório como lançamento com data inválida.
+            if not history and all(
+                pd.isna(value) or str(value).strip() in {"", "0", "0.0", "0,00", "0.00"}
+                for value in (line[columns["debit"]], line[columns["credit"]])
+            ):
+                continue
             day = _date(day_cell, source_line)
             if not history or _norm(history).startswith(("saldoanterior", "saldofinal")):
                 raise ValueError(
