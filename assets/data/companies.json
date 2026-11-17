@@ -285,6 +285,12 @@
     "regime": "LUCRO PRESUMIDO"
   },
   {
+    "codigo": 1328,
+    "nome": "A&Z INDUSTRIA, COMERCIO E SERVICOS LTDA",
+    "regime": "Não informado",
+    "chave_sistema": "az_industria_1328"
+  },
+  {
     "codigo": 1396,
     "nome": "NOVA GERAÇÃO COMERCIAL ELETRICA LTDA (FILIAL)",
     "regime": "LUCRO PRESUMIDO",
