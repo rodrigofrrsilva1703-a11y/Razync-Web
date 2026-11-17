@@ -105,3 +105,35 @@ def test_divergencia_de_saldo_impede_exportacao_incompleta():
     with patch("pandas.read_excel",return_value={"Extrato":sheet}):
         with pytest.raises(ValueError,match="saldo divergente na linha 6"):
             read_statement(OLE_MAGIC+b"fixture")
+
+
+def test_1328_rodape_erp_na_coluna_data_apos_totalizadores():
+    """Regressão da linha 326 do arquivo real, após os 304 movimentos.
+
+    Células do rodapé não são lançamentos, nem possuem data; nunca podem
+    produzir 'data inválida na linha 326'.
+    """
+    sheet = _sheet()
+    footer = pd.DataFrame([[None] * 10 for _ in range(326 - len(sheet))])
+    footer.iloc[-1, 0] = r"Financeiro\Extrato Financeiro   (102)"
+    # Simula resumo de rodapé apresentado nas colunas J e K do ERP.
+    footer.iloc[-11, 9] = "Saldo Anterior :"
+    sheet = pd.concat([sheet, footer], ignore_index=True)
+    assert len(sheet) == 326
+    with patch("pandas.read_excel", return_value={"Extrato": sheet}):
+        result = read_statement(OLE_MAGIC + b"fixture")
+    assert len(result) == 2
+    assert result["VALOR"].tolist() == [-1234.56, 2000.12]
+
+
+def test_1328_nao_ignora_movimento_com_data_invalida():
+    """Rodapé sem movimento pode ser ignorado; débito real não pode."""
+    sheet = _sheet()
+    sheet.loc[len(sheet)] = [
+        r"Financeiro\Extrato Financeiro   (102)", None, None,
+        "PAGAMENTO COM DATA INVALIDA", "123-1", None, None,
+        75.00, 0.00, None,
+    ]
+    with patch("pandas.read_excel", return_value={"Extrato": sheet}):
+        with pytest.raises(ValueError, match="data inválida"):
+            read_statement(OLE_MAGIC + b"fixture")
