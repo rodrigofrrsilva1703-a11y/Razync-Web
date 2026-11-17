@@ -147,9 +147,9 @@ def statement(code, bank, content, filename):
                               tax_id=None, agency="0644", account="0007377-7",
                               accounting_account=accounts(code)[bank], salary_names=names)
     if code == 1328:
-        if bank != "itau" or not filename.lower().endswith((".xls", ".xlsx")):
-            raise ValueError("Empresa 1328: envie extrato financeiro Itaú em Excel.")
-        from app.company_1328 import read_statement
+        if bank != "itau" or not filename.lower().endswith(".pdf"):
+            raise ValueError("Empresa 1328: na Conferência com Extrato, envie o PDF bancário Itaú.")
+        from app.company_1328_itau_pdf import read_statement
         return read_statement(content)
     if code in (113, 1274):
         if not filename.lower().endswith(".pdf"):
