@@ -47,7 +47,9 @@ def test_statement_reads_real_file_magic_not_extension(magic):
 
 def test_excel_com_extension_xlsx_mas_formato_xls():
     with patch("pandas.read_excel",return_value={"Extrato":_sheet()}):
-        parsed=statement(1328,"itau",OLE_MAGIC+b"fixture","extrato.xlsx")
+        # Organizar Arquivos usa Excel; a função statement() é reservada
+        # à Conferência com Extrato, que recebe o PDF bancário.
+        parsed=read_statement(OLE_MAGIC+b"fixture")
     assert len(parsed)==2
 
 
