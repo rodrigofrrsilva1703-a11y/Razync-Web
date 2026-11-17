@@ -259,6 +259,21 @@ CAPABILITIES[1050] = {
     "tools": ["modelo_dominio", "conferencia_extrato", "base_inteligente"],
 }
 
+CAPABILITIES[1328] = {
+    "status": "api_ready",
+    "workflow": "advanced",
+    "banks": {"itau": "508"},
+    "tools": ["modelo_dominio", "conferencia_extrato", "base_inteligente"],
+    "roles": [
+        {"name": "itau", "label": "Extrato financeiro Itaú 508 (Excel XLS/XLSX)",
+         "accept": ".xls,.xlsx", "multiple": True},
+    ],
+    "options": [
+        {"name": "data_inicial", "label": "Data inicial (opcional)", "type": "date"},
+        {"name": "data_final", "label": "Data final (opcional)", "type": "date"},
+    ],
+}
+
 CAPABILITIES[1303] = {
     "status": "api_ready",
     "workflow": "advanced",
