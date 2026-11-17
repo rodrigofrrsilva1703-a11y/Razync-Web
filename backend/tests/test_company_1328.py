@@ -88,3 +88,20 @@ def test_original_file_has_saldo_anterior_in_credit_column():
     assert "Saldo Anterior" not in " ".join(result["HISTÓRICO"])
     assert result.iloc[0]["HISTÓRICO"]=="Pago: PAGAMENTO FORNECEDOR | Doc: 00001234-1"
     assert result.iloc[1]["HISTÓRICO"]=="Recebido: RECEBIMENTO CLIENTE | Doc: 0000789"
+
+
+def test_saldo_e_apenas_conferencia_nao_lancamento():
+    sheet=_sheet()
+    with patch("pandas.read_excel",return_value={"Extrato":sheet}):
+        df=read_statement(OLE_MAGIC+b"fixture")
+    assert len(df)==2
+    assert round(df["VALOR"].sum(),2)==765.56
+    assert all("Saldo" not in h for h in df["HISTÓRICO"])
+
+
+def test_divergencia_de_saldo_impede_exportacao_incompleta():
+    sheet=_sheet()
+    sheet.iloc[5,9]=489124.08  # R$ 1 a mais do que o saldo correto.
+    with patch("pandas.read_excel",return_value={"Extrato":sheet}):
+        with pytest.raises(ValueError,match="saldo divergente na linha 6"):
+            read_statement(OLE_MAGIC+b"fixture")
