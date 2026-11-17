@@ -65,6 +65,26 @@ def _money(value, row):
     return abs(int(pennies))
 
 
+def _saldo_centavos(value, row):
+    """Saldo é usado somente para conferir o extrato, nunca para lançar."""
+    if value is None or pd.isna(value) or (
+        isinstance(value, str) and not value.strip()
+    ):
+        return None
+    if isinstance(value, bool):
+        raise ValueError(f"Empresa 1328: saldo inválido na linha {row}.")
+    raw = str(value).strip().replace("R$", "").replace(" ", "")
+    if "," in raw:
+        raw = raw.replace(".", "").replace(",", ".")
+    try:
+        number = Decimal(raw) * 100
+    except InvalidOperation as exc:
+        raise ValueError(f"Empresa 1328: saldo ilegível na linha {row}.") from exc
+    if not number.is_finite() or number != number.to_integral_value():
+        raise ValueError(f"Empresa 1328: saldo inválido na linha {row}.")
+    return int(number)
+
+
 def _date(value, row):
     if isinstance(value, (pd.Timestamp, datetime, date)):
         parsed = pd.Timestamp(value)
@@ -132,6 +152,9 @@ def read_statement(content):
         if header_row is None:
             # Ignorar abas auxiliares sem tabela; não aceitar arquivo vazio.
             continue
+        balance_index = _column(data.iloc[header_row].tolist(), "saldo")
+        running_balance = None
+        validated_balances = 0
         for i in range(header_row + 1, len(data)):
             line = data.iloc[i].tolist()
             source_line = i + 1
@@ -156,6 +179,13 @@ def read_statement(content):
                 if not history or _norm(history).startswith(
                     ("saldo", "total", "resumo")
                 ):
+                    # No arquivo original o texto "Saldo Anterior :" está
+                    # na coluna Crédito (I) e o valor na coluna Saldo (J).
+                    if (balance_index is not None and not rows
+                        and _norm(line[columns["credit"]]).startswith("saldoanterior")):
+                        running_balance = _saldo_centavos(
+                            line[balance_index], source_line
+                        )
                     continue
                 raise ValueError(
                     f"Empresa 1328: lançamento sem data na linha {source_line}."
@@ -175,6 +205,17 @@ def read_statement(content):
                 )
             document = _document(line[columns["document"]])
             value = cred if cred else -deb
+            if running_balance is not None and balance_index is not None:
+                reported = _saldo_centavos(line[balance_index], source_line)
+                if reported is not None:
+                    if running_balance + value != reported:
+                        raise ValueError(
+                            f"Empresa 1328: saldo divergente na linha {source_line}."
+                        )
+                    running_balance = reported
+                    validated_balances += 1
+                else:
+                    running_balance += value
             description = history if not document else f"{history} | Doc: {document}"
             rows.append({
                 "DESCRIÇÃO": "BANCO ITAÚ",
