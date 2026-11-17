@@ -146,6 +146,11 @@ def statement(code, bank, content, filename):
         return read_statement(content, holder=r"RODRIGUEZ\s+GONCALES\s+SOCIEDADE\s+DE\s+ADVOGADOS",
                               tax_id=None, agency="0644", account="0007377-7",
                               accounting_account=accounts(code)[bank], salary_names=names)
+    if code == 1328:
+        if bank != "itau" or not filename.lower().endswith((".xls", ".xlsx")):
+            raise ValueError("Empresa 1328: envie extrato financeiro Itaú em Excel.")
+        from app.company_1328 import read_statement
+        return read_statement(content)
     if code in (113, 1274):
         if not filename.lower().endswith(".pdf"):
             raise ValueError("Envie extrato bancário em PDF.")
@@ -504,6 +509,9 @@ def _workflow(code, roles, options):
         if code in {1165, 1166}:
             from app.otom_1165 import workflow as otom_workflow
             return otom_workflow(roles, options, company=code)
+        if code == 1328:
+            from app.company_1328 import workflow_1328
+            return workflow_1328(roles, options)
         if code == 113:
             from app.company_113 import workflow_113
             return workflow_113(roles, options)
