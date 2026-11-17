@@ -13,7 +13,7 @@
     if (code === 1130) return '.pdf';
     if (code === 977) return bank === 'bradesco' ? '.pdf,.zip' : '.pdf';
     if (pdfOnly.has(code)) return '.pdf';
-    if (code === 1530) return '.xls,.xlsx';
+    if (code === 1328 || code === 1530) return '.xls,.xlsx';
     if (code === 841) return '.pdf,.xls,.xlsx';
     if (code === 968 && bank === 'bradesco') return '.pdf';
     if (universalStatements.has(code)) return '.pdf,.xls,.xlsx,.csv,.ofx';
