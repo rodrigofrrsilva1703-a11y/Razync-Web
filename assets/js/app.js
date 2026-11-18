@@ -1575,10 +1575,12 @@ function renderClassifiedWorkbook(prepared, summary, classifyOptions, companyCod
   if (controller.signal.aborted || selected?.codigo !== companyCode) return;
   showWorkflowPreview(prepared.preview,target);
   renderClassificationCoverage(summary.cobertura);
-  if (summary.gemini_avaliados) {
+  if (summary.gemini_consultados) {
     const decision = document.createElement("p");
     decision.className = "helper";
-    decision.textContent = summary.por_gemini_decision
+    decision.textContent = !summary.gemini_avaliados
+      ? "Gemini Decision 1 indisponível nesta consulta. As pendências seguem para revisão."
+      : summary.por_gemini_decision
       ? `Gemini Decision 1 classificou ${summary.por_gemini_decision} de ${summary.gemini_avaliados} lançamentos avaliados.`
       : `Gemini Decision 1 confirmou ${summary.gemini_confirmados} de ${summary.gemini_avaliados} lançamentos avaliados. As contas desses lançamentos continuam pendentes.`;
     target.append(decision);

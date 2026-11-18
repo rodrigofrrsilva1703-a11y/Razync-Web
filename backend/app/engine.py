@@ -2497,11 +2497,8 @@ def classificar_planilha_final(
             elif conflito and (not conta_segura or len(candidatos | set(contas_nome)) > 1):
                 resumo['conflitos'] += 1
                 resumo['somente_banco'] += 1
-                if not decidir_pendencias or not operacao or not 2 <= len(evidencias) <= 4:
-                    continue
-                if (candidatos | set(contas_nome)) - evidencias.keys() or any(
-                    e['indefinida'] or not e['operacoes'] for e in evidencias.values()
-                ):
+                contas_concorrentes = candidatos | set(contas_nome) | set(evidencias)
+                if not decidir_pendencias or not nome_empresa or not 2 <= len(contas_concorrentes) <= 4:
                     continue
                 if periodo_decisao:
                     col_data = mapa_colunas.get('data')
@@ -2509,19 +2506,30 @@ def classificar_planilha_final(
                     if pd.isna(data) or not periodo_decisao[0] <= data.normalize() <= periodo_decisao[1]:
                         continue
                 contas_operacao = {
-                    conta: len(evidencia['operacoes'].get(operacao, ()))
-                    for conta, evidencia in evidencias.items()
+                    conta: len(evidencias.get(conta, {}).get('operacoes', {}).get(operacao, ()))
+                    for conta in contas_concorrentes
                 }
                 if any(not re.fullmatch(r'[1-9][0-9]{0,14}', conta)
                        or conta in contas_bancarias.values() or conta in valores_regra
                        for conta in contas_operacao):
                     continue
-                if sum(bool(total) for total in contas_operacao.values()) == 1 and max(contas_operacao.values()) >= 2:
+                apto = (
+                    operacao and set(evidencias) == contas_concorrentes
+                    and all(not e['indefinida'] and e['operacoes'] for e in evidencias.values())
+                    and sum(bool(total) for total in contas_operacao.values()) == 1
+                    and max(contas_operacao.values()) >= 2
+                )
+                if apto:
                     grupo = (operacao, tuple(sorted(contas_operacao.items())))
-                    if grupo in pendencias_decisao or len(pendencias_decisao) < 8:
-                        pendencias_decisao.setdefault(grupo, []).append(
-                            (ws.cell(numero_linha, coluna_contrapartida), linha_estava_parcial)
-                        )
+                else:
+                    grupo = ('indeterminada', tuple(sorted(
+                        (conta, len(contas_nome.get(conta, {}).get('periodos', ())))
+                        for conta in contas_concorrentes
+                    )))
+                if grupo in pendencias_decisao or len(pendencias_decisao) < 8:
+                    pendencias_decisao.setdefault(grupo, []).append(
+                        (ws.cell(numero_linha, coluna_contrapartida), linha_estava_parcial)
+                    )
             elif conta_segura or conta_documento:
                 ws.cell(numero_linha, coluna_contrapartida).value = valor_conta_excel(
                     conta_segura or conta_documento
@@ -2561,12 +2569,14 @@ def classificar_planilha_final(
     if pendencias_decisao:
         grupos = list(pendencias_decisao)
         respostas = decidir_pendencias([(operacao, dict(contas)) for operacao, contas in grupos])
-        resumo['gemini_avaliados'] = sum(map(len, pendencias_decisao.values()))
+        resumo['gemini_consultados'] = sum(map(len, pendencias_decisao.values()))
+        resumo['gemini_avaliados'] = resumo['gemini_consultados'] if respostas is not None else 0
+        respostas = respostas or {}
         resumo['gemini_confirmados'] = 0
         resumo['por_gemini_decision'] = 0
         for indice, grupo in enumerate(grupos):
             conta = respostas.get(indice)
-            if dict(grupo[1]).get(conta, 0) < 2:
+            if grupo[0] == 'indeterminada' or dict(grupo[1]).get(conta, 0) < 2:
                 continue
             linhas = pendencias_decisao[grupo]
             resumo['gemini_confirmados'] += len(linhas)

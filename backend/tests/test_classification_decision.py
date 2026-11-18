@@ -77,7 +77,7 @@ def test_gemini_automatic_flow_compares_then_applies_only_when_enabled(monkeypat
         calls.append(questions)
         assert '412' not in str(questions)
         assert 'Fornecedor ABC' not in str(questions)
-        return {'g1': SimpleNamespace(choice='opcao_1', confidence=.99)}
+        return {name: SimpleNamespace(choice='opcao_1', confidence=.99) for name in questions}
 
     monkeypatch.setattr(classification_decision, 'request_choices', request)
     source = book([[-100, '', 508, 'PIX ENVIADO PARA FORNECEDOR ABC NF 9000'],
@@ -95,3 +95,23 @@ def test_gemini_automatic_flow_compares_then_applies_only_when_enabled(monkeypat
     assert rows['D3'].value is None
     assert summary['por_gemini_decision'] == 1
     assert len(calls) == 2
+
+
+def test_conflict_without_operation_is_evaluated_but_never_written(monkeypatch):
+    monkeypatch.setattr(classification_service, 'records', lambda _: [
+        record(account='412'), record(account='413'),
+    ])
+    monkeypatch.setattr(classification_decision, 'configured_key', lambda: 'test-key')
+    monkeypatch.setenv('GEMINI_DECISION_AUTO_APPLY', '1')
+
+    def request(key, context, questions):
+        assert 'Escolha revisar' in questions['g1']['instructions']
+        return {name: SimpleNamespace(choice='opcao_1', confidence=.99) for name in questions}
+
+    monkeypatch.setattr(classification_decision, 'request_choices', request)
+    output, summary = classification_service.classify(
+        242, book(), 'itau.xlsx', {'modo_consolidado': False},
+    )
+    assert summary['gemini_avaliados'] == 1
+    assert summary['por_gemini_decision'] == 0
+    assert load_workbook(io.BytesIO(output)).worksheets[0]['D2'].value is None

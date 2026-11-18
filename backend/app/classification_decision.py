@@ -116,10 +116,16 @@ def classify_groups(key, groups):
         for index, (account, periods) in enumerate(sorted(candidates.items()), 1):
             option = f'opcao_{index}'
             options[question][option] = account, periods
-            criteria[option] = f'{periods} período(s) com o mesmo fornecedor e tipo de operação.'
+            criteria[option] = (
+                f'{periods} período(s) com a mesma contraparte, sem confirmação do tipo de operação.'
+                if operation == 'indeterminada' else
+                f'{periods} período(s) com o mesmo fornecedor e tipo de operação.'
+            )
         questions[question] = {
             'type': 'choice',
             'instructions': (
+                'A evidência disponível não distingue as contas. Escolha revisar.'
+                if operation == 'indeterminada' else
                 f'Tipo de operação identificado localmente: {operation}. '
                 'Confirme apenas a opção com pelo menos dois períodos compatíveis e '
                 'sem períodos compatíveis em outra opção. Se houver dúvida, escolha revisar.'
@@ -131,7 +137,9 @@ def classify_groups(key, groups):
         accepted = {}
         for group, (question, candidates) in enumerate(options.items()):
             answer = answers.get(question)
-            if answer is None or answer.choice not in candidates:
+            if answer is None:
+                raise ValueError('missing_answer')
+            if groups[group][0] == 'indeterminada' or answer.choice not in candidates:
                 continue
             account, periods = candidates[answer.choice]
             if periods >= 2 and all(not count for other, count in candidates.values() if other != account):
@@ -140,4 +148,4 @@ def classify_groups(key, groups):
         return accepted
     except Exception as exc:
         logging.getLogger(__name__).warning('classification_decision_failure type=%s', type(exc).__name__)
-        return {}
+        return None
