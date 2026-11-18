@@ -1768,24 +1768,30 @@ def extrair_nome_empresa_classificacao(historico, assinatura=''):
     empresa_match = re.search(
         r'empresa\s*:\s*(.*?)(?:\s+obs\s*:|$)', texto
     )
+    observacao = ''
     if empresa_match:
         empresa = empresa_match.group(1)
-    elif assinatura:
-        _, empresa, _ = decompor_assinatura_classificacao(assinatura)
+    elif texto:
+        empresa = re.split(r'\s+obs\s*:', texto, maxsplit=1)[0]
     else:
-        empresa = re.sub(
-            r'^\s*(?:pago|pagar|pagamento|recebido|receber|recebimento)\b',
-            ' ',
-            texto
-        )
-        # Remove um documento variável que apareça logo após a natureza.
-        empresa = re.sub(
-            r'^\s*[a-z0-9./-]*\d[a-z0-9./-]*\s+',
-            ' ',
-            empresa
-        )
+        _, empresa, observacao = decompor_assinatura_classificacao(assinatura)
 
     tokens = re.findall(r'[a-z0-9]+', empresa)
+    if not empresa_match:
+        # Extratos variam o prefixo da mesma contraparte entre bancos e meses.
+        # Remova metadados nas bordas, preservando palavras dentro da razão social.
+        operacoes = {
+            'pix', 'enviado', 'enviada', 'recebido', 'recebida', 'pago',
+            'paga', 'pagamento', 'pagamentos', 'pagto', 'pagtos', 'pgto',
+            'pagar', 'receber', 'recebimento', 'recebimentos', 'via', 'para',
+            'de', 'da', 'do', 'das', 'dos',
+        }
+        inicio, fim = 0, len(tokens)
+        while inicio < fim and (tokens[inicio] in operacoes or tokens[inicio].isdigit()):
+            inicio += 1
+        while fim > inicio and (tokens[fim - 1] in operacoes or tokens[fim - 1].isdigit()):
+            fim -= 1
+        tokens = tokens[inicio:fim]
     termos_ruido = {
         'ltda', 'limitada', 'eireli', 'epp', 'me', 'mei', 'sa', 's', 'a',
         'sociedade', 'anonima', 'unipessoal', 'de', 'da', 'do', 'das', 'dos',
@@ -1801,6 +1807,14 @@ def extrair_nome_empresa_classificacao(historico, assinatura=''):
         if any(caractere.isdigit() for caractere in token) and len(token) >= 4:
             continue
         tokens_validos.append(token)
+    observacao_match = re.search(r'\s+obs\s*:\s*(.*)$', texto)
+    if observacao_match:
+        observacao = observacao_match.group(1)
+    if observacao and tokens_validos:
+        tokens_validos.extend(
+            token for token in re.findall(r'\b[a-z]+\b', observacao)
+            if token not in termos_ruido
+        )
     return ' '.join(tokens_validos).strip()
 
 def normalizar_nome_empresa_classificacao(nome):
@@ -2137,10 +2151,35 @@ def aplicar_classificacoes_automaticas(df, banco, base_classificacoes):
             resultado.at[indice, '_CLASSIFICAÇÃO'] = 'Revisar padrão novo'
     return resultado
 
+_OPERACOES_CLASSIFICACAO = {
+    'nota fiscal': r'\b(?:nf(?:e)?|nota fiscal)\b',
+    'adiantamento': r'\b(?:adiantamento|adto|antecipad[oa])\b',
+    'reembolso': r'\b(?:reembolso|reemb|reem)\b',
+    'devolucao': r'\b(?:devolucao|estorno)\b',
+    'frete': r'\bfrete\b',
+    'aluguel': r'\baluguel\b',
+}
+
+
+def sinais_classificacao(historico, nome):
+    texto = normalizar_texto(historico)
+    operacoes = [operacao for operacao, padrao in _OPERACOES_CLASSIFICACAO.items()
+                 if re.search(padrao, texto)]
+    operacao = operacoes[0] if len(operacoes) == 1 else ''
+    documento = re.search(r'\b(?:nf(?:e)?|nota fiscal)\s*[:#-]?\s*(\d{3,15})\b', texto)
+    # Use an explicit invoice reference only for the locally matched supplier.
+    referencia = documento.group(1) if documento and operacao == 'nota fiscal' else ''
+    identidade = nome
+    if operacao:
+        identidade = re.sub(_OPERACOES_CLASSIFICACAO[operacao], ' ', identidade)
+    return ' '.join(identidade.split()), operacao, referencia
+
+
 def classificar_planilha_final(
     file_bytes, filename, base_classificacoes, contas_bancarias=None,
     empresa_classificacao='', coluna_substituir='', valores_substituiveis=None,
-    modo_consolidado_eletro_forte=False,
+    modo_consolidado_eletro_forte=False, decidir_pendencias=None,
+    aplicar_decisoes=False, periodo_decisao=None,
 ):
     """Preenche Débito/Crédito somente na planilha final já conciliada."""
     from openpyxl import load_workbook
@@ -2154,6 +2193,7 @@ def classificar_planilha_final(
     candidatos_por_banco = {}
     periodos_por_banco = {}
     evidencias_nomes_por_banco = {}
+    evidencias_operacao = {}
     for item in base_classificacoes:
         banco = item.get('banco', '')
         assinatura = item.get('assinatura', '')
@@ -2213,6 +2253,19 @@ def classificar_planilha_final(
             except (TypeError, ValueError):
                 ocorrencias_item = 1
             por_conta['ocorrencias'] += ocorrencias_item
+            identidade, operacao, referencia = sinais_classificacao(historico_exemplo, nome_empresa)
+            if len(identidade) >= 4:
+                por_identidade = evidencias_operacao.setdefault((banco, natureza, identidade), {})
+                evidencia = por_identidade.setdefault(contrapartida, {'operacoes': {}, 'documentos': set(), 'indefinida': False})
+                if operacao:
+                    evidencia['operacoes'].setdefault(operacao, set()).update(
+                        p for p in periodos_item if re.fullmatch(r'\d{4}-(?:0[1-9]|1[0-2])', str(p))
+                    )
+                else:
+                    evidencia['indefinida'] = True
+                if referencia:
+                    evidencia['documentos'].add(referencia)
+
 
     mapas_seguros = {}
     for banco, candidatos in candidatos_por_banco.items():
@@ -2248,6 +2301,7 @@ def classificar_planilha_final(
     }
     banco_arquivo = identificar_chave_banco_empresa(filename)
     cache_similaridade = {}
+    pendencias_decisao = {}
 
     for ws in wb.worksheets:
         # Na 242, nunca classificar a aba Principal. Ela deve permanecer exatamente
@@ -2394,8 +2448,10 @@ def classificar_planilha_final(
                     resumo['parciais_completados'] += 1
                 continue
 
-            candidatos_banco = candidatos_por_banco.get(banco_linha, {})
-            mapas_banco = mapas_seguros.get(banco_linha, {})
+            nome_empresa = extrair_nome_empresa_classificacao(historico)
+            nomes_banco = evidencias_nomes_por_banco.get(banco_linha, {})
+            candidatos_banco = candidatos_por_banco.get(banco_linha, {}) if nome_empresa else {}
+            mapas_banco = mapas_seguros.get(banco_linha, {}) if nome_empresa else {}
             candidatos = candidatos_banco.get(assinatura, set())
             conta_segura = mapas_banco.get(assinatura)
 
@@ -2408,6 +2464,16 @@ def classificar_planilha_final(
                 assinatura_outro = f"outro|{sufixo_assinatura}" if sufixo_assinatura else assinatura
                 candidatos = candidatos_banco.get(assinatura_outro, set())
                 conta_segura = mapas_banco.get(assinatura_outro)
+            identidade, operacao, referencia = sinais_classificacao(historico, nome_empresa)
+            evidencias = evidencias_operacao.get((banco_linha, natureza, identidade), {})
+            contas_nome = nomes_banco.get(natureza, {}).get(nome_empresa, {})
+            conflito = len(candidatos | set(contas_nome) | set(evidencias)) > 1
+            conta_documento = None
+            if not conflito and referencia and len(evidencias) == 1:
+                conta, evidencia = next(iter(evidencias.items()))
+                if referencia in evidencia['documentos']:
+                    conta_documento = conta
+
             conta_fixa_accede = (
                 identificar_conta_folha_accede_1000(historico)
                 if empresa_classificacao == 'accede_automacao'
@@ -2428,23 +2494,48 @@ def classificar_planilha_final(
                 resumo['antecipados'] += 1
                 if linha_estava_parcial:
                     resumo['parciais_completados'] += 1
-            elif conta_segura:
+            elif conflito and (not conta_segura or len(candidatos | set(contas_nome)) > 1):
+                resumo['conflitos'] += 1
+                resumo['somente_banco'] += 1
+                if not decidir_pendencias or not operacao or not 2 <= len(evidencias) <= 4:
+                    continue
+                if (candidatos | set(contas_nome)) - evidencias.keys() or any(
+                    e['indefinida'] or not e['operacoes'] for e in evidencias.values()
+                ):
+                    continue
+                if periodo_decisao:
+                    col_data = mapa_colunas.get('data')
+                    data = pd.to_datetime(ws.cell(numero_linha, col_data).value, dayfirst=True, errors='coerce') if col_data else pd.NaT
+                    if pd.isna(data) or not periodo_decisao[0] <= data.normalize() <= periodo_decisao[1]:
+                        continue
+                contas_operacao = {
+                    conta: len(evidencia['operacoes'].get(operacao, ()))
+                    for conta, evidencia in evidencias.items()
+                }
+                if any(not re.fullmatch(r'[1-9][0-9]{0,14}', conta)
+                       or conta in contas_bancarias.values() or conta in valores_regra
+                       for conta in contas_operacao):
+                    continue
+                if sum(bool(total) for total in contas_operacao.values()) == 1 and max(contas_operacao.values()) >= 2:
+                    grupo = (operacao, tuple(sorted(contas_operacao.items())))
+                    if grupo in pendencias_decisao or len(pendencias_decisao) < 8:
+                        pendencias_decisao.setdefault(grupo, []).append(
+                            (ws.cell(numero_linha, coluna_contrapartida), linha_estava_parcial)
+                        )
+            elif conta_segura or conta_documento:
                 ws.cell(numero_linha, coluna_contrapartida).value = valor_conta_excel(
-                    conta_segura
+                    conta_segura or conta_documento
                 )
                 resumo['automaticos'] += 1
                 if linha_estava_parcial:
                     resumo['parciais_completados'] += 1
-            elif len(candidatos) > 1:
-                resumo['conflitos'] += 1
-                resumo['somente_banco'] += 1
             else:
-                chave_cache = (banco_linha, natureza, assinatura)
+                chave_cache = (banco_linha, natureza, nome_empresa)
                 if chave_cache not in cache_similaridade:
                     cache_similaridade[chave_cache] = encontrar_conta_por_nome_historico(
                         historico,
                         natureza,
-                        evidencias_nomes_por_banco.get(banco_linha, {})
+                        nomes_banco
                     )
                 conta_similar, _, motivo_nome = cache_similaridade[chave_cache]
                 if conta_similar:
@@ -2466,6 +2557,27 @@ def classificar_planilha_final(
         raise ValueError(
             'Nenhuma aba com as colunas HISTÓRICO, DÉBITO e CRÉDITO foi encontrada.'
         )
+
+    if pendencias_decisao:
+        grupos = list(pendencias_decisao)
+        respostas = decidir_pendencias([(operacao, dict(contas)) for operacao, contas in grupos])
+        resumo['gemini_avaliados'] = sum(map(len, pendencias_decisao.values()))
+        resumo['gemini_confirmados'] = 0
+        resumo['por_gemini_decision'] = 0
+        for indice, grupo in enumerate(grupos):
+            conta = respostas.get(indice)
+            if dict(grupo[1]).get(conta, 0) < 2:
+                continue
+            linhas = pendencias_decisao[grupo]
+            resumo['gemini_confirmados'] += len(linhas)
+            if aplicar_decisoes:
+                for celula, parcial in linhas:
+                    celula.value = valor_conta_excel(conta)
+                    resumo['parciais_completados'] += int(parcial)
+                resumo['automaticos'] += len(linhas)
+                resumo['conflitos'] -= len(linhas)
+                resumo['somente_banco'] -= len(linhas)
+                resumo['por_gemini_decision'] += len(linhas)
 
     saida = io.BytesIO()
     wb.save(saida)

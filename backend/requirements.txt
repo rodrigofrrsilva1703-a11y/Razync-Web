@@ -18,3 +18,5 @@ lxml>=5,<7
 
 psycopg[binary]==3.2.13
 psycopg-pool==3.3.3
+
+google-genai>=3.2,<4

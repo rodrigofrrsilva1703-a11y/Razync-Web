@@ -1,5 +1,6 @@
 """Persistent adapter for the complete original classification and review rules."""
 from __future__ import annotations
+from functools import partial
 import hashlib
 import io
 import json
@@ -287,12 +288,24 @@ def _limit_classified_workbook_to_period(original_content, classified_content, d
 
 
 def classify(company, content, filename, options=None):
+    from app import classification_decision
+
     options = resolve_classification_options(company, options)
+    start, end = options.get('data_inicial', ''), options.get('data_final', '')
+    if bool(start) != bool(end):
+        raise ValueError('Informe as duas datas do período.')
+    period = (pd.Timestamp(start).normalize(), pd.Timestamp(end).normalize()) if start else None
+    if period and period[1] < period[0]:
+        raise ValueError('A Data Final não pode ser anterior à Data Inicial.')
+    key = classification_decision.configured_key()
     workbook, summary = engine.classificar_planilha_final(
         content, filename, records(company), accounts(company),
         empresa_classificacao=slug(company), coluna_substituir=options.get('coluna_substituir', ''),
         valores_substituiveis=options.get('valores_substituiveis', []),
-        modo_consolidado_eletro_forte=bool(options.get('modo_consolidado', company in {242, 1408}))
+        modo_consolidado_eletro_forte=bool(options.get('modo_consolidado', company in {242, 1408})),
+        decidir_pendencias=partial(classification_decision.classify_groups, key) if key else None,
+        aplicar_decisoes=os.getenv('GEMINI_DECISION_AUTO_APPLY') == '1',
+        periodo_decisao=period,
     )
     workbook, changed = _limit_classified_workbook_to_period(
         content, workbook, options.get('data_inicial', ''), options.get('data_final', '')

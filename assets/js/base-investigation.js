@@ -174,11 +174,11 @@
     if(!result.total_pendencias){body.append(node('h3','Nenhuma pendência elegível neste perfil.'));return;}
     const intro=node('div',null,'base-review-intro'),progress=node('p',null,'base-review-progress');
     intro.append(node('h3','Compare e revise'));body.append(intro);progress.setAttribute('role','status');progress.setAttribute('aria-live','polite');workbar.append(progress);
-    const aiStatus=node('p','Comparação pelos padrões salvos. A IA opcional apenas organiza a fila; não escolhe nem aprova contas.','base-review-status');aiStatus.setAttribute('role','status');
-    const aiButton=button('Priorizar casos com IA',async()=>{
+    const aiStatus=node('p','A IA opcional pode priorizar casos ou sugerir contas com base nas evidências. Você confirma cada aprovação.','base-review-status');aiStatus.setAttribute('role','status');
+    const aiButton=button('Analisar pendências com IA',async()=>{
       let succeeded=false;
       aiButton.disabled=true;priorityController=new AbortController();const signal=priorityController.signal;
-      aiBar.setAttribute('aria-busy','true');aiStatus.textContent='Priorizando casos ambíguos. Você pode continuar comparando os históricos.';
+      aiBar.setAttribute('aria-busy','true');aiStatus.textContent='Analisando casos ambíguos. Você pode continuar comparando os históricos.';
       const data=new FormData();data.append('file',current.blob,'classificado.xlsx');data.append('options_json',JSON.stringify(current.options));data.append('usar_ia','true');
       try{
         const response=await fetch(`${API()}/api/v1/base-inteligente/${current.company}/sugerir-pendentes`,{method:'POST',body:data,signal});
@@ -187,16 +187,25 @@
         const interpretation=prioritized.ia || {};
         if(interpretation.estado && interpretation.estado!=='concluida'){
           aiStatus.textContent=interpretation.motivo || 'A IA não concluiu esta consulta. Você pode tentar novamente.';
-          aiButton.textContent=interpretation.estado==='dispensada'?'Priorizar casos com IA':'Tentar IA novamente';
+          aiButton.textContent=interpretation.estado==='dispensada'?'Analisar pendências com IA':'Tentar IA novamente';
           return;
         }
-        // Preserve every draft and approval. Only reorder the navigation queue.
+        if(interpretation.modelo==='gemini-decision-1'){
+          const byRow=new Map(prioritized.sugestoes.map(s=>[JSON.stringify([s._aba,s._linha]),s]));
+          for(const control of controls){
+            if(control.select.checked || control.deferred || control.reviewed || control.account.value.trim())continue;
+            const suggestion=byRow.get(JSON.stringify([control.s._aba,control.s._linha]));
+            if(!suggestion?.conta_sugerida || control.s.conta_sugerida)continue;
+            Object.assign(control.s,suggestion);
+            control.account.value=suggestion.conta_sugerida;
+          }
+        }
         const ids=new Set(prioritized.ia?.prioridades || []);
         controls.sort((a,b)=>Number(ids.has(b.s.grupo))-Number(ids.has(a.s.grupo)));
         const provider={groq:'Groq',gemini:'Gemini',openrouter:'OpenRouter'}[interpretation.provedor];
         aiStatus.textContent=(provider?`${provider}${interpretation.modelo?' · '+interpretation.modelo:''}: `:'')+(interpretation.motivo || 'Prioridade mantida pelas evidências locais.');
-        succeeded=true;aiButton.textContent='Prioridades atualizadas';updateQueue();
-      }catch(error){if(!signal.aborted && version===generation)aiStatus.textContent=error.message;}finally{if(version===generation){aiBar.setAttribute('aria-busy','false');aiButton.disabled=succeeded || completed || applying;if(!succeeded && aiButton.textContent==='Priorizar casos com IA')aiButton.textContent='Tentar IA novamente';}}
+        succeeded=true;aiButton.textContent='Análise concluída';updateQueue();showDetail();
+      }catch(error){if(!signal.aborted && version===generation)aiStatus.textContent=error.message;}finally{if(version===generation){aiBar.setAttribute('aria-busy','false');aiButton.disabled=succeeded || completed || applying;if(!succeeded && aiButton.textContent==='Analisar pendências com IA')aiButton.textContent='Tentar IA novamente';}}
     });
     const aiBar=node('div',null,'base-review-ai');aiBar.append(aiStatus,aiButton);
     const controls=[],catalog=result.catalogo_contas || [],priority=new Set(result.ia?.prioridades || []);

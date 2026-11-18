@@ -48,6 +48,14 @@ mesmo formato de Excel.
   modelo pago. O preço máximo permitido é zero para entrada e saída.
 - `GEMINI_API_KEY`: chave do Google AI Studio já usada pela integração
   anterior; manter exclusivamente no Railway.
+- `GEMINI_DECISION_API_KEY` e `GEMINI_DECISION_FREE_TIER_CONFIRMED=1`
+  habilitam a análise durante a classificação e a consulta opcional no
+  Assistente. Sem chave dedicada, a integração usa a chave Gemini existente
+  se o ambiente já confirma o nível gratuito com `GEMINI_FREE_TIER_CONFIRMED=1`.
+  A classificação envia somente tipos de operação e contagens por opção anônima.
+  No modo de comparação, os resultados vêm no resumo sem alterar as contas.
+  Depois de validar a precisão, defina `GEMINI_DECISION_AUTO_APPLY=1` para
+  permitir o preenchimento automático das decisões confirmadas.
 - `GEMINI_FREE_MODEL` (opcional): padrão `gemini-3.1-flash-lite`.
   Só aceita `gemini-3.1-flash-lite` e `gemini-2.5-flash-lite`.
 - `GEMINI_FREE_TIER_CONFIRMED=1`: habilita o Gemini como reserva,

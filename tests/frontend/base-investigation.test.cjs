@@ -48,7 +48,7 @@ function twoRows(){const data=JSON.parse(JSON.stringify(report));data.total_pend
 const action=(h,text)=>flatten(h.window).find(e=>e.tag==='button'&&e.textContent===text);
 test('aprovar e próximo mantém a decisão anterior e navega sem novas chamadas',async()=>{const h=await populated(twoRows());action(h,'Aprovar e próximo').events.click();let current=flatten(h.body).find(e=>e.attrs['aria-label']==='Conta para Itaú, linha 3');assert.ok(current);const first=flatten(h.body).find(e=>e.attrs['aria-label']==='Comparar Itaú, linha 2');first.events.click();assert.match(textOf(h.body),/Conta aprovada/);assert.equal(h.requests.length,1);assert.ok(action(h,'Salvar aprovações'));});
 test('alterar uma conta aprovada exige nova aprovação',async()=>{const h=await populated();action(h,'Aprovar e próximo').events.click();const account=flatten(h.body).find(e=>e.attrs['aria-label']==='Conta para Itaú, linha 2');account.value='999';account.events.input();assert.equal(action(h,'Salvar aprovações').hidden,true);});
-test('IA opcional só reordena a fila sem apagar contas e aprovações',async()=>{const h=await populated(twoRows());action(h,'Aprovar e próximo').events.click();h.ctx.fetch=async(url,options)=>{h.requests.push({url,options});return {ok:true,json:async()=>({...twoRows(),token:'prioritized',ia:{prioridades:[2],motivo:'Prioridade de teste'}})};};await action(h,'Priorizar casos com IA').events.click();assert.equal(h.requests[1].options.body.get('usar_ia'),'true');const first=flatten(h.body).find(e=>e.attrs['aria-label']==='Comparar Itaú, linha 2');first.events.click();assert.match(textOf(h.body),/Conta aprovada/);assert.ok(action(h,'Salvar aprovações'));});
+test('IA opcional só reordena a fila sem apagar contas e aprovações',async()=>{const h=await populated(twoRows());action(h,'Aprovar e próximo').events.click();h.ctx.fetch=async(url,options)=>{h.requests.push({url,options});return {ok:true,json:async()=>({...twoRows(),token:'prioritized',ia:{prioridades:[2],motivo:'Prioridade de teste'}})};};await action(h,'Analisar pendências com IA').events.click();assert.equal(h.requests[1].options.body.get('usar_ia'),'true');const first=flatten(h.body).find(e=>e.attrs['aria-label']==='Comparar Itaú, linha 2');first.events.click();assert.match(textOf(h.body),/Conta aprovada/);assert.ok(action(h,'Salvar aprovações'));});
 
 test('prepara pendências locais antes de abrir o assistente',async()=>{const h=setup();h.mount();await flush();assert.equal(h.window.hidden,true);assert.equal(h.requests.length,1);assert.equal(h.requests[0].options.body.get('usar_ia'),'false');h.launcher.events.click();assert.equal(h.requests.length,1);});
 test('cancelar preparação não reinicia consultas automaticamente',async()=>{const h=setup();h.mount();await flush();action(h,'Cancelar').events.click();await flush();assert.equal(h.requests.length,1);assert.match(textOf(h.body),/Preparação interrompida/);assert.deepEqual(h.workflowStates.at(-1),{state:'error',message:'Preparação interrompida'});});
@@ -179,14 +179,14 @@ test('investigação expirada é renovada sem perder aprovações',async()=>{
 test('falha da IA libera nova tentativa e preserva as aprovações',async()=>{
   const h=await populated(twoRows());action(h,'Aprovar e próximo').events.click();
   let attempts=0;h.ctx.fetch=async()=>{attempts++;return {ok:true,json:async()=>attempts===1?{ia:{estado:'indisponivel',motivo:'Limite temporário.'}}:{ia:{estado:'concluida',provedor:'groq',modelo:'test',prioridades:[2],motivo:'Ordem conferida.'}}};};
-  await action(h,'Priorizar casos com IA').events.click();assert.equal(action(h,'Tentar IA novamente').disabled,false);
+  await action(h,'Analisar pendências com IA').events.click();assert.equal(action(h,'Tentar IA novamente').disabled,false);
   assert.ok(action(h,'Salvar aprovações'));assert.match(textOf(h.body),/Limite temporário/);
   await action(h,'Tentar IA novamente').events.click();assert.equal(attempts,2);assert.ok(action(h,'Salvar aprovações'));
-  assert.equal(action(h,'Prioridades atualizadas').disabled,true);assert.match(textOf(h.body),/Groq · test/);
+  assert.equal(action(h,'Análise concluída').disabled,true);assert.match(textOf(h.body),/Groq · test/);
 });
 test('falha de rede da IA também permite repetir sem refazer a classificação',async()=>{
   const h=await populated(twoRows());h.ctx.fetch=async()=>{throw Error('Conexão interrompida')};
-  await action(h,'Priorizar casos com IA').events.click();assert.equal(action(h,'Tentar IA novamente').disabled,false);
+  await action(h,'Analisar pendências com IA').events.click();assert.equal(action(h,'Tentar IA novamente').disabled,false);
   assert.match(textOf(h.body),/Conexão interrompida/);assert.ok(action(h,'Salvar aprovações'));
 });
 
@@ -273,4 +273,21 @@ test('conta fora do catálogo explica o bloqueio e não aprova até selecionar u
  assert.equal(action(h,'Aprovar e próximo').disabled,true);assert.ok(action(h,'Salvar aprovações'));
  input.value='412';input.events.input();assert.equal(hint.hidden,true);assert.equal(action(h,'Aprovar e próximo').disabled,false);
  assert.equal(h.requests.length,1);
+});
+
+test('Gemini preenche uma sugestão pendente sem aprovar o lançamento',async()=>{
+  const data=twoRows(),pending=data.sugestoes[1];
+  pending.situacao='MANUAL';pending.conta_sugerida='';
+  const h=await populated(data);
+  action(h,'Aprovar e próximo').events.click();
+  h.ctx.fetch=async()=>({ok:true,json:async()=>({
+    ...data,
+    sugestoes:[data.sugestoes[0],{...pending,situacao:'MODERADA',conta_sugerida:'412',justificativa:'Sugestão do Gemini Decision 1'}],
+    ia:{estado:'concluida',provedor:'gemini',modelo:'gemini-decision-1'}
+  })});
+  await action(h,'Analisar pendências com IA').events.click();
+  const account=flatten(h.body).find(e=>e.attrs['aria-label']==='Conta para Itaú, linha 3');
+  assert.equal(account.value,'412');
+  assert.ok(action(h,'Aprovar e próximo'));
+  assert.match(textOf(h.body),/Gemini Decision 1/);
 });

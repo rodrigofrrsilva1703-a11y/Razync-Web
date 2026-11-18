@@ -109,6 +109,9 @@ def eligible(company, content, options):
 
 def candidates_for(row, records, bankaccounts):
     grouped = {}
+    name = engine.extrair_nome_empresa_classificacao(row.get('Histórico', ''))
+    if not name:
+        return []
     signature = row['assinatura'].split('|',1)[-1]
     words = set(signature.split())
     for record in records:
@@ -126,16 +129,19 @@ def candidates_for(row, records, bankaccounts):
         exact = suffix == signature
         tokens = set(suffix.split())
         overlap = len(words & tokens)/max(1,len(words | tokens))
-        if not exact and (len(words & tokens)<2 or overlap<.65):
-            continue
+        saved_name = engine.extrair_nome_empresa_classificacao(record.get('exemplo_historico'), sig)
+        same_name = len(name) >= 4 and name == saved_name
+        if not exact and not same_name and (len(words & tokens)<2 or overlap<.65):
+            if engine.calcular_similaridade_nome_empresa(name, saved_name) < .94:
+                continue
         account = debit if nature=='pago' else credit
         if not re.fullmatch(r'[1-9][0-9]{0,14}', account) or account in {str(v) for v in bankaccounts.values()}:
             continue
         # Provisional accounts cannot become a suggestion based solely on their old use.
         if account in {'14','16','166'} and row.get('_company')==242:
             continue
-        key = (account, bank, exact)
-        item = grouped.setdefault(key, {'conta':account,'banco':bank,'exata':exact,'mesmo_banco':bank==row['_banco'],
+        key = (account, bank, exact, same_name)
+        item = grouped.setdefault(key, {'conta':account,'banco':bank,'exata':exact,'nome_exato':same_name,'mesmo_banco':bank==row['_banco'],
             'periodos':set(),'ocorrencias':0,'historicos':[]})
         item['periodos'].update(p for p in record.get('periodos',[]) if re.fullmatch(r'\d{4}-\d{2}',str(p)))
         item['ocorrencias'] += max(0,int(record.get('ocorrencias',0)))
@@ -223,8 +229,13 @@ def investigate(company, content, options=None, use_ai=True):
                        'Sem correspondência documental, nomes semelhantes não comprovam a identidade da operação.'],
         'ia':{'estado':'dispensada','chamadas_nesta_execucao':0}}
     if use_ai and any(s['situacao']=='MANUAL' and s['evidencias'] for s in suggestions):
-        from app.classification_agent_ai import interpret
-        result['ia'] = interpret(suggestions)
+        from app import classification_decision
+        decision_key = classification_decision.configured_key()
+        if decision_key:
+            result['ia'] = classification_decision.interpret(suggestions, decision_key)
+        else:
+            from app.classification_agent_ai import interpret
+            result['ia'] = interpret(suggestions)
     result['token'] = secrets.token_urlsafe(32)
     with _lock:
         _cache[key]={'owner':current_owner.get(),'time':time.monotonic(),'result':copy.deepcopy(result),'company':company,'filehash':filehash,

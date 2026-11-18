@@ -1575,6 +1575,15 @@ function renderClassifiedWorkbook(prepared, summary, classifyOptions, companyCod
   if (controller.signal.aborted || selected?.codigo !== companyCode) return;
   showWorkflowPreview(prepared.preview,target);
   renderClassificationCoverage(summary.cobertura);
+  if (summary.gemini_avaliados) {
+    const decision = document.createElement("p");
+    decision.className = "helper";
+    decision.textContent = summary.por_gemini_decision
+      ? `Gemini Decision 1 classificou ${summary.por_gemini_decision} de ${summary.gemini_avaliados} lançamentos avaliados.`
+      : `Gemini Decision 1 confirmou ${summary.gemini_confirmados} de ${summary.gemini_avaliados} lançamentos avaliados. As contas desses lançamentos continuam pendentes.`;
+    target.append(decision);
+  }
+
   const pending = Math.max(0, Number(summary.cobertura?.pendentes) || 0);
   window.RazyncBaseWorkflow?.setClassification("complete");
   window.RazyncBaseWorkflow?.setReview("preparing", pending
