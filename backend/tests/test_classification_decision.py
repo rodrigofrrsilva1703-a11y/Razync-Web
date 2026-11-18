@@ -115,3 +115,34 @@ def test_conflict_without_operation_is_evaluated_but_never_written(monkeypatch):
     assert summary['gemini_avaliados'] == 1
     assert summary['por_gemini_decision'] == 0
     assert load_workbook(io.BytesIO(output)).worksheets[0]['D2'].value is None
+
+
+def test_competing_accounts_require_distinct_document_evidence(monkeypatch):
+    invoice = record(periods=('2026-07',))
+    invoice['exemplo_historico'] = 'Pago: Empresa: Fornecedor ABC Obs: NF 1234'
+    other = record(periods=('2026-07',), account='413')
+    other['exemplo_historico'] = 'Pago: Empresa: Fornecedor ABC Obs: NF 5678'
+    monkeypatch.setattr(classification_service, 'records', lambda _: [invoice, other])
+    source = book([[-100, '', 508, 'PIX ENVIADO PARA FORNECEDOR ABC NF 1234'],
+                   [-100, '', 508, 'PIX ENVIADO PARA FORNECEDOR ABC NF 9000']])
+    options = {'modo_consolidado': False}
+    output, _ = classification_service.classify(242, source, 'itau.xlsx', options)
+    rows = load_workbook(io.BytesIO(output)).worksheets[0]
+    assert rows['D2'].value == 412
+    assert rows['D3'].value is None
+
+    other['exemplo_historico'] = invoice['exemplo_historico']
+    output, _ = classification_service.classify(242, source, 'itau.xlsx', options)
+    assert load_workbook(io.BytesIO(output)).worksheets[0]['D2'].value is None
+
+
+def test_existing_name_rule_takes_priority_over_contextual_comparison(monkeypatch):
+    learned = record()
+    learned['exemplo_historico'] = 'Pago: Empresa: Fornecedor ABC Obs: Contrato Regional'
+    monkeypatch.setattr(classification_service, 'records', lambda _: [learned])
+    source = book([[-100, '', 508, 'Pago: Empresa: Fornecedor ABC Obs: Serviço Local']])
+    output, summary = classification_service.classify(
+        242, source, 'itau.xlsx', {'modo_consolidado': False},
+    )
+    assert load_workbook(io.BytesIO(output)).worksheets[0]['D2'].value == 412
+    assert summary['por_nome_empresa'] == 1

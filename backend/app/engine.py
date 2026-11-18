@@ -1759,7 +1759,7 @@ def decompor_assinatura_classificacao(assinatura):
     observacao = '|'.join(partes[2:]) if len(partes) > 2 else ''
     return natureza, empresa, observacao
 
-def extrair_nome_empresa_classificacao(historico, assinatura=''):
+def extrair_nome_empresa_classificacao(historico, assinatura='', *, legado=False):
     """
     Extrai a entidade do histórico e elimina somente ruídos que mudam por mês,
     preservando as palavras que realmente identificam o fornecedor ou cliente.
@@ -1771,13 +1771,21 @@ def extrair_nome_empresa_classificacao(historico, assinatura=''):
     observacao = ''
     if empresa_match:
         empresa = empresa_match.group(1)
+    elif legado:
+        if assinatura:
+            _, empresa, _ = decompor_assinatura_classificacao(assinatura)
+        else:
+            empresa = re.sub(
+                r'^\s*(?:pago|pagar|pagamento|recebido|receber|recebimento)\b', ' ', texto
+            )
+            empresa = re.sub(r'^\s*[a-z0-9./-]*\d[a-z0-9./-]*\s+', ' ', empresa)
     elif texto:
         empresa = re.split(r'\s+obs\s*:', texto, maxsplit=1)[0]
     else:
         _, empresa, observacao = decompor_assinatura_classificacao(assinatura)
 
     tokens = re.findall(r'[a-z0-9]+', empresa)
-    if not empresa_match:
+    if not legado and not empresa_match:
         # Extratos variam o prefixo da mesma contraparte entre bancos e meses.
         # Remova metadados nas bordas, preservando palavras dentro da razão social.
         operacoes = {
@@ -1810,7 +1818,7 @@ def extrair_nome_empresa_classificacao(historico, assinatura=''):
     observacao_match = re.search(r'\s+obs\s*:\s*(.*)$', texto)
     if observacao_match:
         observacao = observacao_match.group(1)
-    if observacao and tokens_validos:
+    if not legado and observacao and tokens_validos:
         tokens_validos.extend(
             token for token in re.findall(r'\b[a-z]+\b', observacao)
             if token not in termos_ruido
@@ -1821,13 +1829,13 @@ def normalizar_nome_empresa_classificacao(nome):
     """Normaliza um nome já extraído para comparação conservadora."""
     return extrair_nome_empresa_classificacao(nome)
 
-def calcular_similaridade_nome_empresa(nome_a, nome_b):
+def calcular_similaridade_nome_empresa(nome_a, nome_b, *, legado=False):
     """
     Compara nomes por caracteres e palavras. Nomes de uma única palavra só
     passam quando são exatamente iguais, evitando aproximações arriscadas.
     """
-    a = normalizar_nome_empresa_classificacao(nome_a)
-    b = normalizar_nome_empresa_classificacao(nome_b)
+    a = extrair_nome_empresa_classificacao(nome_a, legado=legado)
+    b = extrair_nome_empresa_classificacao(nome_b, legado=legado)
     if not a or not b:
         return 0.0
     if a == b:
@@ -1880,12 +1888,12 @@ def calcular_similaridade_nome_empresa(nome_a, nome_b):
         return razao_caracteres
     return 0.0
 
-def encontrar_conta_por_nome_historico(historico, natureza, evidencias_nomes):
+def encontrar_conta_por_nome_historico(historico, natureza, evidencias_nomes, *, legado=False):
     """
     Retorna uma conta somente quando o nome foi confirmado em períodos
     diferentes, pertence à mesma natureza e não possui classificação concorrente.
     """
-    nome_alvo = extrair_nome_empresa_classificacao(historico)
+    nome_alvo = extrair_nome_empresa_classificacao(historico, legado=legado)
     if natureza not in {'pago', 'recebido'} or len(nome_alvo) < 4:
         return None, 0.0, 'nome_insuficiente'
 
@@ -1909,7 +1917,7 @@ def encontrar_conta_por_nome_historico(historico, natureza, evidencias_nomes):
         # Nome exatamente igual continua podendo ser confirmado em dois períodos.
         if len(evidencia['periodos']) < 3 or evidencia['ocorrencias'] < 3:
             continue
-        similaridade = calcular_similaridade_nome_empresa(nome_alvo, nome_base)
+        similaridade = calcular_similaridade_nome_empresa(nome_alvo, nome_base, legado=legado)
         if similaridade > melhor_por_conta.get(conta, 0.0):
             melhor_por_conta[conta] = similaridade
 
@@ -2193,6 +2201,7 @@ def classificar_planilha_final(
     candidatos_por_banco = {}
     periodos_por_banco = {}
     evidencias_nomes_por_banco = {}
+    evidencias_nomes_legadas = {}
     evidencias_operacao = {}
     for item in base_classificacoes:
         banco = item.get('banco', '')
@@ -2236,23 +2245,25 @@ def classificar_planilha_final(
         )
 
         historico_exemplo = item.get('exemplo_historico') or ''
-        nome_empresa = extrair_nome_empresa_classificacao(
-            historico_exemplo, assinatura
-        )
-        if nome_empresa:
-            por_natureza = evidencias_nomes_por_banco.setdefault(
-                banco, {}
-            ).setdefault(natureza, {})
-            por_conta = por_natureza.setdefault(nome_empresa, {}).setdefault(
-                contrapartida,
-                {'periodos': set(), 'ocorrencias': 0}
+        nome_empresa = extrair_nome_empresa_classificacao(historico_exemplo, assinatura)
+        nome_legado = extrair_nome_empresa_classificacao(historico_exemplo, assinatura, legado=True)
+        try:
+            ocorrencias_item = max(1, int(item.get('ocorrencias') or 1))
+        except (TypeError, ValueError):
+            ocorrencias_item = 1
+        for indice_nomes, nome in (
+            (evidencias_nomes_por_banco, nome_empresa),
+            (evidencias_nomes_legadas, nome_legado),
+        ):
+            if not nome:
+                continue
+            por_natureza = indice_nomes.setdefault(banco, {}).setdefault(natureza, {})
+            por_conta = por_natureza.setdefault(nome, {}).setdefault(
+                contrapartida, {'periodos': set(), 'ocorrencias': 0}
             )
             por_conta['periodos'].update(periodos_item)
-            try:
-                ocorrencias_item = max(1, int(item.get('ocorrencias') or 1))
-            except (TypeError, ValueError):
-                ocorrencias_item = 1
             por_conta['ocorrencias'] += ocorrencias_item
+        if nome_empresa:
             identidade, operacao, referencia = sinais_classificacao(historico_exemplo, nome_empresa)
             if len(identidade) >= 4:
                 por_identidade = evidencias_operacao.setdefault((banco, natureza, identidade), {})
@@ -2301,6 +2312,7 @@ def classificar_planilha_final(
     }
     banco_arquivo = identificar_chave_banco_empresa(filename)
     cache_similaridade = {}
+    cache_similaridade_legada = {}
     pendencias_decisao = {}
 
     for ws in wb.worksheets:
@@ -2450,8 +2462,8 @@ def classificar_planilha_final(
 
             nome_empresa = extrair_nome_empresa_classificacao(historico)
             nomes_banco = evidencias_nomes_por_banco.get(banco_linha, {})
-            candidatos_banco = candidatos_por_banco.get(banco_linha, {}) if nome_empresa else {}
-            mapas_banco = mapas_seguros.get(banco_linha, {}) if nome_empresa else {}
+            candidatos_banco = candidatos_por_banco.get(banco_linha, {})
+            mapas_banco = mapas_seguros.get(banco_linha, {})
             candidatos = candidatos_banco.get(assinatura, set())
             conta_segura = mapas_banco.get(assinatura)
 
@@ -2464,16 +2476,16 @@ def classificar_planilha_final(
                 assinatura_outro = f"outro|{sufixo_assinatura}" if sufixo_assinatura else assinatura
                 candidatos = candidatos_banco.get(assinatura_outro, set())
                 conta_segura = mapas_banco.get(assinatura_outro)
-            identidade, operacao, referencia = sinais_classificacao(historico, nome_empresa)
-            evidencias = evidencias_operacao.get((banco_linha, natureza, identidade), {})
-            contas_nome = nomes_banco.get(natureza, {}).get(nome_empresa, {})
-            conflito = len(candidatos | set(contas_nome) | set(evidencias)) > 1
-            conta_documento = None
-            if not conflito and referencia and len(evidencias) == 1:
-                conta, evidencia = next(iter(evidencias.items()))
-                if referencia in evidencia['documentos']:
-                    conta_documento = conta
-
+            # Primeiro preserve todas as decisões da classificação anterior.
+            conta_legada = conta_segura
+            if not conta_legada and len(candidatos) <= 1:
+                chave_legada = (banco_linha, natureza, assinatura)
+                if chave_legada not in cache_similaridade_legada:
+                    cache_similaridade_legada[chave_legada] = encontrar_conta_por_nome_historico(
+                        historico, natureza, evidencias_nomes_legadas.get(banco_linha, {}),
+                        legado=True,
+                    )[0]
+                conta_legada = cache_similaridade_legada[chave_legada]
             conta_fixa_accede = (
                 identificar_conta_folha_accede_1000(historico)
                 if empresa_classificacao == 'accede_automacao'
@@ -2488,16 +2500,67 @@ def classificar_planilha_final(
                 resumo['regras_fixas_1000'] += 1
                 if linha_estava_parcial:
                     resumo['parciais_completados'] += 1
+                continue
             elif empresa_classificacao not in {'bormais_521', 'dourado_745', 'felix_gitti_803', 'youz_818'} and 'antecipad' in normalizar_texto(historico):
                 ws.cell(numero_linha, coluna_contrapartida).value = 532
                 resumo['automaticos'] += 1
                 resumo['antecipados'] += 1
                 if linha_estava_parcial:
                     resumo['parciais_completados'] += 1
-            elif conflito and (not conta_segura or len(candidatos | set(contas_nome)) > 1):
+                continue
+            elif conta_legada:
+                ws.cell(numero_linha, coluna_contrapartida).value = valor_conta_excel(conta_legada)
+                resumo['automaticos'] += 1
+                resumo['por_nome_empresa'] += int(not conta_segura)
+                if linha_estava_parcial:
+                    resumo['parciais_completados'] += 1
+                continue
+
+            identidade, operacao, referencia = sinais_classificacao(historico, nome_empresa)
+            evidencias = evidencias_operacao.get((banco_linha, natureza, identidade), {})
+            contas_nome = nomes_banco.get(natureza, {}).get(nome_empresa, {})
+            conflito = len(candidatos | set(contas_nome) | set(evidencias)) > 1
+            contas_concorrentes = candidatos | set(contas_nome) | set(evidencias)
+            contas_validas = {
+                conta for conta in contas_concorrentes
+                if re.fullmatch(r'[1-9][0-9]{0,14}', conta)
+                and conta not in {texto_celula_seguro(v) for v in contas_bancarias.values()}
+                and conta not in valores_regra
+            }
+            conta_evidencia = None
+            if referencia and contas_validas == contas_concorrentes:
+                contas_documento = {
+                    conta for conta, evidencia in evidencias.items()
+                    if referencia in evidencia['documentos']
+                }
+                if len(contas_documento) == 1:
+                    conta = next(iter(contas_documento))
+                    # Um documento pode resolver o conflito entre operações do
+                    # fornecedor. Duas contas na mesma assinatura exigem revisão
+                    # quando o número também está registrado em ambas.
+                    if not candidatos or conta in candidatos:
+                        conta_evidencia = conta
+            if not conta_evidencia and operacao and len(candidatos) == 1:
+                conta = next(iter(candidatos))
+                evidencia = evidencias.get(conta)
+                if (
+                    conta in contas_validas and evidencia
+                    and len(nome_empresa.split()) >= 2
+                    and evidencia['operacoes'].get(operacao)
+                    and set(evidencias) == contas_concorrentes
+                    and all(
+                        outro == conta or (
+                            not alternativa['indefinida'] and alternativa['operacoes']
+                            and operacao not in alternativa['operacoes']
+                        )
+                        for outro, alternativa in evidencias.items()
+                    )
+                ):
+                    conta_evidencia = conta
+
+            if conflito and not conta_evidencia:
                 resumo['conflitos'] += 1
                 resumo['somente_banco'] += 1
-                contas_concorrentes = candidatos | set(contas_nome) | set(evidencias)
                 if not decidir_pendencias or not nome_empresa or not 2 <= len(contas_concorrentes) <= 4:
                     continue
                 if periodo_decisao:
@@ -2530,11 +2593,12 @@ def classificar_planilha_final(
                     pendencias_decisao.setdefault(grupo, []).append(
                         (ws.cell(numero_linha, coluna_contrapartida), linha_estava_parcial)
                     )
-            elif conta_segura or conta_documento:
+            elif conta_evidencia:
                 ws.cell(numero_linha, coluna_contrapartida).value = valor_conta_excel(
-                    conta_segura or conta_documento
+                    conta_evidencia
                 )
                 resumo['automaticos'] += 1
+                resumo['por_evidencia_operacao'] = resumo.get('por_evidencia_operacao', 0) + 1
                 if linha_estava_parcial:
                     resumo['parciais_completados'] += 1
             else:
