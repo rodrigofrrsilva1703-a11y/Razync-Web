@@ -160,6 +160,7 @@
       const badges=node('div',null,'base-evidence-badges');
       badges.append(node('span',item.exata?'Assinatura exata':'Histórico semelhante',item.exata?'is-exact':'is-similar'));
       badges.append(node('span',item.mesmo_banco?'Mesmo banco':'Outro banco',item.mesmo_banco?'is-same-bank':'is-other-bank'));
+      if(item.periodos_nome_normalizado?.length)badges.append(node('span','Mesmo nome e operação','is-same-bank'));
       card.append(badges);
       const periods=(item.periodos || []).map(periodLabel);
       card.append(node('small',`${bankLabelUI(item.banco)} · ${periods.length?periods.join(', '):'período não comprovado'}`));
@@ -263,9 +264,10 @@
       const exactAccounts=[...new Set(evidence.filter(e=>e.exata).map(e=>e.conta))],allAccounts=[...new Set(evidence.map(e=>e.conta))];
       const conflict=exactAccounts.length>1 || (!exactAccounts.length && allAccounts.length>1);
       const chosen=matching.length?matching:evidence,same=chosen.some(e=>e.mesmo_banco),exact=chosen.some(e=>e.exata);
+      const normalized=chosen.some(e=>e.periodos_nome_normalizado?.length);
       const histories=chosen.flatMap(e=>e.historicos || []),numbers=String(s['Histórico'] || '').match(/\d+/g) || [];
-      const differentNumbers=same && histories.length && numbers.length && !histories.some(h=>JSON.stringify(String(h).match(/\d+/g) || [])===JSON.stringify(numbers));
-      const title=conflict?'Compare as contas da base':!evidence.length?'Sem referência para este lançamento':!same?'Referência de outro banco':differentNumbers?'Números diferentes no histórico':exact?'Histórico compatível':'Histórico parecido';
+      const differentNumbers=!normalized && same && histories.length && numbers.length && !histories.some(h=>JSON.stringify(String(h).match(/\d+/g) || [])===JSON.stringify(numbers));
+      const title=conflict?'Compare as contas da base':!evidence.length?'Sem referência para este lançamento':!same?'Referência de outro banco':normalized?'Mesmo nome e operação':differentNumbers?'Números diferentes no histórico':exact?'Histórico compatível':'Histórico parecido';
       const next=conflict?'Escolha a conta que corresponde à operação.':!evidence.length?'Confira o documento e escolha a conta.':!same?'Confirme a contrapartida deste banco.':differentNumbers?'Confira o documento antes de aprovar.':'Confirme a operação e a conta antes de aprovar.';
       const focus=node('section',null,'base-check-focus');focus.setAttribute('role','note');focus.append(node('strong',title),node('p',next,'base-analysis-check'));
       const wasOpen=Boolean(c.contextDetails?.open);

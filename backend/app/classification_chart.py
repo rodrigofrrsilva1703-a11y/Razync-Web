@@ -107,13 +107,19 @@ def _history_party(history):
     return _canonical_party(body)
 
 
-def remember_chart_approval(record):
+def remember_chart_approval(record, *, normalize_unstructured=False):
     """Keep the name and period of a review explicitly taught to the base."""
     history = record.get('exemplo_historico') or ''
     normalized = engine.normalizar_texto(history)
     if _SPECIAL_OPERATION.search(normalized) or _APPROVAL_SPECIAL_OPERATION.search(normalized):
         return
     name = _history_party(history)
+    if normalize_unstructured and len(name.split()) < 2:
+        from app.classification_history import historical_identity
+
+        party, operation = historical_identity(history)
+        if operation == 'movimento_regular':
+            name = party
     if len(name.split()) >= 2:
         record['aprovacoes_nome'] = {name: sorted(
             period for period in record['periodos'] if _MONTH_PATTERN.fullmatch(period)

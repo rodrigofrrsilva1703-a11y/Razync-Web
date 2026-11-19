@@ -1,5 +1,6 @@
 """Read-only evidence investigation; approved reviews reuse the existing Excel writer."""
 from collections import defaultdict, OrderedDict
+from functools import lru_cache
 import copy
 import hashlib
 import io
@@ -12,6 +13,7 @@ import time
 from openpyxl import load_workbook
 import pandas as pd
 from app import classification_service as base, engine
+from app.classification_history import historical_identity
 from app.classification_coverage import _normalized_header, _classified, _needs_replacement, coverage
 from app.migration_services import accounts, slug
 
@@ -107,13 +109,14 @@ def eligible(company, content, options):
     return result
 
 
-def candidates_for(row, records, bankaccounts):
+def candidates_for(row, records, bankaccounts, *, identify_party=historical_identity):
     grouped = {}
     name = engine.extrair_nome_empresa_classificacao(row.get('Histórico', ''))
     if not name:
         return []
     signature = row['assinatura'].split('|',1)[-1]
     words = set(signature.split())
+    target_party, target_operation = identify_party(row.get('Histórico')) if row.get('_company') == 266 else ('', '')
     for record in records:
         bank = record.get('banco')
         if bank not in bankaccounts:
@@ -131,7 +134,10 @@ def candidates_for(row, records, bankaccounts):
         overlap = len(words & tokens)/max(1,len(words | tokens))
         saved_name = engine.extrair_nome_empresa_classificacao(record.get('exemplo_historico'), sig)
         same_name = len(name) >= 4 and name == saved_name
-        if not exact and not same_name and (len(words & tokens)<2 or overlap<.65):
+        normalized_match = False
+        if target_party and target_operation and bank == row['_banco']:
+            normalized_match = identify_party(record.get('exemplo_historico')) == (target_party, target_operation)
+        if not exact and not same_name and not normalized_match and (len(words & tokens)<2 or overlap<.65):
             if engine.calcular_similaridade_nome_empresa(name, saved_name) < .94:
                 continue
         account = debit if nature=='pago' else credit
@@ -143,7 +149,10 @@ def candidates_for(row, records, bankaccounts):
         key = (account, bank, exact, same_name)
         item = grouped.setdefault(key, {'conta':account,'banco':bank,'exata':exact,'nome_exato':same_name,'mesmo_banco':bank==row['_banco'],
             'periodos':set(),'ocorrencias':0,'historicos':[]})
-        item['periodos'].update(p for p in record.get('periodos',[]) if re.fullmatch(r'\d{4}-\d{2}',str(p)))
+        valid_periods = {p for p in record.get('periodos',[]) if re.fullmatch(r'\d{4}-\d{2}',str(p))}
+        item['periodos'].update(valid_periods)
+        if normalized_match:
+            item.setdefault('periodos_nome_normalizado', set()).update(valid_periods)
         item['ocorrencias'] += max(0,int(record.get('ocorrencias',0)))
         example = str(record.get('exemplo_historico',''))[:240]
         if example and example not in item['historicos'] and len(item['historicos'])<3:
@@ -151,8 +160,11 @@ def candidates_for(row, records, bankaccounts):
     values = []
     for item in grouped.values():
         item['periodos'] = sorted(item['periodos'])
+        if 'periodos_nome_normalizado' in item:
+            item['periodos_nome_normalizado'] = sorted(item['periodos_nome_normalizado'])
         values.append(item)
-    return sorted(values,key=lambda x:(not x['exata'],not x['mesmo_banco'],-len(x['periodos']),x['conta']))
+    return sorted(values,key=lambda x:(not x['exata'],not x['mesmo_banco'],not x.get('periodos_nome_normalizado'),
+                                       -len(x['periodos']),x['conta']))
 
 
 def account_catalog(records, bankaccounts):
@@ -180,7 +192,7 @@ def account_catalog(records, bankaccounts):
 
 
 def investigate(company, content, options=None, use_ai=True):
-    from app.classification_chart import ChartNameMatcher, load_company_chart
+    from app.classification_chart import ChartNameMatcher, _month, load_company_chart
 
     company = int(company)
     options = base.resolve_classification_options(company, options)
@@ -211,9 +223,10 @@ def investigate(company, content, options=None, use_ai=True):
         identity=(row['_banco'],row['natureza'],row['assinatura'],engine.normalizar_texto(row['Histórico']))
         groups[identity].append(row)
     suggestions=[]
+    identify_party = lru_cache(maxsize=8192)(historical_identity)
     for number, members in enumerate(groups.values(),1):
         row = members[0]
-        evidence = candidates_for(row,records,bank_accounts)
+        evidence = candidates_for(row,records,bank_accounts,identify_party=identify_party)
         same = [e for e in evidence if e['exata'] and e['mesmo_banco']]
         exact = [e for e in evidence if e['exata']]
         options_found = {e['conta'] for e in exact or evidence}
@@ -228,6 +241,13 @@ def investigate(company, content, options=None, use_ai=True):
         for member in members:
             suggestion = {**member, 'grupo': number, 'conta_sugerida': chosen, 'situacao': strength,
                           'justificativa': reason, 'evidencias': evidence[:12], 'aprovada': False}
+            if not chosen and len(options_found) == 1 and evidence:
+                month = _month(member['Data'])
+                if month and any(p < month for e in evidence for p in e.get('periodos_nome_normalizado', ())):
+                    suggestion.update(
+                        conta_sugerida=next(iter(options_found)), situacao='MODERADA',
+                        justificativa='O mesmo nome e tipo de operação apareceram antes neste banco. Confira a conta antes de aprovar.',
+                    )
             recent = matcher.recent_suggestion(
                 member['_banco'], member['natureza'], member['Histórico'], member['Data'],
             ) if matcher else None
@@ -307,7 +327,7 @@ def _apply(company, content, filename, revisions, token, remember=False):
 
         for record in learned:
             record['origem'] = 'sugestao_agente_aprovada'
-            remember_chart_approval(record)
+            remember_chart_approval(record, normalize_unstructured=int(company) == 266)
         con=base._db()
         try:
             con.execute('BEGIN IMMEDIATE')

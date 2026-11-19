@@ -329,6 +329,11 @@ def classify(company, content, filename, options=None, *, plano_contas=None, tit
     key = '' if int(company) == 266 else classification_decision.configured_key()
     learned = records(company)
     bank_accounts = accounts(company)
+    history_lookup = None
+    if int(company) == 266:
+        from app.classification_history import HistoryMatcher
+
+        history_lookup = HistoryMatcher(learned, bank_accounts).find
     chart_lookup = None
     transfer_lookup = None
     from app.classification_chart import (
@@ -354,6 +359,7 @@ def classify(company, content, filename, options=None, *, plano_contas=None, tit
         aplicar_decisoes=os.getenv('GEMINI_DECISION_AUTO_APPLY') == '1',
         periodo_decisao=period, localizar_conta_plano=chart_lookup,
         localizar_transferencias=transfer_lookup,
+        localizar_conta_historico=history_lookup,
     )
     workbook, changed = _limit_classified_workbook_to_period(
         content, workbook, options.get('data_inicial', ''), options.get('data_final', '')
@@ -407,7 +413,7 @@ def review(company, content, filename, revisions, remember=False):
         from app.classification_chart import remember_chart_approval
 
         for record in new_records:
-            remember_chart_approval(record)
+            remember_chart_approval(record, normalize_unstructured=int(company) == 266)
         con = _db()
         try:
             con.execute('BEGIN IMMEDIATE')

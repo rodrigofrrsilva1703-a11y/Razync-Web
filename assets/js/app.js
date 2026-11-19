@@ -1642,12 +1642,14 @@ function renderClassifiedWorkbook(prepared, summary, classifyOptions, companyCod
   const titleMatches = Number(summary.por_titulo_baixado || 0);
   const planMatches = Number(summary.por_plano_contas || 0) - titleMatches;
   const transferMatches = Number(summary.por_transferencia_confirmada || 0);
-  if (titleMatches || planMatches || transferMatches) {
+  const approvalMatches = Number(summary.por_aprovacao_historica || 0);
+  if (titleMatches || planMatches || transferMatches || approvalMatches) {
     const evidence = document.createElement("p");
     evidence.className = "helper";
     evidence.textContent = [
       titleMatches && `Títulos baixados: ${titleMatches}`,
       planMatches && `Plano de contas: ${planMatches}`,
+      approvalMatches && `Aprovações reaproveitadas: ${approvalMatches}`,
       transferMatches && `Transferências confirmadas: ${transferMatches}`
     ].filter(Boolean).join(" · ");
     target.append(evidence);

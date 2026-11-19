@@ -2188,6 +2188,7 @@ def classificar_planilha_final(
     empresa_classificacao='', coluna_substituir='', valores_substituiveis=None,
     modo_consolidado_eletro_forte=False, decidir_pendencias=None,
     aplicar_decisoes=False, periodo_decisao=None, localizar_conta_plano=None, localizar_transferencias=None,
+    localizar_conta_historico=None,
 ):
     """Preenche Débito/Crédito somente na planilha final já conciliada."""
     from openpyxl import load_workbook
@@ -2563,7 +2564,11 @@ def classificar_planilha_final(
                     conta_evidencia = conta
 
             alvo_plano = None
-            if localizar_conta_plano and not conta_evidencia:
+            conta_banco_atual = credito_atual if natureza == 'pago' else debito_atual
+            historico_aplicavel = localizar_conta_historico and valor_linha and (
+                not conta_banco_atual or conta_banco_atual == texto_celula_seguro(conta_banco)
+            )
+            if (localizar_conta_plano or historico_aplicavel) and not conta_evidencia:
                 coluna_data = mapa_colunas.get('data')
                 data_plano = ws.cell(numero_linha, coluna_data).value if coluna_data else None
                 dentro_periodo = True
@@ -2574,7 +2579,7 @@ def classificar_planilha_final(
                     alvo_plano = ws.cell(numero_linha, coluna_contrapartida)
                     pendencias_plano[alvo_plano] = (
                         banco_linha, natureza, historico, data_plano,
-                        linha_estava_parcial, valores_regra,
+                        linha_estava_parcial, valores_regra, contas_concorrentes, historico_aplicavel,
                         'conflitos' if conflito else 'padroes_novos',
                     )
 
@@ -2652,14 +2657,17 @@ def classificar_planilha_final(
 
     transferencias = localizar_transferencias(abas_transferencias) if localizar_transferencias else {}
     for celula, dados in pendencias_plano.items():
-        banco, natureza, historico, data, parcial, provisoria, motivo = dados
+        banco, natureza, historico, data, parcial, provisoria, concorrentes, historico_aplicavel, motivo = dados
         if celula.value:
             continue
         conta_transferencia = transferencias.get(celula)
         decisao = (
             (conta_transferencia, 'por_transferencia_confirmada') if conta_transferencia
-            else localizar_conta_plano(banco, natureza, historico, data)
+            else localizar_conta_plano(banco, natureza, historico, data) if localizar_conta_plano else None
         )
+        pelo_plano = bool(decisao) and not conta_transferencia
+        if not decisao and historico_aplicavel:
+            decisao = localizar_conta_historico(banco, natureza, historico, data, concorrentes)
         if not decisao:
             continue
         conta, origem = decisao
@@ -2670,7 +2678,7 @@ def classificar_planilha_final(
         resumo['somente_banco'] -= 1
         resumo['parciais_completados'] += int(parcial)
         resumo[motivo] -= 1
-        if not conta_transferencia:
+        if pelo_plano:
             resumo['por_plano_contas'] = resumo.get('por_plano_contas', 0) + 1
         resumo[origem] = resumo.get(origem, 0) + 1
 
