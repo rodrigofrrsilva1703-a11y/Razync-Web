@@ -59,3 +59,68 @@
 #companyPanel .saved-period-months {display:flex;flex-wrap:wrap;gap:5px;min-width:0;}
 #companyPanel .saved-period-months>span {display:block;padding:4px 7px;border:1px solid var(--border);border-radius:5px;background:var(--surface-2);color:var(--muted);font-size:11px;line-height:1.5;font-variant-numeric:tabular-nums;}
 @media(max-width:600px){#companyPanel .saved-period-bank {grid-template-columns:minmax(0,1fr);gap:7px;}#companyPanel .saved-periods-heading button {min-height:44px;}}
+
+#companyPanel .base-chart-control {
+  min-width: 0;
+}
+#companyPanel .base-chart-control > summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+#companyPanel .base-chart-control > summary::-webkit-details-marker {
+  display: none;
+}
+#companyPanel .base-chart-control > summary::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: translateY(-1px) rotate(45deg);
+}
+#companyPanel .base-chart-control[open] {
+  flex-basis: 100%;
+}
+#companyPanel .base-chart-control[open] > summary::after {
+  transform: translateY(2px) rotate(225deg);
+}
+#companyPanel .base-chart-control > summary:hover {
+  background: var(--surface-2);
+}
+#companyPanel .base-chart-control > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+#companyPanel .base-chart-fields {
+  display: grid;
+  gap: 8px;
+  max-width: 560px;
+  padding-top: 10px;
+}
+#companyPanel .base-chart-fields p {
+  margin: 0;
+}
+#companyPanel .base-chart-fields label {
+  font-size: 12px;
+  font-weight: 600;
+}
+#companyPanel .base-chart-fields > button {
+  justify-self: start;
+}
+@media (max-width: 560px) {
+  #companyPanel .base-chart-control > summary {
+    min-height: 44px;
+  }
+}

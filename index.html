@@ -27,7 +27,7 @@
   <link rel="razync-lazy-stylesheet" data-lazy-tool="fiscal" href="./assets/css/fiscal-ai-reader.css?v=theme-surfaces-20261027-5">
   <link rel="razync-lazy-stylesheet" data-lazy-tool="fiscal" href="./assets/css/fiscal-account-dialog.css?v=fiscal-agent-steps-20261030-1">
   <link rel="stylesheet" href="./assets/css/portfolio-home.css?v=home-composed-20261027-11">
-  <link rel="stylesheet" href="./assets/css/base-maintenance.css?v=company-tools-20261031-1">
+  <link rel="stylesheet" href="./assets/css/base-maintenance.css?v=compact-chart-1">
   <link rel="stylesheet" href="./assets/css/admin-auth.css?v=password-eye-20261106-1">
   <link rel="stylesheet" href="./assets/css/tool-preparation.css?v=company-upload-three-parts-20261031-3">
   <link rel="stylesheet" href="./assets/css/company-directory.css?v=accounting-status-2">
@@ -811,22 +811,6 @@
               </button>
             </nav>
             <div class="stack-forms">
-              <section class="modern-form compact-form preparation-form" aria-labelledby="baseChartTitle">
-                <div class="form-card-header">
-                  <span class="form-card-icon icon-learn" aria-hidden="true"></span>
-                  <div>
-                    <strong id="baseChartTitle">Plano de contas da empresa</strong>
-                    <small>Salve o plano do Domínio para validar as contas nas próximas classificações.</small>
-                  </div>
-                </div>
-                <details id="classificationSources" class="base-cleanup">
-                  <summary>Ensinar com plano de contas</summary>
-                  <p id="classificationChartStatus" class="helper" role="status"></p>
-                  <label for="classificationChartFile">Plano de contas do Domínio em PDF</label>
-                  <input id="classificationChartFile" type="file" accept=".pdf,application/pdf">
-                  <button id="saveClassificationChart" type="button" class="secondary-action">Salvar plano de contas</button>
-                </details>
-              </section>
               <form id="classifyForm" class="modern-form compact-form preparation-form">
                 <div class="form-card-header">
                   <span class="form-card-icon icon-classify" aria-hidden="true"></span>
@@ -885,6 +869,15 @@
               </form>
               <div class="base-management">
                 <button id="exportBase" type="button" class="secondary-action">Exportar Base Inteligente</button>
+                <details id="classificationSources" class="base-chart-control">
+                  <summary>Plano de contas</summary>
+                  <div class="base-chart-fields">
+                    <p id="classificationChartStatus" class="helper" role="status"></p>
+                    <label for="classificationChartFile">Plano de contas do Domínio em PDF</label>
+                    <input id="classificationChartFile" type="file" accept=".pdf,application/pdf">
+                    <button id="saveClassificationChart" type="button" class="secondary-action">Salvar plano de contas</button>
+                  </div>
+                </details>
                 <button id="importOriginalBase" type="button" class="secondary-action" hidden>Copiar base do Streamlit</button>
                 <p id="baseManagementMessage" class="helper"></p>
                 <details id="baseCleanup" class="base-cleanup">
