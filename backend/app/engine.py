@@ -2187,7 +2187,7 @@ def classificar_planilha_final(
     file_bytes, filename, base_classificacoes, contas_bancarias=None,
     empresa_classificacao='', coluna_substituir='', valores_substituiveis=None,
     modo_consolidado_eletro_forte=False, decidir_pendencias=None,
-    aplicar_decisoes=False, periodo_decisao=None,
+    aplicar_decisoes=False, periodo_decisao=None, localizar_conta_plano=None, localizar_transferencias=None,
 ):
     """Preenche Débito/Crédito somente na planilha final já conciliada."""
     from openpyxl import load_workbook
@@ -2314,6 +2314,8 @@ def classificar_planilha_final(
     cache_similaridade = {}
     cache_similaridade_legada = {}
     pendencias_decisao = {}
+    pendencias_plano = {}
+    abas_transferencias = []
 
     for ws in wb.worksheets:
         # Na 242, nunca classificar a aba Principal. Ela deve permanecer exatamente
@@ -2343,6 +2345,8 @@ def classificar_planilha_final(
         col_valor = mapa_colunas.get('valor')
         col_descricao = mapa_colunas.get('descricao')
         banco_aba = identificar_chave_banco_empresa(ws.title) or banco_arquivo
+        if localizar_transferencias:
+            abas_transferencias.append((ws, linha_cabecalho, mapa_colunas, banco_aba))
 
         for numero_linha in range(linha_cabecalho + 1, ws.max_row + 1):
             historico = texto_celula_seguro(ws.cell(numero_linha, col_hist).value)
@@ -2558,6 +2562,22 @@ def classificar_planilha_final(
                 ):
                     conta_evidencia = conta
 
+            alvo_plano = None
+            if localizar_conta_plano and not conta_evidencia:
+                coluna_data = mapa_colunas.get('data')
+                data_plano = ws.cell(numero_linha, coluna_data).value if coluna_data else None
+                dentro_periodo = True
+                if periodo_decisao:
+                    data = pd.to_datetime(data_plano, dayfirst=True, errors='coerce')
+                    dentro_periodo = not pd.isna(data) and periodo_decisao[0] <= data.normalize() <= periodo_decisao[1]
+                if dentro_periodo:
+                    alvo_plano = ws.cell(numero_linha, coluna_contrapartida)
+                    pendencias_plano[alvo_plano] = (
+                        banco_linha, natureza, historico, data_plano,
+                        linha_estava_parcial, valores_regra,
+                        'conflitos' if conflito else 'padroes_novos',
+                    )
+
             if conflito and not conta_evidencia:
                 resumo['conflitos'] += 1
                 resumo['somente_banco'] += 1
@@ -2619,17 +2639,46 @@ def classificar_planilha_final(
                     if linha_estava_parcial:
                         resumo['parciais_completados'] += 1
                 else:
-                    if motivo_nome == 'conflito':
-                        resumo['conflitos'] += 1
-                    else:
-                        resumo['padroes_novos'] += 1
+                    motivo = 'conflitos' if motivo_nome == 'conflito' else 'padroes_novos'
+                    resumo[motivo] += 1
                     resumo['somente_banco'] += 1
+                    if alvo_plano is not None:
+                        pendencias_plano[alvo_plano] = (*pendencias_plano[alvo_plano][:-1], motivo)
 
     if resumo['abas_processadas'] == 0:
         raise ValueError(
             'Nenhuma aba com as colunas HISTÓRICO, DÉBITO e CRÉDITO foi encontrada.'
         )
 
+    transferencias = localizar_transferencias(abas_transferencias) if localizar_transferencias else {}
+    for celula, dados in pendencias_plano.items():
+        banco, natureza, historico, data, parcial, provisoria, motivo = dados
+        if celula.value:
+            continue
+        conta_transferencia = transferencias.get(celula)
+        decisao = (
+            (conta_transferencia, 'por_transferencia_confirmada') if conta_transferencia
+            else localizar_conta_plano(banco, natureza, historico, data)
+        )
+        if not decisao:
+            continue
+        conta, origem = decisao
+        if conta in provisoria:
+            continue
+        celula.value = valor_conta_excel(conta)
+        resumo['automaticos'] += 1
+        resumo['somente_banco'] -= 1
+        resumo['parciais_completados'] += int(parcial)
+        resumo[motivo] -= 1
+        if not conta_transferencia:
+            resumo['por_plano_contas'] = resumo.get('por_plano_contas', 0) + 1
+        resumo[origem] = resumo.get(origem, 0) + 1
+
+    pendencias_decisao = {
+        grupo: restantes
+        for grupo, linhas in pendencias_decisao.items()
+        if (restantes := [(celula, parcial) for celula, parcial in linhas if not celula.value])
+    }
     if pendencias_decisao:
         grupos = list(pendencias_decisao)
         respostas = decidir_pendencias([(operacao, dict(contas)) for operacao, contas in grupos])

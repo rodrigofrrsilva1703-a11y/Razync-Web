@@ -211,7 +211,7 @@
     const controls=[],catalog=result.catalogo_contas || [],priority=new Set(result.ia?.prioridades || []);
     const candidateAccounts=s=>[...new Set([s.conta_sugerida,...(s.evidencias || []).map(e=>e.conta)].filter(Boolean))];
     const category=s=>s.conta_sugerida?'single':candidateAccounts(s).length>1?'conflict':candidateAccounts(s).length===1?'single':'none';
-    const rank=s=>({single:0,conflict:1,none:2})[category(s)];
+    const rank=s=>s.tres_periodos?-1:({single:0,conflict:1,none:2})[category(s)];
     const resultEvidence=JSON.stringify([result.sugestoes,result.catalogo_contas]);
     const suggestions=[...result.sugestoes].sort((a,b)=>rank(a)-rank(b) || Number(priority.has(b.grupo))-Number(priority.has(a.grupo)));
     let active=null,filter='all',query='',grouped=true,completed=false,applying=false;const undoStack=[];let savedReview={revisions:[],learn:false};
@@ -221,7 +221,8 @@
     const groupToggle=button('Agrupar equivalentes',()=>{grouped=!grouped;groupToggle.setAttribute('aria-pressed',String(grouped));updateQueue();showDetail();});groupToggle.setAttribute('aria-pressed','true');
     const tools=node('div',null,'base-queue-tools');tools.append(search);
     const filters=node('div',null,'base-review-filters'),filterButtons=[];
-    for(const [value,label] of [['all','Todas'],['single','Uma conta'],['conflict','Várias contas'],['none','Sem referência'],['deferred','Adiadas'],['approved','Aprovadas']]){
+    for(const [value,label] of [['all','Todas'],['recent','Três períodos'],['single','Uma conta'],['conflict','Várias contas'],['none','Sem referência'],['deferred','Adiadas'],['approved','Aprovadas']]){
+      if(value==='recent' && !suggestions.some(s=>s.tres_periodos))continue;
       const control=button(label,()=>{filter=value;updateQueue();showDetail();});control.setAttribute('aria-pressed',String(value==='all'));filters.append(control);filterButtons.push({value,label,control});
     }
 
@@ -242,7 +243,7 @@
       }catch{return false;}
     }
     const message=node('p',null,'helper');message.setAttribute('role','status');
-    const matchesFilter=(c,value)=>value==='all' || value==='approved' && c.select.checked || value==='deferred' && c.deferred && !c.select.checked || category(c.s)===value;
+    const matchesFilter=(c,value)=>value==='all' || value==='approved' && c.select.checked || value==='deferred' && c.deferred && !c.select.checked || (value==='recent' ? Boolean(c.s.tres_periodos) : category(c.s)===value);
     const matchesSearch=c=>!query || normalized([c.s['Histórico'],c.s._aba,c.account.value,c.s.Valor,String(c.s.Valor).replace('.',','),Number(c.s.Valor).toLocaleString('pt-BR',{minimumFractionDigits:2}),displayDate(c.s.Data)].join(' ')).includes(query);
     const visible=()=>controls.filter(c=>matchesFilter(c,filter) && matchesSearch(c));
     const rowKey=c=>`${c.s._aba}:${c.s._linha}`;
@@ -275,6 +276,10 @@
       const reason=!chosen.length?'A base não encontrou histórico compatível com este lançamento.':conflict?'Os históricos encontrados apontam para contas diferentes. Compare as referências antes de escolher.':account && !matching.length?'A conta foi escolhida manualmente e não tem evidência específica para este lançamento.':exact?`A base encontrou o mesmo padrão de histórico${same?' neste banco':' em outro banco'}. Isso não confirma a operação atual.`:`A base encontrou apenas textos semelhantes${same?' neste banco':' em outro banco'}. A semelhança não confirma a classificação.`;
       const check=differentNumbers?'Os números do histórico diferem dos exemplos. Confira o documento ou investimento e se a mesma conta se aplica.':!evidence.length?'Confira o documento de origem e a natureza da operação antes de escolher uma conta.':conflict?'Confira qual conta corresponde à operação atual; não aprove apenas pela semelhança do texto.':!same?'A referência é de outro banco. Confirme a conta de contrapartida aplicável a este banco.':'Confira a operação e se a conta continua válida no plano de contas.';
       details.append(node('strong','Por que considerar'),node('p',reason),node('p',check));
+      if(s.tres_periodos){
+        const months=s.tres_periodos.periodos.map(periodLabel).join(', ');
+        focus.append(node('small',`Conta ${s.tres_periodos.conta} registrada em ${months} e localizada no plano de contas.`));
+      }
       const evidenceBody=node('div');showEvidence(s,evidenceBody);details.append(evidenceBody,node('p',s.justificativa));
       c.contextDetails=details;c.summary.setAttribute('data-analysis-state',conflict?'conflict':s.conta_sugerida?'suggested':'insufficient');c.summary.replaceChildren(focus,details);
       if(c.accountHelp){const valid=validAccount(c);c.accountHelp.hidden=valid;c.accountHelp.textContent=account?'Conta não encontrada para este tipo de lançamento. Escolha uma conta da base.':'Escolha uma conta da base para continuar.';c.account.setAttribute('aria-invalid',String(Boolean(account) && !valid));}

@@ -1003,6 +1003,16 @@ function openCompany(company) {
   window.RazyncBaseWorkflow?.reset();
   cancelReconcilePreview();
   selected = company;
+  for (const input of [$("#classificationChartFile"), $("#classificationTitlesFile")]) {
+    if (!input) continue;
+    input.value = "";
+    updateFileSelection(input);
+  }
+  const chartDetails = $("#classificationSources");
+  if (chartDetails) {
+    chartDetails.open = false;
+    $("#classificationChartStatus").textContent = "";
+  }
   renderCompanyToolGuide("");
   const available = hasCompanyTools(company);
   const defaultTool = "organizar";
@@ -1501,6 +1511,59 @@ classifyForm.addEventListener("change", () => {
   $("#classifyMessage").textContent = "";
 });
 
+const chartStatus = $("#classificationChartStatus");
+const chartFile = $("#classificationChartFile");
+const titlesFile = $("#classificationTitlesFile");
+const saveChart = $("#saveClassificationChart");
+function chartStatusText(result) {
+  return result.analiticas
+    ? `Plano salvo · ${result.analiticas.toLocaleString("pt-BR")} contas analíticas`
+    : "Cadastre o plano de contas da empresa para usar o cruzamento.";
+}
+async function loadClassificationChartStatus() {
+  if (!selected || !chartStatus) return;
+  const code = selected.codigo;
+  try {
+    const response = await fetch(`${API()}/api/v1/base-inteligente/${code}/plano-contas`);
+    if (!response.ok) throw new Error(await responseError(response));
+    const result = await response.json();
+    if (selected?.codigo === code) chartStatus.textContent = chartStatusText(result);
+  } catch (error) {
+    if (selected?.codigo === code) chartStatus.textContent = error.message;
+  }
+}
+$("#classificationSources")?.addEventListener("toggle", event => {
+  if (event.currentTarget.open) loadClassificationChartStatus();
+});
+saveChart?.addEventListener("click", async () => {
+  if (!selected) return;
+  const code = selected.codigo;
+  const file = chartFile.files[0];
+  if (!file) {
+    chartStatus.textContent = "Selecione o plano de contas em PDF.";
+    return;
+  }
+  const data = new FormData();
+  data.append("plano", file);
+  saveChart.disabled = true;
+  chartStatus.textContent = "Salvando plano de contas…";
+  try {
+    const response = await fetch(`${API()}/api/v1/base-inteligente/${code}/plano-contas`, {method:"PUT", body:data});
+    if (!response.ok) throw new Error(await responseError(response));
+    const result = await response.json();
+    if (selected?.codigo === code) {
+      chartStatus.textContent = chartStatusText(result);
+      chartFile.value = "";
+      updateFileSelection(chartFile);
+      cancelClassificationPreview();
+    }
+  } catch (error) {
+    if (selected?.codigo === code) chartStatus.textContent = error.message;
+  } finally {
+    saveChart.disabled = false;
+  }
+});
+
 classifyForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const file = $("#classifyFile").files[0];
@@ -1519,6 +1582,7 @@ classifyForm.addEventListener("submit", async (event) => {
   window.RazyncBaseWorkflow?.setClassification("processing");
   const data = new FormData();
   [...$("#classifyFile").files].forEach(file => data.append("file", file));
+  if (titlesFile?.files[0]) data.append("titulos", titlesFile.files[0]);
   const classifyOptions = {};
   if (Number(selected.codigo) === 242) {
     classifyOptions.origem_242 = eletro242ClassificationMode;
@@ -1575,6 +1639,19 @@ function renderClassifiedWorkbook(prepared, summary, classifyOptions, companyCod
   if (controller.signal.aborted || selected?.codigo !== companyCode) return;
   showWorkflowPreview(prepared.preview,target);
   renderClassificationCoverage(summary.cobertura);
+  const titleMatches = Number(summary.por_titulo_baixado || 0);
+  const planMatches = Number(summary.por_plano_contas || 0) - titleMatches;
+  const transferMatches = Number(summary.por_transferencia_confirmada || 0);
+  if (titleMatches || planMatches || transferMatches) {
+    const evidence = document.createElement("p");
+    evidence.className = "helper";
+    evidence.textContent = [
+      titleMatches && `Títulos baixados: ${titleMatches}`,
+      planMatches && `Plano de contas: ${planMatches}`,
+      transferMatches && `Transferências confirmadas: ${transferMatches}`
+    ].filter(Boolean).join(" · ");
+    target.append(evidence);
+  }
   if (summary.gemini_consultados) {
     const decision = document.createElement("p");
     decision.className = "helper";

@@ -287,7 +287,26 @@ def _limit_classified_workbook_to_period(original_content, classified_content, d
     return output.getvalue(), changed
 
 
-def classify(company, content, filename, options=None):
+def chart_directory():
+    return Path(os.getenv('RAZYNC_CHART_DIRECTORY') or DB_PATH.parent / 'company-charts')
+
+
+def save_chart(company, content, company_name):
+    from app.classification_chart import parse_chart_pdf, save_company_chart
+
+    chart = parse_chart_pdf(content, company_name)
+    save_company_chart(chart_directory(), company, chart)
+    return {'contas': len(chart), 'analiticas': sum(entry['analitica'] for entry in chart.values())}
+
+
+def chart_status(company):
+    from app.classification_chart import load_company_chart
+
+    chart = load_company_chart(chart_directory(), company)
+    return {'contas': len(chart or {}), 'analiticas': sum(entry['analitica'] for entry in (chart or {}).values())}
+
+
+def classify(company, content, filename, options=None, *, plano_contas=None, titulos_baixados=None):
     from app import classification_decision
 
     options = resolve_classification_options(company, options)
@@ -297,15 +316,35 @@ def classify(company, content, filename, options=None):
     period = (pd.Timestamp(start).normalize(), pd.Timestamp(end).normalize()) if start else None
     if period and period[1] < period[0]:
         raise ValueError('A Data Final não pode ser anterior à Data Inicial.')
-    key = classification_decision.configured_key()
+    # A empresa 266 usa apenas as regras e evidências locais na classificação automática.
+    key = '' if int(company) == 266 else classification_decision.configured_key()
+    learned = records(company)
+    bank_accounts = accounts(company)
+    chart_lookup = None
+    transfer_lookup = None
+    from app.classification_chart import (
+        ChartNameMatcher, load_company_chart, match_internal_transfers, settled_titles_lookup,
+    )
+    if plano_contas is None:
+        plano_contas = load_company_chart(chart_directory(), company)
+    if titulos_baixados is not None:
+        lookup_titles = settled_titles_lookup(titulos_baixados, plano_contas, bank_accounts)
+    if plano_contas:
+        learned_lookup = ChartNameMatcher(learned, bank_accounts, plano_contas).find
+        chart_lookup = learned_lookup
+        if titulos_baixados is not None:
+            def chart_lookup(bank, nature, history, date):
+                return lookup_titles(bank, nature, history, date) or learned_lookup(bank, nature, history, date)
+        transfer_lookup = partial(match_internal_transfers, bank_accounts=bank_accounts, chart=plano_contas)
     workbook, summary = engine.classificar_planilha_final(
-        content, filename, records(company), accounts(company),
+        content, filename, learned, bank_accounts,
         empresa_classificacao=slug(company), coluna_substituir=options.get('coluna_substituir', ''),
         valores_substituiveis=options.get('valores_substituiveis', []),
         modo_consolidado_eletro_forte=bool(options.get('modo_consolidado', company in {242, 1408})),
         decidir_pendencias=partial(classification_decision.classify_groups, key) if key else None,
         aplicar_decisoes=os.getenv('GEMINI_DECISION_AUTO_APPLY') == '1',
-        periodo_decisao=period,
+        periodo_decisao=period, localizar_conta_plano=chart_lookup,
+        localizar_transferencias=transfer_lookup,
     )
     workbook, changed = _limit_classified_workbook_to_period(
         content, workbook, options.get('data_inicial', ''), options.get('data_final', '')
@@ -320,9 +359,9 @@ def classify(company, content, filename, options=None):
     return workbook, summary
 
 
-def classify_with_coverage(company, content, filename, options=None):
+def classify_with_coverage(company, content, filename, options=None, *, plano_contas=None, titulos_baixados=None):
     """Acrescenta indicadores apenas à resposta web, preservando o contrato interno."""
-    workbook, summary = classify(company, content, filename, options)
+    workbook, summary = classify(company, content, filename, options, plano_contas=plano_contas, titulos_baixados=titulos_baixados)
     resolved = resolve_classification_options(company, options)
     resolved.setdefault('modo_consolidado', int(company) in {242, 1408})
     from app.classification_coverage import coverage

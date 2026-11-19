@@ -811,6 +811,22 @@
               </button>
             </nav>
             <div class="stack-forms">
+              <section class="modern-form compact-form preparation-form" aria-labelledby="baseChartTitle">
+                <div class="form-card-header">
+                  <span class="form-card-icon icon-learn" aria-hidden="true"></span>
+                  <div>
+                    <strong id="baseChartTitle">Plano de contas da empresa</strong>
+                    <small>Salve o plano do Domínio para validar as contas nas próximas classificações.</small>
+                  </div>
+                </div>
+                <details id="classificationSources" class="base-cleanup">
+                  <summary>Ensinar com plano de contas</summary>
+                  <p id="classificationChartStatus" class="helper" role="status"></p>
+                  <label for="classificationChartFile">Plano de contas do Domínio em PDF</label>
+                  <input id="classificationChartFile" type="file" accept=".pdf,application/pdf">
+                  <button id="saveClassificationChart" type="button" class="secondary-action">Salvar plano de contas</button>
+                </details>
+              </section>
               <form id="classifyForm" class="modern-form compact-form preparation-form">
                 <div class="form-card-header">
                   <span class="form-card-icon icon-classify" aria-hidden="true"></span>
@@ -818,6 +834,12 @@
                 </div>
                 <label for="classifyFile">Modelo Domínio para classificar</label>
                 <input id="classifyFile" type="file" accept=".xlsx" multiple>
+                <details class="base-cleanup">
+                  <summary>Usar títulos baixados</summary>
+                  <label for="classificationTitlesFile">Títulos baixados em XLSX (opcional)</label>
+                  <input id="classificationTitlesFile" type="file" accept=".xlsx">
+                  <p class="helper">Inclua Contraparte, Título, Parcela, Natureza e Conta contábil. Em Natureza, use Pagamento ou Recebimento.</p>
+                </details>
                 <div id="eletro242Classification" class="eletro-classification" hidden>
                   <span class="classification-mode-label">Tipo de planilha da 242</span>
                   <div id="eletro242Modes" class="classification-mode-tabs" role="tablist" aria-label="Tipo de classificação da empresa 242">
@@ -1086,11 +1108,11 @@
   <script src="./assets/js/organizer-jobs.js?v=20261026-1"></script>
   <script src="./assets/js/company-directory.js?v=accounting-status-2"></script>
   <script src="./assets/js/converter-global.js?v=standard-preview-20261109-1"></script>
-  <script src="./assets/js/base-investigation.js?v=assistant-shortcut-1"></script>
+  <script src="./assets/js/base-investigation.js?v=assistant-recent-periods-1"></script>
   <script src="./assets/js/base-workflow.js?v=guided-base-20261031-1"></script>
   <script src="./assets/js/file-formats.js?v=horeb-1092-1"></script>
   <script src="./assets/js/monthly-tasks.js?v=admin-notices-1"></script>
-  <script src="./assets/js/app.js?v=gemini-comparison-2"></script>
+  <script src="./assets/js/app.js?v=classification-sources-2"></script>
   <script src="./assets/js/migration.js?v=otom-1166-1"></script>
   <script type="text/plain" data-lazy-tool="fiscal" src="./assets/js/fiscal-242.js?v=fiscal-agent-steps-20261030-2"></script>
   <script src="./assets/js/base-maintenance.js?v=saved-periods-20261026-1"></script>

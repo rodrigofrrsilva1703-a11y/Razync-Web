@@ -351,17 +351,52 @@ async def intelligent_base_learn(
     return {"ok": True, "learned": total, "errors": errors, **stats}
 
 
+@app.get("/api/v1/base-inteligente/{company_code}/plano-contas")
+def intelligent_base_chart_status(company_code: int):
+    from app.classification_service import chart_status
+
+    return chart_status(company_code)
+
+
+@app.put("/api/v1/base-inteligente/{company_code}/plano-contas")
+async def intelligent_base_save_chart(company_code: int, plano: UploadFile = File(...)):
+    from app.classification_service import save_chart
+
+    company = next((row for row in await run_in_threadpool(company_catalog)
+                    if int(row['codigo']) == company_code), None)
+    if not company:
+        raise HTTPException(404, 'Empresa não encontrada.')
+    if not (plano.filename or '').lower().endswith('.pdf'):
+        raise HTTPException(422, 'Envie o plano de contas do Domínio em PDF.')
+    content = await plano.read(16 * 1024 * 1024 + 1)
+    if len(content) > 16 * 1024 * 1024:
+        raise HTTPException(413, 'O plano de contas pode ter até 16 MB.')
+    try:
+        return await run_in_threadpool(save_chart, company_code, content, company['nome'])
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
 @app.post("/api/v1/base-inteligente/{company_code}/classificar")
 async def intelligent_base_classify(
     request: Request,
     company_code: int, file: list[UploadFile] = File(...), options_json: str = Form('{}'),
+    titulos: UploadFile | None = File(None),
 ):
     file = await upload_group(file, model=True)
     try:
         options = json.loads(options_json)
         if not isinstance(options, dict):
             raise ValueError('Opções de classificação inválidas.')
-        workbook, summary = await run_in_threadpool(base_classify_with_coverage, company_code, await file.read(), file.filename or "modelo.xlsx", options)
+        settled = None
+        if titulos is not None:
+            settled = await titulos.read(16 * 1024 * 1024 + 1)
+            if len(settled) > 16 * 1024 * 1024:
+                raise ValueError('A planilha de títulos baixados pode ter até 16 MB.')
+        workbook, summary = await run_in_threadpool(
+            base_classify_with_coverage, company_code, await file.read(),
+            file.filename or "modelo.xlsx", options, titulos_baixados=settled,
+        )
         headers = {"X-Razync-Summary": json.dumps(summary, ensure_ascii=False)}
         response = await run_in_threadpool(workbook_response, workbook, f"RAZYNC_{company_code}_CLASSIFICADO.xlsx", request.headers.get("x-razync-preview") == "1")
         response.headers.update(headers)

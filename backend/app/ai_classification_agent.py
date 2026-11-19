@@ -17,7 +17,7 @@ from app.migration_services import accounts, slug
 
 from app.site_access import current_owner
 
-VERSION = 'base-investigator-3'
+VERSION = 'base-investigator-4'
 _lock = threading.RLock()
 _cache = OrderedDict()
 _TTL = 1200
@@ -180,12 +180,17 @@ def account_catalog(records, bankaccounts):
 
 
 def investigate(company, content, options=None, use_ai=True):
+    from app.classification_chart import ChartNameMatcher, load_company_chart
+
     company = int(company)
     options = base.resolve_classification_options(company, options)
     records = base.records(company)
+    bank_accounts = accounts(company)
+    chart = load_company_chart(base.chart_directory(), company)
+    matcher = ChartNameMatcher(records, bank_accounts, chart) if chart else None
     digest = fingerprint(records)
     filehash = hashlib.sha256(content).hexdigest()
-    key = fingerprint([VERSION,current_owner.get(),company,filehash,digest,options,bool(use_ai)])
+    key = fingerprint([VERSION,current_owner.get(),company,filehash,digest,chart,options,bool(use_ai)])
     with _lock:
         now = time.monotonic()
         for old in list(_cache):
@@ -208,7 +213,7 @@ def investigate(company, content, options=None, use_ai=True):
     suggestions=[]
     for number, members in enumerate(groups.values(),1):
         row = members[0]
-        evidence = candidates_for(row,records,accounts(company))
+        evidence = candidates_for(row,records,bank_accounts)
         same = [e for e in evidence if e['exata'] and e['mesmo_banco']]
         exact = [e for e in evidence if e['exata']]
         options_found = {e['conta'] for e in exact or evidence}
@@ -221,12 +226,24 @@ def investigate(company, content, options=None, use_ai=True):
                   else 'Sem correspondência exata suficiente. Os candidatos similares exigem conferência manual.' if evidence
                   else 'Não há evidência histórica compatível para sugerir uma conta.')
         for member in members:
-            suggestions.append({**member,'grupo':number,'conta_sugerida':chosen,'situacao':strength,
-                'justificativa':reason,'evidencias':evidence[:12],'aprovada':False})
+            suggestion = {**member, 'grupo': number, 'conta_sugerida': chosen, 'situacao': strength,
+                          'justificativa': reason, 'evidencias': evidence[:12], 'aprovada': False}
+            recent = matcher.recent_suggestion(
+                member['_banco'], member['natureza'], member['Histórico'], member['Data'],
+            ) if matcher else None
+            if recent and (not chosen or chosen == recent['conta']):
+                suggestion.update(
+                    conta_sugerida=recent['conta'],
+                    situacao=strength if strength == 'FORTE' else 'MODERADA',
+                    tres_periodos=recent,
+                    justificativa='A conta aparece nos três períodos anteriores mais recentes da contraparte, '
+                                  'no mesmo banco, e consta no plano. Confira antes de aprovar.',
+                )
+            suggestions.append(suggestion)
     result={'empresa':company,'versao':VERSION,'total_pendencias':len(rows),'grupos_investigados':len(groups),
         'sugestoes':suggestions,'cache':False,'catalogo_contas':account_catalog(records,accounts(company)),
-        'limitacoes':['O plano de contas não foi fornecido: confirme se a conta histórica continua ativa.',
-                       'Sem correspondência documental, nomes semelhantes não comprovam a identidade da operação.'],
+        'limitacoes': (['O plano de contas não foi fornecido: confirme se a conta histórica continua ativa.'] if not chart else [])
+                      + ['Nomes semelhantes exigem conferência antes de aprovar.'],
         'ia':{'estado':'dispensada','chamadas_nesta_execucao':0}}
     if use_ai and any(s['situacao']=='MANUAL' and s['evidencias'] for s in suggestions):
         from app import classification_decision
