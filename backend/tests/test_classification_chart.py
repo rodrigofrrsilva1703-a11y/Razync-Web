@@ -167,3 +167,65 @@ def test_assistant_prioritizes_three_recent_periods_without_approving(monkeypatc
     older['periodos'].append('2026-08')
     result = agent.investigate(242, book(), use_ai=False)
     assert 'tres_periodos' not in result['sugestoes'][0]
+
+
+def test_taught_approval_reuses_name_in_later_period_and_respects_conflicts(monkeypatch, tmp_path):
+    from app import ai_classification_agent as agent, base_maintenance
+    from app.classification_chart import ChartNameMatcher
+
+    base = classification_service
+    monkeypatch.setattr(base, 'DB_PATH', tmp_path / 'base.sqlite')
+    monkeypatch.setenv('RAZYNC_DATA_BACKEND', 'sqlite')
+    monkeypatch.setenv('RAZYNC_CHART_DIRECTORY', str(tmp_path))
+    monkeypatch.delenv('GEMINI_DECISION_API_KEY', raising=False)
+    monkeypatch.delenv('GEMINI_API_KEY', raising=False)
+    original = record(periods=('2026-08',), signature='pago|comercial verde')
+    original['exemplo_historico'] = 'Pago: Empresa: Comercial Verde'
+    chart = {'412': {
+        'analitica': True, 'nome': 'Fornecedor ABC Componentes', 'classificacao': '2.1.3.01.001',
+    }}
+    banks = base.accounts(242)
+    with base._db() as con:
+        base._save(con, 242, [original])
+
+    def match(rows=None, date='2026-11-15', history='Pago: Empresa: Fornecedor ABC Obs: 1000/2'):
+        return ChartNameMatcher(base.records(242) if rows is None else rows, banks, chart).find(
+            'itau_508', 'pago', history, date,
+        )
+
+    assert match() is None
+    data = book()
+    investigation = agent.investigate(242, data, use_ai=False)
+    approvals = [{'_aba': 'Itaú 508', '_linha': 2, 'Conta da contrapartida': '412'}]
+    _, summary = agent.apply(242, data, 'modelo.xlsx', approvals, investigation['token'], remember=True)
+    assert summary['aprendizados'] == 1
+    target = load_workbook(io.BytesIO(book([
+        [-100, '', 508, 'Pago: Empresa: Fornecedor ABC Obs: 1000/2'],
+        [-100, 777, 508, 'Pago: Empresa: Fornecedor ABC Obs: 1001/2'],
+    ])))
+    sheet = target['Itaú 508']
+    sheet['B2'] = sheet['B3'] = '15/11/2026'
+    workbook = io.BytesIO()
+    target.save(workbook)
+    result, summary = base.classify_with_coverage(
+        242, workbook.getvalue(), 'itau.xlsx', {'modo_consolidado': False}, plano_contas=chart,
+    )
+    result_sheet = load_workbook(io.BytesIO(result))['Itaú 508']
+    assert summary['por_aprovacao_no_plano'] == 1
+    assert result_sheet['D2'].value == 412
+    assert result_sheet['D3'].value == 777
+
+    with base._db() as con:
+        base._save(con, 242, [record(periods=('2026-11',))])
+
+    assert match() == ('412', 'por_aprovacao_no_plano')
+    assert match(date='2026-10-31') is None
+    assert match(history='Pago: Empresa: Fornecedor ABC Obs: Aluguel') is None
+    assert match(rows=base.records(242) + [record(account='413')]) is None
+    chart['413'] = dict(chart['412'])
+    assert match() is None
+    chart.pop('413')
+
+    selection = base_maintenance.preview(242, 'itau_508', '2026-10')
+    base_maintenance.delete(242, 'itau_508', '2026-10', selection['token'])
+    assert match() is None

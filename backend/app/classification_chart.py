@@ -52,9 +52,14 @@ def _month(value):
 _GROUP_BY_NATURE = {'pago': '2.1.3.01.001', 'recebido': '1.1.2.01.001'}
 _TITLE_REFERENCE = re.compile(r'(?:(?:nf[e]?|ped)\s*[:#-]?\s*)?\d{3,10}(?:\s*/\s*\d{1,2})?')
 _INSTALLMENT_REFERENCE = re.compile(r'((?:ped)?\d{3,10})\s*/\s*(\d{1,2})')
+_MONTH_PATTERN = re.compile(r'\d{4}-(?:0[1-9]|1[0-2])')
 _SPECIAL_OPERATION = re.compile(
     r'\b(?:adiant\w*|adto|antecip\w*|reemb\w*|reem|devol\w*|estorn\w*|transf\w*|'
     r'tarif\w*|juros|multa|iof|aplicacao|resgate|folha|salario|imposto|tribut\w*)\b'
+)
+_APPROVAL_SPECIAL_OPERATION = re.compile(
+    r'\b(?:ferias|rescis\w*|inss|fgts|irrf|pis|cofins|csll|icms|iss|gnre|'
+    r'aluguel|frete|emprestim\w*|financiam\w*|rendiment\w*)\b'
 )
 
 
@@ -102,6 +107,32 @@ def _history_party(history):
     return _canonical_party(body)
 
 
+def remember_chart_approval(record):
+    """Keep the name and period of a review explicitly taught to the base."""
+    history = record.get('exemplo_historico') or ''
+    normalized = engine.normalizar_texto(history)
+    if _SPECIAL_OPERATION.search(normalized) or _APPROVAL_SPECIAL_OPERATION.search(normalized):
+        return
+    name = _history_party(history)
+    if len(name.split()) >= 2:
+        record['aprovacoes_nome'] = {name: sorted(
+            period for period in record['periodos'] if _MONTH_PATTERN.fullmatch(period)
+        )}
+
+
+def chart_approvals(record):
+    approvals = record.get('aprovacoes_nome')
+    if not isinstance(approvals, dict):
+        return {}
+    return {
+        name: periods
+        for name, values in approvals.items()
+        if isinstance(name, str) and len(name.split()) >= 2 and isinstance(values, list)
+        if (periods := {p for p in values if isinstance(p, str) and _MONTH_PATTERN.fullmatch(p)
+                       and p in record.get('periodos', [])})
+    }
+
+
 class ChartNameMatcher:
     """Cross-check the counterparty name against learned accounts and the chart."""
 
@@ -110,6 +141,7 @@ class ChartNameMatcher:
         self.plan_parties = defaultdict(dict)
         self.learned_parties = defaultdict(lambda: defaultdict(set))
         self.learned_periods = defaultdict(set)
+        self.approved_periods = defaultdict(set)
         self.plan_terms = defaultdict(set)
         self.bank_codes = {str(code) for code in bank_accounts.values()}
         for account, entry in chart.items():
@@ -133,20 +165,27 @@ class ChartNameMatcher:
                 nature, account = 'recebido', credit
             else:
                 continue
+            for name, periods in chart_approvals(record).items():
+                self.learned_parties[bank, nature][name].add(account)
+                key = (bank, nature, name, account)
+                self.learned_periods[key].update(periods)
+                self.approved_periods[key].update(periods)
             history = record.get('exemplo_historico')
             if _SPECIAL_OPERATION.search(engine.normalizar_texto(history or '')):
                 continue
             name = _history_party(history)
             if len(name.split()) >= 2:
                 self.learned_parties[bank, nature][name].add(account)
-                self.learned_periods[bank, nature, name, account].update(
+                key = (bank, nature, name, account)
+                self.learned_periods[key].update(
                     str(period) for period in record.get('periodos', [])
-                    if re.fullmatch(r'\d{4}-(?:0[1-9]|1[0-2])', str(period))
+                    if _MONTH_PATTERN.fullmatch(str(period))
                 )
 
     def find(self, bank, nature, history, transaction_date):
         # Operações especiais seguem as regras já existentes.
-        if _SPECIAL_OPERATION.search(engine.normalizar_texto(history)):
+        normalized = engine.normalizar_texto(history)
+        if _SPECIAL_OPERATION.search(normalized):
             return None
         name = _history_party(history)
         if len(name.split()) < 2:
@@ -170,9 +209,14 @@ class ChartNameMatcher:
             return None
         account = next(iter(candidates))
         month = _month(transaction_date)
+        if not month:
+            return None
         periods = self.learned_periods.get((bank, nature, name, account), ())
-        if plan[account] == name and month and sum(p < month for p in periods) >= 2:
+        if plan[account] == name and sum(p < month for p in periods) >= 2:
             return account, 'por_historico_confirmado_no_plano'
+        approvals = self.approved_periods.get((bank, nature, name, account), ())
+        if any(p < month for p in approvals) and not _APPROVAL_SPECIAL_OPERATION.search(normalized):
+            return account, 'por_aprovacao_no_plano'
         return None
 
 

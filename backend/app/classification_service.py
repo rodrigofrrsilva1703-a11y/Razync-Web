@@ -77,6 +77,8 @@ def _db():
     return con
 
 def _save(con, company, records):
+    from app.classification_chart import chart_approvals
+
     # One read and one upsert per batch instead of two network trips per pattern.
     # SQLite keeps batches below its traditional 999-parameter limit.
     batch_size = 1000 if persistence.is_postgres(con) else 250
@@ -98,9 +100,16 @@ def _save(con, company, records):
         for record in prepared:
             identity = record['id']
             old = updates.get(identity, previous.get(identity))
+            approvals = chart_approvals(record)
             if old:
+                for name, periods in chart_approvals(old).items():
+                    approvals.setdefault(name, set()).update(periods)
                 record['periodos'] = sorted(set(record.get('periodos', []) + old.get('periodos', [])))
                 record['ocorrencias'] = max(int(record.get('ocorrencias', 1)), int(old.get('ocorrencias', 1)))
+            if approvals:
+                record['aprovacoes_nome'] = {name: sorted(periods) for name, periods in approvals.items()}
+            else:
+                record.pop('aprovacoes_nome', None)
             updates[identity] = record
         values = ','.join('(?,?,?)' for _ in updates)
         parameters = tuple(value for record in updates.values()
@@ -395,6 +404,10 @@ def review(company, content, filename, revisions, remember=False):
         validated.append(row)
     workbook, applied, new_records = engine.aplicar_revisoes_inteligentes(content, pd.DataFrame(validated), filename, slug(company), accounts(company))
     if remember:
+        from app.classification_chart import remember_chart_approval
+
+        for record in new_records:
+            remember_chart_approval(record)
         con = _db()
         try:
             con.execute('BEGIN IMMEDIATE')

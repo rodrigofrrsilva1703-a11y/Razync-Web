@@ -303,8 +303,11 @@ def _apply(company, content, filename, revisions, token, remember=False):
     book, applied, learned = engine.aplicar_revisoes_inteligentes(content,pd.DataFrame(validated),filename,slug(company),accounts(company))
     summary={'aplicadas':applied,'aprendizados':0,'cobertura':coverage(content,book,slug(company),ticket['options'])}
     if remember:
+        from app.classification_chart import remember_chart_approval
+
         for record in learned:
             record['origem'] = 'sugestao_agente_aprovada'
+            remember_chart_approval(record)
         con=base._db()
         try:
             con.execute('BEGIN IMMEDIATE')

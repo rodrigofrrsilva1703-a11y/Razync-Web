@@ -2,6 +2,7 @@
 import hashlib
 import json
 from app import classification_service as base, persistence
+from app.classification_chart import chart_approvals
 from app.migration_services import accounts
 
 
@@ -74,6 +75,11 @@ def delete(company, bank, period, token):
             raise StaleSelection('A base mudou desde a prévia. Confira novamente antes de excluir.')
         for identity, record in modern:
             record['periodos'] = [p for p in record['periodos'] if p != period]
+            if 'aprovacoes_nome' in record:
+                approvals = chart_approvals(record)
+                record.pop('aprovacoes_nome')
+                if approvals:
+                    record['aprovacoes_nome'] = {name: sorted(periods) for name, periods in approvals.items()}
             if record['periodos']:
                 con.execute('UPDATE classification_records SET payload=? WHERE company=? AND id=?',
                             (json.dumps(record, ensure_ascii=False), company, identity))
